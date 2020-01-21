@@ -136,9 +136,14 @@ public class SingleInstanceGetRoutingTableProcedureTest
     {
         var portRegister = mock( ConnectorPortRegister.class );
         var config = Config.defaults();
-        var procedure = newProcedure( portRegister, config );
 
+        var databaseIdRepository = mock( DatabaseIdRepository.Caching.class );
+        when( databaseIdRepository.getByName( UNKNOWN_DATABASE_NAME )).thenReturn( Optional.empty() );
+        var databaseManager = mock( DatabaseManager.class );
+        when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( UNKNOWN_DATABASE_NAME )};
+
+        var procedure = newProcedure( databaseManager, portRegister, config );
 
         var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
         assertEquals( DatabaseNotFound, error.status() );

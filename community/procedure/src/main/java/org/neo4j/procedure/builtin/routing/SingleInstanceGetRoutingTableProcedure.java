@@ -21,6 +21,7 @@ package org.neo4j.procedure.builtin.routing;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -28,11 +29,14 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 
 public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
 {
@@ -54,13 +58,28 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     }
 
     @Override
-    protected RoutingResult invoke( NamedDatabaseId namedDatabaseId, MapValue routingContext )
+    protected RoutingResult invoke( NamedDatabaseId namedDatabaseId, MapValue routingContext ) throws ProcedureException
     {
+        assertDatabaseIsOperational( namedDatabaseId );
         if ( config.get( BoltConnector.enabled ) )
         {
             return createRoutingResult( findAdvertisedBoltAddress(), configuredRoutingTableTtl() );
         }
         return createEmptyRoutingResult();
+    }
+
+    private void assertDatabaseIsOperational( NamedDatabaseId namedDatabaseId ) throws ProcedureException
+    {
+        Optional<Database> database = getDatabase( namedDatabaseId );
+        if ( database.isEmpty() )
+        {
+            throw databaseNotFoundException( namedDatabaseId.name() );
+        }
+        if ( !database.get().getDatabaseAvailabilityGuard().isAvailable() )
+        {
+            throw new ProcedureException( DatabaseUnavailable,
+                                          "Unable to get a routing table for database '" + namedDatabaseId.name() + "' because this database is unavailable" );
+        }
     }
 
     protected RoutingResult createRoutingResult( SocketAddress address, long routingTableTtl )

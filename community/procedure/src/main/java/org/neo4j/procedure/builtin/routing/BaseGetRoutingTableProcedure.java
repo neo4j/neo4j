@@ -20,9 +20,11 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -31,6 +33,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -91,6 +94,11 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     protected abstract String description();
 
     protected abstract RoutingResult invoke( NamedDatabaseId namedDatabaseId, MapValue routingContext ) throws ProcedureException;
+
+    Optional<Database> getDatabase( NamedDatabaseId databaseId )
+    {
+        return databaseManager.getDatabaseContext( databaseId ).map( DatabaseContext::database );
+    }
 
     private NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
     {
@@ -158,7 +166,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .build();
     }
 
-    private static ProcedureException databaseNotFoundException( String databaseName )
+    static ProcedureException databaseNotFoundException( String databaseName )
     {
         return new ProcedureException( DatabaseNotFound,
                 "Unable to get a routing table for database '" + databaseName + "' because this database does not exist" );
