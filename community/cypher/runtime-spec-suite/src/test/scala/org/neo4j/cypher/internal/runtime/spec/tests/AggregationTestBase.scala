@@ -33,12 +33,12 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
 import scala.util.Random
-
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
@@ -821,7 +821,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withSingleRow(sizeHint / 2)
   }
 
-  test("should count(cache[n.prop]) will nulls and limit") {
+  test("should count(cache[n.prop]) with nulls and limit") {
     // given
     given {
       nodePropertyGraph(sizeHint, {
@@ -842,7 +842,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRows(singleRow(limit/2))
+    runtimeResult should beColumns("c").withRows(matching {
+      // We don't know how many of these rows have null, so the final count produced by the aggregation can be anywhere between 0 and limit
+      case Seq(Array(d:IntegralValue)) if d.longValue() >= 0 && d.longValue() <= limit =>
+    })
   }
 
   test("should count(*) on cache[n.prop] grouping column with nulls") {
