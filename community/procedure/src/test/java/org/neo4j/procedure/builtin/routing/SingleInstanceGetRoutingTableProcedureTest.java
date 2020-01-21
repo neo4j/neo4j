@@ -135,6 +135,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var config = Config.defaults();
         var procedure = newProcedure( portRegister, config );
 
+        databaseIdRepository.filter( UNKNOWN_ID.name() );
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( UNKNOWN_ID.name() )};
 
         var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
