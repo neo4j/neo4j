@@ -26,8 +26,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -64,6 +62,7 @@ import java.util.function.Consumer;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -1796,17 +1795,18 @@ class GBPTreeTest
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void trackPageCacheAccessOnTreeSeek() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var tree = index( defaultPageSize ).with( pageCacheTracer ).build() )
+        try ( var tree = index( (int) ByteUnit.kibiBytes( 4 ) ).with( pageCacheTracer ).build() )
         {
             for ( int i = 0; i < 1000; i++ )
             {
                 insert( tree, i, 1 );
             }
+
             var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
+
             try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorTracer ) )
             {
                 while ( seeker.next() )
@@ -1814,6 +1814,7 @@ class GBPTreeTest
                     // just scroll over the results
                 }
             }
+
             assertThat( cursorTracer.hits() ).isEqualTo( 8 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 8 );
             assertThat( cursorTracer.pins() ).isEqualTo( 8 );
