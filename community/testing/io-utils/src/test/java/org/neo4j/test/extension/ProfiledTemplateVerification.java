@@ -19,9 +19,16 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.Test;
+
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
 @TestDirectoryExtension
 class ProfiledTemplateVerification extends ProfiledTestTemplate
 {
+    @Test
+    void testThatFailsBeforeInitialisingTestDirectory()
+    {
+        throw new RuntimeException( "fail" );
+    }
 }
