@@ -30,13 +30,13 @@ import java.util.stream.LongStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ThreadSafePeakMemoryAllocationTrackerTest
+class ThreadSafePeakMemoryTrackerTest
 {
     @Test
     void shouldRegisterConcurrentAllocationsAndDeallocations() throws InterruptedException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker();
+        ThreadSafePeakMemoryTracker tracker = new ThreadSafePeakMemoryTracker();
         ExecutorService executorService = Executors.newFixedThreadPool( 10 );
         for ( int t = 0; t < 10; t++ )
         {
@@ -44,13 +44,13 @@ class ThreadSafePeakMemoryAllocationTrackerTest
             {
                 for ( int i = 1; i < 100; i++ )
                 {
-                    tracker.allocated( i );
+                    tracker.allocateDirect( i );
                     assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
                 }
                 for ( int i = 1; i < 100; i++ )
                 {
                     assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
-                    tracker.deallocated( i );
+                    tracker.releaseDirect( i );
                 }
             } );
         }
@@ -67,7 +67,7 @@ class ThreadSafePeakMemoryAllocationTrackerTest
     void shouldRegisterPeakMemoryUsage() throws InterruptedException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker();
+        ThreadSafePeakMemoryTracker tracker = new ThreadSafePeakMemoryTracker();
         int threads = 200;
         long[] allocations = new long[threads];
         ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -83,19 +83,19 @@ class ThreadSafePeakMemoryAllocationTrackerTest
         for ( int i = 0; i < threads; i++ )
         {
             int id = i;
-            executorService.submit( () -> tracker.allocated( allocations[id] ) );
+            executorService.submit( () -> tracker.allocateDirect( allocations[id] ) );
         }
         executorService.shutdown();
         executorService.awaitTermination( 10, TimeUnit.MINUTES );
 
         long peakAfterAllocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::deallocated );
+        LongStream.of( allocations ).forEach( tracker::releaseDirect );
         long peakAfterDeallocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::allocated );
-        tracker.allocated( 10 ); // <-- 10 more than previous peak
+        LongStream.of( allocations ).forEach( tracker::allocateDirect );
+        tracker.allocateDirect( 10 ); // <-- 10 more than previous peak
         long peakAfterHigherReallocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::deallocated );
-        tracker.deallocated( 10 );
+        LongStream.of( allocations ).forEach( tracker::releaseDirect );
+        tracker.releaseDirect( 10 );
         long peakAfterFinalDeallocation = tracker.peakMemoryUsage();
 
         // then

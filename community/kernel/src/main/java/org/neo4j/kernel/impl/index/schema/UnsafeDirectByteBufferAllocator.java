@@ -27,7 +27,7 @@ import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -36,13 +36,13 @@ import org.neo4j.util.Preconditions;
  */
 public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Allocator
 {
-    private final MemoryAllocationTracker memoryAllocationTracker;
+    private final MemoryTracker memoryTracker;
     private final List<ByteBuffer> allocations = new ArrayList<>();
     private boolean closed;
 
-    public UnsafeDirectByteBufferAllocator( MemoryAllocationTracker memoryAllocationTracker )
+    public UnsafeDirectByteBufferAllocator( MemoryTracker memoryTracker )
     {
-        this.memoryAllocationTracker = memoryAllocationTracker;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         {
             var byteBuffer = ByteBuffers.allocateDirect( bufferSize );
             allocations.add( byteBuffer );
-            memoryAllocationTracker.allocated( bufferSize );
+            memoryTracker.allocateDirect( bufferSize );
             return byteBuffer;
         }
         catch ( NativeMemoryAllocationRefusedError allocationRefusedError )
@@ -71,7 +71,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         {
             allocations.forEach( buffer -> {
                 int capacity = buffer.capacity();
-                memoryAllocationTracker.deallocated( capacity );
+                memoryTracker.releaseDirect( capacity );
                 ByteBuffers.releaseBuffer( buffer );
             } );
             closed = true;

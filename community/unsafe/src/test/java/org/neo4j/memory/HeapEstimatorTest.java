@@ -17,28 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.repair;
+package org.neo4j.memory;
 
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.junit.jupiter.api.Test;
 
-public enum RelationshipNodeField
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.HeapEstimator.OBJECT_ALIGNMENT_BYTES;
+
+class HeapEstimatorTest
 {
-    FIRST
+    @Test
+    void alignObjectSize()
     {
-        @Override
-        public long get( RelationshipRecord rel )
+        for ( int i = 0; i <= 1024; i++ )
         {
-            return rel.getFirstNode();
+            long aligned = HeapEstimator.alignObjectSize( i );
+            assertEquals( 0, aligned % OBJECT_ALIGNMENT_BYTES );
         }
-    },
-    SECOND
-    {
-        @Override
-        public long get( RelationshipRecord rel )
-        {
-            return rel.getSecondNode();
-        }
-    };
-
-    public abstract long get( RelationshipRecord rel );
+    }
 }

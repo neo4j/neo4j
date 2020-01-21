@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,7 +45,7 @@ class CachingOffHeapBlockAllocatorTest
     private static final int CACHE_SIZE = 4;
     private static final int MAX_CACHEABLE_BLOCK_SIZE = 128;
 
-    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
     private final CachingOffHeapBlockAllocator allocator = spy( new CachingOffHeapBlockAllocator( MAX_CACHEABLE_BLOCK_SIZE, CACHE_SIZE ) );
 
     @AfterEach

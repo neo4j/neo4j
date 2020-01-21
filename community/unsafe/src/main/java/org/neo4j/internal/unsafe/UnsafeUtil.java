@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Long.compareUnsigned;
 import static java.lang.String.format;
@@ -57,7 +57,7 @@ public final class UnsafeUtil
     private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( UnsafeUtil.class, "printReflectionExceptions", false );
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
-     * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate
+     * The {@link UnsafeUtil#allocateMemory(long, MemoryTracker)} method is not guaranteed to allocate
      * zeroed out memory, but might often do so by pure chance.
      * <p>
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
@@ -418,7 +418,7 @@ public final class UnsafeUtil
     public static ByteBuffer allocateByteBuffer( int size )
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect( size );
-        GlobalMemoryTracker.INSTANCE.allocated( size );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( size );
         return buffer;
     }
 
@@ -430,7 +430,7 @@ public final class UnsafeUtil
     {
         int capacity = byteBuffer.capacity();
         UnsafeUtil.invokeCleaner( byteBuffer );
-        GlobalMemoryTracker.INSTANCE.deallocated( capacity );
+        GlobalMemoryTracker.INSTANCE.releaseDirect( capacity );
     }
 
     /**
@@ -464,7 +464,7 @@ public final class UnsafeUtil
             setMemory( pointer, bytes, (byte) 0xA5 );
         }
         addAllocatedPointer( pointer, bytes );
-        GlobalMemoryTracker.INSTANCE.allocated( bytes );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( bytes );
         return pointer;
     }
 
@@ -475,22 +475,22 @@ public final class UnsafeUtil
      * The memory is uninitialised, so it may contain random garbage, or it may not.
      * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker ) throws NativeMemoryAllocationRefusedError
+    public static long allocateMemory( long bytes, MemoryTracker allocationTracker ) throws NativeMemoryAllocationRefusedError
     {
         assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         final long pointer = allocateMemory( bytes );
-        allocationTracker.allocated( bytes );
+        allocationTracker.allocateDirect( bytes );
         return pointer;
     }
 
     /**
      * Free the memory that was allocated with {@link #allocateMemory} and update memory allocation tracker accordingly.
      */
-    public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
+    public static void free( long pointer, long bytes, MemoryTracker allocationTracker )
     {
         assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         free( pointer, bytes );
-        allocationTracker.deallocated( bytes );
+        allocationTracker.releaseDirect( bytes );
     }
 
     /**
@@ -500,7 +500,7 @@ public final class UnsafeUtil
     {
         checkFree( pointer );
         Native.free( pointer );
-        GlobalMemoryTracker.INSTANCE.deallocated( bytes );
+        GlobalMemoryTracker.INSTANCE.releaseDirect( bytes );
     }
 
     private static void addAllocatedPointer( long pointer, long sizeInBytes )

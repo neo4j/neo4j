@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -300,7 +301,7 @@ class ValuesMapTest
         final int MAPS = 13;
         final int COUNT = 10000 + rnd.nextInt( 1000 );
 
-        final AppendOnlyValuesContainer valuesContainer = new AppendOnlyValuesContainer( new TestMemoryAllocator() );
+        final AppendOnlyValuesContainer valuesContainer = new AppendOnlyValuesContainer( new TestMemoryAllocator(), EmptyMemoryTracker.INSTANCE );
 
         final List<ValuesMap> actualMaps = new ArrayList<>();
         final List<MutableLongObjectMap<Value>> expectedMaps = new ArrayList<>();
@@ -353,7 +354,7 @@ class ValuesMapTest
 
     private static ValuesMap newMap()
     {
-        return newMap( new AppendOnlyValuesContainer( new TestMemoryAllocator() ) );
+        return newMap( new AppendOnlyValuesContainer( new TestMemoryAllocator(), EmptyMemoryTracker.INSTANCE ) );
     }
 
     private static ValuesMap newMap( AppendOnlyValuesContainer valuesContainer )

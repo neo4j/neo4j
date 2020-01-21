@@ -19,20 +19,22 @@
  */
 package org.neo4j.memory;
 
-/**
- * Memory allocation tracker that tracks bytes allocation and de-allocation
- */
-public interface MemoryAllocationTracker extends MemoryTracker
-{
-    /**
-     * Record allocation of bytes
-     * @param bytes number of allocated bytes
-     */
-    void allocated( long bytes );
+import org.neo4j.kernel.api.exceptions.Status;
 
-    /**
-     * Record de-allocation of bytes
-     * @param bytes number of de0allocated bytes
-     */
-    void deallocated( long bytes );
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.exceptions.Status.General.TransactionMemoryLimit;
+
+public class HeapMemoryLimitExceeded extends RuntimeException implements Status.HasStatus
+{
+
+    public HeapMemoryLimitExceeded( long allocation, long limit, long current )
+    {
+        super( format( "The allocation of %d would use more than the limit %d. Currently using %d", allocation, limit, current ) );
+    }
+
+    @Override
+    public Status status()
+    {
+        return TransactionMemoryLimit;
+    }
 }

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.memory.EmptyMemoryTracker;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
@@ -34,8 +36,8 @@ class RelationshipChangesForNodeTest
     @Test
     void shouldGetRelationships()
     {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD );
+        RelationshipChangesForNode changes = RelationshipChangesForNode.createRelationshipChangesForNode(
+                RelationshipChangesForNode.DiffStrategy.ADD, EmptyMemoryTracker.INSTANCE );
 
         final int TYPE = 2;
 
@@ -53,8 +55,8 @@ class RelationshipChangesForNodeTest
     @Test
     void shouldGetRelationshipsByTypeAndDirection()
     {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD );
+        RelationshipChangesForNode changes = RelationshipChangesForNode.createRelationshipChangesForNode(
+                RelationshipChangesForNode.DiffStrategy.ADD, EmptyMemoryTracker.INSTANCE );
 
         final int TYPE = 2;
         final int DECOY_TYPE = 666;

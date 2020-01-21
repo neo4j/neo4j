@@ -26,26 +26,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LocalMemoryTrackerTest
 {
     @Test
-    void trackMemoryAllocations()
+    void trackDirectMemoryAllocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocated( 10 );
-        memoryTracker.allocated( 20 );
-        memoryTracker.allocated( 40 );
+        memoryTracker.allocateDirect( 10 );
+        memoryTracker.allocateDirect( 20 );
+        memoryTracker.allocateDirect( 40 );
         assertEquals( 70, memoryTracker.usedDirectMemory());
     }
 
     @Test
-    void trackMemoryDeallocations()
+    void trackDirectMemoryDeallocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocated( 100 );
+        memoryTracker.allocateDirect( 100 );
         assertEquals( 100, memoryTracker.usedDirectMemory() );
 
-        memoryTracker.deallocated( 20 );
+        memoryTracker.releaseDirect( 20 );
         assertEquals( 80, memoryTracker.usedDirectMemory() );
 
-        memoryTracker.deallocated( 40 );
+        memoryTracker.releaseDirect( 40 );
         assertEquals( 40, memoryTracker.usedDirectMemory() );
+    }
+
+    @Test
+    void trackHeapMemoryAllocations()
+    {
+        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
+        memoryTracker.allocateHeap( 10 );
+        memoryTracker.allocateHeap( 20 );
+        memoryTracker.allocateHeap( 40 );
+        assertEquals( 70, memoryTracker.estimatedHeapMemory() );
+    }
+
+    @Test
+    void trackHeapMemoryDeallocations()
+    {
+        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
+        memoryTracker.allocateHeap( 100 );
+        assertEquals( 100, memoryTracker.estimatedHeapMemory() );
+
+        memoryTracker.releaseHeap( 20 );
+        assertEquals( 80, memoryTracker.estimatedHeapMemory() );
+
+        memoryTracker.releaseHeap( 40 );
+        assertEquals( 40, memoryTracker.estimatedHeapMemory() );
     }
 }

@@ -38,8 +38,9 @@ import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -73,10 +74,10 @@ class MutableLinearProbeLongHashSetTest
     private RandomRule rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
-    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
-    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
+    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( blockAllocator );
 
-    private MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( memoryAllocator );
+    private MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( memoryAllocator, memoryTracker );
 
     @AfterEach
     void afterEach()
@@ -219,29 +220,29 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void allocateFreeMemory()
     {
-        final MemoryAllocationTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
-        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( memoryTrackerSpy, blockAllocator ) );
+        final MemoryTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( blockAllocator ), memoryTrackerSpy );
 
-        verify( memoryTrackerSpy ).allocated( anyLong() );
+        verify( memoryTrackerSpy ).allocateDirect( anyLong() );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
             set2.add( 100 + i );
         }
-        verify( memoryTrackerSpy ).deallocated( anyLong() );
-        verify( memoryTrackerSpy, times( 2 ) ).allocated( anyLong() );
+        verify( memoryTrackerSpy ).releaseDirect( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).allocateDirect( anyLong() );
 
         set2.close();
-        verify( memoryTrackerSpy, times( 2 ) ).deallocated( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).releaseDirect( anyLong() );
     }
 
     @Test
     void freeFrozenMemory()
     {
-        final MemoryAllocationTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
-        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( memoryTrackerSpy, blockAllocator ) );
+        final MemoryTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( blockAllocator ), memoryTrackerSpy );
 
-        verify( memoryTrackerSpy ).allocated( anyLong() );
+        verify( memoryTrackerSpy ).allocateDirect( anyLong() );
 
         set2.addAll( 100, 200, 300 );
         set2.freeze();
@@ -249,7 +250,7 @@ class MutableLinearProbeLongHashSetTest
         set2.freeze();
         set2.clear();
         set2.close();
-        verify( memoryTrackerSpy, times( 3 ) ).deallocated( anyLong() );
+        verify( memoryTrackerSpy, times( 3 ) ).releaseDirect( anyLong() );
     }
 
     @Test
@@ -316,7 +317,7 @@ class MutableLinearProbeLongHashSetTest
     void testEquals()
     {
         set.addAll( 1, 2, 3, 100, 200, 300 );
-        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( memoryAllocator );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( memoryAllocator , EmptyMemoryTracker.INSTANCE );
         set2.addAll( 300, 200, 100, 3, 2, 1 );
         final LongHashSet set3 = newSetWith( 300, 200, 100, 3, 2, 1 );
         assertEquals( set, set2 );
@@ -434,7 +435,7 @@ class MutableLinearProbeLongHashSetTest
         {
             final long seed = rnd.nextLong();
             final MutableLongList elements;
-            try ( MutableLinearProbeLongHashSet s = new MutableLinearProbeLongHashSet( memoryAllocator ) )
+            try ( MutableLinearProbeLongHashSet s = new MutableLinearProbeLongHashSet( memoryAllocator, EmptyMemoryTracker.INSTANCE ) )
             {
                 long v = s.hashAndMask( seed );
                 while ( s.hashAndMask( v ) != 0 || v == 0 || v == 1 )

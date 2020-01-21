@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.util.collection;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.memory.MemoryTracker;
+
 public interface Memory
 {
     long readLong( long offset );
@@ -31,9 +33,9 @@ public interface Memory
 
     long size();
 
-    void free();
+    void free( MemoryTracker memoryTracker );
 
-    Memory copy();
+    Memory copy( MemoryTracker memoryTracker );
 
     ByteBuffer asByteBuffer();
 }

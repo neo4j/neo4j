@@ -19,24 +19,100 @@
  */
 package org.neo4j.memory;
 
+import static java.lang.Math.max;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.Preconditions.requireNonNegative;
+import static org.neo4j.util.Preconditions.requirePositive;
+
 /**
  * Memory allocation tracker that can be used in local context that required
  * tracking of memory that is independent from global.
  */
-public class LocalMemoryTracker implements MemoryAllocationTracker
+public class LocalMemoryTracker implements MemoryTracker
 {
-    private long allocatedBytes;
+    private static final long NO_LIMIT = Long.MAX_VALUE;
+    private static final long DEFAULT_RESERVE = 1024;
 
-    @Override
-    public void allocated( long bytes )
+    private final MemoryTracker parent;
+
+    /**
+     * A per tracker limit.
+     */
+    private final long localHeapBytesLimit;
+
+    /**
+     * Number of bytes we are allowed to use on the heap. If this run out, we need to reserve more from the parent.
+     */
+    private long localHeapPool;
+
+    /**
+     * The current size of the tracked heap
+     */
+    private long allocatedBytesHeap;
+
+    /**
+     * The currently allocated off heap
+     */
+    private long allocatedBytesDirect;
+
+    public LocalMemoryTracker()
     {
-        this.allocatedBytes += bytes;
+        this( EmptyMemoryTracker.INSTANCE, NO_LIMIT, DEFAULT_RESERVE );
+    }
+
+    public LocalMemoryTracker( MemoryTracker parent )
+    {
+        this( parent, NO_LIMIT, DEFAULT_RESERVE );
+    }
+
+    LocalMemoryTracker( MemoryTracker parent, long localHeapBytesLimit, long initialReservedBytes )
+    {
+        this.parent = requireNonNull( parent );
+        this.localHeapBytesLimit = requirePositive( localHeapBytesLimit );
+        reserveHeap( initialReservedBytes );
     }
 
     @Override
-    public void deallocated( long bytes )
+    public void allocateDirect( long bytes )
     {
-        this.allocatedBytes -= bytes;
+        this.allocatedBytesDirect += bytes;
+    }
+
+    @Override
+    public void releaseDirect( long bytes )
+    {
+        this.allocatedBytesDirect -= bytes;
+    }
+
+    @Override
+    public void allocateHeap( long bytes )
+    {
+        if ( bytes == 0 )
+        {
+            return;
+        }
+        requirePositive( bytes );
+
+        allocatedBytesHeap += bytes;
+
+        if ( allocatedBytesHeap > localHeapBytesLimit )
+        {
+            throw new HeapMemoryLimitExceeded( bytes, localHeapBytesLimit, allocatedBytesHeap - bytes );
+        }
+
+        if ( allocatedBytesHeap > localHeapPool )
+        {
+            long grab = max( bytes, localHeapPool ); // TODO: try different strategies, e.g. grow factor, static increment, etc... For now we double
+            reserveHeap( grab );
+        }
+    }
+
+    @Override
+    public void releaseHeap( long bytes )
+    {
+        requireNonNegative( bytes );
+        allocatedBytesHeap -= bytes;
     }
 
     /**
@@ -45,6 +121,33 @@ public class LocalMemoryTracker implements MemoryAllocationTracker
     @Override
     public long usedDirectMemory()
     {
-        return allocatedBytes;
+        return allocatedBytesDirect;
+    }
+
+    @Override
+    public long estimatedHeapMemory()
+    {
+        return allocatedBytesHeap;
+    }
+
+    @Override
+    public void reset()
+    {
+        checkState( allocatedBytesDirect == 0, "Potential direct memory leak" );
+        parent.releaseHeap( localHeapPool );
+        localHeapPool = 0; // TODO: reset to initial allocation?
+        allocatedBytesHeap = 0;
+    }
+
+    /**
+     * Will reserve heap on the parent tracker.
+     *
+     * @param size heap space to reserve for the local pool
+     * @throws RuntimeException TODO: which exception?
+     */
+    private void reserveHeap( long size )
+    {
+        parent.allocateHeap( size );
+        localHeapPool += size;
     }
 }

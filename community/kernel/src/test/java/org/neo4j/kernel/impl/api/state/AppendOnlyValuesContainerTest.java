@@ -48,8 +48,9 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.OffHeapMemoryAllocator;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -87,9 +88,9 @@ class AppendOnlyValuesContainerTest
     private RandomRule rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
-    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
 
-    private final AppendOnlyValuesContainer container = new AppendOnlyValuesContainer( new OffHeapMemoryAllocator( memoryTracker, blockAllocator ) );
+    private final AppendOnlyValuesContainer container = new AppendOnlyValuesContainer( new OffHeapMemoryAllocator( blockAllocator ), memoryTracker );
 
     @AfterAll
     static void afterAll()
@@ -239,7 +240,7 @@ class AppendOnlyValuesContainerTest
     @Test
     void valueSizeExceedsChunkSize()
     {
-        final AppendOnlyValuesContainer container2 = new AppendOnlyValuesContainer( 4, new TestMemoryAllocator() );
+        final AppendOnlyValuesContainer container2 = new AppendOnlyValuesContainer( 4, new TestMemoryAllocator(), EmptyMemoryTracker.INSTANCE );
         final long ref1 = container2.add( longValue( 42 ) );
         final long ref2 = container2.add( stringValue( "1234567890ABCDEF" ) );
 
@@ -252,7 +253,7 @@ class AppendOnlyValuesContainerTest
     @Test
     void close()
     {
-        final AppendOnlyValuesContainer container2 = new AppendOnlyValuesContainer( 4, new TestMemoryAllocator() );
+        final AppendOnlyValuesContainer container2 = new AppendOnlyValuesContainer( 4, new TestMemoryAllocator(), EmptyMemoryTracker.INSTANCE );
         final long ref = container2.add( intValue( 42 ) );
         container2.close();
         assertThrows( IllegalStateException.class, () -> container2.add( intValue( 1 ) ) );

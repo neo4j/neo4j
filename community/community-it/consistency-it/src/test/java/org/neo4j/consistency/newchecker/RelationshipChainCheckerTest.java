@@ -118,10 +118,10 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             relationship.setFirstNode( set.longIterator().next() );
         }, report ->
         {
-            report.targetNextReferencesOtherNodes( any() );
+            report.sourceNextDoesNotReferenceBack( any() );
             report.sourceNextReferencesOtherNodes( any() );
-            report.sourcePrevDoesNotReferenceBack( any() );
             report.sourcePrevReferencesOtherNodes( any() );
+            report.targetPrevReferencesOtherNodes( any() );
         } );
     }
 
@@ -136,10 +136,10 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             relationship.setSecondNode( set.longIterator().next() );
         }, report ->
         {
-            report.sourceNextReferencesOtherNodes( any() );
+            report.targetNextDoesNotReferenceBack( any() );
             report.targetNextReferencesOtherNodes( any() );
             report.targetPrevReferencesOtherNodes( any() );
-            report.targetPrevDoesNotReferenceBack( any() );
+            report.sourcePrevReferencesOtherNodes( any() );
         } );
     }
 

@@ -37,7 +37,7 @@ import org.neo4j.util.LocalIntCounter;
  */
 public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges = new LongObjectHashMap<>();
+    private final LongObjectHashMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges = new LongObjectHashMap<>();
     private final Loader<RECORD,ADDITIONAL> loader;
     private final MutableInt changeCounter;
 
@@ -97,14 +97,11 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     @Override
     public void close()
     {
-        if ( recordChanges.size() <= 32 )
+        boolean shouldCompact = recordChanges.size() <= 32;
+        recordChanges.clear();
+        if ( shouldCompact )
         {
-            recordChanges.clear();
-        }
-        else
-        {
-            // Let's not allow the internal maps to grow too big over time.
-            recordChanges = new LongObjectHashMap<>();
+            recordChanges.compact();
         }
         changeCounter.setValue( 0 );
     }

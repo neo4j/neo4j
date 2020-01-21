@@ -19,7 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+
 import java.util.Objects;
+
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
+
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 /**
  * The transaction state of a token that we want to create.
@@ -28,10 +34,17 @@ import java.util.Objects;
  */
 class TokenState
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TokenState.class );
     public final String name;
     public final boolean internal;
 
-    TokenState( String name, boolean internal )
+    static TokenState createTokenState( String name, boolean internal, MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap( SHALLOW_SIZE + sizeOf( name ) );
+        return new TokenState( name, internal );
+    }
+
+    private TokenState( String name, boolean internal )
     {
         this.name = name;
         this.internal = internal;

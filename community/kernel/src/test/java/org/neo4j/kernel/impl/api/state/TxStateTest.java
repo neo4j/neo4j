@@ -59,6 +59,8 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -101,6 +103,7 @@ abstract class TxStateTest
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private CollectionsFactory collectionsFactory;
     private TxState state;
+    private MemoryTracker memoryTracker;
 
     TxStateTest( CollectionsFactorySupplier collectionsFactorySupplier )
     {
@@ -110,15 +113,16 @@ abstract class TxStateTest
     @BeforeEach
     void before()
     {
+        memoryTracker = new LocalMemoryTracker();
         collectionsFactory = spy( collectionsFactorySupplier.create() );
-        state = new TxState( collectionsFactory );
+        state = new TxState( collectionsFactory, memoryTracker );
     }
 
     @AfterEach
     void after()
     {
         collectionsFactory.release();
-        assertEquals( 0L, collectionsFactory.getMemoryTracker().usedDirectMemory(), "Seems like native memory is leaking" );
+        assertEquals( 0L, memoryTracker.usedDirectMemory(), "Seems like native memory is leaking" );
     }
 
     @Test
@@ -936,8 +940,8 @@ abstract class TxStateTest
         nodeState.removeProperty( 3 );
         nodeState.changeProperty( 4, stringValue( "bar" ) );
 
-        verify( collectionsFactory, times( 2 ) ).newValuesMap();
-        verify( collectionsFactory ).newLongSet();
+        verify( collectionsFactory, times( 2 ) ).newValuesMap( memoryTracker );
+        verify( collectionsFactory ).newLongSet( memoryTracker );
         verifyNoMoreInteractions( collectionsFactory );
     }
 
@@ -949,7 +953,7 @@ abstract class TxStateTest
         diffSets.add( 1 );
         diffSets.remove( 2 );
 
-        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verify( collectionsFactory, times( 2 ) ).newLongSet( memoryTracker );
         verifyNoMoreInteractions( collectionsFactory );
     }
 
@@ -959,13 +963,13 @@ abstract class TxStateTest
         final MutableLongDiffSets diffSets = state.getOrCreateIndexUpdatesForSeek( new HashMap<>(), ValueTuple.of( stringValue( "test" ) ) );
         diffSets.add( 1 );
         diffSets.remove( 2 );
-        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verify( collectionsFactory, times( 2 ) ).newLongSet( memoryTracker );
         verifyNoMoreInteractions( collectionsFactory );
     }
 
     private LongDiffSets addedNodes( long... added )
     {
-        return new MutableLongDiffSetsImpl( LongSets.mutable.of( added ), LongSets.mutable.empty(), collectionsFactory );
+        return new MutableLongDiffSetsImpl( LongSets.mutable.of( added ), LongSets.mutable.empty(), collectionsFactory, memoryTracker );
     }
 
     private TreeMap<ValueTuple,LongDiffSets> sortedAddedNodesDiffSets( long... added )

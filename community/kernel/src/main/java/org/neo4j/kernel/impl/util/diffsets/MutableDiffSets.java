@@ -19,21 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import java.util.Iterator;
-
 import org.neo4j.storageengine.api.txstate.DiffSets;
 
 public interface MutableDiffSets<T> extends DiffSets<T>
 {
     boolean add( T elem );
 
-    void addAll( Iterator<T> elems );
-
     boolean remove( T elem );
-
-    void removeAll( Iterator<T> elems );
-
-    void clear();
 
     boolean unRemove( T item );
 }

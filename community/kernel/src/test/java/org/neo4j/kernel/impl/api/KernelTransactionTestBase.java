@@ -197,27 +197,21 @@ class KernelTransactionTestBase
     {
 
         @Override
-        public MutableLongSet newLongSet()
+        public MutableLongSet newLongSet( MemoryTracker memoryTracker )
         {
-            return OnHeapCollectionsFactory.INSTANCE.newLongSet();
+            return OnHeapCollectionsFactory.INSTANCE.newLongSet( memoryTracker );
         }
 
         @Override
-        public MutableLongDiffSetsImpl newLongDiffSets()
+        public MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker )
         {
-            return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets();
+            return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets( memoryTracker );
         }
 
         @Override
-        public MutableLongObjectMap<Value> newValuesMap()
+        public MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker )
         {
             return new LongObjectHashMap<>();
-        }
-
-        @Override
-        public MemoryTracker getMemoryTracker()
-        {
-            return OnHeapCollectionsFactory.INSTANCE.getMemoryTracker();
         }
 
         @Override

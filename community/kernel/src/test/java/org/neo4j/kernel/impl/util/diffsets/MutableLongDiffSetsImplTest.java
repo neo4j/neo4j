@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -164,20 +165,20 @@ class MutableLongDiffSetsImplTest
         final MutableLongSet set1 = new LongHashSet();
         final MutableLongSet set2 = new LongHashSet();
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
-        doReturn( set1, set2 ).when( collectionsFactory ).newLongSet();
+        doReturn( set1, set2 ).when( collectionsFactory ).newLongSet( EmptyMemoryTracker.INSTANCE );
 
-        final MutableLongDiffSetsImpl diffSets = new MutableLongDiffSetsImpl( collectionsFactory );
+        final MutableLongDiffSetsImpl diffSets = new MutableLongDiffSetsImpl( collectionsFactory, EmptyMemoryTracker.INSTANCE );
         diffSets.add( 1L );
         diffSets.remove( 2L );
 
         assertSame( set1, diffSets.getAdded() );
         assertSame( set2, diffSets.getRemoved() );
-        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verify( collectionsFactory, times( 2 ) ).newLongSet( EmptyMemoryTracker.INSTANCE );
         verifyNoMoreInteractions( collectionsFactory );
     }
 
     private static MutableLongDiffSetsImpl createDiffSet()
     {
-        return new MutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE );
+        return new MutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE );
     }
 }

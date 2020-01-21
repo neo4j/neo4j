@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.neo4j.memory.MemoryTracker;
+
 @FunctionalInterface
 public interface MemoryAllocator
 {
@@ -26,5 +28,5 @@ public interface MemoryAllocator
      * @param size amount of memory to allocate in bytes
      * @param zeroed if {@code true} then allocated memory is guaranteed to be zero-filled
      */
-    Memory allocate( long size, boolean zeroed );
+    Memory allocate( long size, boolean zeroed, MemoryTracker memoryTracker );
 }

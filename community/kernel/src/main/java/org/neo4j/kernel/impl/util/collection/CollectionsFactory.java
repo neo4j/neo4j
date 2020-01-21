@@ -33,13 +33,11 @@ import org.neo4j.values.storable.Value;
  */
 public interface CollectionsFactory
 {
-    MutableLongSet newLongSet();
+    MutableLongSet newLongSet( MemoryTracker memoryTracker );
 
-    MutableLongDiffSetsImpl newLongDiffSets();
+    MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker );
 
-    MutableLongObjectMap<Value> newValuesMap();
-
-    MemoryTracker getMemoryTracker();
+    MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker );
 
     /**
      * Release previously created collections. This method does not invalidate the factory.

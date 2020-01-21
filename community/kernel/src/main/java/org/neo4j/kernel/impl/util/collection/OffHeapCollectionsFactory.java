@@ -30,14 +30,11 @@ import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesMap;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
-import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
 public class OffHeapCollectionsFactory implements CollectionsFactory
 {
-    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
     private final MemoryAllocator allocator;
 
     private final Collection<Resource> resources = new ArrayList<>();
@@ -45,39 +42,33 @@ public class OffHeapCollectionsFactory implements CollectionsFactory
 
     public OffHeapCollectionsFactory( OffHeapBlockAllocator blockAllocator )
     {
-        this.allocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
+        this.allocator = new OffHeapMemoryAllocator( blockAllocator );
     }
 
     @Override
-    public MutableLongSet newLongSet()
+    public MutableLongSet newLongSet( MemoryTracker memoryTracker )
     {
-        final MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( allocator );
+        final MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( allocator, memoryTracker );
         resources.add( set );
         return set;
     }
 
     @Override
-    public MutableLongDiffSetsImpl newLongDiffSets()
+    public MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker )
     {
-        return new MutableLongDiffSetsImpl( this );
+        return MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( this, memoryTracker );
     }
 
     @Override
-    public MutableLongObjectMap<Value> newValuesMap()
+    public MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker )
     {
         if ( valuesContainer == null )
         {
-            valuesContainer = new AppendOnlyValuesContainer( allocator );
+            valuesContainer = new AppendOnlyValuesContainer( allocator, memoryTracker );
         }
-        final LinearProbeLongLongHashMap refs = new LinearProbeLongLongHashMap( allocator );
+        final LinearProbeLongLongHashMap refs = new LinearProbeLongLongHashMap( allocator, memoryTracker );
         resources.add( refs );
         return new ValuesMap( refs, valuesContainer );
-    }
-
-    @Override
-    public MemoryTracker getMemoryTracker()
-    {
-        return memoryTracker;
     }
 
     @Override

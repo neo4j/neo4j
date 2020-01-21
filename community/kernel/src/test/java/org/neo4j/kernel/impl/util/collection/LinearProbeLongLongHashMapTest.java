@@ -47,8 +47,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -80,14 +81,14 @@ class LinearProbeLongLongHashMapTest
     private RandomRule rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
-    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
-    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
+    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( blockAllocator );
 
     private LinearProbeLongLongHashMap map = newMap();
 
     private LinearProbeLongLongHashMap newMap()
     {
-        return new LinearProbeLongLongHashMap( memoryAllocator );
+        return new LinearProbeLongLongHashMap( memoryAllocator, memoryTracker );
     }
 
     @AfterEach
@@ -585,7 +586,7 @@ class LinearProbeLongLongHashMapTest
         {
             final long seed = rnd.nextLong();
             final MutableLongList elements;
-            try ( LinearProbeLongLongHashMap s = new LinearProbeLongLongHashMap( memoryAllocator ) )
+            try ( LinearProbeLongLongHashMap s = new LinearProbeLongLongHashMap( memoryAllocator, EmptyMemoryTracker.INSTANCE ) )
             {
                 long v = s.hashAndMask( seed );
                 while ( s.hashAndMask( v ) != 0 || v == 0 || v == 1 )

@@ -25,7 +25,7 @@ import java.util.Queue;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
@@ -77,7 +77,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     }
 
     @Override
-    public MemoryBlock allocate( long size, MemoryAllocationTracker tracker )
+    public MemoryBlock allocate( long size, MemoryTracker tracker )
     {
         requirePositive( size );
         checkState( !released, "Allocator is already released" );
@@ -94,13 +94,13 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         }
         else
         {
-            tracker.allocated( block.size );
+            tracker.allocateDirect( block.size );
         }
         return block;
     }
 
     @Override
-    public void free( MemoryBlock block, MemoryAllocationTracker tracker )
+    public void free( MemoryBlock block, MemoryTracker tracker )
     {
         if ( released || notCacheable( block.size ) )
         {
@@ -123,7 +123,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             return;
         }
 
-        tracker.deallocated( block.size );
+        tracker.releaseDirect( block.size );
     }
 
     @Override
@@ -141,13 +141,13 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     }
 
     @VisibleForTesting
-    void doFree( MemoryBlock block, MemoryAllocationTracker tracker )
+    void doFree( MemoryBlock block, MemoryTracker tracker )
     {
         UnsafeUtil.free( block.addr, block.size, tracker );
     }
 
     @VisibleForTesting
-    MemoryBlock allocateNew( long size, MemoryAllocationTracker tracker )
+    MemoryBlock allocateNew( long size, MemoryTracker tracker )
     {
         final long addr = UnsafeUtil.allocateMemory( size, tracker );
         return new MemoryBlock( addr, size );

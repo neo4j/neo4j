@@ -306,7 +306,7 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     int hashAndMask( long element )
     {
         final long h = SpreadFunctions.longSpreadOne( element );
-        return Long.hashCode( h ) & (capacity - 1);
+        return (int) h & (capacity - 1);
     }
 
     long valueAt( int idx )

@@ -28,7 +28,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
-import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
+import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.concurrent.Runnables;
@@ -47,7 +47,7 @@ public class IndexPopulationJob implements Runnable
     private final IndexingService.Monitor monitor;
     private final boolean verifyBeforeFlipping;
     private final ByteBufferFactory bufferFactory;
-    private final ThreadSafePeakMemoryAllocationTracker memoryAllocationTracker;
+    private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
@@ -64,7 +64,7 @@ public class IndexPopulationJob implements Runnable
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
-        this.memoryAllocationTracker = new ThreadSafePeakMemoryAllocationTracker();
+        this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
         this.bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryAllocationTracker ), parseBlockSize() );
     }
 

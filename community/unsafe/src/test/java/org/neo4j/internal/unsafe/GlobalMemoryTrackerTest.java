@@ -30,9 +30,9 @@ class GlobalMemoryTrackerTest
     void trackMemoryAllocations()
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocated( 10 );
-        GlobalMemoryTracker.INSTANCE.allocated( 20 );
-        GlobalMemoryTracker.INSTANCE.allocated( 40 );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( 10 );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( 20 );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( 40 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 70L );
     }
 
@@ -40,13 +40,13 @@ class GlobalMemoryTrackerTest
     void trackMemoryDeallocations()
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocated( 100 );
+        GlobalMemoryTracker.INSTANCE.allocateDirect( 100 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 100L );
 
-        GlobalMemoryTracker.INSTANCE.deallocated( 20 );
+        GlobalMemoryTracker.INSTANCE.releaseDirect( 20 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 80L );
 
-        GlobalMemoryTracker.INSTANCE.deallocated( 40 );
+        GlobalMemoryTracker.INSTANCE.releaseDirect( 40 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 40L );
     }
 

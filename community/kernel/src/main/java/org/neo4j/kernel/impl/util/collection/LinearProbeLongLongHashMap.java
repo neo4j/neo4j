@@ -56,6 +56,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
@@ -84,6 +85,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
     private static final long ENTRY_SIZE = 2 * Long.BYTES;
 
     private final MemoryAllocator allocator;
+    private final MemoryTracker memoryTracker;
 
     private Memory memory;
     private int capacity;
@@ -98,9 +100,10 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
     private long zeroValue;
     private long oneValue;
 
-    LinearProbeLongLongHashMap( MemoryAllocator allocator )
+    LinearProbeLongLongHashMap( MemoryAllocator allocator, MemoryTracker memoryTracker )
     {
         this.allocator = requireNonNull( allocator );
+        this.memoryTracker = memoryTracker;
         allocateMemory( DEFAULT_CAPACITY );
     }
 
@@ -433,7 +436,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
         hasOneKey = false;
         entriesInMemory = 0;
         removals = 0;
-        memory.free();
+        memory.free( memoryTracker );
         allocateMemory( DEFAULT_CAPACITY );
     }
 
@@ -659,7 +662,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
         ++modCount;
         if ( memory != null )
         {
-            memory.free();
+            memory.free( memoryTracker );
             memory = null;
         }
     }
@@ -755,7 +758,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
             }
         }
 
-        prevMemory.free();
+        prevMemory.free( memoryTracker );
     }
 
     private static boolean isSentinelKey( long key )
@@ -769,7 +772,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
         capacity = newCapacity;
         resizeOccupancyThreshold = (int) (newCapacity * LOAD_FACTOR);
         resizeRemovalsThreshold = (int) (newCapacity * REMOVALS_FACTOR);
-        memory = allocator.allocate( newCapacity * ENTRY_SIZE, true );
+        memory = allocator.allocate( newCapacity * ENTRY_SIZE, true, memoryTracker );
     }
 
     private long removeForSentinelKey( long key, long ifAbsent )

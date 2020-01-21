@@ -47,8 +47,6 @@ public interface DiffSets<T>
 
     Iterator<T> apply( Iterator<? extends T> source );
 
-    int delta();
-
     DiffSets<T> filterAdded( Predicate<T> addedFilter );
 
     final class Empty<T> implements DiffSets<T>
@@ -56,15 +54,16 @@ public interface DiffSets<T>
         @SuppressWarnings( "unchecked" )
         public static <T> DiffSets<T> instance()
         {
-            return INSTANCE;
+            return (DiffSets<T>) INSTANCE;
         }
 
+        @SuppressWarnings( "unchecked" )
         public static <T> DiffSets<T> ifNull( DiffSets<T> diffSets )
         {
-            return diffSets == null ? INSTANCE : diffSets;
+            return diffSets == null ? (DiffSets<T>) INSTANCE : diffSets;
         }
 
-        private static final DiffSets INSTANCE = new Empty();
+        private static final DiffSets<?> INSTANCE = new Empty<>();
 
         private Empty()
         {
@@ -101,16 +100,11 @@ public interface DiffSets<T>
             return true;
         }
 
+        @SuppressWarnings( "unchecked" )
         @Override
         public Iterator<T> apply( Iterator<? extends T> source )
         {
-            return (Iterator)source;
-        }
-
-        @Override
-        public int delta()
-        {
-            return 0;
+            return (Iterator<T>)source;
         }
 
         @Override

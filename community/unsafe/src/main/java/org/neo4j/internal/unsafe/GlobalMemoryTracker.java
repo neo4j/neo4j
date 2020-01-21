@@ -21,20 +21,19 @@ package org.neo4j.internal.unsafe;
 
 import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.memory.MemoryTracker;
 
 /**
  * Global memory tracker that can be used in a global multi threaded context to record
  * allocation and de-allocation of native memory.
- * @see org.neo4j.memory.MemoryAllocationTracker
  * @see MemoryTracker
  */
-final class GlobalMemoryTracker implements MemoryAllocationTracker
+public final class GlobalMemoryTracker implements MemoryTracker
 {
-    static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
+    public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
 
-    private final LongAdder allocatedBytes = new LongAdder();
+    private final LongAdder allocatedBytesDirect = new LongAdder();
+    private final LongAdder allocatedBytesHeap = new LongAdder();
 
     private GlobalMemoryTracker()
     {
@@ -43,18 +42,41 @@ final class GlobalMemoryTracker implements MemoryAllocationTracker
     @Override
     public long usedDirectMemory()
     {
-        return allocatedBytes.sum();
+        return allocatedBytesDirect.sum();
     }
 
     @Override
-    public void allocated( long bytes )
+    public long estimatedHeapMemory()
     {
-        allocatedBytes.add( bytes );
+        return allocatedBytesHeap.sum();
     }
 
     @Override
-    public void deallocated( long bytes )
+    public void allocateDirect( long bytes )
     {
-        allocatedBytes.add( -bytes );
+        allocatedBytesDirect.add( bytes );
+    }
+
+    @Override
+    public void releaseDirect( long bytes )
+    {
+        allocatedBytesDirect.add( -bytes );
+    }
+
+    @Override
+    public void allocateHeap( long bytes )
+    {
+        allocatedBytesHeap.add( bytes );
+    }
+
+    @Override
+    public void releaseHeap( long bytes )
+    {
+        allocatedBytesHeap.add( -bytes );
+    }
+
+    @Override
+    public void reset()
+    {
     }
 }

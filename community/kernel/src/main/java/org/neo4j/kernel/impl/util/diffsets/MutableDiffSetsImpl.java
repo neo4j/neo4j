@@ -20,31 +20,35 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 
 public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
 {
+    private final MemoryTracker memoryTracker;
     private Set<T> addedElements;
     private Set<T> removedElements;
     private Predicate<T> filter;
 
-    private MutableDiffSetsImpl( Set<T> addedElements, Set<T> removedElements )
+    private MutableDiffSetsImpl( Set<T> addedElements, Set<T> removedElements, MemoryTracker memoryTracker )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
+        this.memoryTracker = memoryTracker;
     }
 
-    public MutableDiffSetsImpl()
+    public static <T> MutableDiffSets<T> newMutableDiffSets( MemoryTracker memoryTracker )
     {
-        this( null, null );
+        return new MutableDiffSetsImpl<>( null, null, memoryTracker );
     }
 
     @Override
@@ -56,15 +60,6 @@ public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
     }
 
     @Override
-    public void addAll( Iterator<T> elems )
-    {
-        while ( elems.hasNext() )
-        {
-            add( elems.next() );
-        }
-    }
-
-    @Override
     public boolean remove( T elem )
     {
         boolean removedFromAddedElements = added( false ).remove( elem );
@@ -73,52 +68,9 @@ public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
     }
 
     @Override
-    public void removeAll( Iterator<T> elems )
-    {
-        while ( elems.hasNext() )
-        {
-            remove( elems.next() );
-        }
-    }
-
-    @Override
-    public void clear()
-    {
-        if ( addedElements != null )
-        {
-            addedElements.clear();
-        }
-        if ( removedElements != null )
-        {
-            removedElements.clear();
-        }
-    }
-
-    @Override
     public boolean unRemove( T item )
     {
         return removed( false ).remove( item );
-    }
-
-    protected Set<T> added( boolean create )
-    {
-        if ( addedElements == null )
-        {
-            if ( !create )
-            {
-                return Collections.emptySet();
-            }
-            addedElements = new HashSet<>();
-        }
-        return addedElements;
-    }
-
-    private void ensureFilterHasBeenCreated()
-    {
-        if ( filter == null )
-        {
-            filter = item -> !removed( false ).contains( item ) && !added( false ).contains( item );
-        }
     }
 
     @Override
@@ -157,14 +109,18 @@ public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
         return added( false ).isEmpty() && removed( false ).isEmpty();
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public Iterator<T> apply( Iterator<? extends T> source )
     {
-        Iterator<T> result = (Iterator) source;
+        Iterator<T> result = (Iterator<T>) source;
         if ( (removedElements != null && !removedElements.isEmpty()) ||
                 (addedElements != null && !addedElements.isEmpty()) )
         {
-            ensureFilterHasBeenCreated();
+            if ( filter == null )
+            {
+                filter = item -> !removed( false ).contains( item ) && !added( false ).contains( item );
+            }
             result = Iterators.filter( filter, result );
         }
         if ( addedElements != null && !addedElements.isEmpty() )
@@ -175,20 +131,27 @@ public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
     }
 
     @Override
-    public int delta()
-    {
-        return added( false ).size() - removed( false ).size();
-    }
-
-    @Override
     public MutableDiffSetsImpl<T> filterAdded( Predicate<T> addedFilter )
     {
         return new MutableDiffSetsImpl<>(
                 Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
-                Iterables.asSet( removed( false ) ) );
+                Iterables.asSet( removed( false ) ), EmptyMemoryTracker.INSTANCE ); // no tracker, hopefully a temporary copy
     }
 
-    protected Set<T> removed( boolean create )
+    private Set<T> added( boolean create )
+    {
+        if ( addedElements == null )
+        {
+            if ( !create )
+            {
+                return Collections.emptySet();
+            }
+            addedElements = HeapTrackingCollections.newSet( memoryTracker );
+        }
+        return addedElements;
+    }
+
+    private Set<T> removed( boolean create )
     {
         if ( removedElements == null )
         {
@@ -196,22 +159,9 @@ public class MutableDiffSetsImpl<T> implements MutableDiffSets<T>
             {
                 return Collections.emptySet();
             }
-            removedElements = new HashSet<>();
+            removedElements = HeapTrackingCollections.newSet( memoryTracker );
         }
         return removedElements;
-    }
-
-    public void replace( T toRemove, T toAdd )
-    {
-        Set<T> added = added( true ); // we're doing both add and remove on it, so pass in true
-        boolean removedFromAdded = added.remove( toRemove );
-        removed( false ).remove( toAdd );
-
-        added.add( toAdd );
-        if ( !removedFromAdded )
-        {
-            removed( true ).add( toRemove );
-        }
     }
 
     private Set<T> resultSet( Set<T> coll )

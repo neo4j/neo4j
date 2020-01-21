@@ -25,6 +25,8 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -34,6 +36,8 @@ import static java.util.Collections.emptyIterator;
 
 class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RelationshipStateImpl.class );
+
     static final RelationshipState EMPTY = new RelationshipState()
     {
         @Override
@@ -95,9 +99,15 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
     private long endNode = -1;
     private int type = -1;
 
-    RelationshipStateImpl( long id, CollectionsFactory collectionsFactory )
+    static RelationshipStateImpl createRelationshipStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
-        super( id, collectionsFactory );
+        memoryTracker.allocateHeap( SHALLOW_SIZE );
+        return new RelationshipStateImpl( id, collectionsFactory, memoryTracker );
+    }
+
+    private RelationshipStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    {
+        super( id, collectionsFactory, memoryTracker );
     }
 
     void setMetaData( long startNode, long endNode, int type )

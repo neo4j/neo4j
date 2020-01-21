@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,9 +39,9 @@ class CapacityLimitingBlockAllocatorDecoratorTest
     @Test
     void maxMemoryLimit()
     {
-        final MemoryAllocationTracker tracker = mock( MemoryAllocationTracker.class );
+        final MemoryTracker tracker = mock( MemoryTracker.class );
         final OffHeapBlockAllocator allocator = mock( OffHeapBlockAllocator.class );
-        when( allocator.allocate( anyLong(), any( MemoryAllocationTracker.class ) ) ).then( invocation ->
+        when( allocator.allocate( anyLong(), any( MemoryTracker.class ) ) ).then( invocation ->
         {
             final long size = invocation.<Long>getArgument( 0 );
             return new MemoryBlock( 0, size );

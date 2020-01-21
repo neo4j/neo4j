@@ -25,44 +25,31 @@ import java.util.Arrays;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.util.collection.Memory;
 import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
-import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
 
 class TestMemoryAllocator implements MemoryAllocator
 {
-    final MemoryAllocationTracker tracker;
-
-    TestMemoryAllocator()
-    {
-        this( new LocalMemoryTracker() );
-    }
-
-    TestMemoryAllocator( MemoryAllocationTracker tracker )
-    {
-        this.tracker = tracker;
-    }
-
     @Override
-    public Memory allocate( long size, boolean zeroed )
+    public Memory allocate( long size, boolean zeroed, MemoryTracker memoryTracker )
     {
         final ByteBuffer buf = ByteBuffers.allocate( toIntExact( size ) );
         if ( zeroed )
         {
             Arrays.fill( buf.array(), (byte) 0 );
         }
-        return new MemoryImpl( buf );
+        return new MemoryImpl( buf, memoryTracker );
     }
 
-    class MemoryImpl implements Memory
+    static class MemoryImpl implements Memory
     {
         final ByteBuffer buf;
 
-        MemoryImpl( ByteBuffer buf )
+        MemoryImpl( ByteBuffer buf, MemoryTracker memoryTracker )
         {
             this.buf = buf;
-            tracker.allocated( buf.capacity() );
+            memoryTracker.allocateDirect( buf.capacity() );
         }
 
         @Override
@@ -90,16 +77,16 @@ class TestMemoryAllocator implements MemoryAllocator
         }
 
         @Override
-        public void free()
+        public void free( MemoryTracker memoryTracker )
         {
-            tracker.deallocated( buf.capacity() );
+            memoryTracker.releaseDirect( buf.capacity() );
         }
 
         @Override
-        public Memory copy()
+        public Memory copy( MemoryTracker memoryTracker )
         {
             ByteBuffer copyBuf = ByteBuffer.wrap( Arrays.copyOf( buf.array(), buf.array().length ) );
-            return new MemoryImpl( copyBuf );
+            return new MemoryImpl( copyBuf, memoryTracker );
         }
 
         @Override

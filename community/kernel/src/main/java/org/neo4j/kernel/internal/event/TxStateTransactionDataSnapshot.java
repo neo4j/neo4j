@@ -73,7 +73,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
-    private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
+    private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore = new LongObjectHashMap<>();
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
 

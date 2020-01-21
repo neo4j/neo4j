@@ -23,16 +23,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 
 /**
- * A {@link MemoryAllocationTracker} which is thread-safe and will register peak memory usage during its lifetime.
+ * A {@link MemoryTracker} which is thread-safe and will register peak memory usage during its lifetime.
  * Note that thread-safe and accurate is not the same thing, since we don't enforce the memory ordering peak memory is not exact, but a good enough estimate.
  */
-public class ThreadSafePeakMemoryAllocationTracker implements MemoryAllocationTracker
+public class ThreadSafePeakMemoryTracker implements MemoryTracker
 {
     private final AtomicLong allocated = new AtomicLong();
     private final LongAccumulator peak = new LongAccumulator( Long::max, 0 );
 
     @Override
-    public void allocated( long bytes )
+    public void allocateDirect( long bytes )
     {
         // Update allocated
         long total = allocated.addAndGet( bytes );
@@ -40,15 +40,39 @@ public class ThreadSafePeakMemoryAllocationTracker implements MemoryAllocationTr
     }
 
     @Override
-    public void deallocated( long bytes )
+    public void releaseDirect( long bytes )
     {
         allocated.addAndGet( -bytes );
+    }
+
+    @Override
+    public void allocateHeap( long bytes )
+    {
+
+    }
+
+    @Override
+    public void releaseHeap( long bytes )
+    {
+
+    }
+
+    @Override
+    public void reset()
+    {
+
     }
 
     @Override
     public long usedDirectMemory()
     {
         return allocated.get();
+    }
+
+    @Override
+    public long estimatedHeapMemory()
+    {
+        return 0;
     }
 
     public long peakMemoryUsage()

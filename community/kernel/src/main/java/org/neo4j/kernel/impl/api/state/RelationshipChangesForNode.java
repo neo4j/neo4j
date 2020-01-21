@@ -25,10 +25,12 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static java.lang.Math.toIntExact;
@@ -41,6 +43,7 @@ import static java.lang.Math.toIntExact;
  */
 public class RelationshipChangesForNode
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RelationshipChangesForNode.class );
     /**
      * Allows this data structure to work both for tracking removals and additions.
      */
@@ -68,14 +71,22 @@ public class RelationshipChangesForNode
     }
 
     private final DiffStrategy diffStrategy;
+    private final MemoryTracker memoryTracker;
 
     private MutableIntObjectMap<MutableLongSet> outgoing;
     private MutableIntObjectMap<MutableLongSet> incoming;
     private MutableIntObjectMap<MutableLongSet> loops;
 
-    public RelationshipChangesForNode( DiffStrategy diffStrategy )
+    static RelationshipChangesForNode createRelationshipChangesForNode( DiffStrategy diffStrategy, MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap( SHALLOW_SIZE );
+        return new RelationshipChangesForNode( diffStrategy, memoryTracker );
+    }
+
+    private RelationshipChangesForNode( DiffStrategy diffStrategy, MemoryTracker memoryTracker )
     {
         this.diffStrategy = diffStrategy;
+        this.memoryTracker = memoryTracker;
     }
 
     public void addRelationship( long relId, int typeId, RelationshipDirection direction )
@@ -151,7 +162,7 @@ public class RelationshipChangesForNode
     {
         if ( outgoing == null )
         {
-            outgoing = new IntObjectHashMap<>();
+            outgoing = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
         }
         return outgoing;
     }
@@ -160,7 +171,7 @@ public class RelationshipChangesForNode
     {
         if ( incoming == null )
         {
-            incoming = new IntObjectHashMap<>();
+            incoming = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
         }
         return incoming;
     }
@@ -169,7 +180,7 @@ public class RelationshipChangesForNode
     {
         if ( loops == null )
         {
-            loops = new IntObjectHashMap<>();
+            loops = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
         }
         return loops;
     }

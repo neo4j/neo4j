@@ -31,6 +31,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.SynchronizedLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
@@ -51,6 +52,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     private static final double LOAD_FACTOR = 0.75;
 
     private final MemoryAllocator allocator;
+    private final MemoryTracker memoryTracker;
     private final MutableMultimap<Memory, FrozenCopy> frozenCopies = Multimaps.mutable.list.empty();
 
     private int resizeOccupancyThreshold;
@@ -58,9 +60,10 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     private int removals;
     private boolean frozen;
 
-    MutableLinearProbeLongHashSet( MemoryAllocator allocator )
+    MutableLinearProbeLongHashSet( MemoryAllocator allocator, MemoryTracker memoryTracker )
     {
         this.allocator = requireNonNull( allocator );
+        this.memoryTracker = memoryTracker;
         allocateMemory( DEFAULT_CAPACITY );
     }
 
@@ -182,12 +185,12 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         {
             frozenCopies.forEachKeyMultiValues( ( mem, copies ) ->
             {
-                mem.free();
+                mem.free( memoryTracker );
                 copies.forEach( FrozenCopy::invalidate );
             } );
             if ( !frozenCopies.containsKey( memory ) )
             {
-                memory.free();
+                memory.free( memoryTracker );
             }
             memory = null;
             frozenCopies.clear();
@@ -245,9 +248,9 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     public LongSet freeze()
     {
         frozen = true;
-        final FrozenCopy frozen = new FrozenCopy();
-        frozenCopies.put( memory, frozen );
-        return frozen;
+        final FrozenCopy frozenCopy = new FrozenCopy();
+        frozenCopies.put( memory, frozenCopy );
+        return frozenCopy;
     }
 
     @Override
@@ -330,7 +333,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         capacity = newCapacity;
         resizeOccupancyThreshold = (int) (newCapacity * LOAD_FACTOR);
         resizeRemovalsThreshold = newCapacity / REMOVALS_RATIO;
-        memory = allocator.allocate( (long) newCapacity * Long.BYTES, true );
+        memory = allocator.allocate( (long) newCapacity * Long.BYTES, true, memoryTracker );
     }
 
     private void rehash( int newCapacity )
@@ -350,7 +353,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
             }
         }
 
-        prevMemory.free();
+        prevMemory.free( memoryTracker );
     }
 
     private void copyIfFrozen()
@@ -358,7 +361,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         if ( frozen )
         {
             frozen = false;
-            memory = memory.copy();
+            memory = memory.copy( memoryTracker );
         }
     }
 

@@ -100,6 +100,9 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -188,6 +191,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
+    private final MemoryTracker memoryTracker;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -248,6 +252,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         traceProvider = getTraceProvider( config );
         registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
+        this.memoryTracker = new LocalMemoryTracker( EmptyMemoryTracker.INSTANCE ); // TODO: the parent tacker should be propagated from the global module
     }
 
     /**
@@ -475,7 +480,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.executingQuery();
     }
 
-    void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+    private void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
     }
@@ -505,7 +510,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             leaseClient.ensureValid();
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState( collectionsFactory );
+            txState = new TxState( collectionsFactory, memoryTracker );
         }
         return txState;
     }
@@ -985,6 +990,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             pageCursorTracer.reportEvents();
             initializationTrace = null;
             pool.release( this );
+            memoryTracker.reset();
         }
         finally
         {
@@ -1167,7 +1173,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long directAllocatedBytes()
         {
-            return transaction.collectionsFactory.getMemoryTracker().usedDirectMemory();
+            return transaction.memoryTracker.usedDirectMemory();
         }
 
         /**

@@ -31,8 +31,10 @@ import java.util.Set;
 
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -40,9 +42,12 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
+import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.createRelationshipChangesForNode;
 
 class NodeStateImpl extends EntityStateImpl implements NodeState
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( NodeStateImpl.class );
+
     static final NodeState EMPTY = new NodeState()
     {
         @Override
@@ -124,9 +129,15 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
 
     private Set<MutableLongDiffSets> indexDiffs;
 
-    NodeStateImpl( long id, CollectionsFactory collectionsFactory )
+    static NodeStateImpl createNodeState( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
-        super( id, collectionsFactory );
+        memoryTracker.allocateHeap( SHALLOW_SIZE );
+        return new NodeStateImpl( id, collectionsFactory, memoryTracker );
+    }
+
+    private NodeStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    {
+        super( id, collectionsFactory, memoryTracker );
     }
 
     @Override
@@ -139,7 +150,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     {
         if ( labelDiffSets == null )
         {
-            labelDiffSets = new MutableLongDiffSetsImpl( collectionsFactory );
+            labelDiffSets = HeapTrackingCollections.newMutableLongDiffSets( collectionsFactory, memoryTracker );
         }
         return labelDiffSets;
     }
@@ -148,7 +159,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     {
         if ( !hasAddedRelationships() )
         {
-            relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD );
+            relationshipsAdded = createRelationshipChangesForNode( DiffStrategy.ADD, memoryTracker );
         }
         relationshipsAdded.addRelationship( relId, typeId, direction );
     }
@@ -166,7 +177,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         }
         if ( !hasRemovedRelationships() )
         {
-            relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE );
+            relationshipsRemoved = createRelationshipChangesForNode( DiffStrategy.REMOVE, memoryTracker );
         }
         relationshipsRemoved.addRelationship( relId, typeId, direction );
     }

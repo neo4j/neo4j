@@ -36,7 +36,6 @@ final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor
     @Override
     boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems )
     {
-        return ((DefaultRelationshipScanCursor) cursor)
-                .scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
+        return ((DefaultRelationshipScanCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
     }
 }

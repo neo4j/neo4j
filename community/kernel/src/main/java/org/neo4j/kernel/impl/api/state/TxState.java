@@ -20,11 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
-import org.eclipse.collections.impl.map.mutable.UnifiedMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -42,11 +41,13 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.kernel.impl.util.diffsets.RemovalsCountingDiffSets;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
@@ -58,6 +59,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
+import static org.neo4j.kernel.impl.api.state.TokenState.createTokenState;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -92,21 +94,24 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingDiffSets relationships;
 
-    private UnifiedMap<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint;
+    private MutableMap<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint;
 
-    private UnifiedMap<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
+    private MutableMap<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
+    private final MemoryTracker memoryTracker;
     private long revision;
     private long dataRevision;
 
+    @VisibleForTesting
     public TxState()
     {
-        this( OnHeapCollectionsFactory.INSTANCE );
+        this( OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE );
     }
 
-    public TxState( CollectionsFactory collectionsFactory )
+    public TxState( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         this.collectionsFactory = collectionsFactory;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -212,9 +217,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( labelStatesMap == null )
         {
-            labelStatesMap = new LongObjectHashMap<>();
+            labelStatesMap = HeapTrackingCollections.newLongObjectMap( memoryTracker );
         }
-        return labelStatesMap.getIfAbsentPut( labelId, () -> new MutableLongDiffSetsImpl( collectionsFactory ) );
+        return labelStatesMap.getIfAbsentPut( labelId, () -> HeapTrackingCollections.newMutableLongDiffSets( collectionsFactory, memoryTracker ) );
     }
 
     private LongDiffSets getLabelStateNodeDiffSets( long labelId )
@@ -417,9 +422,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdLabelTokens == null )
         {
-            createdLabelTokens = new LongObjectHashMap<>();
+            createdLabelTokens = HeapTrackingCollections.newLongObjectMap( memoryTracker );
+
         }
-        createdLabelTokens.put( id, new TokenState( labelName, internal ) );
+        createdLabelTokens.put( id, createTokenState( labelName, internal, memoryTracker ) );
         changed();
     }
 
@@ -428,9 +434,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdPropertyKeyTokens == null )
         {
-            createdPropertyKeyTokens = new LongObjectHashMap<>();
+            createdPropertyKeyTokens = HeapTrackingCollections.newLongObjectMap( memoryTracker );
         }
-        createdPropertyKeyTokens.put( id, new TokenState( propertyKeyName, internal ) );
+        createdPropertyKeyTokens.put( id, createTokenState( propertyKeyName, internal, memoryTracker ) );
         changed();
     }
 
@@ -439,9 +445,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdRelationshipTypeTokens == null )
         {
-            createdRelationshipTypeTokens = new LongObjectHashMap<>();
+            createdRelationshipTypeTokens = HeapTrackingCollections.newLongObjectMap( memoryTracker );
         }
-        createdRelationshipTypeTokens.put( id, new TokenState( labelName, internal ) );
+        createdRelationshipTypeTokens.put( id, createTokenState( labelName, internal, memoryTracker ) );
         changed();
     }
 
@@ -537,7 +543,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( indexChanges == null )
         {
-            indexChanges = new MutableDiffSetsImpl<>();
+            indexChanges = HeapTrackingCollections.newMutableDiffSets( memoryTracker );
         }
         return indexChanges;
     }
@@ -552,7 +558,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( nodes == null )
         {
-            nodes = new RemovalsCountingDiffSets();
+            nodes = HeapTrackingCollections.newRemovalsCountingDiffSets( collectionsFactory, memoryTracker );
         }
         return nodes;
     }
@@ -567,7 +573,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( relationships == null )
         {
-            relationships = new RemovalsCountingDiffSets();
+            relationships = HeapTrackingCollections.newRemovalsCountingDiffSets( collectionsFactory, memoryTracker );
         }
         return relationships;
     }
@@ -583,18 +589,18 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( nodeStatesMap == null )
         {
-            nodeStatesMap = new LongObjectHashMap<>();
+            nodeStatesMap = HeapTrackingCollections.newLongObjectMap( memoryTracker );
         }
-        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId, collectionsFactory ) );
+        return nodeStatesMap.getIfAbsentPut( nodeId, () -> newNodeState( nodeId ) );
     }
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
     {
         if ( relationshipStatesMap == null )
         {
-            relationshipStatesMap = new LongObjectHashMap<>();
+            relationshipStatesMap = HeapTrackingCollections.newLongObjectMap( memoryTracker );
         }
-        return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
+        return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> newRelationshipState( relationshipId ) );
     }
 
     @Override
@@ -643,7 +649,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( constraintsChanges == null )
         {
-            constraintsChanges = new MutableDiffSetsImpl<>();
+            constraintsChanges = HeapTrackingCollections.newMutableDiffSets( memoryTracker );
         }
         return constraintsChanges;
     }
@@ -764,23 +770,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @VisibleForTesting
     MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple, MutableLongDiffSets> updates, ValueTuple values )
     {
-        return updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl( collectionsFactory ) );
+        return updates.computeIfAbsent( values, value -> HeapTrackingCollections.newMutableLongDiffSets( collectionsFactory, memoryTracker ) );
     }
 
     private Map<ValueTuple, MutableLongDiffSets> getOrCreateIndexUpdatesByDescriptor( SchemaDescriptor schema )
     {
         if ( indexUpdates == null )
         {
-            indexUpdates = UnifiedMap.newMap();
+            indexUpdates = HeapTrackingCollections.newMap( memoryTracker );
         }
-        return indexUpdates.getIfAbsentPut( schema, UnifiedMap::newMap );
+        return indexUpdates.getIfAbsentPut( schema, () -> HeapTrackingCollections.newMap( memoryTracker ) );
     }
 
     private Map<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
-            createdConstraintIndexesByConstraint = UnifiedMap.newMap();
+            createdConstraintIndexesByConstraint = HeapTrackingCollections.newMap( memoryTracker );
         }
         return createdConstraintIndexesByConstraint;
     }
@@ -797,37 +803,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return dataRevision;
     }
 
-    /**
-     * This class works around the fact that create-delete in the same transaction is a no-op in {@link MutableDiffSetsImpl},
-     * whereas we need to know total number of explicit removals.
-     */
-    private class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl
+    private NodeStateImpl newNodeState( long nodeId )
     {
-        private MutableLongSet removedFromAdded;
+        return NodeStateImpl.createNodeState( nodeId, collectionsFactory, memoryTracker );
+    }
 
-        RemovalsCountingDiffSets()
-        {
-            super( collectionsFactory );
-        }
-
-        @Override
-        public boolean remove( long elem )
-        {
-            if ( isAdded( elem ) && super.remove( elem ) )
-            {
-                if ( removedFromAdded == null )
-                {
-                    removedFromAdded = collectionsFactory.newLongSet();
-                }
-                removedFromAdded.add( elem );
-                return true;
-            }
-            return super.remove( elem );
-        }
-
-        private boolean wasRemoved( long id )
-        {
-            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
-        }
+    private RelationshipStateImpl newRelationshipState( long relationshipId )
+    {
+        return RelationshipStateImpl.createRelationshipStateImpl( relationshipId, collectionsFactory, memoryTracker );
     }
 }

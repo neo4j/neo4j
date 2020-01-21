@@ -29,6 +29,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.EntityState;
@@ -46,12 +47,14 @@ class EntityStateImpl implements EntityState
     private MutableLongObjectMap<Value> changedProperties;
     private MutableLongSet removedProperties;
 
-    protected final CollectionsFactory collectionsFactory;
+    final CollectionsFactory collectionsFactory;
+    final MemoryTracker memoryTracker;
 
-    EntityStateImpl( long id, CollectionsFactory collectionsFactory )
+    EntityStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         this.id = id;
         this.collectionsFactory = requireNonNull( collectionsFactory );
+        this.memoryTracker = requireNonNull( memoryTracker );
     }
 
     public long getId()
@@ -85,7 +88,7 @@ class EntityStateImpl implements EntityState
 
         if ( changedProperties == null )
         {
-            changedProperties = collectionsFactory.newValuesMap();
+            changedProperties = collectionsFactory.newValuesMap( memoryTracker );
         }
         changedProperties.put( propertyKeyId, value );
 
@@ -106,7 +109,7 @@ class EntityStateImpl implements EntityState
         }
         if ( addedProperties == null )
         {
-            addedProperties = collectionsFactory.newValuesMap();
+            addedProperties = collectionsFactory.newValuesMap( memoryTracker );
         }
         addedProperties.put( propertyKeyId, value );
     }
@@ -119,7 +122,7 @@ class EntityStateImpl implements EntityState
         }
         if ( removedProperties == null )
         {
-            removedProperties = collectionsFactory.newLongSet();
+            removedProperties = collectionsFactory.newLongSet( memoryTracker );
         }
         removedProperties.add( propertyKeyId );
         if ( changedProperties != null )

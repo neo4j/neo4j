@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemove
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -890,7 +891,7 @@ class TxStateIndexChangesTest
         {
             final ValueTuple valueTuple = ValueTuple.of( (Object[]) value );
             final MutableLongDiffSetsImpl changes = updates.computeIfAbsent( valueTuple,
-                    ignore -> new MutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE ) );
+                    ignore -> MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE ) );
             changes.add( id );
             return this;
         }
@@ -899,7 +900,7 @@ class TxStateIndexChangesTest
         {
             final ValueTuple valueTuple = ValueTuple.of( (Object[]) value );
             final MutableLongDiffSetsImpl changes = updates.computeIfAbsent( valueTuple,
-                    ignore -> new MutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE ) );
+                    ignore -> MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE ) );
             changes.remove( id );
             return this;
         }

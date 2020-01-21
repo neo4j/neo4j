@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.util.collection;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
@@ -39,7 +39,7 @@ public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllo
     }
 
     @Override
-    public MemoryBlock allocate( long size, MemoryAllocationTracker tracker )
+    public MemoryBlock allocate( long size, MemoryTracker tracker )
     {
         while ( true )
         {
@@ -66,7 +66,7 @@ public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllo
     }
 
     @Override
-    public void free( MemoryBlock block, MemoryAllocationTracker tracker )
+    public void free( MemoryBlock block, MemoryTracker tracker )
     {
         try
         {

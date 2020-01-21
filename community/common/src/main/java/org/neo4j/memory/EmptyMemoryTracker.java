@@ -19,7 +19,7 @@
  */
 package org.neo4j.memory;
 
-public final class EmptyMemoryTracker implements MemoryAllocationTracker
+public final class EmptyMemoryTracker implements MemoryTracker
 {
     public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
 
@@ -28,12 +28,22 @@ public final class EmptyMemoryTracker implements MemoryAllocationTracker
     }
 
     @Override
-    public void allocated( long bytes )
+    public void allocateDirect( long bytes )
     {
     }
 
     @Override
-    public void deallocated( long bytes )
+    public void releaseDirect( long bytes )
+    {
+    }
+
+    @Override
+    public void allocateHeap( long bytes )
+    {
+    }
+
+    @Override
+    public void releaseHeap( long bytes )
     {
     }
 
@@ -41,5 +51,16 @@ public final class EmptyMemoryTracker implements MemoryAllocationTracker
     public long usedDirectMemory()
     {
         return 0;
+    }
+
+    @Override
+    public long estimatedHeapMemory()
+    {
+        return 0;
+    }
+
+    @Override
+    public void reset()
+    {
     }
 }

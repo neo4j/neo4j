@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -32,7 +32,7 @@ class UnsafeDirectByteBufferFactoryTest
     void shouldAllocateBuffer()
     {
         // given
-        MemoryAllocationTracker tracker = new LocalMemoryTracker();
+        MemoryTracker tracker = new LocalMemoryTracker();
         try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
         {
             // when
@@ -48,7 +48,7 @@ class UnsafeDirectByteBufferFactoryTest
     void shouldFreeOnClose()
     {
         // given
-        MemoryAllocationTracker tracker = new LocalMemoryTracker();
+        MemoryTracker tracker = new LocalMemoryTracker();
         try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
         {
             // when
@@ -63,7 +63,7 @@ class UnsafeDirectByteBufferFactoryTest
     void shouldHandleMultipleClose()
     {
         // given
-        MemoryAllocationTracker tracker = new LocalMemoryTracker();
+        MemoryTracker tracker = new LocalMemoryTracker();
         UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker );
 
         // when

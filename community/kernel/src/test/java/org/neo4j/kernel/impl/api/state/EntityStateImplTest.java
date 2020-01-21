@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Values;
@@ -40,7 +41,7 @@ class EntityStateImplTest
     void shouldListAddedProperties()
     {
         // Given
-        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
         state.removeProperty( 1 );
@@ -56,7 +57,7 @@ class EntityStateImplTest
     void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
-        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 1, Values.of( "WAT" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
@@ -73,7 +74,7 @@ class EntityStateImplTest
     void shouldConvertAddRemoveToChange()
     {
         // Given
-        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE, EmptyMemoryTracker.INSTANCE );
 
         // When
         state.removeProperty( 4 );

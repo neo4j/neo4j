@@ -20,15 +20,48 @@
 package org.neo4j.memory;
 
 /**
- * Tracker that capable to report number of allocated bytes.
- * @see MemoryAllocationTracker
+ * Memory allocation tracker that tracks bytes allocation and de-allocation
  */
 public interface MemoryTracker
 {
-    MemoryTracker NONE = () -> 0;
-
     /**
      * @return number of bytes of direct memory that are used
      */
     long usedDirectMemory();
+
+    /**
+     * @return estimated number of retained heap in bytes
+     */
+    long estimatedHeapMemory();
+
+    /**
+     * Record allocation of bytes in direct memory.
+     *
+     * @param bytes number of allocated bytes.
+     */
+    void allocateDirect( long bytes );
+
+    /**
+     * Record de-allocation of bytes in direct memory.
+     *
+     * @param bytes number of released bytes.
+     */
+    void releaseDirect( long bytes );
+
+    /**
+     * Record an allocation of heap memory.
+     *
+     * @param bytes the number of bytes about to be allocated.
+     * @throws HeapMemoryLimitExceeded if the current quota would be exceeded by allocating the provided number of bytes.
+     */
+    void allocateHeap( long bytes );
+
+    /**
+     * Record the release of heap memory. This should be called when we forget about a reference and that particular object will be garbage collected.
+     *
+     * @param bytes number of released bytes
+     */
+    void releaseHeap( long bytes );
+
+    void reset();
 }

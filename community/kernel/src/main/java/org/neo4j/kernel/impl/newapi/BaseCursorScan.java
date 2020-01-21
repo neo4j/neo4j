@@ -44,12 +44,12 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
     private final long[] addedItemsArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
-    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedIntTransaction, PageCursorTracer cursorTracer )
+    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedInTransaction, PageCursorTracer cursorTracer )
     {
         this.storageScan = storageScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-        this.addedItemsArray = hasChanges ? addedIntTransaction.get() : EMPTY_LONG_ARRAY;
+        this.addedItemsArray = hasChanges ? addedInTransaction.get() : EMPTY_LONG_ARRAY;
         this.cursorTracer = cursorTracer;
         this.addedItemsConsumed = addedItemsArray.length == 0;
     }
