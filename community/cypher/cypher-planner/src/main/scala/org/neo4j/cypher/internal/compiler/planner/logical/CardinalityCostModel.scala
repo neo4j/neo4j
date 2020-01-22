@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.expressions.{HasLabels, Property}
-import org.neo4j.cypher.internal.util.{Cardinality, Cost, CostPerRow, Multiplier}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.CostPerRow
+import org.neo4j.cypher.internal.util.Multiplier
 
 case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
 
@@ -58,6 +63,12 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
 
     case _: AllNodesScan
     => 1.2
+
+    case e: Expand if e.mode == ExpandInto
+    => 4.5
+
+    case e: VarExpand if e.mode == ExpandInto
+    => 4.5
 
     case _: Expand |
          _: VarExpand
