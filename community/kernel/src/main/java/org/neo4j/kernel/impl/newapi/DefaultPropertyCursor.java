@@ -107,20 +107,20 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     {
         this.assertOpen = assertOpen;
         this.read = read;
-        this.accessMode = read.ktx.securityContext().mode();
         this.labels = null;
     }
 
     boolean allowed()
     {
-        int propertyKey = propertyKey();
         if ( isNode() )
         {
-            return accessMode.allowsReadNodeProperty( this::labelsIgnoringTxStateSetRemove, propertyKey );
+            assertAccessMode();
+            return accessMode.allowsReadNodeProperty( this::labelsIgnoringTxStateSetRemove, propertyKey() );
         }
         if ( isRelationship() )
         {
-            return accessMode.allowsReadRelationshipProperty( this::getRelType, propertyKey );
+            assertAccessMode();
+            return accessMode.allowsReadRelationshipProperty( this::getRelType, propertyKey() );
         }
         return true;
     }
@@ -262,6 +262,14 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             }
         }
         return labels;
+    }
+
+    private void assertAccessMode()
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
     }
 
     private int getRelType()

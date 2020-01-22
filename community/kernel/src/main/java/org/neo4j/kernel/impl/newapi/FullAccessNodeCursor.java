@@ -34,7 +34,7 @@ class FullAccessNodeCursor extends DefaultNodeCursor
     }
 
     @Override
-    boolean allowsTraverse()
+    final boolean allowsTraverse()
     {
         return true;
     }

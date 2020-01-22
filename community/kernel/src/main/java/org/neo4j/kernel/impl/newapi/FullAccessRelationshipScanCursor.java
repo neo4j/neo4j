@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCursor
 {
-    FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
+    FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool,
+            StorageRelationshipScanCursor storeCursor )
     {
         super( pool, storeCursor );
     }
 
     @Override
-    protected boolean allowedToSeeEndNode( AccessMode mode )
+    final protected boolean allowed()
     {
         return true;
     }
