@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.Node
+
+import scala.collection.mutable.ArrayBuffer
 
 abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -164,5 +167,39 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m", "o").withNoRows()
+  }
+
+  test("should do double index seek on rhs of apply - multiple input rows") {
+    // given
+    val size = Math.max(sizeHint, 10)
+    index("Label", "prop")
+    val nodes = given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i % 10)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .apply()
+      .|.multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i"))),
+                                    _.indexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i"))))
+      .unwind("range(0, 2) AS i")
+      .argument()
+      .build()
+
+    // then
+    val expected = new ArrayBuffer[Array[Node]]
+    (0 to 2).foreach { i =>
+      val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == i)
+      val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == i)
+      val cartesian = for {n <- ns
+                           m <- ms} yield Array(n, m)
+      expected ++= cartesian
+    }
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "m").withRows(expected)
   }
 }
