@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -52,6 +56,9 @@ class SchemaLoggingIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setInternalLogProvider( logProvider );
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( new CancelMonitor() );
+        builder.setMonitors( monitors );
     }
 
     @Test
@@ -64,7 +71,6 @@ class SchemaLoggingIT
         createIndex( db, labelName, property );
 
         // then
-        var matcher = assertThat(logProvider).forClass( IndexPopulationJob.class ).forLevel( INFO );
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
@@ -88,6 +94,15 @@ class SchemaLoggingIT
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
+        }
+    }
+
+    private static class CancelMonitor extends IndexingService.MonitorAdapter
+    {
+        @Override
+        public void populationCancelled()
+        {
+            System.out.println( "Job was canceled" );
         }
     }
 }
