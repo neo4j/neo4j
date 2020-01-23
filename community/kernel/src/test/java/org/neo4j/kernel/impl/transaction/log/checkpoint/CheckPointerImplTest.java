@@ -507,7 +507,7 @@ class CheckPointerImplTest
     @Test
     void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
                 verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
 
     }
@@ -515,7 +515,7 @@ class CheckPointerImplTest
     @Test
     void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
                 verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
