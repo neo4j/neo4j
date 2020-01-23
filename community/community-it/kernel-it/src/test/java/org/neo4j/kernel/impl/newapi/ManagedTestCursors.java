@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -112,14 +111,6 @@ public class ManagedTestCursors implements CursorFactory
     public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
     {
         PropertyCursor n = cursors.allocateFullAccessPropertyCursor( cursorTracer );
-        allCursors.add( n );
-        return n;
-    }
-
-    @Override
-    public RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
-    {
-        RelationshipGroupCursor n = cursors.allocateRelationshipGroupCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.graphdb.Direction;
@@ -43,6 +44,8 @@ public interface NodeState extends EntityState
     int augmentDegree( Direction direction, int degree, int typeId );
 
     long getId();
+
+    IntIterable getAddedRelationshipTypes();
 
     LongIterator getAddedRelationships();
 

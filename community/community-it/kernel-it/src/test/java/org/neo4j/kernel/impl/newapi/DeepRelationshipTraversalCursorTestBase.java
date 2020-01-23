@@ -23,18 +23,20 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.token.TokenHolders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -44,6 +46,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     private static int expected_total, expected_unique;
 
     private RelationshipType PARENT = withName( "PARENT" );
+    private int parentRelationshipTypeId;
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -83,6 +86,9 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
 
             expected_total = offset + duplicate;
             expected_unique = leafs.length;
+            parentRelationshipTypeId =
+                    ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( TokenHolders.class ).relationshipTypeTokens().getIdByName(
+                            PARENT.name() );
 
             tx.commit();
         }
@@ -100,8 +106,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     @Test
     void shouldTraverseTreeOfDepthThree()
     {
-        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+        try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipTraversalCursor relationship1 = cursors.allocateRelationshipTraversalCursor( NULL );
               RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
@@ -111,25 +116,14 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
             // when
             read.singleNode( three_root, node );
             assertTrue( node.next(), "access root node" );
-            node.relationshipGroups( group );
-            assertFalse( node.next(), "single root" );
 
-            assertTrue( group.next(), "access group of root" );
-            group.incoming( relationship1 );
-            assertFalse( group.next(), "single group of root" );
-
+            node.relationships( relationship1, selection( parentRelationshipTypeId, Direction.INCOMING ) );
             while ( relationship1.next() )
             {
                 relationship1.otherNode( node );
 
                 assertTrue( node.next(), "child level 1" );
-                node.relationshipGroups( group );
-                assertFalse( node.next(), "single node" );
-
-                assertTrue( group.next(), "group of level 1 child" );
-                group.incoming( relationship2 );
-                assertFalse( group.next(), "single group of level 1 child" );
-
+                node.relationships( relationship2, selection( parentRelationshipTypeId, Direction.INCOMING ) );
                 while ( relationship2.next() )
                 {
                     leafs.add( relationship2.otherNodeReference() );

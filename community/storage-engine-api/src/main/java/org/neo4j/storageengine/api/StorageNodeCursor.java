@@ -41,7 +41,9 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
 
     void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection );
 
-    void relationshipGroups( StorageRelationshipGroupCursor groupCursor );
+    int[] relationshipTypes();
+
+    Degrees degrees( RelationshipSelection selection );
 
     /**
      * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.

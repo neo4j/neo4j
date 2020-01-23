@@ -30,12 +30,14 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class RandomRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -78,7 +80,6 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
               RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             for ( int i = 0; i < N_TRAVERSALS; i++ )
@@ -87,19 +88,19 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                 long nodeId = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
                 read.singleNode( nodeId, node );
                 assertTrue( node.next(), "access root node" );
-                node.relationshipGroups( group );
+                int[] types = node.relationshipTypes();
                 assertFalse( node.next(), "single root" );
 
                 // then
-                while ( group.next() )
+                for ( int type : types )
                 {
-                    group.incoming( relationship );
+                    node.relationships( relationship, selection( type, INCOMING ) );
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "incoming origin" );
                         relationship.otherNode( node );
                     }
-                    group.outgoing( relationship );
+                    node.relationships( relationship, selection( type, OUTGOING ) );
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "outgoing origin");

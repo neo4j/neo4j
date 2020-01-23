@@ -72,10 +72,8 @@ case class ExpandIntoPipe(source: Pipe,
             toNode match {
               case IsNoValue() => Iterator.empty
               case n: NodeValue =>
-                val groupCursor = query.groupCursor()
                 val traversalCursor = query.traversalCursor()
                 val relationships = relationshipIterator(expandInto.connectingRelationships(nodeCursor,
-                                                                                            groupCursor,
                                                                                             traversalCursor,
                                                                                             fromNode.id(),
                                                                                             lazyTypes.types(query),

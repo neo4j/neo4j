@@ -51,7 +51,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits(value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
-  protected def manyDbHits(value: RelationshipGroupCursor): RelationshipGroupCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
   protected def manyDbHits(count: Int): Int = count
 
@@ -92,8 +91,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
-
-  override def groupCursor(): RelationshipGroupCursor = manyDbHits(inner.groupCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 

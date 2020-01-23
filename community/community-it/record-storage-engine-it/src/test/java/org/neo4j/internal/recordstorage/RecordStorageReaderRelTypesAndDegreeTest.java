@@ -28,6 +28,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -35,9 +36,9 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
-import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -48,17 +49,18 @@ import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.recordstorage.TestRelType.IN;
 import static org.neo4j.internal.recordstorage.TestRelType.LOOP;
 import static org.neo4j.internal.recordstorage.TestRelType.OUT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
-import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 @ExtendWith( RandomExtension.class )
 class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
@@ -202,7 +204,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
 
         assertEquals( outRelCount + loopRelCount, degreeForDirection( cursor, OUTGOING ) );
         assertEquals( inRelCount + loopRelCount, degreeForDirection( cursor, INCOMING ) );
-        assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, RelationshipDirection.LOOP) );
+        assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
     private void testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
@@ -230,42 +232,17 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
 
         assertEquals( outRelCount + loopRelCount, degreeForDirection( cursor, OUTGOING ) );
         assertEquals( inRelCount + loopRelCount, degreeForDirection( cursor, INCOMING ) );
-        assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, RelationshipDirection.LOOP) );
+        assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
-    private int degreeForDirection( StorageNodeCursor cursor, RelationshipDirection direction )
+    private int degreeForDirection( StorageNodeCursor cursor, Direction direction )
     {
-        return degreeForDirectionAndType( cursor, direction, ANY_RELATIONSHIP_TYPE );
+        return cursor.degrees( RelationshipSelection.selection( direction ) ).degree( direction );
     }
 
-    private int degreeForDirectionAndType( StorageNodeCursor cursor, RelationshipDirection direction, int relType )
+    private int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
     {
-        int degree = 0;
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
-        {
-            cursor.relationshipGroups( groups );
-            while ( groups.next() )
-            {
-                if ( relType == ANY_RELATIONSHIP_TYPE || relType == groups.type() )
-                {
-                    switch ( direction )
-                    {
-                    case OUTGOING:
-                        degree += groups.outgoingCount();
-                        break;
-                    case INCOMING:
-                        degree += groups.incomingCount();
-                        break;
-                    case LOOP:
-                        degree += groups.totalCount();
-                        break;
-                    default:
-                        throw new IllegalArgumentException( direction.name() );
-                    }
-                }
-            }
-        }
-        return degree;
+        return cursor.degrees( RelationshipSelection.selection( relType, direction ) ).degree( relType, direction );
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
@@ -305,9 +282,9 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( inRelCount, degreeForDirectionAndType( cursor, INCOMING, relTypeId( IN ) ) );
         assertEquals( loopRelCount, degreeForDirectionAndType( cursor, INCOMING, relTypeId( LOOP ) ) );
 
-        assertEquals( inRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( IN ) ) );
-        assertEquals( outRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( OUT ) ) );
-        assertEquals( loopRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( LOOP ) ) );
+        assertEquals( inRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( IN ) ) );
+        assertEquals( outRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( OUT ) ) );
+        assertEquals( loopRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( LOOP ) ) );
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
@@ -341,9 +318,9 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( inRelCount, degreeForDirectionAndType( cursor, INCOMING, relTypeId( IN ) ) );
         assertEquals( loopRelCount, degreeForDirectionAndType( cursor, INCOMING, relTypeId( LOOP ) ) );
 
-        assertEquals( inRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( IN ) ) );
-        assertEquals( outRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( OUT ) ) );
-        assertEquals( loopRelCount, degreeForDirectionAndType( cursor, RelationshipDirection.LOOP, relTypeId( LOOP ) ) );
+        assertEquals( inRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( IN ) ) );
+        assertEquals( outRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( OUT ) ) );
+        assertEquals( loopRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( LOOP ) ) );
     }
 
     @Test
@@ -395,13 +372,9 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private Set<TestRelType> relTypes( StorageNodeCursor cursor )
     {
         Set<TestRelType> types = new HashSet<>();
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
+        for ( int relType : cursor.relationshipTypes( NULL ) )
         {
-            cursor.relationshipGroups( groups );
-            while ( groups.next() )
-            {
-                types.add( relTypeForId( groups.type() ) );
-            }
+            types.add( relTypeForId( relType ) );
         }
         return types;
     }
@@ -489,13 +462,10 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
+        Degrees nodeDegrees = nodeCursor.degrees( ALL_RELATIONSHIPS );
+        for ( int type : nodeDegrees.types( NULL ) )
         {
-            nodeCursor.relationshipGroups( groups );
-            while ( groups.next() )
-            {
-                degrees.add( new TestDegreeItem( groups.type(), groups.outgoingCount(), groups.incomingCount() ) );
-            }
+            degrees.add( new TestDegreeItem( type, nodeDegrees.outgoingDegree( type ), nodeDegrees.incomingDegree( type ) ) );
         }
         return degrees;
     }

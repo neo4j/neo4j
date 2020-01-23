@@ -24,14 +24,14 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import java.util.function.LongConsumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.CountsDelta;
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -41,7 +41,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final CountsDelta counts;
     private final ReadableTransactionState txState;
     private final StorageNodeCursor nodeCursor;
-    private final StorageRelationshipGroupCursor groupCursor;
     private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
@@ -51,7 +50,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         this.txState = txState;
         this.counts = counts;
         this.nodeCursor = storageReader.allocateNodeCursor( cursorTracer );
-        this.groupCursor = storageReader.allocateRelationshipGroupCursor( cursorTracer );
         this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorTracer );
     }
 
@@ -87,10 +85,10 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
     {
-        node.relationshipGroups( groupCursor );
-        while ( groupCursor.next() )
+        Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
+        for ( int type : degrees.types() )
         {
-            visitor.visitDegree( groupCursor.type(), groupCursor.outgoingCount(), groupCursor.incomingCount() );
+            visitor.visitDegree( type, degrees.outgoingDegree( type ), degrees.incomingDegree( type ) );
         }
     }
 
@@ -200,6 +198,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void close()
     {
         super.close();
-        closeAllUnchecked( nodeCursor, groupCursor, relationshipCursor );
+        closeAllUnchecked( nodeCursor, relationshipCursor );
     }
 }

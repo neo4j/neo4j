@@ -22,6 +22,8 @@ package org.neo4j.internal.kernel.api.helpers;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.storageengine.api.RelationshipDirection;
+
 public class TestRelationshipChain
 {
     private List<Data> data;
@@ -89,6 +91,15 @@ public class TestRelationshipChain
             this.source = source;
             this.target = target;
             this.type = type;
+        }
+
+        RelationshipDirection relationshipRirection( long nodeReference )
+        {
+            if ( source == target )
+            {
+                return RelationshipDirection.LOOP;
+            }
+            return nodeReference == source ? RelationshipDirection.OUTGOING : RelationshipDirection.INCOMING;
         }
     }
 }

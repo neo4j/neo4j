@@ -128,6 +128,12 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
+
+        @Override
+        public IntIterable getAddedRelationshipTypes()
+        {
+            return IntSets.immutable.empty();
+        }
     };
 
     private MutableLongDiffSets labelDiffSets;
@@ -289,5 +295,11 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
                ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    @Override
+    public IntIterable getAddedRelationshipTypes()
+    {
+        return relationshipsAdded != null ? relationshipsAdded.relationshipTypes() : IntSets.immutable.empty();
     }
 }
