@@ -650,10 +650,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         int pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
         if ( pageSize > pageCache.pageSize() )
         {
-            throw new MetadataMismatchException(
+            throw new MetadataMismatchException( format(
                     "Tried to create tree with page size %d" +
                     ", but page cache used to create it has a smaller page size %d" +
-                    " so cannot be created", pageSize, pageCache.pageSize() );
+                    " so cannot be created", pageSize, pageCache.pageSize() ) );
         }
 
         // We need to create this index
@@ -906,10 +906,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             if ( pageSize > pageCache.pageSize() || pageSize < 0 )
             {
-                throw new MetadataMismatchException(
+                throw new MetadataMismatchException( format(
                         "Tried to create tree with page size %d, but page cache used to open it this time " +
                         "has a smaller page size %d so cannot be opened",
-                        pageSize, pageCache.pageSize() );
+                        pageSize, pageCache.pageSize() ) );
             }
             pagedFile.close();
             pagedFileOpen.setFalse();

@@ -118,10 +118,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         if ( inlineKeyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
-            throw new MetadataMismatchException(
+            throw new MetadataMismatchException( format(
                     "We need to fit at least %d key-value entries per page in leaves. To do that a key-value entry can be at most %dB " +
                             "with current page size of %dB. We require this cap to be at least %dB.",
-                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, inlineKeyValueSizeCap, pageSize, Long.BYTES );
+                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, inlineKeyValueSizeCap, pageSize, Long.BYTES ) );
         }
 
         tmpKeyLeft = layout.newKey();
