@@ -37,17 +37,20 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     private final BlockingQueue<CleanupJob> jobs = new LinkedBlockingQueue<>();
     private final JobScheduler jobScheduler;
     private final Group group;
-    private volatile boolean started;
+    private final Group workerGroup;
+    private volatile boolean moreJobsAllowed = true;
     private JobHandle handle;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
      * @param group {@link Group} to which all cleanup jobs should be scheduled.
+     * @param workerGroup {@link Group} to which all sub-tasks of cleanup jobs should be scheduled.
      */
-    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler, Group group )
+    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler, Group group, Group workerGroup )
     {
         this.jobScheduler = jobScheduler;
         this.group = group;
+        this.workerGroup = workerGroup;
     }
 
     @Override
@@ -59,21 +62,21 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     @Override
     public void add( CleanupJob job )
     {
-        Preconditions.checkState( !started, "Index clean jobs can't be added after collector start." );
+        Preconditions.checkState( moreJobsAllowed, "Index clean jobs can't be added after collector start." );
         jobs.add( job );
     }
 
     @Override
     public void start()
     {
-        Preconditions.checkState( !started, "Already started" );
-        started = true;
+        Preconditions.checkState( moreJobsAllowed, "Already started" );
+        moreJobsAllowed = false;
     }
 
     @Override
     public void shutdown() throws ExecutionException, InterruptedException
     {
-        started = true;
+        moreJobsAllowed = false;
         if ( handle != null )
         {
             // Also set the started flag which acts as a signal to exit the scheduled job on empty queue,
@@ -105,7 +108,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
                     job = jobs.poll( 100, TimeUnit.MILLISECONDS );
                     if ( job != null )
                     {
-                        job.run( jobScheduler.executor( group ) );
+                        job.run( jobScheduler.executor( workerGroup ) );
                     }
                 }
                 catch ( Exception e )
@@ -122,7 +125,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
                 }
             }
             // Even if there are no jobs in the queue then continue looping until we go to started state
-            while ( !jobs.isEmpty() || !started );
+            while ( !jobs.isEmpty() || moreJobsAllowed );
         };
     }
 }

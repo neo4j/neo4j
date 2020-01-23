@@ -108,7 +108,8 @@ import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstrain
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.checkStoreFiles;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.scheduler.Group.STORAGE_MAINTENANCE;
+import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
+import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -288,7 +289,7 @@ public final class Recovery
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
 
-        RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler, STORAGE_MAINTENANCE );
+        RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK );
         DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );

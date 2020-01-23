@@ -44,6 +44,10 @@ public enum Group
     CHECKPOINT( "CheckPoint" ),
     /** Various little periodic tasks that need to be done on a regular basis to keep the store in good shape. */
     STORAGE_MAINTENANCE( "StorageMaintenance" ),
+    /** Index recovery cleanup. */
+    INDEX_CLEANUP( "IndexCleanup" ),
+    /** Index recovery cleanup work. */
+    INDEX_CLEANUP_WORK( "IndexCleanupWork" ),
     /** Terminates kernel transactions that have timed out. */
     TRANSACTION_TIMEOUT_MONITOR( "TransactionTimeoutMonitor" ),
     /** Background index population. */
