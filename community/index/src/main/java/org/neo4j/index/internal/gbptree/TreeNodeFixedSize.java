@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -86,14 +87,14 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
         if ( internalMaxKeyCount < 2 )
         {
-            throw new MetadataMismatchException(
+            throw new MetadataMismatchException( format(
                     "For layout %s a page size of %d would only fit %d internal keys, minimum is 2",
-                    layout, pageSize, internalMaxKeyCount );
+                    layout, pageSize, internalMaxKeyCount ) );
         }
         if ( leafMaxKeyCount < 2 )
         {
-            throw new MetadataMismatchException( "A page size of %d would only fit %d leaf keys (keySize:%d, valueSize:%d), minimum is 2",
-                    pageSize, leafMaxKeyCount, keySize, valueSize );
+            throw new MetadataMismatchException( format( "A page size of %d would only fit %d leaf keys (keySize:%d, valueSize:%d), minimum is 2",
+                    pageSize, leafMaxKeyCount, keySize, valueSize ) );
         }
     }
 

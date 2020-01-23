@@ -24,13 +24,13 @@ package org.neo4j.index.internal.gbptree;
  */
 public class MetadataMismatchException extends RuntimeException
 {
-    MetadataMismatchException( Throwable cause, String format, Object... args )
+    MetadataMismatchException( String message, Throwable cause )
     {
-        super( String.format( format, args ), cause );
+        super( message, cause );
     }
 
-    MetadataMismatchException( String format, Object... args )
+    MetadataMismatchException( String message )
     {
-        super( String.format( format, args ) );
+        super( message );
     }
 }

@@ -25,6 +25,7 @@ import org.neo4j.index.internal.gbptree.TreeNodeSelector.Factory;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -135,9 +136,8 @@ public class Meta
         }
         catch ( CursorException e )
         {
-            throw new MetadataMismatchException( e,
-                    "Tried to open, but caught an error while reading meta data. " +
-                    "File is expected to be corrupt, try to rebuild." );
+            throw new MetadataMismatchException( "Tried to open, but caught an error while reading meta data. File is expected " +
+                    "to be corrupt, try to rebuild.", e );
         }
 
         return parseMeta( format, pageSize, layoutIdentifier, layoutMajorVersion, layoutMinorVersion );
@@ -156,21 +156,21 @@ public class Meta
 
         if ( !layout.compatibleWith( layoutIdentifier, layoutMajorVersion, layoutMinorVersion ) )
         {
-            throw new MetadataMismatchException(
+            throw new MetadataMismatchException( format(
                     "Tried to open using layout not compatible with " +
                     "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
                     "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
                     layoutIdentifier, layoutMajorVersion, layoutMinorVersion,
-                    layout.identifier(), layout.majorVersion(), layout.minorVersion() );
+                    layout.identifier(), layout.majorVersion(), layout.minorVersion() ) );
         }
 
         Factory formatByLayout = TreeNodeSelector.selectByLayout( layout );
         if ( formatByLayout.formatIdentifier() != formatIdentifier ||
              formatByLayout.formatVersion() != formatVersion )
         {
-            throw new MetadataMismatchException( "Tried to open using layout not compatible with what index was created with. " +
+            throw new MetadataMismatchException( format( "Tried to open using layout not compatible with what index was created with. " +
                     "Created with formatIdentifier:%d,formatVersion:%d. Opened with formatIdentifier:%d,formatVersion%d",
-                    formatIdentifier, formatVersion, formatByLayout.formatIdentifier(), formatByLayout.formatVersion() );
+                    formatIdentifier, formatVersion, formatByLayout.formatIdentifier(), formatByLayout.formatVersion() ) );
         }
     }
 
