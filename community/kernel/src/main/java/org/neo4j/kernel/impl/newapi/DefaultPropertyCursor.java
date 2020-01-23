@@ -114,12 +114,12 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     {
         if ( isNode() )
         {
-            assertAccessMode();
+            ensureAccessMode();
             return accessMode.allowsReadNodeProperty( this::labelsIgnoringTxStateSetRemove, propertyKey() );
         }
         if ( isRelationship() )
         {
-            assertAccessMode();
+            ensureAccessMode();
             return accessMode.allowsReadRelationshipProperty( this::getRelType, propertyKey() );
         }
         return true;
@@ -264,7 +264,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         return labels;
     }
 
-    private void assertAccessMode()
+    private void ensureAccessMode()
     {
         if ( accessMode == null )
         {
