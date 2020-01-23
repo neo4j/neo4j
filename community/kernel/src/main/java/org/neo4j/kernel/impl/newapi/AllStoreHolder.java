@@ -227,7 +227,10 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
-                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) )
+                {
+                    txState.accept( countingVisitor );
+                }
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId );
@@ -289,7 +292,10 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
-                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) )
+                {
+                    txState.accept( countingVisitor );
+                }
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId );
