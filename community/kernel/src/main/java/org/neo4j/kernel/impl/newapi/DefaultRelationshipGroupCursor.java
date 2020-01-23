@@ -24,20 +24,15 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDenseSelection;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncoming;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoops;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoing;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeSelection;
 
 class DefaultRelationshipGroupCursor extends TraceableCursor implements RelationshipGroupCursor
 {
@@ -178,7 +173,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
         int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.outgoingCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.OUTGOING, count, type() ) : count;
+                       .augmentDegree( Direction.OUTGOING, count, type() ) : count;
     }
 
     @Override
@@ -187,84 +182,29 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
         int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.incomingCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.INCOMING, count, type() ) : count;
+                       .augmentDegree( Direction.INCOMING, count, type() ) : count;
     }
 
     @Override
-    public int loopCount()
+    public int totalCount()
     {
-        int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.loopCount();
+        int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.totalCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.LOOP, count, type() ) : count;
-
+                       .augmentDegree( Direction.BOTH, count, type() ) : count;
     }
 
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReferenceWithoutFlags(),
-                type(), RelationshipDirection.OUTGOING, nodeIsDense, read );
+
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReferenceWithoutFlags(),
-                type(), RelationshipDirection.INCOMING, nodeIsDense, read );
-    }
-
-    @Override
-    public void loops( RelationshipTraversalCursor cursor )
-    {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReferenceWithoutFlags(),
-                type(), RelationshipDirection.LOOP, nodeIsDense, read );
-    }
-
-    @Override
-    public long outgoingReference()
-    {
-        long reference = outgoingReferenceWithoutFlags();
-        return reference == NO_ID ? encodeNoOutgoing( type() ) : encodeSelectionToReference( reference );
-    }
-
-    @Override
-    public long incomingReference()
-    {
-        long reference = incomingReferenceWithoutFlags();
-        return reference == NO_ID ? encodeNoIncoming( type() ) : encodeSelectionToReference( reference );
-    }
-
-    @Override
-    public long loopsReference()
-    {
-        long reference = loopsReferenceWithoutFlags();
-        return reference == NO_ID ? encodeNoLoops( type() ) : encodeSelectionToReference( reference );
-    }
-
-    private long encodeSelectionToReference( long reference )
-    {
-        return nodeIsDense ? encodeDenseSelection( reference ) : encodeSelection( reference );
-    }
-
-    private long outgoingReferenceWithoutFlags()
-    {
-        return relationshipReferenceWithoutFlags( storeCursor.outgoingReference() );
-    }
-
-    private long incomingReferenceWithoutFlags()
-    {
-        return relationshipReferenceWithoutFlags( storeCursor.incomingReference() );
-    }
-
-    private long loopsReferenceWithoutFlags()
-    {
-        return relationshipReferenceWithoutFlags( storeCursor.loopsReference() );
-    }
-
-    private long relationshipReferenceWithoutFlags( long storeReference )
-    {
-        return currentTypeAddedInTx != NO_ID ? NO_ID : storeReference;
+//        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReferenceWithoutFlags(),
+//                type(), RelationshipDirection.INCOMING, nodeIsDense, read );
     }
 
     @Override

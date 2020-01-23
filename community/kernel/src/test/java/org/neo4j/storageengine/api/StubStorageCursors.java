@@ -475,13 +475,19 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public long relationshipGroupReference()
+        public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
         {
-            return current.firstRelationship;
+            throw new UnsupportedOperationException( "Not implemented yet" );
         }
 
         @Override
-        public long allRelationshipsReference()
+        public void relationshipGroups( StorageRelationshipGroupCursor groupCursor )
+        {
+            throw new UnsupportedOperationException( "Not implemented yet" );
+        }
+
+        @Override
+        public long relationshipsReference()
         {
             return current.firstRelationship;
         }

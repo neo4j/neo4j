@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -36,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -44,6 +42,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCount;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCounts;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.count;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -96,7 +95,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when
             read.singleNode( bare, node );
             assertTrue( node.next(), "access node" );
-            node.relationships( group );
+            node.relationshipGroups( group );
 
             // then
             assertFalse( group.next(), "access group" );
@@ -116,7 +115,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             read.allNodesScan( node );
             while ( node.next() )
             {
-                node.relationships( group );
+                node.relationshipGroups( group );
                 boolean none = true;
                 while ( group.next() )
                 {
@@ -138,25 +137,16 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                         );
                         degree.incoming++;
                     }
-                    group.loops( relationship );
-                    while ( relationship.next() )
-                    {
-                        assertEquals( group.type(), relationship.type(), "node #" + node.nodeReference() +
-                                                                         "relationship should have same label as group"
-                        );
-                        degree.loop++;
-                    }
 
                     // then
-                    assertNotEquals( 0, degree.incoming + degree.outgoing + degree.loop, "all" );
+                    assertNotEquals( 0, degree.incoming + degree.outgoing, "all" );
                     assertEquals(
                             group.outgoingCount(), degree.outgoing, "node #" + node.nodeReference() + " outgoing"
                     );
                     assertEquals(
                             group.incomingCount(), degree.incoming, "node #" + node.nodeReference() + " incoming"
                     );
-                    assertEquals( group.loopCount(), degree.loop, "node #" + node.nodeReference() + " loop" );
-                    assertEquals( group.totalCount(), degree.incoming + degree.outgoing + degree.loop,
+                    assertEquals( group.totalCount(), degree.incoming + degree.outgoing,
                             "node #" + node.nodeReference() + " all = incoming + outgoing - loop"
                     );
                 }
@@ -182,7 +172,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when - traversing from start to end
             read.singleNode( start, node );
             assertTrue( node.next(), "access start node" );
-            node.relationships( group );
+            node.relationshipGroups( group );
             assertTrue( group.next(), "access relationship group" );
             group.outgoing( relationship );
             assertTrue( relationship.next(), "access outgoing relationships" );
@@ -201,15 +191,13 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
             group.incoming( relationship );
             assertFalse( relationship.next(), "no incoming relationships" );
-            group.loops( relationship );
-            assertFalse( relationship.next(), "no loop relationships" );
 
             assertFalse( group.next(), "only a single group" );
 
             // when - traversing from end to start
             read.singleNode( end, node );
             assertTrue( node.next(), "access start node" );
-            node.relationships( group );
+            node.relationshipGroups( group );
             assertTrue( group.next(), "access relationship group" );
             group.incoming( relationship );
             assertTrue( relationship.next(), "access incoming relationships" );
@@ -228,8 +216,6 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
             group.outgoing( relationship );
             assertFalse( relationship.next(), "no outgoing relationships" );
-            group.loops( relationship );
-            assertFalse( relationship.next(), "no loop relationships" );
 
             assertFalse( group.next(), "only a single group" );
         }
@@ -254,25 +240,13 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     @Test
     void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( sparse, false );
+        traverseViaGroups( sparse );
     }
 
     @Test
     void shouldTraverseDenseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( dense, false );
-    }
-
-    @Test
-    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( sparse, true );
-    }
-
-    @Test
-    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( dense, true );
+        traverseViaGroups( dense );
     }
 
     @Test
@@ -303,7 +277,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         traverseWithoutGroups( dense, true );
     }
 
-    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws KernelException
+    private void traverseViaGroups( RelationshipTestSupport.StartNode start ) throws KernelException
     {
         // given
         Map<String,Integer> expectedCounts = start.expectedCounts();
@@ -315,52 +289,19 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when
             read.singleNode( start.id, node );
             assertTrue( node.next(), "access node" );
-            if ( detached )
-            {
-                read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
-            }
-            else
-            {
-                node.relationships( group );
-            }
+            node.relationshipGroups( group );
 
             while ( group.next() )
             {
                 // outgoing
-                if ( detached )
-                {
-                    read.relationships( start.id, group.outgoingReference(), relationship );
-                }
-                else
-                {
-                    group.outgoing( relationship );
-                }
+                group.outgoing( relationship );
                 // then
                 assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
 
                 // incoming
-                if ( detached )
-                {
-                    read.relationships( start.id, group.incomingReference(), relationship );
-                }
-                else
-                {
-                    group.incoming( relationship );
-                }
+                group.incoming( relationship );
                 // then
                 assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
-
-                // loops
-                if ( detached )
-                {
-                    read.relationships( start.id, group.loopsReference(), relationship );
-                }
-                else
-                {
-                    group.loops( relationship );
-                }
-                // then
-                assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
             }
         }
     }
@@ -378,11 +319,11 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
             if ( detached )
             {
-                read.relationships( start.id, node.allRelationshipsReference(), relationship );
+                read.relationships( start.id, node.relationshipsReference(), relationship );
             }
             else
             {
-                node.allRelationships( relationship );
+                node.relationships( relationship, ALL_RELATIONSHIPS );
             }
 
             Map<String,Integer> counts = count( tx, relationship );
@@ -394,6 +335,6 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
     private static class Sizes
     {
-        int incoming, outgoing, loop;
+        int incoming, outgoing;
     }
 }

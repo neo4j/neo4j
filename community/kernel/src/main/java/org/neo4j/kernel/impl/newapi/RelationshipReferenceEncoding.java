@@ -58,16 +58,7 @@ enum RelationshipReferenceEncoding
     SELECTION( 2 ),
 
     /** @see #encodeDenseSelection(long)   */
-    DENSE_SELECTION( 3 ),
-
-    /** @see #encodeNoOutgoing(int) */
-    NO_OUTGOING_OF_TYPE( 4 ),
-
-    /** @see #encodeNoIncoming(int) */
-    NO_INCOMING_OF_TYPE( 5 ),
-
-    /** @see #encodeNoLoops(int) */
-    NO_LOOPS_OF_TYPE( 6 );
+    DENSE_SELECTION( 3 );
 
     private static final RelationshipReferenceEncoding[] ENCODINGS = RelationshipReferenceEncoding.values();
     static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
@@ -119,30 +110,6 @@ enum RelationshipReferenceEncoding
     static long encodeDenseSelection( long reference )
     {
         return reference | DENSE_SELECTION.bits | FLAG_MARKER;
-    }
-
-    /**
-     * Encode that no outgoing relationships of the encoded type exist.
-     */
-    static long encodeNoOutgoing( int type )
-    {
-        return type | NO_OUTGOING_OF_TYPE.bits | FLAG_MARKER;
-    }
-
-    /**
-     * Encode that no incoming relationships of the encoded type exist.
-     */
-    static long encodeNoIncoming( int type )
-    {
-        return type | NO_INCOMING_OF_TYPE.bits | FLAG_MARKER;
-    }
-
-    /**
-     * Encode that no loop relationships of the encoded type exist.
-     */
-    static long encodeNoLoops( int type )
-    {
-        return type | NO_LOOPS_OF_TYPE.bits | FLAG_MARKER;
     }
 
     /**

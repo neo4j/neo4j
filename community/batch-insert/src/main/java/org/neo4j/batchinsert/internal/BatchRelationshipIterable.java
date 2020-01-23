@@ -28,6 +28,8 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
@@ -44,7 +46,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         {
             throw new NotFoundException( "Node " + nodeId + " not found" );
         }
-        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference(), nodeCursor.isDense() );
+        relationshipCursor.init( nodeId, nodeCursor.relationshipsReference(), nodeCursor.isDense(), ALL_RELATIONSHIPS );
     }
 
     @Override

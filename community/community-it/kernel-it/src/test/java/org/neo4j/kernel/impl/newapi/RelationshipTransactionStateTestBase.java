@@ -60,6 +60,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.sparse;
 import static org.neo4j.kernel.impl.newapi.RelationshipTransactionStateTestBase.RelationshipDirection.IN;
 import static org.neo4j.kernel.impl.newapi.RelationshipTransactionStateTestBase.RelationshipDirection.LOOP;
 import static org.neo4j.kernel.impl.newapi.RelationshipTransactionStateTestBase.RelationshipDirection.OUT;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -218,7 +219,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
 
-                node.allRelationships( relationship );
+                node.relationships( relationship, ALL_RELATIONSHIPS );
                 assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
@@ -252,7 +253,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
 
-                node.allRelationships( relationship );
+                node.relationships( relationship, ALL_RELATIONSHIPS );
                 assertFalse( relationship.next(), "should not find relationship" );
             }
             tx.commit();
@@ -280,7 +281,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
 
-                node.allRelationships( relationship );
+                node.relationships( relationship, ALL_RELATIONSHIPS );
                 assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
@@ -316,30 +317,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void shouldTraverseSparseNodeViaGroups() throws Exception
-    {
-        traverseViaGroups( sparse( graphDb ), false );
-    }
-
-    @Test
-    void shouldTraverseDenseNodeViaGroups() throws Exception
-    {
-        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), false );
-    }
-
-    @Test
-    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( sparse( graphDb ), true );
-    }
-
-    @Test
-    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
-    }
-
-    @Test
     void shouldSeeNewRelationshipPropertyInTransaction() throws Exception
     {
         try ( KernelTransaction tx = beginTransaction() )
@@ -361,7 +338,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
-                node.allRelationships( relationship );
+                node.relationships( relationship, ALL_RELATIONSHIPS );
 
                 assertTrue( relationship.next(), "should access relationship" );
 
@@ -647,7 +624,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             assertEquals( 101, group.outgoingCount() );
             assertEquals( 0, group.incomingCount() );
-            assertEquals( 0, group.loopCount() );
             assertEquals( 101, group.totalCount() );
         } );
         //sparse outgoing
@@ -655,7 +631,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             assertEquals( 2, group.outgoingCount() );
             assertEquals( 0, group.incomingCount() );
-            assertEquals( 0, group.loopCount() );
             assertEquals( 2, group.totalCount() );
         } );
         //dense incoming
@@ -671,24 +646,21 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             assertEquals( 0, group.outgoingCount() );
             assertEquals( 2, group.incomingCount() );
-            assertEquals( 0, group.loopCount() );
             assertEquals( 2, group.totalCount() );
         } );
 
         //dense loops
         assertCount( 100, LOOP, group ->
         {
-            assertEquals( 0, group.incomingCount() );
-            assertEquals( 0, group.outgoingCount() );
-            assertEquals( 101, group.loopCount() );
+            assertEquals( 101, group.incomingCount() );
+            assertEquals( 101, group.outgoingCount() );
             assertEquals( 101, group.totalCount() );
         } );
         //sparse loops
         assertCount( 1, LOOP, group ->
         {
-            assertEquals( 0, group.outgoingCount() );
-            assertEquals( 0, group.incomingCount() );
-            assertEquals( 2, group.loopCount() );
+            assertEquals( 2, group.outgoingCount() );
+            assertEquals( 2, group.incomingCount() );
             assertEquals( 2, group.totalCount() );
         } );
     }
@@ -714,7 +686,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 while ( group.next() )
                 {
@@ -723,7 +695,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 1, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, out );
                         assertNoRelationships( IN, group, traversal );
                         assertNoRelationships( LOOP, group, traversal );
@@ -732,16 +703,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 0, group.outgoingCount() );
                         assertEquals( 2, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( IN, group, traversal, in1, in2 );
                         assertNoRelationships( OUT, group, traversal );
                         assertNoRelationships( LOOP, group, traversal );
                     }
                     else if ( t == looping )
                     {
-                        assertEquals( 0, group.outgoingCount() );
-                        assertEquals( 0, group.incomingCount() );
-                        assertEquals( 1, group.loopCount() );
+                        assertEquals( 1, group.outgoingCount() );
+                        assertEquals( 1, group.incomingCount() );
                         assertRelationships( LOOP, group, traversal, loop );
                         assertNoRelationships( OUT, group, traversal );
                         assertNoRelationships( IN, group, traversal );
@@ -782,13 +751,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 assertTrue( group.next() );
                 assertEquals( type, group.type() );
                 assertEquals( 2, group.outgoingCount() );
                 assertEquals( 0, group.incomingCount() );
-                assertEquals( 0, group.loopCount() );
                 assertRelationships( OUT, group, traversal, newRelationship, existingRelationship );
 
                 assertFalse( group.next() );
@@ -825,7 +793,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 read.singleNode( start, node );
                 assertTrue( node.next() );
                 assertFalse( node.isDense() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 while ( group.next() )
                 {
@@ -834,14 +802,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 1, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, existingRelationship );
                     }
                     else if ( t == two )
                     {
                         assertEquals( 1, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, newRelationship );
 
                     }
@@ -888,7 +854,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 read.singleNode( start, node );
                 assertTrue( node.next() );
                 assertTrue( node.isDense() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 while ( group.next() )
                 {
@@ -897,7 +863,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 1, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, existingRelationship );
 
                     }
@@ -905,14 +870,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 1, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, newRelationship );
                     }
                     else if ( t == bulk )
                     {
                         assertEquals( 100, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                     }
                     else
                     {
@@ -953,13 +916,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 read.singleNode( start, node );
                 assertTrue( node.next() );
                 assertFalse( node.isDense() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 assertTrue( group.next() );
                 assertEquals( type, group.type() );
                 assertEquals( 2, group.outgoingCount() );
                 assertEquals( 0, group.incomingCount() );
-                assertEquals( 0, group.loopCount() );
                 assertRelationships( OUT, group, traversal, newRelationship, existingRelationship );
 
                 assertFalse( group.next() );
@@ -1002,7 +964,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 read.singleNode( start, node );
                 assertTrue( node.next() );
                 assertTrue( node.isDense() );
-                node.relationships( group );
+                node.relationshipGroups( group );
 
                 while ( group.next() )
                 {
@@ -1011,7 +973,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     {
                         assertEquals( 2, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                         assertRelationships( OUT, group, traversal, existingRelationship, newRelationship );
 
                     }
@@ -1020,7 +981,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                         assertEquals( bulk, group.type() );
                         assertEquals( 100, group.outgoingCount() );
                         assertEquals( 0, group.incomingCount() );
-                        assertEquals( 0, group.loopCount() );
                     }
                     else
                     {
@@ -1146,9 +1106,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         case IN:
             group.incoming( traversal );
             break;
-        case LOOP:
-            group.loops( traversal );
-            break;
         default:
             throw new AssertionError( "Where is your god now!" );
         }
@@ -1177,10 +1134,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             group.incoming( traversal );
             assertFalse( traversal.next() );
             break;
-        case LOOP:
-            group.loops( traversal );
-            assertFalse( traversal.next() );
-            break;
         default:
             throw new AssertionError( "Where is your god now!" );
         }
@@ -1202,11 +1155,11 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
-                    tx.dataRead().relationships( start.id, node.allRelationshipsReference(), relationship );
+                    tx.dataRead().relationships( start.id, node.relationshipsReference(), relationship );
                 }
                 else
                 {
-                    node.allRelationships( relationship );
+                    node.relationships( relationship, ALL_RELATIONSHIPS );
                 }
 
                 Map<String,Integer> counts = count( tx, relationship );
@@ -1216,75 +1169,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             }
 
             tx.rollback();
-        }
-    }
-
-    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
-    {
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            org.neo4j.internal.kernel.api.Read read = tx.dataRead();
-            Map<String,Integer> expectedCounts = modifyStartNodeRelationships( start, tx );
-
-            // given
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
-                  RelationshipGroupCursor group = tx.cursors().allocateRelationshipGroupCursor( NULL );
-                  RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
-            {
-                // when
-                read.singleNode( start.id, node );
-                assertTrue( node.next(), "access node" );
-                if ( detached )
-                {
-                    read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
-                }
-                else
-                {
-                    node.relationships( group );
-                }
-
-                while ( group.next() )
-                {
-                    // outgoing
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.outgoingReference(), relationship );
-                    }
-                    else
-                    {
-                        group.outgoing( relationship );
-                    }
-                    // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
-
-                    // incoming
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.incomingReference(), relationship );
-                    }
-                    else
-                    {
-                        group.incoming( relationship );
-                    }
-                    // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
-
-                    // loops
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.loopsReference(), relationship );
-                    }
-                    else
-                    {
-                        group.loops( relationship );
-                    }
-                    // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
-                }
-            }
         }
     }
 
@@ -1520,7 +1404,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                node.relationships( group );
+                node.relationshipGroups( group );
                 assertTrue( group.next() );
                 asserter.accept( group );
             }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.storageengine.api.RelationshipSelection;
+
 /**
  * Cursor for scanning nodes.
  */
@@ -32,15 +34,13 @@ public interface NodeCursor extends Cursor
 
     boolean hasLabel( int label );
 
-    void relationships( RelationshipGroupCursor cursor );
+    void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
 
-    void allRelationships( RelationshipTraversalCursor relationships );
+    void relationshipGroups( RelationshipGroupCursor groupCursor );
 
     void properties( PropertyCursor cursor );
 
-    long relationshipGroupReference();
-
-    long allRelationshipsReference();
+    long relationshipsReference();
 
     long propertiesReference();
 

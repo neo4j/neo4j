@@ -1007,7 +1007,7 @@ object TransactionBoundQueryContext {
     }
   }
 
-  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator with AutoCloseable {
+  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends RelationshipIterator with AutoCloseable {
 
     import RelationshipCursorIterator.{NOT_INITIALIZED, NO_ID}
 

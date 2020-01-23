@@ -37,4 +37,123 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
     long otherNodeReference();
 
     long originNodeReference();
+
+    RelationshipTraversalCursor EMPTY = new RelationshipTraversalCursor()
+    {
+        @Override
+        public void otherNode( NodeCursor cursor )
+        {
+        }
+
+        @Override
+        public long otherNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long originNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void setTracer( KernelReadTracer tracer )
+        {
+        }
+
+        @Override
+        public void removeTracer()
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public void closeInternal()
+        {
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return true;
+        }
+
+        @Override
+        public void setCloseListener( CloseListener closeListener )
+        {
+        }
+
+        @Override
+        public CloseListener getCloseListener()
+        {
+            return null;
+        }
+
+        @Override
+        public void setToken( int token )
+        {
+        }
+
+        @Override
+        public int getToken()
+        {
+            return -1;
+        }
+
+        @Override
+        public long relationshipReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public int type()
+        {
+            return -1;
+        }
+
+        @Override
+        public void source( NodeCursor cursor )
+        {
+        }
+
+        @Override
+        public void target( NodeCursor cursor )
+        {
+        }
+
+        @Override
+        public void properties( PropertyCursor cursor )
+        {
+        }
+
+        @Override
+        public long sourceNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long targetNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long propertiesReference()
+        {
+            return -1;
+        }
+    };
 }

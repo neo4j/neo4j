@@ -82,19 +82,19 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
     @Override
     public int outgoingCount()
     {
-        return groups[offset].countOut;
+        return groups[offset].countOut + groups[offset].countLoop;
     }
 
     @Override
     public int incomingCount()
     {
-        return groups[offset].countIn;
+        return groups[offset].countIn + groups[offset].countLoop;
     }
 
     @Override
-    public int loopCount()
+    public int totalCount()
     {
-        return groups[offset].countLoop;
+        return groups[offset].countOut + groups[offset].countIn + groups[offset].countLoop;
     }
 
     @Override
@@ -107,30 +107,6 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
     public void incoming( RelationshipTraversalCursor cursor )
     {
         ((StubRelationshipCursor) cursor).read( groups[offset].in );
-    }
-
-    @Override
-    public void loops( RelationshipTraversalCursor cursor )
-    {
-        ((StubRelationshipCursor) cursor).read( groups[offset].loop );
-    }
-
-    @Override
-    public long outgoingReference()
-    {
-        return groups[offset].out;
-    }
-
-    @Override
-    public long incomingReference()
-    {
-        return groups[offset].in;
-    }
-
-    @Override
-    public long loopsReference()
-    {
-        return groups[offset].loop;
     }
 
     @Override

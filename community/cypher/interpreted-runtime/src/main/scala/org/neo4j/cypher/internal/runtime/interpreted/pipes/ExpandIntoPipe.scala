@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
-import org.neo4j.internal.kernel.api.helpers.{CachingExpandInto, RelationshipSelectionCursor}
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
@@ -93,7 +94,7 @@ case class ExpandIntoPipe(source: Pipe,
 
 object ExpandIntoPipe {
 
-  def relationshipIterator(cursor: RelationshipSelectionCursor,
+  def relationshipIterator(cursor: RelationshipTraversalCursor,
                            query: QueryContext): Iterator[RelationshipValue] = {
     new CursorIterator[RelationshipValue] {
 

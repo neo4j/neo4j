@@ -58,6 +58,7 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipGroup;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -210,7 +211,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             cursor.setTracer( tracer );
             tx.dataRead().singleNode( n1, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.allRelationships( cursor );
+            nodeCursor.relationships( cursor, ALL_RELATIONSHIPS );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( r ) );
@@ -238,7 +239,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             cursor.setTracer( tracer );
             tx.dataRead().singleNode( n1, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.relationships( cursor );
+            nodeCursor.relationshipGroups( cursor );
 
             assertTrue( cursor.next() );
             int expectedType = cursor.type();

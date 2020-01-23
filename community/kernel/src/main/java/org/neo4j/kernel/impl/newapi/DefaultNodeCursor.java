@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
@@ -176,15 +177,15 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public void relationships( RelationshipGroupCursor cursor )
+    public void relationships( RelationshipTraversalCursor cursor, RelationshipSelection selection )
     {
-        ((DefaultRelationshipGroupCursor) cursor).init( nodeReference(), relationshipGroupReferenceWithoutFlags(), isDense(), read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), relationshipsReferenceWithoutFlags(), isDense(), selection, read );
     }
 
     @Override
-    public void allRelationships( RelationshipTraversalCursor cursor )
+    public void relationshipGroups( RelationshipGroupCursor groupCursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), allRelationshipsReferenceWithoutFlags(), isDense(), read );
+        ((DefaultRelationshipGroupCursor) groupCursor).init( nodeReference(), relationshipsReferenceWithoutFlags(), isDense(), read );
     }
 
     @Override
@@ -194,29 +195,16 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public long relationshipGroupReference()
+    public long relationshipsReference()
     {
-        long reference = relationshipGroupReferenceWithoutFlags();
+        long reference = relationshipsReferenceWithoutFlags();
         // Mark reference with special flags since this reference will leave some context behind when returned
         return isDense() ? encodeDense( reference ) : reference;
     }
 
-    private long relationshipGroupReferenceWithoutFlags()
+    private long relationshipsReferenceWithoutFlags()
     {
-        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipGroupReference();
-    }
-
-    @Override
-    public long allRelationshipsReference()
-    {
-        long reference = allRelationshipsReferenceWithoutFlags();
-        // Mark reference with special flags since this reference will leave some context behind when returned
-        return isDense() ? encodeDense( reference ) : reference;
-    }
-
-    private long allRelationshipsReferenceWithoutFlags()
-    {
-        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.allRelationshipsReference();
+        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipsReference();
     }
 
     @Override

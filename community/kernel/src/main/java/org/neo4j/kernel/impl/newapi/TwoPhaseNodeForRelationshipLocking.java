@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -74,7 +74,8 @@ class TwoPhaseNodeForRelationshipLocking
             //if the node is not there, someone else probably deleted it, just ignore
             if ( nodes.next() )
             {
-                try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
+                try ( RelationshipTraversalCursor rels =
+                        RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
                 {
                     boolean first = true;
                     while ( rels.next() && !retry )
@@ -100,7 +101,7 @@ class TwoPhaseNodeForRelationshipLocking
             this.sortedNodeIds = EMPTY;
             return;
         }
-        try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
+        try ( RelationshipTraversalCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
         {
             while ( rels.next() )
             {

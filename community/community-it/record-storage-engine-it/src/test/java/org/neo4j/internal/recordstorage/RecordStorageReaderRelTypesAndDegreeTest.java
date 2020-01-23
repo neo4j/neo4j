@@ -243,7 +243,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         int degree = 0;
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
-            groups.init( cursor.entityReference(), cursor.relationshipGroupReference(), cursor.isDense() );
+            cursor.relationshipGroups( groups );
             while ( groups.next() )
             {
                 if ( relType == ANY_RELATIONSHIP_TYPE || relType == groups.type() )
@@ -251,13 +251,13 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
                     switch ( direction )
                     {
                     case OUTGOING:
-                        degree += groups.outgoingCount() + groups.loopCount();
+                        degree += groups.outgoingCount();
                         break;
                     case INCOMING:
-                        degree += groups.incomingCount() + groups.loopCount();
+                        degree += groups.incomingCount();
                         break;
                     case LOOP:
-                        degree += groups.outgoingCount() + groups.incomingCount() + groups.loopCount();
+                        degree += groups.totalCount();
                         break;
                     default:
                         throw new IllegalArgumentException( direction.name() );
@@ -397,7 +397,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         Set<TestRelType> types = new HashSet<>();
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
-            groups.init( cursor.entityReference(), cursor.relationshipGroupReference(), cursor.isDense() );
+            cursor.relationshipGroups( groups );
             while ( groups.next() )
             {
                 types.add( relTypeForId( groups.type() ) );
@@ -491,10 +491,10 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         Set<TestDegreeItem> degrees = new HashSet<>();
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor( NULL ) )
         {
-            groups.init( nodeCursor.entityReference(), nodeCursor.relationshipGroupReference(), nodeCursor.isDense() );
+            nodeCursor.relationshipGroups( groups );
             while ( groups.next() )
             {
-                degrees.add( new TestDegreeItem( groups.type(), groups.outgoingCount() + groups.loopCount(), groups.incomingCount() + groups.loopCount() ) );
+                degrees.add( new TestDegreeItem( groups.type(), groups.outgoingCount(), groups.incomingCount() ) );
             }
         }
         return degrees;

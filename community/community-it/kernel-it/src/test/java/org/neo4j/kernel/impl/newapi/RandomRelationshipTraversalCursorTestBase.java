@@ -87,7 +87,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                 long nodeId = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
                 read.singleNode( nodeId, node );
                 assertTrue( node.next(), "access root node" );
-                node.relationships( group );
+                node.relationshipGroups( group );
                 assertFalse( node.next(), "single root" );
 
                 // then
@@ -103,12 +103,6 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                     while ( relationship.next() )
                     {
                         assertEquals( nodeId, relationship.originNodeReference(), "outgoing origin");
-                        relationship.otherNode( node );
-                    }
-                    group.loops( relationship );
-                    while ( relationship.next() )
-                    {
-                        assertEquals( nodeId, relationship.originNodeReference(), "loop origin" );
                         relationship.otherNode( node );
                     }
                 }
