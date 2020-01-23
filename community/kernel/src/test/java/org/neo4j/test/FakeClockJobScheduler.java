@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
+import org.neo4j.scheduler.ExtendedExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -117,9 +118,9 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public Executor executor( Group group )
+    public ExtendedExecutor executor( Group group )
     {
-        return job -> schedule( job, now() );
+        return new FakeClockExecutor();
     }
 
     @Override
@@ -215,7 +216,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         shutdown();
     }
 
-    class JobTrigger<T> implements JobHandle<T>
+    class JobTrigger<T> implements JobHandle<T>, Future<T>
     {
         private final long id = jobIdGen.incrementAndGet();
         private final Runnable runnable;
@@ -275,7 +276,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         @Override
         public void cancel()
         {
-            jobs.remove( this );
+            cancel( true );
         }
 
         @Override
@@ -291,7 +292,31 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
+        public boolean cancel( boolean mayInterruptIfRunning )
+        {
+            return jobs.remove( this );
+        }
+
+        @Override
+        public boolean isCancelled()
+        {
+            return !jobs.contains( this );
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public T get()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public T get( long timeout, TimeUnit unit )
         {
             throw new UnsupportedOperationException();
         }
@@ -315,6 +340,21 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         public int hashCode()
         {
             return Objects.hash( id );
+        }
+    }
+
+    private class FakeClockExecutor implements ExtendedExecutor
+    {
+        @Override
+        public <T> Future<T> submit( Callable<T> callable )
+        {
+            return schedule( callable, now() );
+        }
+
+        @Override
+        public void execute( Runnable command )
+        {
+            schedule( command, now() );
         }
     }
 }

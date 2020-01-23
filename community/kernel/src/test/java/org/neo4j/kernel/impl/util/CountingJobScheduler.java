@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
+import org.neo4j.scheduler.ExtendedExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -63,7 +63,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public Executor executor( Group group )
+    public ExtendedExecutor executor( Group group )
     {
         return delegate.executor( group );
     }
