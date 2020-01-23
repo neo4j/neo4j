@@ -22,7 +22,7 @@ package org.neo4j.store.watch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
@@ -64,6 +64,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
+@EnabledOnOs( OS.LINUX )
 class FileWatchIT
 {
     @Inject
@@ -90,7 +91,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException
     {
         String fileName = databaseLayout.metadataStore().getName();
@@ -175,7 +175,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void doNotMonitorTransactionLogFiles() throws IOException, InterruptedException
     {
         FileWatcher fileWatcher = getFileWatcher( database );
@@ -201,7 +200,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
         String fileName = databaseLayout.metadataStore().getName();
