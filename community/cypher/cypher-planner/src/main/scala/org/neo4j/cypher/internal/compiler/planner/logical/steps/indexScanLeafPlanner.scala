@@ -139,17 +139,20 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                       predicate: Expression,
                       planProducer: PlanProducer,
                       context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val semanticTable = context.semanticTable
-    val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    if (qg.argumentIds.contains(variableName)) Set.empty
+    else {
+      val semanticTable = context.semanticTable
+      val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
 
-    for (labelPredicate <- labelPredicates.getOrElse(variableName, Set.empty);
-         labelName <- labelPredicate.labels;
-         labelId <- semanticTable.id(labelName);
-         indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
-         )
-      yield {
-        produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, labelPredicate, labelName, labelId, indexDescriptor)
-      }
+      for (labelPredicate <- labelPredicates.getOrElse(variableName, Set.empty);
+           labelName <- labelPredicate.labels;
+           labelId <- semanticTable.id(labelName);
+           indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
+           )
+        yield {
+          produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, labelPredicate, labelName, labelId, indexDescriptor)
+        }
+    }
   }
 
   private def produceForConstraintOrAggregation(variableName: String,

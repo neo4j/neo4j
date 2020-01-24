@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
@@ -31,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.duration.DurationInt
@@ -204,4 +207,25 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     Await.result(futurePlan, 1.minutes)
   }
+
+  test("should not plan index scan if predicate variable is an argument") {
+    val plan =
+      new given {
+        indexOn("Label", "prop")
+      } getLogicalPlanFor
+        """
+           |MATCH (a: Label {prop: $param})
+           |MATCH (b)
+           |WHERE (a:Label {prop: $param})-[]-(b)
+           |RETURN a
+           |""".stripMargin
+
+    plan._2 should beLike {
+      case SemiApply(
+             CartesianProduct(_: NodeIndexSeek, _: AllNodesScan),
+             Expand(
+               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
+    }
+  }
+
 }
