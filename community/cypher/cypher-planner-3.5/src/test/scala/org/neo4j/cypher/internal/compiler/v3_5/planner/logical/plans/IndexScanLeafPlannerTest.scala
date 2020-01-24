@@ -507,6 +507,51 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
+  test("does not plan index scans for arguments for: n.prop = <value>") {
+    new given {
+      qg = queryGraph(eqPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does not plan index contains scan for arguments") {
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does not plan index ends with scan for arguments") {
+    new given {
+      qg = queryGraph(endsWithPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
       selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),

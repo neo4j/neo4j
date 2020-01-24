@@ -96,29 +96,32 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                       predicate: Expression,
                       planProducer: PlanProducer,
                       context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val semanticTable = context.semanticTable
-    val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
-    val idName = variableName
+    if (qg.argumentIds.contains(variableName)) Set.empty
+    else {
+      val semanticTable = context.semanticTable
+      val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+      val idName = variableName
 
-    for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
-         labelName <- labelPredicate.labels;
-         labelId <- semanticTable.id(labelName);
-         indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
-    )
-      yield {
-        val hint = qg.hints.collectFirst {
-          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
-            if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
+      for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
+           labelName <- labelPredicate.labels;
+           labelId <- semanticTable.id(labelName);
+           indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
+           )
+        yield {
+          val hint = qg.hints.collectFirst {
+            case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
+              if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
+          }
+          // Index scan is always on just one property
+          val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
+          val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
+          val orderColumnName = s"$variableName.${property.propertyKey.name}"
+          val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq((orderColumnName, propertyType)), indexDescriptor.orderCapability)
+
+          val labelToken = LabelToken(labelName, labelId)
+          val predicates = Seq(predicate, labelPredicate)
+          planProducer(idName, labelToken, indexProperty, predicates, hint, qg.argumentIds, providedOrder)
         }
-        // Index scan is always on just one property
-        val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
-        val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
-        val orderColumnName =  s"$variableName.${property.propertyKey.name}"
-        val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq((orderColumnName, propertyType)), indexDescriptor.orderCapability)
-
-        val labelToken = LabelToken(labelName, labelId)
-        val predicates = Seq(predicate, labelPredicate)
-        planProducer(idName, labelToken, indexProperty, predicates, hint, qg.argumentIds, providedOrder)
-      }
+    }
   }
 }
