@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +43,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.CancelListener;
+import org.neo4j.scheduler.ExtendedExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
@@ -389,9 +389,9 @@ class CentralJobSchedulerTest
     void schedulerExecutorMustBeOfTypeDefinedByGroup()
     {
         life.start();
-        Executor executor = scheduler.executor( Group.CYPHER_WORKER );
+        ExtendedExecutor.Adaptor executor = (ExtendedExecutor.Adaptor) scheduler.executor( Group.CYPHER_WORKER );
         // The CYPHER_WORKER group configures a ForkJoin pool, so that's what we should get.
-        assertThat( executor ).isInstanceOf( ForkJoinPool.class );
+        assertThat( executor.delegate() ).isInstanceOf( ForkJoinPool.class );
     }
 
     @Test

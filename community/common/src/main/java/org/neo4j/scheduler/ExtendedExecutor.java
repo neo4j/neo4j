@@ -24,6 +24,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.neo4j.util.VisibleForTesting;
+
 /**
  * Extends {@link Executor} to make it more similar to {@link ExecutorService} but without possibility to shut down.
  */
@@ -53,6 +55,12 @@ public interface ExtendedExecutor extends Executor
         public void execute( Runnable command )
         {
             executorService.submit( command );
+        }
+
+        @VisibleForTesting
+        public Object delegate()
+        {
+            return executorService;
         }
     }
 }
