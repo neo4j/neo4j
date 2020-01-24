@@ -39,7 +39,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.concurrent.AsyncEvents;
 
-import static org.apache.commons.lang.StringUtils.defaultString;
+import static org.apache.commons.lang3.StringUtils.defaultString;
 
 public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor
 {

@@ -1293,24 +1293,6 @@
         <version>1.2</version>
       </dependency>
       <dependency>
-        <groupId>commons-configuration</groupId>
-        <artifactId>commons-configuration</artifactId>
-        <version>1.10</version>
-        <type>jar</type>
-        <scope>compile</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>commons-digester</groupId>
-            <artifactId>commons-digester</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <!-- Added (directly) to avoid version clash in commons-configuration. -->
-      <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-digester3</artifactId>
         <version>3.2</version>

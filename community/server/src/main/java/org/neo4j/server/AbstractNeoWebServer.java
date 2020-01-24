@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
