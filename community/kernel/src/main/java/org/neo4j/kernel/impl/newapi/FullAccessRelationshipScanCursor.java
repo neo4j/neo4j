@@ -30,7 +30,7 @@ public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCur
     }
 
     @Override
-    final protected boolean allowed()
+    protected final boolean allowed()
     {
         return true;
     }
