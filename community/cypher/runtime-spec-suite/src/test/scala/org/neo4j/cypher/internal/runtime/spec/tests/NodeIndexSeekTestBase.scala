@@ -565,6 +565,143 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withRows(rowCount(5))
   }
 
+  test("should seek nodes with multiple less than bounds") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(1 > prop < 2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.zipWithIndex.filter{ case (_, i) => i < 1 }.map(_._1)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should seek nodes with multiple less than bounds with different types") {
+    given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(1 > prop < 'foo')")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should seek nodes with multiple less than bounds one inclusive") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(2 >= prop < 2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.zipWithIndex.filter{ case (_, i) => i < 2 }.map(_._1)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+
+  test("should seek nodes with multiple greater than bounds") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(1 < prop > 2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.zipWithIndex.filter{ case (_, i) => i > 2 }.map(_._1)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should seek nodes with multiple greater than bounds with different types") {
+    given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(1 < prop > 'foo')")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should seek nodes with multiple greater than bounds one inclusive") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodeGraph(5, "Honey")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(2 <= prop > 2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.zipWithIndex.filter{ case (_, i) => i > 2 }.map(_._1)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
   test("should seek nodes of a unique index with a property") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
