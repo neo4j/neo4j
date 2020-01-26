@@ -44,12 +44,12 @@ class KernelAPIParallelTraversalStressIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Kernel kernel;
 
     @Test
     void shouldScanNodesAndTraverseInParallel() throws Throwable
     {
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-
         createRandomGraph( kernel );
 
         KernelAPIParallelStress.parallelStressInTx( kernel, N_THREADS, NodeAndTraverseCursors::new, KernelAPIParallelTraversalStressIT::scanAndTraverse );

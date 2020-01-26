@@ -49,13 +49,12 @@ class KernelSchemaStateFlushingTest
 {
     @Inject
     private GraphDatabaseAPI db;
-
+    @Inject
     private Kernel kernel;
 
     @BeforeEach
     void setup() throws KernelException
     {
-        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         try ( KernelTransaction transaction = beginTransaction() )
         {
             // Make sure that a label token with id 1, and a property key token, also with id 1, both exists.

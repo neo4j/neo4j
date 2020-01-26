@@ -44,6 +44,8 @@ class DropBrokenUniquenessConstraintIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     @Test
     void shouldDropUniquenessConstraintWithBackingIndexNotInUse()
@@ -56,7 +58,6 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         schemaRules.indexesGetAll().forEachRemaining( schemaRules::deleteSchemaRule );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
@@ -86,7 +87,6 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         writeSchemaRulesWithoutConstraint( schemaRules );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
@@ -116,7 +116,6 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         schemaRules.constraintsGetAllIgnoreMalformed().forEachRemaining( schemaRules::deleteSchemaRule );
 
@@ -149,7 +148,6 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         schemaRules.constraintsGetAllIgnoreMalformed().forEachRemaining( schemaRules::deleteSchemaRule );
         writeSchemaRulesWithoutConstraint( schemaRules );

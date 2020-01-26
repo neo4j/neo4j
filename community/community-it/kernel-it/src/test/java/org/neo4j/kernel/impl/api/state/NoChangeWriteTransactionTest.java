@@ -37,14 +37,15 @@ class NoChangeWriteTransactionTest
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private TransactionIdStore transactionIdStore;
 
     @Test
     void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
-        TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-        long startTxId = txIdStore.getLastCommittedTransactionId();
+        long startTxId = transactionIdStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
         try ( Transaction tx = db.beginTx() )
         {
@@ -55,7 +56,7 @@ class NoChangeWriteTransactionTest
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
-        assertEquals( startTxId + 2, txIdStore.getLastCommittedTransactionId(),
+        assertEquals( startTxId + 2, transactionIdStore.getLastCommittedTransactionId(),
                 "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)" );
     }
 

@@ -51,6 +51,8 @@ class SchemaLoggingIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private IndexProviderMap indexProviderMap;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -71,7 +73,6 @@ class SchemaLoggingIT
         createIndex( db, labelName, property );
 
         // then
-        IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
         assertThat( logProvider ).forLevel( INFO )

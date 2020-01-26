@@ -50,6 +50,8 @@ class PropertyStoreTraceIT
 {
     @Inject
     private GraphDatabaseAPI database;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -76,7 +78,6 @@ class PropertyStoreTraceIT
     @Test
     void tracePageCacheAccessOnPropertyBlockIdGeneration()
     {
-        var storageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         var propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
         prepareIdGenerator( propertyStore.getStringStore().getIdGenerator() );
         var pageCacheTracer = new DefaultPageCacheTracer();

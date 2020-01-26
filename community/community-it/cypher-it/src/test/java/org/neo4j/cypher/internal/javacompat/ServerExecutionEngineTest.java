@@ -46,18 +46,18 @@ class ServerExecutionEngineTest
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private QueryExecutionEngine executionEngine;
+    @Inject
+    private KernelTransactionFactory transactionFactory;
 
     @Test
     void shouldCloseResourcesInCancel() throws Exception
     {
         // GIVEN
-        DependencyResolver resolver = db.getDependencyResolver();
-        QueryExecutionEngine engine = resolver
-                                          .resolveDependency( QueryExecutionEngine.class );
-        KernelTransactionFactory transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> resolver
-                                                                                                      .resolveDependency( GraphDatabaseQueryService.class ),
-                                                                                              transactionFactory );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> db.getDependencyResolver()
+                                                                                                    .resolveDependency( GraphDatabaseQueryService.class ),
+                                                                                                    transactionFactory );
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 
@@ -67,7 +67,7 @@ class ServerExecutionEngineTest
             tx.createNode();
 
             TransactionalContext context = contextFactory.newContext( tx, query, MapValue.EMPTY );
-            QueryExecution execution = engine.executeQuery( query,
+            QueryExecution execution = executionEngine.executeQuery( query,
                                                             MapValue.EMPTY,
                                                             context,
                                                             false,
@@ -81,12 +81,8 @@ class ServerExecutionEngineTest
     @Test
     void shouldDetectPeriodicCommitQueries()
     {
-        // GIVEN
-        QueryExecutionEngine engine = db.getDependencyResolver()
-                                          .resolveDependency( QueryExecutionEngine.class );
-
         // WHEN
-        boolean result = engine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
+        boolean result = executionEngine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
 
         // THEN
         assertTrue( result, "Did not detect periodic commit query" );
@@ -95,12 +91,8 @@ class ServerExecutionEngineTest
     @Test
     void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
     {
-        // GIVEN
-        QueryExecutionEngine engine = db.getDependencyResolver()
-                                          .resolveDependency( QueryExecutionEngine.class );
-
         // WHEN
-        boolean result = engine.isPeriodicCommit("CREATE ()");
+        boolean result = executionEngine.isPeriodicCommit("CREATE ()");
 
         // THEN
         assertFalse( result, "Did detect non-periodic commit query as periodic commit query" );
@@ -109,12 +101,8 @@ class ServerExecutionEngineTest
     @Test
     void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
     {
-        // GIVEN
-        QueryExecutionEngine engine = db.getDependencyResolver()
-                                          .resolveDependency( QueryExecutionEngine.class );
-
         // WHEN
-        boolean result = engine.isPeriodicCommit("MATCH n RETURN m");
+        boolean result = executionEngine.isPeriodicCommit("MATCH n RETURN m");
 
         // THEN
         assertFalse( result, "Did detect an invalid query as periodic commit query" );

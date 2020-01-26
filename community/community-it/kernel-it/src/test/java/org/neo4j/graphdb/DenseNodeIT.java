@@ -37,6 +37,8 @@ class DenseNodeIT
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Config config;
 
     @Test
     void testBringingNodeOverDenseThresholdIsConsistent()
@@ -246,8 +248,7 @@ class DenseNodeIT
 
     private int denseNodeThreshold( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver()
-                .resolveDependency( Config.class ).get( GraphDatabaseSettings.dense_node_threshold );
+        return config.get( GraphDatabaseSettings.dense_node_threshold );
     }
 
     private void deleteRelationshipsFromNode( Node root, int numberOfRelationships )

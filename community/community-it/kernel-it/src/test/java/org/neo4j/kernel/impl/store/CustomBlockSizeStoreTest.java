@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CustomBlockSizeStoreTest
 {
     @Inject
-    private GraphDatabaseAPI databaseAPI;
+    private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -48,7 +48,7 @@ public class CustomBlockSizeStoreTest
     @Test
     public void testSetBlockSize()
     {
-        var neoStores = databaseAPI.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        var neoStores = storageEngine.testAccessNeoStores();
         final PropertyStore propertyStore = neoStores.getPropertyStore();
         assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE, propertyStore.getStringStore().getRecordSize() );
         assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE, propertyStore.getArrayStore().getRecordSize() );

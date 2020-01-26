@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -37,12 +36,11 @@ import static org.neo4j.kernel.api.security.AnonymousContext.read;
 class NodeScanIT
 {
     @Inject
-    private GraphDatabaseAPI db;
+    private Kernel kernel;
 
     @Test
     void trackPageCacheAccessOnNodeLabelScan() throws TransactionFailureException
     {
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         var testLabel = Label.label( "testLabel" );
         try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, read() ) )
         {

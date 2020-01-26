@@ -57,14 +57,16 @@ class NativeLabelScanStoreStartupIT
     private GraphDatabaseAPI databaseAPI;
     @Inject
     private RandomRule random;
+    @Inject
+    private LabelScanStore labelScanStore;
+    @Inject
+    private RecoveryCleanupWorkCollector workCollector;
 
     private int labelId;
 
     @Test
     void scanStoreStartWithoutExistentIndex() throws Throwable
     {
-        LabelScanStore labelScanStore = getLabelScanStore();
-        RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
         labelScanStore.shutdown();
         workCollector.shutdown();
 
@@ -81,9 +83,6 @@ class NativeLabelScanStoreStartupIT
     @Test
     void scanStoreRecreateCorruptedIndexOnStartup() throws Throwable
     {
-        LabelScanStore labelScanStore = getLabelScanStore();
-        RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
-
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( 1, labels.length, "Label scan store see 1 label for node" );
@@ -100,21 +99,6 @@ class NativeLabelScanStoreStartupIT
 
         long[] rebuildLabels = readNodesForLabel( labelScanStore );
         assertArrayEquals( labels, rebuildLabels, "Store should rebuild corrupted index" );
-    }
-
-    private LabelScanStore getLabelScanStore()
-    {
-        return getDependency( LabelScanStore.class );
-    }
-
-    private RecoveryCleanupWorkCollector getGroupingRecoveryCleanupWorkCollector()
-    {
-        return databaseAPI.getDependencyResolver().resolveDependency( RecoveryCleanupWorkCollector.class );
-    }
-
-    private <T> T getDependency( Class<T> clazz )
-    {
-        return databaseAPI.getDependencyResolver().resolveDependency( clazz );
     }
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )

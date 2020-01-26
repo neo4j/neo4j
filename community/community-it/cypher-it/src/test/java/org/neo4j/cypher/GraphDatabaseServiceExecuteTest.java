@@ -52,6 +52,8 @@ public class GraphDatabaseServiceExecuteTest
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private GlobalProcedures globalProcedures;
 
     @Test
     void shouldExecuteCypher()
@@ -240,8 +242,6 @@ public class GraphDatabaseServiceExecuteTest
     void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        GlobalProcedures globalProcedures =
-                db.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         globalProcedures.registerProcedure( PointProcs.class );
 
         try ( Transaction transaction = db.beginTx() )
@@ -261,8 +261,6 @@ public class GraphDatabaseServiceExecuteTest
     void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        GlobalProcedures globalProcedures =
-                db.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point

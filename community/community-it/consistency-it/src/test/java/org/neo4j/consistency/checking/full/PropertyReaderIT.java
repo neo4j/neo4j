@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -40,6 +39,8 @@ class PropertyReaderIT
 {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     @Test
     void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
@@ -47,7 +48,7 @@ class PropertyReaderIT
         // Create property chain 1 --> 2 --> 3 --> 4
         //                             ↑           │
         //                             └───────────┘
-        PropertyStore propertyStore = getNeoStores().getPropertyStore();
+        PropertyStore propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
         PropertyRecord record = propertyStore.newRecord();
         // 1
         record.setId( 1 );
@@ -67,13 +68,8 @@ class PropertyReaderIT
         propertyStore.updateRecord( record );
 
         // when
-        PropertyReader reader = new PropertyReader( new StoreAccess( getNeoStores() ) );
+        PropertyReader reader = new PropertyReader( new StoreAccess( storageEngine.testAccessNeoStores() ) );
         var e = assertThrows(PropertyReader.CircularPropertyRecordChainException.class, () -> reader.getPropertyRecordChain( 1 ) );
         assertEquals( 4, e.propertyRecordClosingTheCircle().getId() );
-    }
-
-    private NeoStores getNeoStores()
-    {
-        return databaseAPI.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 }

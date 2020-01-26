@@ -52,6 +52,10 @@ class ReadTransactionLogWritingTest
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private LogFiles logFiles;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     private final Label label = label( "Test" );
     private Node node;
@@ -92,12 +96,10 @@ class ReadTransactionLogWritingTest
 
     private long countLogEntries()
     {
-        FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
-        LogFiles logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
         try
         {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
-            filterNeostoreLogicalLog( logFiles, fs, logicalLogCounter );
+            filterNeostoreLogicalLog( logFiles, fileSystem, logicalLogCounter );
 
             long txLogRecordCount = logFiles.getLogFileInformation().getLastEntryId();
 

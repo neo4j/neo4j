@@ -47,6 +47,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +61,7 @@ import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 @DbmsExtension
-@ExtendWith( RandomExtension.class )
+@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
 class AllNodesInStoreExistInLabelIndexTest
 {
     @Inject
@@ -69,6 +70,10 @@ class AllNodesInStoreExistInLabelIndexTest
     private DatabaseManagementService managementService;
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Database database;
+    @Inject
+    private CheckPointer checkPointer;
     @Inject
     private RandomRule random;
 
@@ -98,7 +103,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
@@ -123,7 +128,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
@@ -280,7 +285,6 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        var database = db.getDependencyResolver().resolveDependency( Database.class );
         database.stop();
         fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
         database.start();

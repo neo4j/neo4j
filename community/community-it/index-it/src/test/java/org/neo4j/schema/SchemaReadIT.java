@@ -43,11 +43,12 @@ class SchemaReadIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Kernel kernel;
 
     @Test
     void trackPageCacheAccessOnIndexNodeCount() throws KernelException
     {
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         var label = Label.label( "foo" );
         createIndex( label );
         try ( var tx = kernel.beginTransaction( IMPLICIT, read() ) )

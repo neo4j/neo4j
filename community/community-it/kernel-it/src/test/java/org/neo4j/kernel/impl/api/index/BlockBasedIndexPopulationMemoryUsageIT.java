@@ -53,6 +53,8 @@ class BlockBasedIndexPopulationMemoryUsageIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Monitors monitors;
 
     @BeforeAll
     static void setUpFeatureToggles()
@@ -73,7 +75,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
     {
         // given
         IndexPopulationMemoryUsageMonitor monitor = new IndexPopulationMemoryUsageMonitor();
-        db.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        monitors.addMonitorListener( monitor );
         someData();
 
         // when

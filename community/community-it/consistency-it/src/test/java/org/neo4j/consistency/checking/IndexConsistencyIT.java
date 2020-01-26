@@ -70,6 +70,10 @@ class IndexConsistencyIT
     private GraphDatabaseAPI db;
     @Inject
     private DatabaseManagementService managementService;
+    @Inject
+    private CheckPointer checkPointer;
+    @Inject
+    private DefaultIndexProviderMap indexProviderMap;
 
     @Inject
     private RandomRule random;
@@ -87,9 +91,9 @@ class IndexConsistencyIT
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = databaseLayout.file( "indexesCopy" );
-        File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
+        File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         try ( Transaction tx = db.beginTx() )
@@ -113,9 +117,9 @@ class IndexConsistencyIT
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File indexesCopy = databaseLayout.file( "indexesCopy" );
-        File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
+        File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         managementService.shutdown();
@@ -126,11 +130,6 @@ class IndexConsistencyIT
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ) ).contains(
                 "WARN : Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
-    }
-
-    private <T> T resolveComponent( Class<T> clazz )
-    {
-        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException

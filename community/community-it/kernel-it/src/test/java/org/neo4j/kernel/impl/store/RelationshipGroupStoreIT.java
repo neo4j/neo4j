@@ -42,6 +42,8 @@ class RelationshipGroupStoreIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
@@ -52,7 +54,7 @@ class RelationshipGroupStoreIT
     @Test
     void shouldCreateAllTheseRelationshipTypes()
     {
-        shiftHighId( db );
+        shiftHighId();
 
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -76,9 +78,8 @@ class RelationshipGroupStoreIT
         }
     }
 
-    private static void shiftHighId( GraphDatabaseAPI db )
+    private void shiftHighId()
     {
-        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         neoStores.getRelationshipTypeTokenStore().setHighId( Short.MAX_VALUE - RELATIONSHIP_COUNT / 2 );
     }

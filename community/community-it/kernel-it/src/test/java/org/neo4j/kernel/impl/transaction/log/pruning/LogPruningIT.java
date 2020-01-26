@@ -49,14 +49,18 @@ class LogPruningIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private LogRotation logRotation;
+    @Inject
+    private CheckPointer checkPointer;
+    @Inject
+    private Config config;
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Test
     void pruningStrategyShouldBeDynamic() throws IOException
     {
-        CheckPointer checkPointer = getInstanceFromDb( CheckPointer.class );
-        Config config = getInstanceFromDb( Config.class );
-        FileSystemAbstraction fs = getInstanceFromDb( FileSystemAbstraction.class );
-
         LogFiles logFiles = LogFilesBuilder.builder( db.databaseLayout(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
@@ -83,7 +87,6 @@ class LogPruningIT
 
     private void writeTransactionsAndRotateTwice() throws IOException
     {
-        LogRotation logRotation = db.getDependencyResolver().resolveDependency( LogRotation.class );
         // Apparently we always keep an extra log file what even though the threshold is reached... produce two then
         try ( Transaction tx = db.beginTx() )
         {
@@ -107,11 +110,6 @@ class LogPruningIT
             tx.createNode();
             tx.commit();
         }
-    }
-
-    private <T> T getInstanceFromDb( Class<T> clazz )
-    {
-        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private static int countTransactionLogs( LogFiles logFiles )

@@ -46,12 +46,13 @@ class KernelAPIParallelLabelScanStressIT
     private GraphDatabaseAPI db;
     @Inject
     private RandomRule random;
+    @Inject
+    private Kernel kernel;
 
     @Test
     void shouldDoParallelLabelScans() throws Throwable
     {
         int[] labels = new int[3];
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
 
         // Create nodes with labels
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )

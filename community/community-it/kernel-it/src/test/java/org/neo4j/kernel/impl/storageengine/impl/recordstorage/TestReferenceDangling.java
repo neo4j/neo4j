@@ -37,6 +37,8 @@ class TestReferenceDangling
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private Database database;
 
     @Test
     void testPropertyStoreReferencesOnRead() throws Throwable
@@ -45,7 +47,7 @@ class TestReferenceDangling
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
 
         // When
-        restartNeoDataSource( db );
+        restartNeoDataSource();
 
         // Then reading the property is still possible
         try ( Transaction tx = db.beginTx() )
@@ -62,7 +64,7 @@ class TestReferenceDangling
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
 
         // When
-        restartNeoDataSource( db );
+        restartNeoDataSource();
 
         // Then it should still be possible to manipulate properties on this node
         try ( Transaction tx = db.beginTx() )
@@ -91,9 +93,8 @@ class TestReferenceDangling
         return nId;
     }
 
-    private void restartNeoDataSource( GraphDatabaseAPI databaseAPI ) throws Throwable
+    private void restartNeoDataSource()
     {
-        Database database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
         database.stop();
         database.start();
     }

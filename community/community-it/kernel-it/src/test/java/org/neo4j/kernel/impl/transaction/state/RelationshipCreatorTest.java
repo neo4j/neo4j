@@ -71,20 +71,15 @@ class RelationshipCreatorTest
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private IdGeneratorFactory idGeneratorFactory;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseSettings.dense_node_threshold, DENSE_NODE_THRESHOLD );
-    }
-
-    private IdGeneratorFactory idGeneratorFactory;
-
-    @BeforeEach
-    void before()
-    {
-        idGeneratorFactory = db.getDependencyResolver().resolveDependency(
-                IdGeneratorFactory.class );
     }
 
     @Test
@@ -109,8 +104,7 @@ class RelationshipCreatorTest
 
     private NeoStores flipToNeoStores()
     {
-        return db.getDependencyResolver().resolveDependency(
-                RecordStorageEngine.class ).testAccessNeoStores();
+        return storageEngine.testAccessNeoStores();
     }
 
     private long createNodeWithRelationships( int count )

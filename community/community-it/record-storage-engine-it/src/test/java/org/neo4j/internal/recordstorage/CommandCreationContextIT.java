@@ -47,16 +47,15 @@ public class CommandCreationContextIT
 {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+    @Inject
+    private RecordStorageEngine storageEngine;
+    @Inject
     private PageCacheTracer pageCacheTracer;
     private NeoStores neoStores;
-    private RecordStorageEngine storageEngine;
 
     @BeforeEach
     void setUp()
     {
-        var dependencyResolver = databaseAPI.getDependencyResolver();
-        storageEngine = dependencyResolver.resolveDependency( RecordStorageEngine.class );
-        pageCacheTracer = dependencyResolver.resolveDependency( PageCacheTracer.class );
         neoStores = storageEngine.testAccessNeoStores();
     }
 

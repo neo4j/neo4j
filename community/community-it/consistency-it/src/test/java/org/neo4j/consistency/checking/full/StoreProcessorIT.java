@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -46,10 +45,10 @@ import static org.mockito.Mockito.verify;
 class StoreProcessorIT
 {
     @Inject
-    private GraphDatabaseAPI databaseAPI;
+    private RecordStorageEngine storageEngine;
 
     @Test
-    void shouldProcessAllTheRecordsInAStore() throws Exception
+    void shouldProcessAllTheRecordsInAStore()
     {
         // given
         RecordStore<NodeRecord> nodeStore = getNeoStores().getNodeStore();
@@ -69,13 +68,13 @@ class StoreProcessorIT
     }
 
     @Test
-    void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
+    void shouldStopProcessingRecordsWhenSignalledToStop()
     {
         // given
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
-        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<NodeRecord>( getNeoStores().getNodeStore() )
+        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<>( getNeoStores().getNodeStore() )
         {
             @Override
             public void getRecordByCursor( long id, NodeRecord target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
@@ -103,7 +102,7 @@ class StoreProcessorIT
 
     private NeoStores getNeoStores()
     {
-        return databaseAPI.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        return storageEngine.testAccessNeoStores();
     }
 
     private NodeRecord node( long id, boolean dense, long nextRel, long nextProp )

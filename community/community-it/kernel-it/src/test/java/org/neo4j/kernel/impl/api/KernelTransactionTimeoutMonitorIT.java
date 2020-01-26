@@ -59,6 +59,8 @@ public class KernelTransactionTimeoutMonitorIT
 {
     @Inject
     private GraphDatabaseAPI database;
+    @Inject
+    private KernelTransactions kernelTransactions;
 
     private static final int NODE_ID = 0;
     private ExecutorService executor;
@@ -132,7 +134,7 @@ public class KernelTransactionTimeoutMonitorIT
 
     @Timeout( 30 )
     @Test
-    void terminateExpiredTransaction() throws Exception
+    void terminateExpiredTransaction()
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -154,8 +156,7 @@ public class KernelTransactionTimeoutMonitorIT
 
     private void terminateOngoingTransaction()
     {
-        Set<KernelTransactionHandle> kernelTransactionHandles =
-                database.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+        Set<KernelTransactionHandle> kernelTransactionHandles = kernelTransactions.activeTransactions();
         assertThat( kernelTransactionHandles ).hasSize( 1 );
         for ( KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles )
         {

@@ -81,6 +81,10 @@ class SchemaStorageIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private RecordStorageEngine storageEngine;
+    @Inject
+    private TokenHolders tokenHolders;
 
     private static SchemaStore schemaStore;
     private static SchemaStorage storage;
@@ -98,8 +102,8 @@ class SchemaStorageIT
             tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.commit();
         }
-        schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
+        schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
+        storage = new SchemaStorage( schemaStore, tokenHolders );
     }
 
     @Test
@@ -320,11 +324,6 @@ class SchemaStorageIT
         {
             return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propName );
         }
-    }
-
-    private <T> T resolveDependency( Class<T> clazz )
-    {
-        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private static Consumer<Transaction> index( String label, String prop )

@@ -33,16 +33,15 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Arrays.stream;
 import static java.util.Collections.addAll;
-import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
+import static org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallback
@@ -54,19 +53,20 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
     public void beforeEach( ExtensionContext context )
     {
         TestInstances testInstances = context.getRequiredTestInstances();
-        TestDirectory testDir = getTestDirectory( context );
+        var testDir = getTestDirectory( context );
 
         // Find closest configuration
         TestConfiguration configuration = getConfigurationFromAnnotations( context );
 
         // Make service
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).setFileSystem( testDir.getFileSystem() );
+        var builder = new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).setFileSystem( testDir.getFileSystem() );
         for ( Object testInstance : testInstances.getAllInstances() )
         {
             maybeInvokeCallback( testInstance, builder, configuration.configurationCallback );
         }
-        DatabaseManagementService dbms = builder.build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( configuration.injectableDatabase );
+        var dbms = builder.build();
+        var db = (GraphDatabaseAPI) dbms.database( configuration.injectableDatabase );
+        var dependencyResolver = db.getDependencyResolver();
 
         // Save in context
         Store store = getStore( context );
@@ -75,9 +75,8 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         // Inject
         for ( Object testInstance : testInstances.getAllInstances() )
         {
-            injectInstance( testInstance, dbms, DatabaseManagementService.class );
-            injectInstance( testInstance, db, GraphDatabaseService.class );
-            injectInstance( testInstance, db, GraphDatabaseAPI.class );
+            var injectableFields = lookupInjectableFields( testInstance );
+            injectInstance( testInstance, injectableFields, dependencyResolver );
         }
     }
 
@@ -88,18 +87,21 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         dbms.shutdown();
     }
 
-    protected static <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
+    protected static List<Field> lookupInjectableFields( Object testInstance )
     {
-        Class<?> testClass = testInstance.getClass();
-        do
+        return getFieldsListWithAnnotation( testInstance.getClass(), Inject.class );
+    }
+
+    protected static void injectInstance( Object testInstance, List<Field> injectables, DependencyResolver dependencies )
+    {
+        for ( Field injectable : injectables )
         {
-            stream( testClass.getDeclaredFields() )
-                    .filter( field -> isAnnotated( field, Inject.class ) )
-                    .filter( field -> field.getType() == clazz )
-                    .forEach( field -> setField( testInstance, field, instance ) );
-            testClass = testClass.getSuperclass();
+            var fieldType = injectable.getType();
+            if ( dependencies.resolveTypeDependencies( fieldType ).iterator().hasNext() )
+            {
+                setField( testInstance, injectable, dependencies.resolveDependency( fieldType ) );
+            }
         }
-        while ( testClass != null );
     }
 
     private static void setField( Object testInstance, Field field, Object db )

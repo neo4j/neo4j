@@ -60,7 +60,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class CachingExpandIntoTest
 {
     @Inject
-    private GraphDatabaseAPI db;
+    private Kernel kernel;
 
     private static final int DENSE_THRESHOLD = 10;
 
@@ -72,8 +72,7 @@ class CachingExpandIntoTest
 
     private KernelTransaction transaction() throws TransactionFailureException
     {
-        DependencyResolver resolver = db.getDependencyResolver();
-        return resolver.resolveDependency( Kernel.class ).beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        return kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
     }
 
     @Test

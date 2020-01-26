@@ -55,6 +55,8 @@ class KernelAPIParallelIndexScanStressIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
+    private Kernel kernel;
+    @Inject
     private RandomRule random;
 
     @Test
@@ -87,7 +89,6 @@ class KernelAPIParallelIndexScanStressIT
         }
 
         // when & then
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         IndexReadSession[] indexes = new IndexReadSession[3];
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {

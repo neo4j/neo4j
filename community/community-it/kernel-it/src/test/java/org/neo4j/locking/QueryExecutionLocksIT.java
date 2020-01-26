@@ -92,6 +92,10 @@ class QueryExecutionLocksIT
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private GraphDatabaseQueryService queryService;
+    @Inject
+    private QueryExecutionEngine executionEngine;
 
     @Test
     void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
@@ -179,11 +183,9 @@ class QueryExecutionLocksIT
 
     private List<LockOperationRecord> traceQueryLocks( String query, LockOperationListener... listeners ) throws QueryExecutionKernelException
     {
-        GraphDatabaseQueryService graph = db.getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class );
-        QueryExecutionEngine executionEngine = db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
+        try ( InternalTransaction tx = queryService.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
+            TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( queryService, tx, query ), listeners );
             executionEngine.executeQuery( query, EMPTY_MAP, context, false );
             return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }

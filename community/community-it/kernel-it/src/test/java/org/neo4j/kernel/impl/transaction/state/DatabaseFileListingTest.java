@@ -67,7 +67,7 @@ class DatabaseFileListingTest
     private GraphDatabaseAPI db;
     @Inject
     private TestDirectory testDirectory;
-
+    @Inject
     private Database database;
     private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
             "index",
@@ -116,7 +116,6 @@ class DatabaseFileListingTest
     void setUp() throws IOException
     {
         createIndexDbFile();
-        database = db.getDependencyResolver().resolveDependency( Database.class );
     }
 
     @Test

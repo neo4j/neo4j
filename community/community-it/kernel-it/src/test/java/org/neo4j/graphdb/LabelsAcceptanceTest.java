@@ -34,7 +34,6 @@ import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -721,7 +720,6 @@ class LabelsAcceptanceTest
         Set<Integer> seenLabels = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            DependencyResolver resolver = db.getDependencyResolver();
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
                   PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )

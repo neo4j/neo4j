@@ -53,6 +53,8 @@ class IndexPopulationFlipRaceIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
+    private Kernel kernel;
+    @Inject
     private RandomRule random;
 
     @Test
@@ -142,7 +144,6 @@ class IndexPopulationFlipRaceIT
     private void verifyThatThereAreExactlyOneIndexEntryPerNodeInTheIndexes( int i, Pair<long[],long[]> data )
             throws Exception
     {
-        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AnonymousContext.read() ) )
         {
             int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -51,13 +50,10 @@ class TruncateDatabaseIT
 {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+    @Inject
     private Database database;
-
-    @BeforeEach
-    void setUp()
-    {
-        database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
-    }
+    @Inject
+    private LogFiles logFiles;
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
@@ -224,14 +220,13 @@ class TruncateDatabaseIT
             transaction.commit();
         }
         assertEquals( 20, countPropertyKeys() );
-        LogFiles logFiles = getLogFiles();
         long lastEntryId = logFiles.getLogFileInformation().getLastEntryId();
         // at least 10 transactions made it to the logs
         assertThat( lastEntryId ).isGreaterThanOrEqualTo( 10L );
 
         truncator.truncate( database );
 
-        long truncatedLastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
+        long truncatedLastEntryId = logFiles.getLogFileInformation().getLastEntryId();
         assertThat( truncatedLastEntryId ).isEqualTo( 1L );
     }
 
@@ -275,11 +270,6 @@ class TruncateDatabaseIT
     private RecordStorageEngine getRecordStorageEngine()
     {
         return database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-    }
-
-    private LogFiles getLogFiles()
-    {
-        return database.getDependencyResolver().resolveDependency( LogFiles.class );
     }
 
     private void awaitIndexes()

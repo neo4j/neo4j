@@ -33,6 +33,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -51,6 +52,12 @@ class TransactionRepresentationCommitProcessIT
 
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private GBPTreeCountsStore countsStore;
+    @Inject
+    private CheckPointer checkPointer;
+    @Inject
+    private TransactionIdStore transactionIdStore;
 
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
@@ -108,18 +115,11 @@ class TransactionRepresentationCommitProcessIT
         }
         workers.awaitAndThrowOnError();
 
-        GBPTreeCountsStore counts = getDependency( GBPTreeCountsStore.class );
-        assertThat( counts.txId() ).as( "Count store should be rotated once at least" ).isGreaterThan( 0L );
+        assertThat( countsStore.txId() ).as( "Count store should be rotated once at least" ).isGreaterThan( 0L );
 
-        long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
-        assertEquals( txIdStore.getLastClosedTransactionId(), lastRotationTx,
+        long lastRotationTx = checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        assertEquals( transactionIdStore.getLastClosedTransactionId(), lastRotationTx,
                 "NeoStore last closed transaction id should be equal last count store rotation transaction id." );
-        assertEquals( txIdStore.getLastClosedTransactionId(), counts.txId(), "Last closed transaction should be last rotated tx in count store" );
-    }
-
-    private <T> T getDependency( Class<T> clazz )
-    {
-        return db.getDependencyResolver().resolveDependency( clazz );
+        assertEquals( transactionIdStore.getLastClosedTransactionId(), countsStore.txId(), "Last closed transaction should be last rotated tx in count store" );
     }
 }

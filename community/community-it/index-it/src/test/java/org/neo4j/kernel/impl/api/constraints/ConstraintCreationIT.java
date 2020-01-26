@@ -47,6 +47,8 @@ class ConstraintCreationIT
 {
     @Inject
     private GraphDatabaseAPI db;
+    @Inject
+    private IndexProviderMap indexProviderMap;
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;
@@ -65,7 +67,7 @@ class ConstraintCreationIT
         attemptAndFailConstraintCreation();
 
         // then
-        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( indexDir.exists() );
@@ -78,8 +80,7 @@ class ConstraintCreationIT
         attemptAndFailConstraintCreation();
 
         // then
-        IndexProvider indexProvider =
-                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( indexDir.exists() );

@@ -81,6 +81,8 @@ class NeoStoreIndexStoreViewTest
 {
     @Inject
     private GraphDatabaseAPI graphDb;
+    @Inject
+    private RecordStorageEngine storageEngine;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
@@ -108,7 +110,6 @@ class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        RecordStorageEngine storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         neoStores = storageEngine.testAccessNeoStores();
 
         locks = mock( LockService.class );
