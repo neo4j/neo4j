@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -38,6 +39,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexReader
@@ -119,17 +121,17 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues,
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
             PageCursorTracer cursorTracer, IndexQuery... predicates )
     {
-        validateQuery( indexOrder, predicates );
+        validateQuery( constraints, predicates );
 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, indexOrder, needFilter, needsValues, cursorTracer );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, cursorTracer );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
@@ -154,7 +156,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         {
             Seeker<KEY,VALUE> seeker = tree.seek( lowest, highest, cursorTracer );
             client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, layout, layout::compareValue ),
-                    new IndexQuery[0], IndexOrder.NONE, needsValues, false );
+                    new IndexQuery[0], unordered( needsValues ), false );
         }
         catch ( IOException e )
         {
@@ -162,7 +164,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
     }
 
-    abstract void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates );
+    abstract void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates );
 
     /**
      * @return true if query results from seek will need to be filtered through the predicates, else false
@@ -170,18 +172,18 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
     void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query,
-            IndexOrder indexOrder, boolean needFilter, boolean needsValues, PageCursorTracer cursorTracer )
+            IndexQueryConstraints constraints, boolean needFilter, PageCursorTracer cursorTracer )
     {
         if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues, false );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, constraints, false );
             return;
         }
         try
         {
-            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder, cursorTracer );
+            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorTracer );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
-            client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues, false );
+            client.initialize( descriptor, hitProgressor, query, constraints, false );
         }
         catch ( IOException e )
         {

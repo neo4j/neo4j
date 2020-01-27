@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {

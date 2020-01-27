@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.util.Preconditions;
 
 abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
 {

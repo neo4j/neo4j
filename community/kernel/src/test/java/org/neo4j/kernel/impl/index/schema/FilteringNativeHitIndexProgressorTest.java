@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.extension.Inject;
@@ -40,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 
 @ExtendWith( RandomExtension.class )
 class FilteringNativeHitIndexProgressorTest
@@ -73,7 +73,7 @@ class FilteringNativeHitIndexProgressorTest
         try ( FilteringNativeHitIndexProgressor<GenericKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 predicates ) )
         {
-            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, true, false );
+            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, unorderedValues(), false );
             List<Long> result = new ArrayList<>();
 
             // when

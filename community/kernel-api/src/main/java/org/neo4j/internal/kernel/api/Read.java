@@ -37,7 +37,7 @@ public interface Read
      * Ensure there is an IndexReadSession for the given index bound to this transaction, and return it. Not Thread-safe.
      *
      * @param index descriptor for the index to read from
-     * @return the IndexReadSession
+     * @return the IndexReadSession.
      */
     IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
@@ -50,20 +50,20 @@ public interface Read
      * Seek all nodes matching the provided index query in an index.
      * @param index {@link IndexReadSession} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
-     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
-     * {@link IndexDescriptor referenced index}, or {@link IndexOrder#NONE}.
-     * @param needsValues if the index should fetch property values together with node ids for index queries
+     * @param constraints constraints on the index query result, which can include a specific {@link IndexOrder} of result, or if the index should fetch
+     * property values together with node ids for index queries. Not all indexes can honour all kinds of constraints. For instance, if the
+     * {@link IndexDescriptor referenced index} have no index ordering capabilities, then no ordering constraints can be requested.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
-    void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
             throws KernelException;
 
     /**
      * Seek all relationships matching the provided index query in an index.
      *
      * This is almost but not quite a relationship counterpart to
-     * {@link #nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexOrder, boolean, IndexQuery...)}, in that this method <em>currently</em> cannot return
-     * values from the index. This may be added in the future. When this happens, this method may be extended with parameters for {@code indexOrder} and
+     * {@link #nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, IndexQuery...)}, in that this method <em>currently</em> cannot
+     * return values from the index. This may be added in the future. When this happens, this method may be extended with parameters for {@code indexOrder} and
      * {@code needsValues}, and the cursor parameter will likely require a "value" cursor instead of just an "index" cursor.
      *
      * @param index {@link IndexDescriptor} for the index to query. This must be an index of relationships.
@@ -86,12 +86,12 @@ public interface Read
      * reported as a single distinct values with a higher count instead of several separate values.
      * @param index {@link IndexDescriptor} for the index.
      * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
-     * @param needsValues whether or not values should be loaded and given to the cursor.
+     * @param needsValues whether values should be loaded and given to the cursor.
      */
     void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException;
 
     /**
-     * Returns node id of node found in unique index or -1 if no node was found.
+     * Returns node id of node found in the unique index, or -1 if no node was found.
      *
      * Note that this is a very special method and should be use with caution. It has special locking semantics in
      * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
@@ -114,10 +114,10 @@ public interface Read
      *
      * @param index {@link IndexReadSession} index read session to query.
      * @param cursor the cursor to use for consuming the results.
-     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of the index, or {@link IndexOrder#NONE}.
-     * @param needsValues if the index should fetch property values together with node ids for index queries
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
+     * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      */
-    void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException;
+    void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
 

@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.scheduler.Group;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 {

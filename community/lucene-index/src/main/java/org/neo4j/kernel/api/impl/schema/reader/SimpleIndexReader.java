@@ -46,10 +46,10 @@ import java.util.stream.StreamSupport;
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -70,6 +70,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -111,11 +112,11 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             PageCursorTracer cursorTracer, IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
-        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues, false );
+        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );
     }
 
     private DocValuesCollector search( Query query )
@@ -195,7 +196,7 @@ public class SimpleIndexReader extends AbstractIndexReader
      * instances for those.
      * @param client {@link IndexProgressor.EntityValueClient} to get initialized with this progression.
      * @param propertyAccessor {@link NodePropertyAccessor} for reading property values.
-     * @param needsValues whether or not to load string values.
+     * @param needsValues whether to load string values.
      */
     @Override
     public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
@@ -228,10 +229,10 @@ public class SimpleIndexReader extends AbstractIndexReader
                                                                  : term -> null;
                     TermsEnum termsIterator = terms.iterator();
                     multiProgressor.initialize( descriptor, new LuceneDistinctValuesProgressor( termsIterator, client, valueMaterializer ), noQueries,
-                            IndexOrder.NONE, needsValues, false );
+                            unordered( needsValues ), false );
                 }
             }
-            client.initialize( descriptor, multiProgressor, noQueries, IndexOrder.NONE, needsValues, false );
+            client.initialize( descriptor, multiProgressor, noQueries, unordered( needsValues ), false );
         }
         catch ( IOException e )
         {

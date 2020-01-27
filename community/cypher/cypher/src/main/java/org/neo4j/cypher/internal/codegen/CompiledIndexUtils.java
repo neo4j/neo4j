@@ -26,11 +26,11 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 /**
  * Utility for dealing with indexes from compiled code
@@ -67,7 +67,7 @@ public final class CompiledIndexUtils
             NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor();
             IndexQuery.ExactPredicate query = exact( index.schema().getPropertyIds()[0], makeValueNeoSafe( value ) );
             IndexReadSession indexSession = read.indexReadSession( index );
-            read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
+            read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
             return cursor;
         }
     }

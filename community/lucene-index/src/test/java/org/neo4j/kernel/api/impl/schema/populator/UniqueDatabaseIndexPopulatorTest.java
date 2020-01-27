@@ -35,7 +35,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -60,13 +59,14 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -129,9 +129,9 @@ class UniqueDatabaseIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value2" ) );
-        assertEquals( asList( 3L ), getAllNodes( getDirectory(), "value3" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( singletonList( 2L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( singletonList( 3L ), getAllNodes( getDirectory(), "value3" ) );
     }
 
     private Directory getDirectory() throws IOException
@@ -157,7 +157,7 @@ class UniqueDatabaseIndexPopulatorTest
 
         // then
         assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -177,7 +177,7 @@ class UniqueDatabaseIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList(1L), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
     }
 
     @Test
@@ -217,8 +217,8 @@ class UniqueDatabaseIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( singletonList( 2L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -309,9 +309,9 @@ class UniqueDatabaseIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value2" ) );
-        assertEquals( asList( 3L ), getAllNodes( getDirectory(), "value3" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( singletonList( 2L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( singletonList( 3L ), getAllNodes( getDirectory(), "value3" ) );
     }
 
     @Test
@@ -384,8 +384,10 @@ class UniqueDatabaseIndexPopulatorTest
         var executor = Executors.newCachedThreadPool();
         executor.submit( () ->
         {
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
+
+            try
             {   // Just open it and let it be closed
+                populator.newPopulatingUpdater( nodePropertyAccessor ).close();
             }
             catch ( IndexEntryConflictException e )
             {
@@ -409,15 +411,14 @@ class UniqueDatabaseIndexPopulatorTest
         // THEN it should be able to complete within a very reasonable time
         executor.submit( () ->
         {
-            try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
-            {   // Just open it and let it be closed
-            }
+            // Just open it and let it be closed
+            populator.newPopulatingUpdater( nodePropertyAccessor ).close();
             return null;
         } ).get( 5, SECONDS );
     }
 
     @Test
-    void sampleEmptyIndex() throws Exception
+    void sampleEmptyIndex()
     {
         populator = newPopulator();
 
@@ -427,7 +428,7 @@ class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    void sampleIncludedUpdates() throws Exception
+    void sampleIncludedUpdates()
     {
         LabelSchemaDescriptor schemaDescriptor = forLabel( 1, 1 );
         populator = newPopulator();
@@ -460,12 +461,12 @@ class UniqueDatabaseIndexPopulatorTest
         try ( IndexReader reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, allEntities, IndexOrder.NONE, false, PageCursorTracer.NULL, IndexQuery.exists( 1 ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), PageCursorTracer.NULL, IndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }
 
-    private UniqueLuceneIndexPopulator newPopulator() throws IOException
+    private UniqueLuceneIndexPopulator newPopulator()
     {
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, descriptor );
         populator.create();
@@ -473,10 +474,9 @@ class UniqueDatabaseIndexPopulatorTest
     }
 
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
-            throws IOException
     {
         IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
-        populator.add( asList( update ) );
+        populator.add( singletonList( update ) );
     }
 
     private List<Long> getAllNodes( Directory directory, Object value ) throws IOException

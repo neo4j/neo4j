@@ -27,7 +27,6 @@ import java.util.Arrays;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -40,6 +39,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -81,7 +81,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                 try ( IndexReader reader = accessor.newReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
                 {
-                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, NULL,
+                    reader.query( NULL_CONTEXT, nodes, unconstrained(), NULL,
                             IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
                     assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
                 }

@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -50,7 +49,7 @@ class CompiledIndexUtilsTest
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
 
         // THEN
-        verify( read ).nodeIndexSeek( any(), any(), any(), anyBoolean(), any() );
+        verify( read ).nodeIndexSeek( any(), any(), any(), any() );
     }
 
     @Test
@@ -64,7 +63,7 @@ class CompiledIndexUtilsTest
         NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );
 
         // THEN
-        verify( read, never() ).nodeIndexSeek( any(), any(), any(), anyBoolean() );
+        verify( read, never() ).nodeIndexSeek( any(), any(), any() );
         assertFalse( cursor.next() );
     }
 }

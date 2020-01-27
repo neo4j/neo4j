@@ -47,7 +47,7 @@ public class NodeIdsIndexReaderQueryAnswer implements Answer
     {
         IndexProgressor.EntityValueClient client = invocation.getArgument( 1 );
         NodeValueIndexProgressor progressor = new NodeValueIndexProgressor( iterator( EMPTY, nodeIds ), client );
-        client.initialize( descriptor, progressor, getIndexQueryArgument( invocation ), invocation.getArgument( 2 ), invocation.getArgument( 3 ), false );
+        client.initialize( descriptor, progressor, getIndexQueryArgument( invocation ), invocation.getArgument( 2 ), false );
         return null;
     }
 

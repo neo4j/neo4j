@@ -20,19 +20,19 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 /**
  * The index progressor is a cursor like class, which allows controlled progression through the entries of an index.
  * In contrast to a cursor, the progressor does not hold value state, but rather attempts to write the next entry to a
  * Client. The client can them accept the entry, in which case next() returns, or reject it, in which case the
- * progression continues until an acceptable entry is found or the progression is done.
+ * progression continues until an acceptable entry is found, or the progression is done.
  *
- * A Progressor is expected to feed a single client, which is setup for example in the constructor. The typical
- * interaction goes something like
+ * A Progressor is expected to feed a single client, which is set up for example in the constructor. The typical
+ * interaction goes something like:
  *
  *   -- query(client) -> INDEX
  *                       progressor = new Progressor( client )
@@ -76,15 +76,15 @@ public interface IndexProgressor extends AutoCloseable
          * @param descriptor The descriptor
          * @param progressor The progressor
          * @param query The query of this progression
-         * @param indexOrder The required order the index should return nodeids in
-         * @param needsValues if the index should fetch property values together with node ids for index queries
+         * @param constraints Constraints on the produced results, like the required order the index should return entity ids in, or if the index should fetch
+         * property values together with entity ids.
          * @param indexIncludesTransactionState {@code true} if the index takes transaction state into account such that the entities delivered through
          * {@link #acceptEntity(long, float, Value...)} have already been filtered through, and merged with, the transaction state. If this is {@code true},
          * then the client does not need to do its own transaction state filtering. This is the case for the fulltext schema indexes, for instance.
-         * Otherwise if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
+         * Otherwise, if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
          */
         void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                         IndexQuery[] query, IndexOrder indexOrder, boolean needsValues, boolean indexIncludesTransactionState );
+                         IndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is

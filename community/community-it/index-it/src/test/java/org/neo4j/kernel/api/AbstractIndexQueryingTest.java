@@ -31,11 +31,11 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<S>
 {
@@ -62,7 +62,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "search" ) ) );
+                    read.nodeIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 

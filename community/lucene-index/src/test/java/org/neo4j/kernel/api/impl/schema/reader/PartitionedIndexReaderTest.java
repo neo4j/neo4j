@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -46,11 +45,11 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -89,9 +88,9 @@ class PartitionedIndexReaderTest
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
         IndexQuery.ExactPredicate query = IndexQuery.exact( 1, "Test" );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), any(), any() );
 
         LongSet results = queryResultAsSet( indexReader, query );
         verifyResult( results );
@@ -103,9 +102,9 @@ class PartitionedIndexReaderTest
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
         IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, 1, true, 2, true );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), any(), any() );
 
         LongSet results = queryResultAsSet( indexReader, query );
         verifyResult( results );
@@ -117,9 +116,9 @@ class PartitionedIndexReaderTest
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
         IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, "a", false, "b", true );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), any(), any() );
 
         LongSet results = queryResultAsSet( indexReader, query );
         verifyResult( results );
@@ -130,9 +129,9 @@ class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1,  stringValue( "prefix" ) );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), any(), any() );
 
         LongSet results = queryResultAsSet( indexReader, query );
         verifyResult( results );
@@ -143,9 +142,9 @@ class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any(), any() );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), any(), any() );
 
         LongSet results = queryResultAsSet( indexReader, query );
         verifyResult( results );
@@ -178,7 +177,7 @@ class PartitionedIndexReaderTest
     {
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            indexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, NULL, query );
+            indexReader.query( NULL_CONTEXT, iterator, unconstrained(), NULL, query );
             return PrimitiveLongCollections.asSet( iterator );
         }
     }

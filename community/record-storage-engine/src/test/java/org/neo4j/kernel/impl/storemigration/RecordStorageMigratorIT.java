@@ -88,7 +88,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

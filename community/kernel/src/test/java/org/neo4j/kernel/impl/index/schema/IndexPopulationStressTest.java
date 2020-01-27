@@ -39,7 +39,6 @@ import java.util.function.Function;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,6 +72,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -104,7 +104,6 @@ abstract class IndexPopulationStressTest
     @Inject
     private TestDirectory testDirectory;
 
-    private final String name;
     private final boolean hasValues;
     private final Function<RandomValues, Value> valueGenerator;
     private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
@@ -117,11 +116,9 @@ abstract class IndexPopulationStressTest
     private IndexProvider indexProvider;
     private boolean prevAccessCheck;
 
-    IndexPopulationStressTest( String name, boolean hasValues,
-        Function<RandomValues, Value> valueGenerator,
-        Function<IndexPopulationStressTest, IndexProvider> providerCreator )
+    IndexPopulationStressTest(
+            boolean hasValues, Function<RandomValues,Value> valueGenerator, Function<IndexPopulationStressTest,IndexProvider> providerCreator )
     {
-        this.name = name;
         this.hasValues = hasValues;
         this.valueGenerator = valueGenerator;
         this.providerCreator = providerCreator;
@@ -185,8 +182,8 @@ abstract class IndexPopulationStressTest
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, entries, IndexOrder.NONE, hasValues, NULL, IndexQuery.exists( 0 ) );
-            referenceReader.query( NULL_CONTEXT, referenceEntries, IndexOrder.NONE, hasValues, NULL, IndexQuery.exists( 0 ) );
+            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), NULL, IndexQuery.exists( 0 ) );
+            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), NULL, IndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );

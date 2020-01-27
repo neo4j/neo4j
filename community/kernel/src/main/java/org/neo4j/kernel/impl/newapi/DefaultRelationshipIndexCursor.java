@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -51,19 +51,19 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
 
-        if ( indexOrder != IndexOrder.NONE )
+        if ( constraints.isOrdered() )
         {
             throw new IllegalArgumentException( "The relationship index cursor does not yet support index orders other than IndexOrder.NONE, " +
-                    "but IndexOrder." + indexOrder + " was requested." );
+                    "but IndexOrder." + constraints.order() + " was requested." );
         }
 
-        if ( needsValues )
+        if ( constraints.needsValues() )
         {
             throw new IllegalArgumentException( "This relationship index cursor was told to fetch the values of the index entries, but this functionality " +
                     "has not been implemented." );

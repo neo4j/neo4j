@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.lock.LockGroup;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;

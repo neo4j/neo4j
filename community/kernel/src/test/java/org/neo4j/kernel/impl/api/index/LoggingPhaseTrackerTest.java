@@ -30,7 +30,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.time.FakeClock;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;

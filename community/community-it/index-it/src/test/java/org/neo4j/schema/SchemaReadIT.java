@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.Kernel;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;

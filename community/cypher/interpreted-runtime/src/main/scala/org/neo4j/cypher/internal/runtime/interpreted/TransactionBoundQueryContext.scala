@@ -263,7 +263,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
 
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    reads().nodeIndexSeek(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
+    reads().nodeIndexSeek(index, nodeCursor, IndexQueryConstraints.ordered(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
     if (needsValues && actualValues != null)
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
     else
@@ -274,7 +274,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
+    reads().nodeIndexScan(index, nodeCursor, IndexQueryConstraints.ordered(asKernelIndexOrder(indexOrder), needsValues))
     nodeCursor
   }
 
@@ -1049,7 +1049,7 @@ object TransactionBoundQueryContext {
       val current = _next
       storeState()
       //Note that if no more elements are found the selection cursor
-      //will be closed so no need to do a extra check after fetching.
+      //will be closed so no need to do an extra check after fetching.
       _next = fetchNext()
 
       current

@@ -50,7 +50,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -76,6 +75,7 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 /**
@@ -396,7 +396,7 @@ public class IndexStatisticsTest
                 {
                     nodesInStore++;
                     String name = (String) node.getProperty( NAME_PROPERTY );
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, name ) );
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exact( propertyKeyId, name ) );
                     boolean found = false;
                     while ( cursor.next() )
                     {
@@ -420,7 +420,7 @@ public class IndexStatisticsTest
                     fail( join( mismatches.toArray(), format( "%n" ) ) );
                 }
                 // Node count == indexed node count
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exists( propertyKeyId ) );
                 int nodesInIndex = 0;
                 while ( cursor.next() )
                 {

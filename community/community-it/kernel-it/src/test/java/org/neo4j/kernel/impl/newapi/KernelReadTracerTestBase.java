@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
@@ -244,7 +245,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
     {
         // when
         cursor.setTracer( tracer );
-        read.nodeIndexSeek( session, cursor, order, false, IndexQuery.range( prop, 0, false, 10, false ) );
+        read.nodeIndexSeek( session, cursor, ordered( order, false ), IndexQuery.range( prop, 0, false, 10, false ) );
 
         tracer.assertEvents( OnIndexSeek() );
 

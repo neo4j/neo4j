@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -60,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 public class LuceneFulltextTestSupport
 {
@@ -159,7 +159,7 @@ public class LuceneFulltextTestSupport
         {
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long nodeId = cursor.nodeReference();
@@ -197,7 +197,7 @@ public class LuceneFulltextTestSupport
         {
             int num = 0;
             float score = Float.MAX_VALUE;
-            ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
             while ( cursor.next() )
             {
                 long nextId = cursor.nodeReference();

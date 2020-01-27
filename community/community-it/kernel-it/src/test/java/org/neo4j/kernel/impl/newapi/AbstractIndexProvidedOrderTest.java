@@ -52,6 +52,7 @@ import org.neo4j.values.storable.ValueType;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
 import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
@@ -173,7 +174,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
 
                 try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
                 {
-                    read.nodeIndexSeek( index, node, indexOrder, false, range );
+                    read.nodeIndexSeek( index, node, ordered( indexOrder, false ), range );
 
                     List<Long> expectedIdsInOrder = expectedIdsInOrder( from, fromInclusive, to, toInclusive, indexOrder );
                     List<Long> actualIdsInOrder = new ArrayList<>();

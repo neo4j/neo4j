@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link Read} instance, and possibly a {@link Resource}, prior to its
- * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexOrder, boolean, boolean)}  initialization}.
+ * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexQueryConstraints, boolean)}  initialization}.
  * <p>
  * This is useful if the entity references needs to be processed further.
  */

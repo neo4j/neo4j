@@ -23,8 +23,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -84,8 +84,7 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     public void initialize( IndexDescriptor descriptor,
                             IndexProgressor progressor,
                             IndexQuery[] queries,
-                            IndexOrder indexOrder,
-                            boolean needsValues,
+                            IndexQueryConstraints constraints,
                             boolean indexIncludesTransactionState )
     {
         assertKeysAlign( descriptor.schema().getPropertyIds() );
@@ -98,7 +97,7 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
         {
             if ( this.keys[i] != keys[i] )
             {
-                throw new UnsupportedOperationException( "Can not chain multiple progressors with different key set." );
+                throw new UnsupportedOperationException( "Cannot chain multiple progressors with different key set." );
             }
         }
     }

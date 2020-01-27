@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -40,6 +40,8 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
@@ -69,7 +71,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             PageCursorTracer cursorTracer, IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         try
@@ -79,14 +81,14 @@ public class PartitionedIndexReader extends AbstractIndexReader
             {
                 try
                 {
-                    reader.query( context, bridgingIndexProgressor, indexOrder, needsValues, cursorTracer, query );
+                    reader.query( context, bridgingIndexProgressor, constraints, cursorTracer, query );
                 }
                 catch ( IndexNotApplicableKernelException e )
                 {
                     throw new InnerException( e );
                 }
             } );
-            client.initialize( descriptor, bridgingIndexProgressor, query, indexOrder, needsValues, false );
+            client.initialize( descriptor, bridgingIndexProgressor, query, constraints, false );
         }
         catch ( InnerException e )
         {
@@ -106,7 +108,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     {
         BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
         indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues, cursorTracer ) );
-        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
+        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], unordered( needsValues ), false );
     }
 
     private static final class InnerException extends RuntimeException

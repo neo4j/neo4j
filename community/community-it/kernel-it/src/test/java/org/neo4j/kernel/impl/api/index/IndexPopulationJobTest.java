@@ -83,7 +83,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

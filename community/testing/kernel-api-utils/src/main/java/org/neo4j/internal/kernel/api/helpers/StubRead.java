@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -32,7 +33,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read
@@ -55,7 +55,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -75,7 +75,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues )
+    public void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints )
     {
         throw new UnsupportedOperationException();
     }

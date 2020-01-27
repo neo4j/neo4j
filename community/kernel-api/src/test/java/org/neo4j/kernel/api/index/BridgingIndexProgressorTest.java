@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 class BridgingIndexProgressorTest
 {
@@ -45,7 +45,7 @@ class BridgingIndexProgressorTest
         // Given
         for ( IndexProgressor part : parts )
         {
-            progressor.initialize( index, part, null, IndexOrder.NONE, false, false );
+            progressor.initialize( index, part, null, unconstrained(), false );
         }
 
         // When

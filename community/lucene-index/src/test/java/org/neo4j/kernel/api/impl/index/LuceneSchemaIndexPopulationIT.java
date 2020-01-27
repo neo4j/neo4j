@@ -30,7 +30,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -54,6 +53,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -106,7 +106,7 @@ class LuceneSchemaIndexPopulationIT
                       NodeValueIterator results = new NodeValueIterator();
                       IndexSampler indexSampler = indexReader.createSampler() )
                 {
-                    indexReader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, NULL, IndexQuery.exists( 1 ) );
+                    indexReader.query( NULL_CONTEXT, results, unconstrained(), NULL, IndexQuery.exists( 1 ) );
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 

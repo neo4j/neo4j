@@ -177,7 +177,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
         return new IndexProvider.Adaptor( providerDescriptor, directoryFactory )
         {
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
             {
                 return failingIndexAccessor();
             }

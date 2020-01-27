@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
@@ -50,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @PageCacheExtension
 class NonUniqueIndexTest
@@ -98,8 +98,7 @@ class NonUniqueIndexTest
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
                 {
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false,
-                            IndexQuery.exact( 1, VALUE ) );
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exact( 1, VALUE ) );
                     assertTrue( cursor.next() );
                     assertEquals( node.getId(), cursor.nodeReference() );
                     assertFalse( cursor.next() );

@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
@@ -48,6 +47,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
@@ -148,7 +148,7 @@ class SchemaComplianceChecker implements AutoCloseable
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, TRACER_SUPPLIER.get(), query );
+            reader.query( NULL_CONTEXT, iterator, unconstrained(), TRACER_SUPPLIER.get(), query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )

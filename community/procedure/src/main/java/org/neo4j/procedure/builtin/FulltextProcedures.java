@@ -51,7 +51,6 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
@@ -68,6 +67,7 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.FULLTEXT_PREFIX;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
@@ -223,7 +223,7 @@ public class FulltextProcedures
         }
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
-        tx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+        tx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>()
         {

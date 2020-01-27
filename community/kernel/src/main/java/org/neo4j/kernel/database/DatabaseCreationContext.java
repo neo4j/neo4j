@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;

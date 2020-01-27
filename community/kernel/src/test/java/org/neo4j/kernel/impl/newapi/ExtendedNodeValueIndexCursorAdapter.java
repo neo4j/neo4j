@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -108,7 +108,7 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable 
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
     }

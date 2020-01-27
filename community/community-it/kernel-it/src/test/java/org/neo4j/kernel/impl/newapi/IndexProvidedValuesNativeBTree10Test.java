@@ -34,7 +34,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -48,6 +47,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
@@ -121,7 +121,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         IndexReadSession index = read.indexReadSession( indexNodeProp );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
-            read.nodeIndexScan( index, node, IndexOrder.NONE, true );
+            read.nodeIndexScan( index, node, unorderedValues() );
 
             List<Value> values = new ArrayList<>();
             while ( node.next() )
@@ -143,7 +143,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         IndexReadSession index = read.indexReadSession( indexNodePropPrip );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
-            read.nodeIndexScan( index, node, IndexOrder.NONE, true );
+            read.nodeIndexScan( index, node, unorderedValues() );
 
             List<ValueTuple> values = new ArrayList<>();
             while ( node.next() )

@@ -36,6 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -64,6 +65,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -230,7 +235,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     void shouldPerformExactLookup() throws Exception
     {
         // given
-        boolean needsValues = false;
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
@@ -238,97 +242,97 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "zero" ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, "zero" ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "one" ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, "one" ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, strOne );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "two" ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, "two" ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, strTwo1, strTwo2 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "three" ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, "three" ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, strThree1, strThree2, strThree3 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, 1 ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, 1 ) );
 
             // then
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             //when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, 2 ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, 2 ) );
 
             // then
             assertFoundNodesAndNoValue( node, 2, uniqueIds );
 
             //when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, 3 ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, 3 ) );
 
             // then
             assertFoundNodesAndNoValue( node, 3, uniqueIds );
 
             //when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, 6 ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, 6 ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, num6 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, 12.0 ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, 12.0 ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, num12a, num12b );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, true ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, true ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, boolTrue );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 3, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 2, uniqueIds );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, DateValue.date( 1986, 11, 18 ) ) );
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( prop, DateValue.date( 1986, 11, 18 ) ) );
 
             // then
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
@@ -339,7 +343,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     void shouldPerformExactLookupInCompositeIndex() throws Exception
     {
         // given
-        boolean needsValues = false;
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
@@ -348,7 +351,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Joe" ),
+            read.nodeIndexSeek( index, node, unconstrained(), IndexQuery.exact( firstName, "Joe" ),
                 IndexQuery.exact( surname, "Dalton" ) );
 
             // then
@@ -370,7 +373,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
+            read.nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
 
             // then
             assertThat( node.numberOfProperties() ).isEqualTo( 1 );
@@ -392,7 +395,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
+            read.nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
 
             // then
             assertThat( node.numberOfProperties() ).isEqualTo( 1 );
@@ -413,7 +416,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringContains( prop, stringValue( "o" ) ) );
+            read.nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringContains( prop, stringValue( "o" ) ) );
 
             // then
             assertThat( node.numberOfProperties() ).isEqualTo( 1 );
@@ -426,6 +429,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesStringValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
@@ -434,32 +438,32 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "three", true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
 
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "three", false ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, "one", true, "three", false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strOne );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", false, "three", true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, "one", false, "three", true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", false, "two", false ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, "one", false, "two", false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "two", true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, "one", true, "two", true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3,
@@ -472,6 +476,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesNumericValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability numberCapability = index.reference().getCapability().valueCapability( ValueCategory.NUMBER );
@@ -480,25 +485,25 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, 5, true, 12, true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, 5, true, 12, true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, numberCapability, needsValues, num5, num6, num12a, num12b );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, 5, true, 12, false ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, 5, true, 12, false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, numberCapability, needsValues, num5, num6 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, 5, false, 12, true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, 5, false, 12, true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, numberCapability, needsValues, num6, num12a, num12b );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, 5, false, 12, false ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, 5, false, 12, false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, numberCapability, needsValues, num6 );
@@ -510,6 +515,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesTemporalValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability temporalCapability = index.reference().getCapability().valueCapability( ValueCategory.TEMPORAL );
@@ -518,28 +524,28 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues,
+            read.nodeIndexSeek( index, node, constraints,
                     IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, temporalCapability, needsValues, date86, date891, date892 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues,
+            read.nodeIndexSeek( index, node, constraints,
                     IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, temporalCapability, needsValues, date86 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues,
+            read.nodeIndexSeek( index, node, constraints,
                     IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), true ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, temporalCapability, needsValues, date891, date892 );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues,
+            read.nodeIndexSeek( index, node, constraints,
                     IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
 
             // then
@@ -552,6 +558,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesSpatialValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability spatialCapability = index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY );
@@ -560,25 +567,25 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, Cartesian ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, Cartesian ) );
 
             // then
             assertFoundNodesAndValue( node, 5, uniqueIds, spatialCapability, needsValues );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, Cartesian_3D ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, Cartesian_3D ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, WGS84 ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, WGS84 ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, WGS84_3D ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.range( prop, WGS84_3D ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability, needsValues );
@@ -590,6 +597,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesBooleanValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.BOOLEAN.category() );
@@ -598,13 +606,13 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, false ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.exact( prop, false ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, capability, needsValues );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, true ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.exact( prop, true ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, capability, needsValues );
@@ -616,6 +624,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         boolean needsValues = indexProvidesArrayValues();
+        IndexQueryConstraints constraints = unordered( needsValues );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.TEXT_ARRAY.category() );
@@ -624,13 +633,13 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, new String[]{"first", "second", "third"} ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.exact( prop, new String[]{"first", "second", "third"} ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, capability, needsValues );
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, new String[]{"fourth", "fifth", "sixth", "seventh"} ) );
+            read.nodeIndexSeek( index, node, constraints, IndexQuery.exact( prop, new String[]{"fourth", "fifth", "sixth", "seventh"} ) );
 
             // then
             assertFoundNodesAndValue( node, 1, uniqueIds, capability, needsValues );
@@ -648,7 +657,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexScan( index, node, IndexOrder.NONE, indexProvidesAllValues() );
+            read.nodeIndexScan( index, node, unordered( indexProvidesAllValues() ) );
 
             // then
             assertThat( node.numberOfProperties() ).isEqualTo( 1 );
@@ -669,7 +678,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop, 1, true, 42, true ) );
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -690,7 +699,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop, "one", true, "two", true ) );
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -711,7 +720,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues,
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ),
                         IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
                 // then
@@ -733,7 +742,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -754,7 +763,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.range( prop,
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop,
                         Values.of( new String[]{"first", "second", "third"} ), true,
                         Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
@@ -777,7 +786,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, orderCapability, needsValues, IndexQuery.exists( prop ) );
+                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.exists( prop ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -800,7 +809,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, true, IndexQuery.range( prop, Cartesian ) );
+            read.nodeIndexSeek( index, node, unorderedValues(), IndexQuery.range( prop, Cartesian ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );
@@ -823,7 +832,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, true, IndexQuery.exists( prop ) );
+            read.nodeIndexSeek( index, node, unorderedValues(), IndexQuery.exists( prop ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, valueCapability, true, nodesOfAllPropertyTypes );
@@ -996,13 +1005,13 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
+            tx.dataRead().nodeIndexScan( index, node, unordered( needsValues ) );
             assertThat( node.numberOfProperties() ).isEqualTo( 1 );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, needsValues );
 
             // then
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
+            tx.dataRead().nodeIndexScan( index, node, unordered( needsValues ) );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT - 1, uniqueIds, wildcardCapability, needsValues );
         }
     }
@@ -1019,7 +1028,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "one" ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( node.next() );
@@ -1039,7 +1048,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "one" ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( node.next() );
@@ -1058,7 +1067,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "one" ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( node.next() );
@@ -1077,7 +1086,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( prop, "ett" ) );
 
             // then
             assertTrue( node.next() );
@@ -1099,7 +1108,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( prop, "one" ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
 
             // then
             assertTrue( node.next() );
@@ -1122,7 +1131,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             tx.dataWrite().nodeDelete( strThree1 );
             tx.dataWrite().nodeDelete( strThree2 );
             tx.dataWrite().nodeDelete( strThree3 );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "three", true ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( node.next() );
@@ -1145,7 +1154,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             tx.dataWrite().nodeRemoveLabel( strThree1, label );
             tx.dataWrite().nodeRemoveLabel( strThree2, label );
             tx.dataWrite().nodeRemoveLabel( strThree3, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "three", true ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( node.next() );
@@ -1167,7 +1176,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             tx.dataWrite().nodeSetProperty( strThree1, prop, stringValue( "tre" ) );
             tx.dataWrite().nodeSetProperty( strThree2, prop, stringValue( "tre" ) );
             tx.dataWrite().nodeSetProperty( strThree3, prop, stringValue( "tre" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "three", true ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( node.next() );
@@ -1186,7 +1195,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "ett", true, "tre", true ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.range( prop, "ett", true, "tre", true ) );
 
             // then
             assertTrue( node.next() );
@@ -1208,7 +1217,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.range( prop, "one", true, "ones", true ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.range( prop, "one", true, "ones", true ) );
 
             // then
             assertTrue( node.next() );
@@ -1229,7 +1238,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1249,7 +1258,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1268,7 +1277,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1287,7 +1296,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "et" ) ) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "et" ) ) );
 
             // then
             assertTrue( node.next() );
@@ -1309,7 +1318,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertTrue( node.next() );
@@ -1330,7 +1339,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeDelete( jackDalton );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Jack" ),
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( firstName, "Jack" ),
                     IndexQuery.exact( surname, "Dalton" ) );
 
             // then
@@ -1352,7 +1361,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeRemoveLabel( joeDalton, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Joe" ),
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( firstName, "Joe" ),
                     IndexQuery.exact( surname, "Dalton" ) );
             // then
             assertFalse( node.next() );
@@ -1373,7 +1382,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
             tx.dataWrite().nodeSetProperty( jackDalton, surname, stringValue( "James" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Jack" ),
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( firstName, "Jack" ),
                     IndexQuery.exact( surname, "Dalton" ) );
 
             // then
@@ -1395,7 +1404,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
             tx.dataWrite().nodeSetProperty( jackDalton, surname, stringValue( "James" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Jesse" ),
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( firstName, "Jesse" ),
                     IndexQuery.exact( surname, "James" ) );
 
             // then
@@ -1421,7 +1430,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
             tx.dataWrite().nodeSetProperty( strOneNoLabel, firstName, stringValue( "Jesse" ) );
             tx.dataWrite().nodeSetProperty( strOneNoLabel, surname, stringValue( "James" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.exact( firstName, "Jesse" ),
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.exact( firstName, "Jesse" ),
                     IndexQuery.exact( surname, "James" ) );
 
             // then

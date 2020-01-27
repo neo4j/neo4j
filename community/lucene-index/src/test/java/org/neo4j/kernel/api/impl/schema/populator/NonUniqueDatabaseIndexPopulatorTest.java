@@ -31,7 +31,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
@@ -52,6 +51,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
@@ -151,7 +151,7 @@ class NonUniqueDatabaseIndexPopulatorTest
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
             int propertyKeyId = labelSchemaDescriptor.getPropertyId();
-            reader.query( NULL_CONTEXT, allEntities, IndexOrder.NONE, false, PageCursorTracer.NULL, IndexQuery.exists( propertyKeyId ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), PageCursorTracer.NULL, IndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

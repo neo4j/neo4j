@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.api.PublicApi;

@@ -48,6 +48,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
@@ -152,7 +153,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
     {
         cursor.setTracer( tracer );
 
-        tx.dataRead().nodeIndexSeek( session, cursor, order, needsValues, IndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
+        tx.dataRead().nodeIndexSeek( session, cursor, ordered( order, needsValues ), IndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
         tracer.assertEvents( OnIndexSeek() );
 
         assertTrue( cursor.next() );

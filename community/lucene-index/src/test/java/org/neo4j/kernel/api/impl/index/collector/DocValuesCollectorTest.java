@@ -35,8 +35,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -394,7 +394,7 @@ final class DocValuesCollectorTest
         }
 
         @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
                 boolean indexIncludesTransactionState )
         {
         }

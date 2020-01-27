@@ -28,7 +28,7 @@ class GenericNativeIndexPopulationStressTest extends IndexPopulationStressTest
 {
     GenericNativeIndexPopulationStressTest()
     {
-        super( "generic", true, RandomValues::nextValue, test ->
+        super( true, RandomValues::nextValue, test ->
         {
             DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs ).build();
             return new GenericNativeIndexProvider( context, test.directory(), immediate(), defaults() );

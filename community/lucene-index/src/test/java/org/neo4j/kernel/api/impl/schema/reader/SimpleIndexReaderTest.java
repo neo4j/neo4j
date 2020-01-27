@@ -35,7 +35,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -55,6 +54,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -157,7 +157,7 @@ class SimpleIndexReaderTest
 
     private void doQuery( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
-        reader.query( NULL_CONTEXT, new NodeValueIterator(), IndexOrder.NONE, false, NULL, query );
+        reader.query( NULL_CONTEXT, new NodeValueIterator(), unconstrained(), NULL, query );
     }
 
     private SimpleIndexReader getNonUniqueSimpleReader()

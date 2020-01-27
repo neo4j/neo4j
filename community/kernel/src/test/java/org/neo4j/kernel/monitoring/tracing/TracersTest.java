@@ -33,7 +33,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;

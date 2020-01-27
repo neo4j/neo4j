@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -67,6 +66,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -334,7 +334,7 @@ public class DatabaseIndexAccessorTest
     private NodeValueIterator results( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
-        reader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, NULL, queries );
+        reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
         return results;
     }
 

@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -59,6 +58,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
@@ -250,7 +250,7 @@ class GenericAccessorPointsTest
             for ( Value value : values )
             {
                 IndexQuery.ExactPredicate exact = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                indexReader.query( QueryContext.NULL_CONTEXT, client, IndexOrder.NONE, true, NULL, exact );
+                indexReader.query( QueryContext.NULL_CONTEXT, client, unorderedValues(), NULL, exact );
 
                 // then
                 assertTrue( client.next() );

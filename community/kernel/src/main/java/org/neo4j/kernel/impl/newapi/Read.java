@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -45,7 +46,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -67,6 +67,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -98,7 +99,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
@@ -113,7 +114,7 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, indexSession.reader );
-        indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, cursorTracer, query );
+        indexSession.reader.query( this, withFullPrecision, constraints, cursorTracer, query );
     }
 
     @Override
@@ -131,7 +132,7 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
-        reader.query( this, withFullPrecision, IndexOrder.NONE, false, cursorTracer, query );
+        reader.query( this, withFullPrecision, unconstrained(), cursorTracer, query );
     }
 
     @Override
@@ -146,8 +147,7 @@ abstract class Read implements TxStateHolder,
         reader.distinctValues( cursorImpl, accessor, needsValues, cursorTracer );
     }
 
-    private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode,
-            IndexDescriptor index )
+    private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode, IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
         int[] propertyIds = schema.getPropertyIds();
@@ -284,14 +284,13 @@ abstract class Read implements TxStateHolder,
         cursor.setRead( this );
         IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, indexReader );
         // we never need values for exact predicates
-        indexReader.query( this, target, IndexOrder.NONE, false, cursorTracer, query );
+        indexReader.query( this, target, unconstrained(), cursorTracer, query );
     }
 
     @Override
     public final void nodeIndexScan( IndexReadSession index,
                                      NodeValueIndexCursor cursor,
-                                     IndexOrder indexOrder,
-                                     boolean needsValues ) throws KernelException
+                                     IndexQueryConstraints constraints ) throws KernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
@@ -307,7 +306,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference );
-        indexSession.reader.query( this, withSecurity, indexOrder, needsValues, cursorTracer, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, withSecurity, constraints, cursorTracer, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

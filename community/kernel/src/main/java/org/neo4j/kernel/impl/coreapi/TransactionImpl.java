@@ -69,7 +69,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -100,6 +99,7 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -645,7 +645,7 @@ public class TransactionImpl implements InternalTransaction
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
-                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
+                read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
                 return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
             }
@@ -715,7 +715,7 @@ public class TransactionImpl implements InternalTransaction
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
-                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
+                read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
             }
             catch ( KernelException e )

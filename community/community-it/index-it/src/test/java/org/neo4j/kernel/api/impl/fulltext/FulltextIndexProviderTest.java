@@ -53,6 +53,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -66,7 +67,6 @@ import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -103,6 +103,7 @@ import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
@@ -441,7 +442,7 @@ public class FulltextIndexProviderTest
 
                 @Override
                 public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                        IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+                        IndexQuery[] query, IndexQueryConstraints constraints,
                         boolean indexIncludesTransactionState )
                 {
                     this.progressor = progressor;
@@ -459,7 +460,7 @@ public class FulltextIndexProviderTest
             };
             Read read = ktx.dataRead();
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-            read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
+            read.nodeIndexSeek( indexSession, cursor, unconstrained(), fulltextSearch( "hej:\"villa\"" ) );
             int counter = 0;
             while ( cursor.next() )
             {
@@ -1152,7 +1153,7 @@ public class FulltextIndexProviderTest
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
             List<Long> actualResult = new ArrayList<>();
-            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, query );
+            ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), query );
             while ( cursor.next() )
             {
                 actualResult.add( cursor.nodeReference() );
@@ -1183,7 +1184,7 @@ public class FulltextIndexProviderTest
         return IndexQuery.exact( containsPropertyId, Values.of( object ) );
     }
 
-    private IndexQuery.RangePredicate rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    private IndexQuery.RangePredicate<?> rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
         return IndexQuery.range( containsPropertyId, Values.of( from ), fromInclusive, Values.of( to ), toInclusive );
     }
@@ -1280,17 +1281,17 @@ public class FulltextIndexProviderTest
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value" ) );
+                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.nodeReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "villa" ) );
+                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
                 assertEquals( thirdNodeId, cursor.nodeReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value3" ) );
+                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value3" ) );
                 MutableLongSet ids = LongSets.mutable.empty();
                 ids.add( 0L );
                 ids.add( thirdNodeId );

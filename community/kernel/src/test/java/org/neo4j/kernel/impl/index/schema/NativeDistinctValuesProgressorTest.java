@@ -33,7 +33,6 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
@@ -45,6 +44,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexValue.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -70,7 +70,7 @@ class NativeDistinctValuesProgressorTest
         // when
         NativeDistinctValuesProgressor<GenericKey,NativeIndexValue> progressor =
                 new NativeDistinctValuesProgressor<>( source, client, layout, layout::compareValue );
-        client.initialize( null, progressor, new IndexQuery[0], IndexOrder.NONE, true, false );
+        client.initialize( null, progressor, new IndexQuery[0], unorderedValues(), false );
         Map<Value,MutableInt> expectedCounts = asDistinctCounts( strings );
 
         // then

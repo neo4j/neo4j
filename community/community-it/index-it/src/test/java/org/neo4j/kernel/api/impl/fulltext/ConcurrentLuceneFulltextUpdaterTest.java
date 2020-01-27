@@ -31,13 +31,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 /**
  * Concurrent updates and index changes should result in valid state, and not create conflicts or exceptions during
@@ -89,7 +89,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "nodes" ) );
             try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( index, bobCursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "bob" ) );
+                ktx.dataRead().nodeIndexSeek( index, bobCursor, unconstrained(), IndexQuery.fulltextSearch( "bob" ) );
                 int bobCount = 0;
                 while ( bobCursor.next() )
                 {
@@ -99,7 +99,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             }
             try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( index, aliceCursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "alice" ) );
+                ktx.dataRead().nodeIndexSeek( index, aliceCursor, unconstrained(), IndexQuery.fulltextSearch( "alice" ) );
                 int aliceCount = 0;
                 while ( aliceCursor.next() )
                 {

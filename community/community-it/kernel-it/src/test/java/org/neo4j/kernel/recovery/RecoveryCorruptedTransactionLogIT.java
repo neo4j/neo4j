@@ -87,7 +87,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;

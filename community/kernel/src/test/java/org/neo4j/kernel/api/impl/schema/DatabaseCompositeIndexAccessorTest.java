@@ -48,7 +48,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -95,6 +94,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -323,7 +323,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, NULL, queries );
+            reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
             return toSet( results );
         }
     }

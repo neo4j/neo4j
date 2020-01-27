@@ -48,7 +48,6 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;

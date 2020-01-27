@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -45,6 +44,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.values.storable.Values.stringValue;
 
 
@@ -374,7 +374,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().nodeIndexSeek( indexSession, nodes, IndexOrder.NONE, needsValues, queries );
+            tx.dataRead().nodeIndexSeek( indexSession, nodes, unordered( needsValues ), queries );
             assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
         }
     }
@@ -397,7 +397,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
         {
-            tx.dataRead().nodeIndexScan( indexSession, nodes, IndexOrder.NONE, needsValues );
+            tx.dataRead().nodeIndexScan( indexSession, nodes, unordered( needsValues ) );
             assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
         }
     }

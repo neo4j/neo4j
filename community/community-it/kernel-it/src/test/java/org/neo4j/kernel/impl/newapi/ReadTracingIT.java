@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
-import static org.neo4j.internal.schema.IndexOrder.NONE;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @DbmsExtension
@@ -71,7 +71,7 @@ class ReadTracingIT
             var indexSession = dataRead.indexReadSession( indexDescriptor );
             try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor() )
             {
-                dataRead.nodeIndexSeek( indexSession, cursor, NONE, false, stringContains( propertyId, stringValue( testPropertyValue ) ) );
+                dataRead.nodeIndexSeek( indexSession, cursor, unconstrained(), stringContains( propertyId, stringValue( testPropertyValue ) ) );
 
                 consumeCursor( cursor );
             }
@@ -159,7 +159,7 @@ class ReadTracingIT
             var indexSession = dataRead.indexReadSession( indexDescriptor );
             try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor() )
             {
-                dataRead.nodeIndexScan( indexSession, cursor, NONE, false );
+                dataRead.nodeIndexScan( indexSession, cursor, unconstrained() );
 
                 consumeCursor( cursor );
             }

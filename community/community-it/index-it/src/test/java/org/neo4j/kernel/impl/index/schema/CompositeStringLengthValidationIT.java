@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -55,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @ExtendWith( RandomExtension.class )
 @DbmsExtension( configurationCallback = "config" )
@@ -116,7 +116,7 @@ class CompositeStringLengthValidationIT
             {
                 IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
                 ktx.dataRead().nodeIndexSeek( indexReadSession,
-                                              cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, firstSlot ),
+                                              cursor, unconstrained(), IndexQuery.exact( propertyKeyId1, firstSlot ),
                                               IndexQuery.exact( propertyKeyId2, secondSlot ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );

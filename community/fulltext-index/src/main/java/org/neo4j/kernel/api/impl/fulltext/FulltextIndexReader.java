@@ -41,10 +41,10 @@ import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -123,7 +123,7 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             PageCursorTracer cursorTracer, IndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
@@ -197,7 +197,7 @@ public class FulltextIndexReader implements IndexReader
             itr = transactionState.filter( itr, query );
         }
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client );
-        client.initialize( index, progressor, queries, indexOrder, needsValues, true );
+        client.initialize( index, progressor, queries, constraints, true );
     }
 
     @Override

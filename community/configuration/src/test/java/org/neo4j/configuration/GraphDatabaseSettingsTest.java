@@ -36,7 +36,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

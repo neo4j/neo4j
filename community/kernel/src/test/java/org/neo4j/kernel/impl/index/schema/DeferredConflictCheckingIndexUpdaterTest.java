@@ -38,7 +38,6 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -61,7 +60,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         IndexReader reader = mock( IndexReader.class );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), any(), any() );
         long nodeId = 0;
         List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
@@ -90,7 +89,7 @@ class DeferredConflictCheckingIndexUpdaterTest
                 {
                     query[i] = IndexQuery.exact( propertyKeyIds[i], tuple[i] );
                 }
-                verify( reader ).query( any(), any(), any(), anyBoolean(), any(), eq( query[0] ), eq( query[1] ) );
+                verify( reader ).query( any(), any(), any(), any(), eq( query[0] ), eq( query[1] ) );
             }
         }
         verify( reader ).close();
@@ -103,7 +102,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         IndexReader reader = mock( IndexReader.class );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), any(), any() );
         DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL );
 
         // when

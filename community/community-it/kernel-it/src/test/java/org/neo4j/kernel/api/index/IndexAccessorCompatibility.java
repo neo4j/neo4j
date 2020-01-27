@@ -50,6 +50,8 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -116,7 +118,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, nodeValueClient, IndexOrder.NONE, false, NULL, predicates );
+            reader.query( NULL_CONTEXT, nodeValueClient, unconstrained(), NULL, predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
             {
@@ -134,7 +136,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
-        reader.query( NULL_CONTEXT, client, order, false, NULL, predicates );
+        reader.query( NULL_CONTEXT, client, ordered( order, false ), NULL, predicates );
         return reader;
     }
 

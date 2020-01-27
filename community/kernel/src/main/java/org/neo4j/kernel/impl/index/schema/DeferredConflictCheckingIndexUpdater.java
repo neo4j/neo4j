@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -35,6 +34,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.UpdateMode.REMOVED;
 
@@ -96,7 +96,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
             {
                 try ( NodeValueIterator client = new NodeValueIterator() )
                 {
-                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, cursorTracer, queryOf( tuple ) );
+                    reader.query( NULL_CONTEXT, client, unconstrained(), cursorTracer, queryOf( tuple ) );
                     if ( client.hasNext() )
                     {
                         long firstEntityId = client.next();

@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -35,18 +35,16 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public IndexDescriptor descriptor;
     public IndexProgressor progressor;
     public IndexQuery[] query;
-    public IndexOrder order;
-    public boolean needsValues;
+    public IndexQueryConstraints constraints;
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder order, boolean needsValues,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
         this.descriptor = descriptor;
         this.progressor = progressor;
         this.query = query;
-        this.order = order;
-        this.needsValues = needsValues;
+        this.constraints = constraints;
     }
 
     @Override
@@ -60,6 +58,6 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     @Override
     public boolean needsValues()
     {
-        return needsValues;
+        return constraints.needsValues();
     }
 }

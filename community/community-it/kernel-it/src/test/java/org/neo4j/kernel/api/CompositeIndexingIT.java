@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -54,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 @ImpermanentDbmsExtension
@@ -353,7 +353,7 @@ class CompositeIndexingIT
     {
         NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
         IndexReadSession indexSession = transaction.dataRead().indexReadSession( index );
-        transaction.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, exactQuery() );
+        transaction.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), exactQuery() );
         return cursor;
     }
 

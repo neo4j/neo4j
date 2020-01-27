@@ -30,11 +30,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -180,26 +181,25 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
         Map<Integer,Value> properties = new HashMap<>();
         int[] propertyKeyIds = new int[slots];
         int filterCount = 0;
-        for ( int i = 0; i < slots; i++ )
+        for ( int propertyKeyId = 0; propertyKeyId < slots; propertyKeyId++ )
         {
-            actualValues[i] = random.nextValue();
-            int propertyKeyId = i;
-            propertyKeyIds[i] = propertyKeyId;
-            //    we want at least one filter         ,  randomly add filter or not
-            if ( (filterCount == 0 && i == slots - 1) || random.nextBoolean() )
+            actualValues[propertyKeyId] = random.nextValue();
+            propertyKeyIds[propertyKeyId] = propertyKeyId;
+            // we want at least one filter, and randomly add the filter or not.
+            if ( (filterCount == 0 && propertyKeyId == slots - 1) || random.nextBoolean() )
             {
-                Object filterValue = (filterAcceptsValue ? actualValues[i] : anyOtherValueThan( actualValues[i] )).asObjectCopy();
-                filters[i] = IndexQuery.exact( propertyKeyId, filterValue );
+                Object filterValue = (filterAcceptsValue ? actualValues[propertyKeyId] : anyOtherValueThan( actualValues[propertyKeyId] )).asObjectCopy();
+                filters[propertyKeyId] = IndexQuery.exact( propertyKeyId, filterValue );
                 filterCount++;
             }
-            values[i] = random.nextBoolean() ? NO_VALUE : actualValues[i];
-            properties.put( propertyKeyId, actualValues[i] );
+            values[propertyKeyId] = random.nextBoolean() ? NO_VALUE : actualValues[propertyKeyId];
+            properties.put( propertyKeyId, actualValues[propertyKeyId] );
         }
         node.withNode( nodeReference, new long[]{labelId}, properties );
 
         // when
         NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, IndexOrder.NONE, true, false );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, unorderedValues(), false );
         boolean accepted = filter.acceptEntity( nodeReference, score, filterValues.apply( values ) );
 
         // then
@@ -225,14 +225,14 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
         {
             propKeyIds[i] = filters[i].propertyKeyId();
         }
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, propKeyIds ), this, null, IndexOrder.NONE, true, false );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, propKeyIds ), this, null, unorderedValues(), false );
         return filter;
     }
 
     private NodeValueClientFilter initializeFilter()
     {
         NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, 0 ), this, null, IndexOrder.NONE, true, false );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, 0 ), this, null, unorderedValues(), false );
         return filter;
     }
 
@@ -247,7 +247,7 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, IndexOrder indexOrder, boolean needsValues,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );

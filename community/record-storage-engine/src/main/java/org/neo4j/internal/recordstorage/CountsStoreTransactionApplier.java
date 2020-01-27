@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {

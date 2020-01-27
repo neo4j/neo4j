@@ -75,7 +75,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;

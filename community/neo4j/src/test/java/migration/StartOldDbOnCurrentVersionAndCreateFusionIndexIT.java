@@ -49,7 +49,6 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
@@ -78,6 +77,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.test.Unzip.unzip;
 
 @Neo4jLayoutExtension
@@ -515,7 +515,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             int count = 0;
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, predicates );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), predicates );
                 while ( cursor.next() )
                 {
                     count++;

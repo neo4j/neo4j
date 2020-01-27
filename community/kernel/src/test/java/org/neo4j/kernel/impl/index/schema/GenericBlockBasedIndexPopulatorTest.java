@@ -29,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -55,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
@@ -292,7 +293,7 @@ class GenericBlockBasedIndexPopulatorTest
         {
             SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
             IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
-            reader.query( NULL_CONTEXT, valueClient, IndexOrder.NONE, false, NULL, exact );
+            reader.query( NULL_CONTEXT, valueClient, unconstrained(), NULL, exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;
             assertEquals( expectedId, id );
@@ -314,7 +315,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient cursor = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, true, NULL, IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
+            reader.query( NULL_CONTEXT, cursor, unorderedValues(), NULL, IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
             assertEquals( value, cursor.values[0] );

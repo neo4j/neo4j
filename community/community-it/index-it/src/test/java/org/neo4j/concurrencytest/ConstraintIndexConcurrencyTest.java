@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -46,6 +45,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @ImpermanentDbmsExtension
 @ExtendWith( ThreadingExtension.class )
@@ -83,7 +83,7 @@ class ConstraintIndexConcurrencyTest
             {
                 IndexDescriptor index = ktx.schemaRead().indexGetForName( constraintName );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false,
+                read.nodeIndexSeek( indexSession, cursor, unconstrained(),
                         IndexQuery.exact( propertyKeyId,
                                 "The value is irrelevant, we just want to perform some sort of lookup against this " + "index" ) );
             }

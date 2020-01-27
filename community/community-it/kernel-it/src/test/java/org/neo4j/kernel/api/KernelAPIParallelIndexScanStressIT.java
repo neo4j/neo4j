@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -43,6 +42,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension
@@ -134,7 +134,7 @@ class KernelAPIParallelIndexScanStressIT
             try
             {
                 IndexQuery.ExistsPredicate query = IndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
-                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, true, query );
+                read.nodeIndexSeek( index, cursor, unorderedValues(), query );
                 int n = 0;
                 while ( cursor.next() )
                 {

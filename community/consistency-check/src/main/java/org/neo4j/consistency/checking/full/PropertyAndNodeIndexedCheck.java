@@ -43,7 +43,6 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -57,6 +56,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.values.storable.NoValue.NO_VALUE;
@@ -254,7 +254,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, TRACER_SUPPLIER.get(), query );
+            reader.query( NULL_CONTEXT, iterator, unconstrained(), TRACER_SUPPLIER.get(), query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )

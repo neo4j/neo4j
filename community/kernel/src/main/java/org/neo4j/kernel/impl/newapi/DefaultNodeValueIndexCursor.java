@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -82,16 +83,15 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     public void initialize( IndexDescriptor descriptor,
                             IndexProgressor progressor,
                             IndexQuery[] query,
-                            IndexOrder indexOrder,
-                            boolean needsValues,
+                            IndexQueryConstraints constraints,
                             boolean indexIncludesTransactionState )
     {
         assert query != null;
         super.initialize( progressor );
         sortedMergeJoin.initialize( indexOrder );
 
-        this.indexOrder = indexOrder;
-        this.needsValues = needsValues;
+        this.indexOrder = constraints.order();
+        this.needsValues = constraints.needsValues();
         this.query = query;
 
         if ( tracer != null )
@@ -142,7 +142,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                     // This case covers first query to be range or exact followed by range
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
-                    rangeQuery( descriptor, exactValues, (IndexQuery.RangePredicate) nextQuery );
+                    rangeQuery( descriptor, exactValues, (IndexQuery.RangePredicate<?>) nextQuery );
                     break;
 
                 case stringPrefix:

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
