@@ -52,8 +52,6 @@ class TruncateDatabaseIT
     private GraphDatabaseAPI databaseAPI;
     @Inject
     private Database database;
-    @Inject
-    private LogFiles logFiles;
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
@@ -220,13 +218,13 @@ class TruncateDatabaseIT
             transaction.commit();
         }
         assertEquals( 20, countPropertyKeys() );
-        long lastEntryId = logFiles.getLogFileInformation().getLastEntryId();
+        long lastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
         // at least 10 transactions made it to the logs
         assertThat( lastEntryId ).isGreaterThanOrEqualTo( 10L );
 
         truncator.truncate( database );
 
-        long truncatedLastEntryId = logFiles.getLogFileInformation().getLastEntryId();
+        long truncatedLastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
         assertThat( truncatedLastEntryId ).isEqualTo( 1L );
     }
 
@@ -270,6 +268,11 @@ class TruncateDatabaseIT
     private RecordStorageEngine getRecordStorageEngine()
     {
         return database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+    }
+
+    private LogFiles getLogFiles()
+    {
+        return database.getDependencyResolver().resolveDependency( LogFiles.class );
     }
 
     private void awaitIndexes()
