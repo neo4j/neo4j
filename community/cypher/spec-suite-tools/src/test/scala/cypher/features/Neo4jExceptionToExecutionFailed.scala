@@ -135,7 +135,7 @@ object Neo4jExceptionToExecutionFailed {
       NEGATIVE_INTEGER_ARGUMENT
     else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
       INVALID_ARGUMENT_TYPE
-    else if (msg.matches("Can't use aggregate functions inside of aggregate functions\\."))
+    else if (msg.matches(semanticError("Can't use aggregate functions inside of aggregate functions\\.")))
       NESTED_AGGREGATION
     else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
       VARIABLE_ALREADY_BOUND

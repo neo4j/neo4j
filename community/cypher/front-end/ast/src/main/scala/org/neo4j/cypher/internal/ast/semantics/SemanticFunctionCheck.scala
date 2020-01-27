@@ -30,6 +30,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         when(ctx == Expression.SemanticContext.Simple) {
           error(s"Invalid use of aggregating function ${f.name}(...) in this context", invocation.position)
         } chain {
+          checkNoNestedAggregateFunctions(invocation) chain
           SemanticExpressionCheck.check(ctx, invocation.arguments) chain
           semanticCheck(ctx, invocation)
         }
@@ -41,6 +42,13 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         when(invocation.distinct) {
           error(s"Invalid use of DISTINCT with function '${f.name}'", invocation.position)
         } chain SemanticExpressionCheck.check(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
+    }
+
+  private def checkNoNestedAggregateFunctions(invocation: FunctionInvocation): SemanticCheck =
+    invocation.args.collectFirst {
+      case expr if expr.containsAggregate => expr.findAggregate.get
+    } foldSemanticCheck {
+      expr => error("Can't use aggregate functions inside of aggregate functions.", expr.position)
     }
 
   protected def semanticCheck(ctx: Expression.SemanticContext, invocation: FunctionInvocation): SemanticCheck =

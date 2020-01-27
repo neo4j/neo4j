@@ -735,6 +735,28 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
   }
 
+  test("Should not allow to use aggregate functions inside aggregate functions") {
+    val query = "WITH 1 AS x RETURN sum(max(x)) AS sumOfMax"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
+  }
+
+  test("Should not allow to use count(*) inside aggregate functions") {
+    val query = "WITH 1 AS x RETURN min(count(*)) AS minOfCount"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
+  }
+
   private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
