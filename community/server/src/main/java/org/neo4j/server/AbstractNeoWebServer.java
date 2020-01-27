@@ -38,6 +38,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -402,7 +403,9 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     {
         ComponentsBinder binder = new ComponentsBinder();
 
+        var databaseStateService = getGlobalDependencies().resolveDependency( DatabaseStateService.class );
         binder.addSingletonBinding( databaseManagementService, DatabaseManagementService.class );
+        binder.addSingletonBinding( databaseStateService, DatabaseStateService.class );
         binder.addSingletonBinding( this, NeoWebServer.class );
         binder.addSingletonBinding( getConfig(), Config.class );
         binder.addSingletonBinding( getWebServer(), WebServer.class );
