@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.InOrder;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,8 +58,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -267,37 +264,11 @@ public class ConfigTest
         verify( log ).warn( "Config file [%s] does not exist.", confFile );
     }
 
-    @Test
-    public void shouldLogIfConfigFileCouldNotBeRead() throws IOException
-    {
-        Log log = mock( Log.class );
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
-        assumeFalse( confFile.canRead() );
-
-        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
-
-        config.setLogger( log );
-
-        verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
-    }
-
     @Test( expected = ConfigLoadIOException.class )
     public void mustThrowIfConfigFileCouldNotBeFound()
     {
         File confFile = testDirectory.file( "test.conf" );
 
-        Config.fromFile( confFile ).build();
-    }
-
-    @Test( expected = ConfigLoadIOException.class )
-    public void mustThrowIfConfigFileCoutNotBeRead() throws IOException
-    {
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
-        assumeFalse( confFile.canRead() );
         Config.fromFile( confFile ).build();
     }
 
