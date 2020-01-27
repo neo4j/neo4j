@@ -653,12 +653,13 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
-  test("should support composite index with existence check") {
+  test("should support composite index with equality and existence check") {
     val nodes = given {
       index("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+        case i if i % 3 == 0  => Map("prop" -> i % 20, "prop2" -> i.toString)
+        case i => Map("prop" -> i % 20)
       }, "Honey")
     }
 
@@ -671,8 +672,53 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes(10)
-    runtimeResult should beColumns("x").withSingleRow(expected)
+    val expected = nodes.filter(n => n.hasProperty("prop2") && n.getProperty("prop").asInstanceOf[Int] == 10)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should support composite index with equality and range check") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i  => Map("prop" -> i % 20, "prop2" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 > 10)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter(n => n.getProperty("prop").asInstanceOf[Int] == 10 && n.getProperty("prop2").asInstanceOf[Int] > 10)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should support composite index with range check and existence check") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 3 == 0  => Map("prop" -> i, "prop2" -> i.toString)
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop > 10, prop2)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should cache properties") {
