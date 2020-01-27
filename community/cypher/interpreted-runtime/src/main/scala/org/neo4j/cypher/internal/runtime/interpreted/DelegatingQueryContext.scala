@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}

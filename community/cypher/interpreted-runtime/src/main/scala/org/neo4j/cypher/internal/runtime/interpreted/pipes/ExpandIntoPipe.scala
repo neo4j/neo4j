@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.{getRowNode, relationshipIterator}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipIterator
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
@@ -30,7 +33,8 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 import scala.collection.Iterator
 

@@ -23,8 +23,6 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexOrderAscending, IndexOrderDescending, IndexOrderNone}
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
@@ -32,6 +30,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.{CursorIterator, IndexSearchMonitor, RelationshipCursorIterator}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.exceptions.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphalgo.BasicEvaluationContext
