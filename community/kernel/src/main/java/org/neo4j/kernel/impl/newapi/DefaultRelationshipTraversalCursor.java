@@ -39,6 +39,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
     private final PageCursorTracer cursorTracer;
     private LongIterator addedRelationships;
+    private long originNodeReference;
     private RelationshipSelection selection;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
@@ -50,17 +51,32 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     }
 
     /**
-     * Initializes this cursor to traverse over all relationships.
+     * Initializes this cursor to traverse over relationships, with a reference that was earlier retrieved from {@link NodeCursor#relationshipsReference()}.
+     *
      * @param nodeReference reference to the origin node.
      * @param reference reference to the place to start traversing these relationships.
-     * @param nodeIsDense whether or not the origin node is dense.
      * @param read reference to {@link Read}.
      */
-    void init( long nodeReference, long reference, boolean nodeIsDense, RelationshipSelection selection, Read read )
+    void init( long nodeReference, long reference, RelationshipSelection selection, Read read )
     {
+        this.originNodeReference = nodeReference;
         this.selection = selection;
-        // For lazily initialized filtering the type/direction will be null, which is what the storage cursor should get in this scenario
-        this.storeCursor.init( nodeReference, reference, nodeIsDense, selection );
+        this.storeCursor.init( nodeReference, reference, selection );
+        init( read );
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    /**
+     * Initializes this cursor to traverse over relationships, directly from the {@link NodeCursor}.
+     *
+     * @param nodeCursor {@link NodeCursor} at the origin node.
+     * @param read reference to {@link Read}.
+     */
+    void init( DefaultNodeCursor nodeCursor, RelationshipSelection selection, Read read )
+    {
+        this.originNodeReference = nodeCursor.nodeReference();
+        this.selection = selection;
+        nodeCursor.storeCursor.relationships( storeCursor, selection );
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -99,8 +115,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     public long originNodeReference()
     {
-        // This will be correct regardless of currentAddedInTx set or not
-        return storeCursor.originNodeReference();
+        return originNodeReference;
     }
 
     @Override
@@ -198,7 +213,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     protected void collectAddedTxStateSnapshot()
     {
         setupFilterStateIfNeeded();
-        NodeState nodeState = read.txState().getNodeState( storeCursor.originNodeReference() );
+        NodeState nodeState = read.txState().getNodeState( originNodeReference );
         addedRelationships = selection.addedRelationship( nodeState );
     }
 

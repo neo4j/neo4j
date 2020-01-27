@@ -43,7 +43,6 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDense;
 
 class DefaultNodeCursor extends TraceableCursor implements NodeCursor
 {
@@ -184,7 +183,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     @Override
     public void relationships( RelationshipTraversalCursor cursor, RelationshipSelection selection )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), relationshipsReferenceWithoutFlags(), isDense(), selection, read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( this, selection, read );
     }
 
     @Override
@@ -196,13 +195,6 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     @Override
     public long relationshipsReference()
     {
-        long reference = relationshipsReferenceWithoutFlags();
-        // Mark reference with special flags since this reference will leave some context behind when returned
-        return isDense() ? encodeDense( reference ) : reference;
-    }
-
-    private long relationshipsReferenceWithoutFlags()
-    {
         return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipsReference();
     }
 
@@ -213,9 +205,9 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public boolean isDense()
+    public boolean hasCheapDegrees()
     {
-        return currentAddedInTx == NO_ID && storeCursor.isDense();
+        return currentAddedInTx == NO_ID && storeCursor.hasCheapDegrees();
     }
 
     @Override

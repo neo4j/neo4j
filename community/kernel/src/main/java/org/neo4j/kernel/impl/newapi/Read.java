@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
@@ -66,9 +67,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-import static org.neo4j.storageengine.api.RelationshipSelection.lazyCapture;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
@@ -454,32 +452,9 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
+    public void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor )
     {
-        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
-        switch ( encoding )
-        {
-        case NONE:
-            // Reference was retrieved from NodeCursor#allRelationshipsReference() for a sparse node.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, false, ALL_RELATIONSHIPS, this );
-            break;
-        case DENSE:
-            // Reference was retrieved from NodeCursor#allRelationshipsReference() for a dense node
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), true, ALL_RELATIONSHIPS, this );
-            break;
-        case SELECTION:
-            // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a sparse node
-            // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), false, lazyCapture(), this );
-            break;
-        case DENSE_SELECTION:
-            // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a dense node
-            // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), true, lazyCapture(), this );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unexpected encoding " + encoding );
-        }
+        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, selection, this );
     }
 
     @Override
