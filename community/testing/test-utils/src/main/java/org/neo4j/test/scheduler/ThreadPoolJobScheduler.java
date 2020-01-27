@@ -47,6 +47,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private final ExecutorService executor;
+    private final ThreadFactory threadFactory;
 
     public ThreadPoolJobScheduler()
     {
@@ -55,12 +56,14 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     public ThreadPoolJobScheduler( String prefix )
     {
-        executor = newCachedThreadPool( new DaemonThreadFactory( prefix ) );
+        threadFactory = new DaemonThreadFactory( prefix );
+        executor = newCachedThreadPool( threadFactory );
     }
 
-    public ThreadPoolJobScheduler( ExecutorService executor )
+    public ThreadPoolJobScheduler( ExecutorService executor, ThreadFactory threadFactory )
     {
         this.executor = executor;
+        this.threadFactory = threadFactory;
     }
 
     @Override
@@ -90,7 +93,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     @Override
     public ThreadFactory threadFactory( Group group )
     {
-        throw new UnsupportedOperationException();
+        return threadFactory;
     }
 
     @Override

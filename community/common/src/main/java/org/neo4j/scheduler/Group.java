@@ -85,6 +85,7 @@ public enum Group
     CATCHUP_SERVER( "CatchupServer" ),
     THROUGHPUT_MONITOR( "ThroughputMonitor" ),
     PANIC_SERVICE( "PanicService" ),
+    CORE_STATE_APPLIER( "CoreStateApplier" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
