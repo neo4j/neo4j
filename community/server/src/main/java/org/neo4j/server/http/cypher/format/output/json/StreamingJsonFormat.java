@@ -61,7 +61,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         this.factory = createJsonFactory();
     }
 
-    private JsonFactory createJsonFactory()
+    private static JsonFactory createJsonFactory()
     {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.disable( FLUSH_AFTER_WRITE_VALUE );

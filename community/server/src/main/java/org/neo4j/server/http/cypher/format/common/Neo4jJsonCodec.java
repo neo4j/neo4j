@@ -89,7 +89,7 @@ public class Neo4jJsonCodec extends ObjectMapper
 
     public Neo4jJsonCodec()
     {
-        getSerializationConfig().without( FLUSH_AFTER_WRITE_VALUE );
+        disable( FLUSH_AFTER_WRITE_VALUE );
     }
 
     @Override
