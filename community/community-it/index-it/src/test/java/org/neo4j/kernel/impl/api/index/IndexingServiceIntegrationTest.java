@@ -90,7 +90,7 @@ public class IndexingServiceIntegrationTest
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).impermanent()
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database );
