@@ -85,6 +85,7 @@ GNU Lesser General Public License, Version 2.1
 
 MIT License
   SLF4J API Module
+  SLF4J NOP Binding
 
 Dependencies with multiple licenses
 -----------------------------------

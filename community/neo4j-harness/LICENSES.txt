@@ -2451,6 +2451,7 @@ MIT License
   jersey-inject-hk2
   jersey-media-jaxb
   SLF4J API Module
+  SLF4J NOP Binding
 ------------------------------------------------------------------------------
 
 The MIT License
