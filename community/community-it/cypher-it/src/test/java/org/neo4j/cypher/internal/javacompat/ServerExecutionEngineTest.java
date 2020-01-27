@@ -50,14 +50,14 @@ class ServerExecutionEngineTest
     private QueryExecutionEngine executionEngine;
     @Inject
     private KernelTransactionFactory transactionFactory;
+    @Inject
+    private GraphDatabaseQueryService queryService;
 
     @Test
     void shouldCloseResourcesInCancel() throws Exception
     {
         // GIVEN
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> db.getDependencyResolver()
-                                                                                                    .resolveDependency( GraphDatabaseQueryService.class ),
-                                                                                                    transactionFactory );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> queryService, transactionFactory );
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 
