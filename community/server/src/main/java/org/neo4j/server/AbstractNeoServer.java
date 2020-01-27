@@ -36,6 +36,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -394,10 +395,12 @@ public abstract class AbstractNeoServer implements NeoServer
     private ComponentsBinder createComponentsBinder()
     {
         DatabaseService database = getDatabaseService();
+        var databaseStateService = getSystemDatabaseDependencyResolver().resolveDependency( DatabaseStateService.class );
 
         ComponentsBinder binder = new ComponentsBinder();
 
         binder.addSingletonBinding( database, DatabaseService.class );
+        binder.addSingletonBinding( databaseStateService, DatabaseStateService.class );
         binder.addSingletonBinding( database.getDatabaseManagementService(), DatabaseManagementService.class );
         binder.addSingletonBinding( this, NeoServer.class );
         binder.addSingletonBinding( getConfig(), Config.class );
