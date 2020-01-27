@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.ExecutorDispatchService;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -97,7 +98,7 @@ class CrashGenerationCleanerTest
     static void setUp()
     {
         executorService = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        executor = new DispatchService.Adaptor( executorService );
+        executor = new ExecutorDispatchService( executorService );
     }
 
     @AfterAll

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.ExecutorDispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
@@ -196,7 +197,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         public DispatchService executor( Group group )
         {
             assertGroup( group, workGroup );
-            DispatchService.Adaptor executor = new DispatchService.Adaptor( executorService );
+            ExecutorDispatchService executor = new ExecutorDispatchService( executorService );
             createdExecutor = executor;
             return executor;
         }

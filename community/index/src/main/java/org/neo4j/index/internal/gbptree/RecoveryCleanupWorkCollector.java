@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.ExecutorDispatchService;
 
 /**
  * Place to add recovery cleanup work to be done as part of recovery of {@link GBPTree}.
@@ -108,7 +109,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
             {
                 try
                 {
-                    job.run( new DispatchService.Adaptor( executor ) );
+                    job.run( new ExecutorDispatchService( executor ) );
                 }
                 finally
                 {

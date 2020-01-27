@@ -43,7 +43,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.CancelListener;
-import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.ExecutorDispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
@@ -389,7 +389,7 @@ class CentralJobSchedulerTest
     void schedulerExecutorMustBeOfTypeDefinedByGroup()
     {
         life.start();
-        DispatchService.Adaptor executor = (DispatchService.Adaptor) scheduler.executor( Group.CYPHER_WORKER );
+        ExecutorDispatchService executor = (ExecutorDispatchService) scheduler.executor( Group.CYPHER_WORKER );
         // The CYPHER_WORKER group configures a ForkJoin pool, so that's what we should get.
         assertThat( executor.delegate() ).isInstanceOf( ForkJoinPool.class );
     }

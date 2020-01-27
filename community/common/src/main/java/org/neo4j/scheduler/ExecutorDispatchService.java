@@ -20,18 +20,35 @@
 package org.neo4j.scheduler;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-/**
- * Extends {@link Executor} to make it more similar to {@link ExecutorService} but without possibility to shut down.
- */
-public interface DispatchService extends Executor
-{
-    /**
-     * See {@link ExecutorService#submit(Callable)}
-     */
-    <T> Future<T> submit( Callable<T> callable );
+import org.neo4j.util.VisibleForTesting;
 
+public class ExecutorDispatchService implements DispatchService
+{
+    private final ExecutorService executorService;
+
+    public ExecutorDispatchService( ExecutorService executorService )
+    {
+        this.executorService = executorService;
+    }
+
+    @Override
+    public <T> Future<T> submit( Callable<T> callable )
+    {
+        return executorService.submit( callable );
+    }
+
+    @Override
+    public void execute( Runnable command )
+    {
+        executorService.submit( command );
+    }
+
+    @VisibleForTesting
+    public Object delegate()
+    {
+        return executorService;
+    }
 }
