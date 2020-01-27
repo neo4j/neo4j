@@ -23,8 +23,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,9 +61,11 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @Neo4jLayoutExtension
+@EnabledOnOs( LINUX )
 class FileWatchIT
 {
     @Inject
@@ -91,7 +92,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException
     {
         String fileName = databaseLayout.metadataStore().getName();
@@ -176,7 +176,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void doNotMonitorTransactionLogFiles() throws IOException, InterruptedException
     {
         FileWatcher fileWatcher = getFileWatcher( database );
@@ -204,7 +203,6 @@ class FileWatchIT
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
         String fileName = databaseLayout.metadataStore().getName();
