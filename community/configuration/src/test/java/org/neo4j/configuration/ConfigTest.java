@@ -22,7 +22,6 @@ package org.neo4j.configuration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +39,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -60,7 +61,6 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.test.AssumptionHelper.withoutReadPermissions;
 
 @TestDirectoryExtension
 class ConfigTest
@@ -459,20 +459,19 @@ class ConfigTest
     }
 
     @Test
+    @DisabledForRoot
     void shouldLogIfConfigFileCouldNotBeRead() throws IOException
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( Config.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        try ( Closeable ignored = withoutReadPermissions( confFile ) )
-        {
-            Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
+        assumeTrue( confFile.setReadable( false ) );
 
-            config.setLogger( log );
+        Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
+        config.setLogger( log );
 
-            assertThat( logProvider ).containsMessages( "Unable to load config file [%s]" );
-        }
+        assertThat( logProvider ).containsMessages( "Unable to load config file [%s]" );
     }
 
     @Test
@@ -498,14 +497,13 @@ class ConfigTest
     }
 
     @Test
+    @DisabledForRoot
     void mustThrowIfConfigFileCoutNotBeRead() throws IOException
     {
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
-        try ( Closeable ignored = withoutReadPermissions( confFile ) )
-        {
-            assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
-        }
+        assumeTrue( confFile.setReadable( false ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
     }
 
     @Test

@@ -42,6 +42,7 @@ import java.util.Random;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -52,7 +53,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -184,6 +184,7 @@ class LoaderTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
+    @DisabledForRoot
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException
     {
@@ -194,7 +195,6 @@ class LoaderTest
         Path parentPath = databaseLayout.databaseDirectory().getParentFile().toPath();
         try ( Closeable ignored = withPermissions( parentPath, emptySet() ) )
         {
-            assumeFalse( parentPath.toFile().canWrite() );
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, databaseLayout ) );
             assertEquals( parentPath.toString(), exception.getMessage() );
         }
@@ -202,6 +202,7 @@ class LoaderTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
+    @DisabledForRoot
     void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
             throws IOException
     {
@@ -217,7 +218,6 @@ class LoaderTest
         Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParentFile().toPath();
         try ( Closeable ignored = withPermissions( txLogsRoot, emptySet() ) )
         {
-            assumeFalse( txLogsRoot.toFile().canWrite() );
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, databaseLayout ) );
             assertEquals( txLogsRoot.toString(), exception.getMessage() );
         }

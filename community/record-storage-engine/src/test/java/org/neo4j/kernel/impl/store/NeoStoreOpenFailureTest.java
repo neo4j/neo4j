@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
@@ -38,16 +36,16 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.test.AssumptionHelper.withoutReadPermissions;
-import static org.neo4j.test.AssumptionHelper.withoutWritePermissions;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -61,7 +59,8 @@ class NeoStoreOpenFailureTest
     private DatabaseLayout databaseLayout;
 
     @Test
-    void mustCloseAllStoresIfNeoStoresFailToOpen() throws IOException
+    @DisabledForRoot
+    void mustCloseAllStoresIfNeoStoresFailToOpen()
     {
         Config config = Config.defaults();
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
@@ -77,17 +76,16 @@ class NeoStoreOpenFailureTest
         neoStores.close();
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.
-        try ( Closeable ignored = withoutReadPermissions( schemaStore );
-                Closeable ignored2 = withoutWritePermissions( schemaStore ) )
-        {
-            assertThrows( RuntimeException.class, () ->
-                    // This should fail due to the permissions we changed above.
-                    // And when it fails, the already-opened stores should be closed.
-                    new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, storeTypes, openOptions ) );
+        assumeTrue( schemaStore.setReadable( false ) );
+        assumeTrue( schemaStore.setWritable( false ) );
 
-            // We verify that the successfully opened stores were closed again by the failed NeoStores open,
-            // by closing the page cache, which will throw if not all files have been unmapped.
-            pageCache.close();
-        }
+        assertThrows( RuntimeException.class, () ->
+                // This should fail due to the permissions we changed above.
+                // And when it fails, the already-opened stores should be closed.
+                new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, storeTypes, openOptions ) );
+
+        // We verify that the successfully opened stores were closed again by the failed NeoStores open,
+        // by closing the page cache, which will throw if not all files have been unmapped.
+        pageCache.close();
     }
 }

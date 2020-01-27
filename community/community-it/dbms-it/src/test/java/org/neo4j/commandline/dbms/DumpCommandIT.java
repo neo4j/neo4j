@@ -59,6 +59,7 @@ import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,7 +71,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -260,6 +260,7 @@ class DumpCommandIT
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
+    @DisabledForRoot
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
@@ -268,7 +269,6 @@ class DumpCommandIT
             Path file = databaseLayout.databaseLockFile().toPath();
             try ( Closeable ignored = withPermissions( file, emptySet() ) )
             {
-                assumeFalse( file.toFile().canWrite() );
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
                 assertEquals( "You do not have permission to dump the database.", commandFailed.getMessage() );
             }

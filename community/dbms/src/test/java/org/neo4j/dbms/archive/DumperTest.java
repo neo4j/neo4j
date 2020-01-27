@@ -33,6 +33,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,7 +41,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 
 @TestDirectoryExtension
@@ -93,6 +93,7 @@ class DumperTest
 
     @Test
     @DisabledOnOs( OS.WINDOWS )
+    @DisabledForRoot
     void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
@@ -100,7 +101,6 @@ class DumperTest
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
-            assumeFalse( archive.getParent().toFile().canWrite() );
             AccessDeniedException exception =
                     assertThrows( AccessDeniedException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
             assertEquals( archive.getParent().toString(), exception.getMessage() );
