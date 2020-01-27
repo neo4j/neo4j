@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -118,7 +118,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public ExtendedExecutor executor( Group group )
+    public DispatchService executor( Group group )
     {
         return new FakeClockExecutor();
     }
@@ -343,7 +343,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
     }
 
-    private class FakeClockExecutor implements ExtendedExecutor
+    private class FakeClockExecutor implements DispatchService
     {
         @Override
         public <T> Future<T> submit( Callable<T> callable )

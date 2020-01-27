@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
@@ -184,7 +184,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
         private final Group mainGroup;
         private final Group workGroup;
-        private ExtendedExecutor createdExecutor;
+        private DispatchService createdExecutor;
 
         SingleGroupJobScheduler( Group mainGroup, Group workGroup )
         {
@@ -193,10 +193,10 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public ExtendedExecutor executor( Group group )
+        public DispatchService executor( Group group )
         {
             assertGroup( group, workGroup );
-            ExtendedExecutor.Adaptor executor = new ExtendedExecutor.Adaptor( executorService );
+            DispatchService.Adaptor executor = new DispatchService.Adaptor( executorService );
             createdExecutor = executor;
             return executor;
         }
@@ -249,7 +249,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
     private static class EvilJob extends CleanupJob.Adaptor
     {
         @Override
-        public void run( ExtendedExecutor executor )
+        public void run( DispatchService executor )
         {
             throw new RuntimeException( "Resilient to run attempts" );
         }
@@ -280,7 +280,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void run( ExtendedExecutor executor )
+        public void run( DispatchService executor )
         {
             allRuns.add( this );
         }
@@ -296,7 +296,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         private Executor targetExecutor;
 
         @Override
-        public void run( ExtendedExecutor executor )
+        public void run( DispatchService executor )
         {
             targetExecutor = executor;
         }

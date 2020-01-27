@@ -36,7 +36,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CancelListener;
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -121,9 +121,9 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public ExtendedExecutor executor( Group group )
+    public DispatchService executor( Group group )
     {
-        return new ExtendedExecutor.Adaptor( getThreadPool( group ).getExecutorService() );
+        return new DispatchService.Adaptor( getThreadPool( group ).getExecutorService() );
     }
 
     @Override

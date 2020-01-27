@@ -34,7 +34,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
 
@@ -82,7 +82,7 @@ class CrashGenerationCleaner
 
     // === Methods about the execution and threading ===
 
-    public void clean( ExtendedExecutor executor )
+    public void clean( DispatchService executor )
     {
         monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration : unexpectedGenerations();

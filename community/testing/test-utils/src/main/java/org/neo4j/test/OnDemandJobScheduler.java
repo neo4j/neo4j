@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
@@ -49,7 +49,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
     }
 
     @Override
-    public ExtendedExecutor executor( Group group )
+    public DispatchService executor( Group group )
     {
         return new OnDemandExecutor();
     }
@@ -118,7 +118,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
         return jobHandle;
     }
 
-    private class OnDemandExecutor implements ExtendedExecutor
+    private class OnDemandExecutor implements DispatchService
     {
         @Override
         public <T> Future<T> submit( Callable<T> callable )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 
 /**
  * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
@@ -53,7 +53,7 @@ public interface CleanupJob
      * Run cleanup job and use provided executor for parallel tasks.
      * This method will wait for all jobs passed to executor to finish before returning.
      */
-    void run( ExtendedExecutor executor );
+    void run( DispatchService executor );
 
     /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
@@ -63,7 +63,7 @@ public interface CleanupJob
     class Adaptor implements CleanupJob
     {
         @Override
-        public void run( ExtendedExecutor executor )
+        public void run( DispatchService executor )
         {   // no-op
         }
 

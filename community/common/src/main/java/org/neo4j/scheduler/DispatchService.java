@@ -29,14 +29,14 @@ import org.neo4j.util.VisibleForTesting;
 /**
  * Extends {@link Executor} to make it more similar to {@link ExecutorService} but without possibility to shut down.
  */
-public interface ExtendedExecutor extends Executor
+public interface DispatchService extends Executor
 {
     /**
      * See {@link ExecutorService#submit(Callable)}
      */
     <T> Future<T> submit( Callable<T> callable );
 
-    class Adaptor implements ExtendedExecutor
+    class Adaptor implements DispatchService
     {
         private final ExecutorService executorService;
 

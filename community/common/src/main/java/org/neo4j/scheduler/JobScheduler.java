@@ -67,7 +67,7 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      * <strong>NOTE:</strong> The returned instance might be an implementation of the {@link ExecutorService} interface. If so, then it is <em>NOT</em> allowed
      * to shut it down, because the life cycle of the executor is managed by the JobScheduler.
      **/
-    ExtendedExecutor executor( Group group );
+    DispatchService executor( Group group );
 
     /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.

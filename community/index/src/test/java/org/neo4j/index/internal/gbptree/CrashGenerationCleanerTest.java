@@ -41,7 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -78,7 +78,7 @@ class CrashGenerationCleanerTest
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
     private static ExecutorService executorService;
-    private static ExtendedExecutor executor;
+    private static DispatchService executor;
     private final TreeState checkpointedTreeState = new TreeState( 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true );
     private final TreeState unstableTreeState = new TreeState( 0, 10, 12, 0, 0, 0, 0, 0, 0, 0, true, true );
     private final List<GBPTreeCorruption.PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
@@ -97,7 +97,7 @@ class CrashGenerationCleanerTest
     static void setUp()
     {
         executorService = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        executor = new ExtendedExecutor.Adaptor( executorService );
+        executor = new DispatchService.Adaptor( executorService );
     }
 
     @AfterAll

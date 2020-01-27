@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
-import org.neo4j.scheduler.ExtendedExecutor;
+import org.neo4j.scheduler.DispatchService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -83,9 +83,9 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
-    public ExtendedExecutor executor( Group group )
+    public DispatchService executor( Group group )
     {
-        return new ExtendedExecutor.Adaptor( executor );
+        return new DispatchService.Adaptor( executor );
     }
 
     @Override
