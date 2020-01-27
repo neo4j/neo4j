@@ -197,9 +197,8 @@ class GroupingRecoveryCleanupWorkCollectorTest
         public DispatchService executor( Group group )
         {
             assertGroup( group, workGroup );
-            ExecutorDispatchService executor = new ExecutorDispatchService( executorService );
-            createdExecutor = executor;
-            return executor;
+            createdExecutor = new ExecutorDispatchService( executorService );
+            return createdExecutor;
         }
 
         @Override

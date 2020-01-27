@@ -276,7 +276,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         @Override
         public void cancel()
         {
-            cancel( true );
+            cancel( false );
         }
 
         @Override
