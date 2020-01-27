@@ -47,15 +47,6 @@ public abstract class RelationshipSelection
     public abstract boolean test( int type, RelationshipDirection direction );
 
     /**
-     * @return whether or not this selection instance is initialized. Most selection instances know upfront their selection criteria,
-     * but others can be initialized after instantiation, when selection criteria is known.
-     */
-    public boolean isInitialized()
-    {
-        return true;
-    }
-
-    /**
      * Selects the correct set of added relationships from transaction state, based on the selection criteria.
      * @param transactionState the {@link NodeState} to select added relationships from.
      * @return a {@link LongIterator} of added relationships matching the selection criteria from transaction state.
