@@ -129,7 +129,7 @@ interface ExecutorServiceFactory
     /**
      * Execute jobs in fixed size pool of threads and if job queue fills up, the caller executes the job and thereby applying back pressure.
      */
-    static ExecutorServiceFactory cachedWithBackPressure()
+    static ExecutorServiceFactory fixedWithBackPressure()
     {
         return ( group, factory, threadCount ) ->
         {
@@ -139,7 +139,7 @@ interface ExecutorServiceFactory
             }
             BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( 2 * threadCount );
             RejectedExecutionHandler policy = new ThreadPoolExecutor.CallerRunsPolicy();
-            return new ThreadPoolExecutor( 0, threadCount, 60L, TimeUnit.SECONDS, workQueue, factory, policy );
+            return new ThreadPoolExecutor( threadCount, threadCount, 0, TimeUnit.SECONDS, workQueue, factory, policy );
         };
     }
 
