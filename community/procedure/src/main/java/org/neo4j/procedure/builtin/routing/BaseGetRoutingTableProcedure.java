@@ -47,7 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.SERVERS;
@@ -132,7 +132,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
         if ( result.containsNoEndpoints() )
         {
             assertDatabaseExists( namedDatabaseId );
-            throw new ProcedureException( ProcedureCallFailed, "Routing table for database " + namedDatabaseId.name() + " is empty" );
+            throw new ProcedureException( DatabaseUnavailable, "Routing table for database " + namedDatabaseId.name() + " is empty" );
         }
     }
 
