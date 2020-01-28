@@ -2672,6 +2672,7 @@ MIT License
   save-as
   setimmediate
   SLF4J API Module
+  SLF4J NOP Binding
   sshpk
   string-width
   string_decoder
