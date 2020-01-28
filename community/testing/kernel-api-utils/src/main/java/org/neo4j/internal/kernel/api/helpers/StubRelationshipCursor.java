@@ -138,7 +138,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
                 return false;
             }
             TestRelationshipChain.Data data = chain.get( offset );
-            if ( selection.test( data.type, data.relationshipRirection( nodeReference ) ) )
+            if ( selection.test( data.type, data.relationshipDirection( nodeReference ) ) )
             {
                 return true;
             }

@@ -93,7 +93,7 @@ public class TestRelationshipChain
             this.type = type;
         }
 
-        RelationshipDirection relationshipRirection( long nodeReference )
+        RelationshipDirection relationshipDirection( long nodeReference )
         {
             if ( source == target )
             {

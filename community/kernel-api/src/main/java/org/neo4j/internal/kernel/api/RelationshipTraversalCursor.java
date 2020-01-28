@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+
 /**
  * Cursor for traversing the relationships of a single node.
  */
@@ -48,13 +50,13 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
         @Override
         public long otherNodeReference()
         {
-            return -1;
+            return NO_ID;
         }
 
         @Override
         public long originNodeReference()
         {
-            return -1;
+            return NO_ID;
         }
 
         @Override
@@ -108,19 +110,19 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
         @Override
         public int getToken()
         {
-            return -1;
+            return TokenRead.ANY_RELATIONSHIP_TYPE;
         }
 
         @Override
         public long relationshipReference()
         {
-            return -1;
+            return NO_ID;
         }
 
         @Override
         public int type()
         {
-            return -1;
+            return TokenRead.ANY_RELATIONSHIP_TYPE;
         }
 
         @Override
@@ -141,19 +143,19 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
         @Override
         public long sourceNodeReference()
         {
-            return -1;
+            return NO_ID;
         }
 
         @Override
         public long targetNodeReference()
         {
-            return -1;
+            return NO_ID;
         }
 
         @Override
         public long propertiesReference()
         {
-            return -1;
+            return NO_ID;
         }
     };
 }

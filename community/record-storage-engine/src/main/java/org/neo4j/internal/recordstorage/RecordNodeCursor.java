@@ -215,7 +215,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             {
                 groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
             }
-            groupCursor.init( entityReference(), getNextRel(), isDense() );
+            groupCursor.init( entityReference(), getNextRel(), true );
             while ( groupCursor.next() )
             {
                 types.add( groupCursor.getType() );
