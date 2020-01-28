@@ -35,8 +35,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 
 public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
 {
@@ -65,7 +65,9 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         {
             return createRoutingResult( findAdvertisedBoltAddress(), configuredRoutingTableTtl() );
         }
-        return createEmptyRoutingResult();
+        throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + namedDatabaseId.name() +
+                                                           " because Bolt is not enabled. Please update your configuration for '" +
+                                                           BoltConnector.enabled.name() + "'" );
     }
 
     private void assertDatabaseIsOperational( NamedDatabaseId namedDatabaseId ) throws ProcedureException
@@ -86,11 +88,6 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     {
         var addresses = Collections.singletonList( address );
         return new RoutingResult( addresses, addresses, addresses, routingTableTtl );
-    }
-
-    private RoutingResult createEmptyRoutingResult()
-    {
-        return new RoutingResult( emptyList(), emptyList(), emptyList(), configuredRoutingTableTtl() );
     }
 
     private long configuredRoutingTableTtl()
