@@ -19,6 +19,7 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
@@ -36,6 +37,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -43,8 +45,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,19 +100,18 @@ public class SingleInstanceGetRoutingTableProcedureTest
     }
 
     @Test
-    void shouldReturnEmptyRoutingTableWhenNoBoltConnectors() throws Exception
+    void shouldThrowWhenNoBoltConnectors()
     {
         var portRegister = mock( ConnectorPortRegister.class );
         var config = newConfig( Duration.ofSeconds( 123 ), null );
 
         var proc = newProcedure( portRegister, config );
 
-        var result = proc.invoke( ID, MapValue.EMPTY );
+        var exception = assertThrows( ProcedureException.class, () -> proc.invoke( ID, MapValue.EMPTY ) );
 
-        assertEquals( Duration.ofSeconds( 123 ).toMillis(), result.ttlMillis() );
-        assertEquals( emptyList(), result.readEndpoints() );
-        assertEquals( emptyList(), result.writeEndpoints() );
-        assertEquals( emptyList(), result.routeEndpoints() );
+        assertEquals( Status.Procedure.ProcedureCallFailed, exception.status() );
+        assertThat( exception.getLocalizedMessage(),
+                    Matchers.endsWith( " Please update your configuration for '" + BoltConnector.enabled.name() + "'" ) );
     }
 
     @Test
