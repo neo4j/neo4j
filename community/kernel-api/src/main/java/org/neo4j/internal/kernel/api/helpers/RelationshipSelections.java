@@ -132,7 +132,7 @@ public final class RelationshipSelections
                                                          int[] types )
     {
         node.relationships( traversalCursor, RelationshipSelection.selection( types, Direction.BOTH ) );
-        return null;
+        return traversalCursor;
     }
 
     public static RelationshipTraversalCursor relationshipsCursor( RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types,
