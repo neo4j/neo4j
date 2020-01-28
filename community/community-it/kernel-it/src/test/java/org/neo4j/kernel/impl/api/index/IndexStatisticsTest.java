@@ -63,6 +63,7 @@ import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.concurrent.Futures;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
@@ -359,10 +360,7 @@ public class IndexStatisticsTest
         // sum result into empty result
         UpdatesTracker result = new UpdatesTracker();
         result.notifyPopulationCompleted();
-        for ( Future<UpdatesTracker> future : futures )
-        {
-            result.add( future.get() );
-        }
+        Futures.getAllResults( futures );
         awaitIndexesOnline();
 
         executorService.shutdown();
@@ -510,10 +508,7 @@ public class IndexStatisticsTest
             } );
         }
 
-        for ( Future<?> job : service.invokeAll( jobs ) )
-        {
-            job.get();
-        }
+        Futures.getAllResults( service.invokeAll( jobs ) );
 
         service.awaitTermination( 1, TimeUnit.SECONDS );
         service.shutdown();

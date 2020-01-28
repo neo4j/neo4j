@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -246,10 +247,7 @@ public class PageListTest
             futures.add( executor.submit( runnable ) );
         }
         end.await();
-        for ( Future<?> future : futures )
-        {
-            future.get();
-        }
+        Futures.getAll( futures );
     }
 
     @Test( expected = IllegalMonitorStateException.class )
@@ -463,10 +461,7 @@ public class PageListTest
         start.await();
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         stop.set( true );
-        for ( Future<?> future : futures )
-        {
-            future.get(); // Assert that this does not throw
-        }
+        Futures.getAll( futures );
     }
 
     @Test

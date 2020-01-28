@@ -307,7 +307,7 @@ class WorkSyncTest
             return null;
         };
 
-        List<Future<Void>> futureList = new ArrayList<>();
+        List<Future<?>> futureList = new ArrayList<>();
         for ( int i = 0; i < workers; i++ )
         {
             futureList.add( executor.submit( work ) );
@@ -316,10 +316,7 @@ class WorkSyncTest
         start.set( true );
         endLatch.await();
 
-        for ( Future<Void> future : futureList )
-        {
-            future.get(); // check for any exceptions
-        }
+        Futures.getAll( futureList );
 
         assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
         assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );
@@ -367,7 +364,7 @@ class WorkSyncTest
             return null;
         };
 
-        List<Future<Void>> futureList = new ArrayList<>();
+        List<Future<?>> futureList = new ArrayList<>();
         for ( int i = 0; i < workers; i++ )
         {
             futureList.add( executor.submit( work ) );
@@ -376,10 +373,7 @@ class WorkSyncTest
         start.set( true );
         endLatch.await();
 
-        for ( Future<Void> future : futureList )
-        {
-            future.get(); // check for any exceptions
-        }
+        Futures.getAll( futureList );
 
         assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
         assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );

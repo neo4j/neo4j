@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 /**
  * Extends {@link Executor} to make it more similar to {@link ExecutorService} but without possibility to shut down.
  */
-public interface DispatchService extends Executor
+public interface CallableExecutor extends Executor
 {
     /**
      * See {@link ExecutorService#submit(Callable)}

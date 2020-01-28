@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
@@ -34,9 +33,10 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -82,7 +82,7 @@ class CrashGenerationCleaner
 
     // === Methods about the execution and threading ===
 
-    public void clean( DispatchService executor )
+    public void clean( CallableExecutor executor )
     {
         monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration : unexpectedGenerations();
@@ -93,45 +93,31 @@ class CrashGenerationCleaner
         int threads = NUMBER_OF_WORKERS;
         long batchSize = batchSize( pagesToClean, threads );
         AtomicLong nextId = new AtomicLong( lowTreeNodeId );
-        AtomicReference<Throwable> error = new AtomicReference<>();
+        AtomicBoolean stopFlag = new AtomicBoolean();
         LongAdder cleanedPointers = new LongAdder();
         LongAdder numberOfTreeNodes = new LongAdder();
         List<Future<?>> cleanerFutures = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
-            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, error );
+            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag );
             Future<?> future = executor.submit( cleanerTask );
             cleanerFutures.add( future );
         }
 
         try
         {
-            for ( Future<?> cleanerFuture : cleanerFutures )
-            {
-                cleanerFuture.get();
-            }
+            Futures.getAll( cleanerFutures );
         }
-        catch ( InterruptedException e )
+        catch ( Throwable e )
         {
-            error.accumulateAndGet( e, Exceptions::chain );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            error.accumulateAndGet( e, Exceptions::chain );
-        }
-
-        Throwable finalError = error.get();
-        if ( finalError != null )
-        {
-            Exceptions.throwIfUnchecked( finalError );
-            throw new RuntimeException( finalError );
+            Exceptions.throwIfUnchecked( e );
+            throw new RuntimeException( e );
         }
 
         monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), startTime.elapsed( MILLISECONDS ) );
     }
 
-    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicReference<Throwable> error )
+    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicBoolean stopFlag )
     {
         return () ->
         {
@@ -160,7 +146,7 @@ class CrashGenerationCleaner
                     }
                     numberOfTreeNodes.add( localNumberOfTreeNodes );
 
-                    if ( error.get() != null )
+                    if ( stopFlag.get() )
                     {
                         break;
                     }
@@ -168,7 +154,8 @@ class CrashGenerationCleaner
             }
             catch ( Throwable e )
             {
-                error.accumulateAndGet( e, Exceptions::chain );
+                stopFlag.set( true );
+                throw e;
             }
             return null;
         };

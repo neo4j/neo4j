@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -93,10 +94,7 @@ class TokenCreationIT
 
     private void consumeFutures( List<Future<?>> futures ) throws InterruptedException, ExecutionException
     {
-        for ( Future<?> future : futures )
-        {
-            future.get();
-        }
+        Futures.getAll( futures );
     }
 
     private Label[] getLabels()

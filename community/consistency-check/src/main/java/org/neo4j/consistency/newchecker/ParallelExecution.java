@@ -24,14 +24,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Long.min;
 
@@ -87,21 +86,7 @@ class ParallelExecution
         {
             Exception exceptionChain = null;
             List<InternalTask> tasks = Arrays.stream( runnables ).map( InternalTask::new ).collect( Collectors.toList() );
-            for ( Future<Void> future : forkJoinPool.invokeAll( tasks ) )
-            {
-                try
-                {
-                    future.get();
-                }
-                catch ( Exception e )
-                {
-                    exceptionChain = Exceptions.chain( exceptionChain, e );
-                }
-            }
-            if ( exceptionChain != null )
-            {
-                throw exceptionChain;
-            }
+            Futures.getAllResults( forkJoinPool.invokeAll( tasks ) );
         }
         finally
         {

@@ -34,6 +34,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.util.concurrent.Futures;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -150,10 +152,7 @@ class ByteBufferFactoryTest
 
         // when
         startLatch.countDown();
-        for ( Future<?> future : futures )
-        {
-            future.get();
-        }
+        Futures.getAll( futures );
         executor.shutdown();
         executor.awaitTermination( 10, TimeUnit.SECONDS );
 

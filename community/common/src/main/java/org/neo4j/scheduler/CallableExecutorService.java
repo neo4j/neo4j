@@ -25,11 +25,11 @@ import java.util.concurrent.Future;
 
 import org.neo4j.util.VisibleForTesting;
 
-public class ExecutorDispatchService implements DispatchService
+public class CallableExecutorService implements CallableExecutor
 {
     private final ExecutorService executorService;
 
-    public ExecutorDispatchService( ExecutorService executorService )
+    public CallableExecutorService( ExecutorService executorService )
     {
         this.executorService = executorService;
     }

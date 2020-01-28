@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
+import org.neo4j.util.concurrent.Futures;
 
 class SequenceLockStressIT
 {
@@ -216,14 +217,8 @@ class SequenceLockStressIT
         stop.set( true );
 
         exclusiveFuture.get();
-        for ( Future<?> future : writers )
-        {
-            future.get();
-        }
-        for ( Future<?> future : readers )
-        {
-            future.get();
-        }
+        Futures.getAll( writers );
+        Futures.getAll( readers );
     }
 
     @Test
@@ -264,9 +259,6 @@ class SequenceLockStressIT
         start.await();
         OffHeapPageLock.unlockExclusiveAndTakeWriteLock( lockAddr );
         stop.set( true );
-        for ( Future<?> future : futures )
-        {
-            future.get(); // Assert that this does not throw
-        }
+        Futures.getAll( futures );
     }
 }

@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,10 +104,7 @@ public class PageCacheStresser
             return thread;
         } );
         List<Future<Void>> futures = executorService.invokeAll( recordStressers );
-        for ( Future<Void> future : futures )
-        {
-            future.get();
-        }
+        Futures.getAllResults( futures );
         executorService.shutdown();
         assertTrue( executorService.awaitTermination( 10, TimeUnit.SECONDS ) );
     }

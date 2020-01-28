@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +52,7 @@ import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -84,19 +87,16 @@ public class Runner implements Callable<Long>
             ExecutorService executorService = Executors.newFixedThreadPool( threads );
             try
             {
-                Future<?>[] handlers = new Future[threads];
+                List<Future<?>> handlers = new ArrayList<>( threads );
                 for ( int i = 0; i < threads; i++ )
                 {
                     TransactionRepresentationFactory factory = new TransactionRepresentationFactory();
                     Worker task = new Worker( transactionAppender, factory, condition );
-                    handlers[i] = executorService.submit( task );
+                    handlers.add( executorService.submit( task ) );
                 }
 
                 // wait for all the workers to complete
-                for ( Future<?> handle : handlers )
-                {
-                    handle.get();
-                }
+                Futures.getAll( handlers );
             }
             finally
             {

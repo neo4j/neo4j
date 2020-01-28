@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.ExecutorDispatchService;
+import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -54,7 +54,7 @@ class CrashGenerationCleanerCrashTest
 
         try
         {
-            ExecutorDispatchService executor = new ExecutorDispatchService( executorService );
+            CallableExecutorService executor = new CallableExecutorService( executorService );
             Throwable exception = assertThrows( Throwable.class, () -> cleaner.clean( executor ) );
             Throwable rootCause = getRootCause( exception );
             assertTrue( rootCause instanceof IOException );

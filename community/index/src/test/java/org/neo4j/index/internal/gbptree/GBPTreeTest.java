@@ -79,7 +79,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.ExecutorDispatchService;
+import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -1948,7 +1948,7 @@ class GBPTreeTest
                 {
                     try
                     {
-                        job.run( new ExecutorDispatchService( executor ) );
+                        job.run( new CallableExecutorService( executor ) );
                         startedJobs.add( job );
                     }
                     finally

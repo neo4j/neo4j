@@ -59,6 +59,7 @@ import org.neo4j.kernel.api.index.AbstractIndexReader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,10 +115,7 @@ class DatabaseIndexIntegrationTest
             Supplier<Runnable> closeTaskSupplier = () -> createConcurrentCloseTask( raceSignal );
             List<Future<?>> closeFutures = submitTasks( closeTaskSupplier );
 
-            for ( Future<?> closeFuture: closeFutures )
-            {
-                closeFuture.get();
-            }
+            Futures.getAll( closeFutures );
 
             assertFalse( luceneIndex.isOpen() );
         } );
@@ -132,10 +130,7 @@ class DatabaseIndexIntegrationTest
             Supplier<Runnable> dropTaskSupplier = () -> createConcurrentDropTask( raceSignal );
             List<Future<?>> futures = submitTasks( dropTaskSupplier );
 
-            for ( Future<?> future: futures )
-            {
-                future.get();
-            }
+            Futures.getAll( futures );
 
             assertFalse( luceneIndex.isOpen() );
         } );

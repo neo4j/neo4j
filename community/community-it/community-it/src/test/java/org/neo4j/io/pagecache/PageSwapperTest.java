@@ -49,6 +49,7 @@ import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -799,17 +800,14 @@ public abstract class PageSwapperTest
                 thread.setDaemon( true );
                 return thread;
             } );
-            List<Future<Void>> futures = new ArrayList<>( threads );
+            List<Future<?>> futures = new ArrayList<>( threads );
             for ( int i = 0; i < threads; i++ )
             {
                 futures.add( executor.submit( work ) );
             }
 
             startLatch.countDown();
-            for ( Future<Void> future : futures )
-            {
-                future.get();
-            }
+            Futures.getAll( futures );
         }
         finally
         {

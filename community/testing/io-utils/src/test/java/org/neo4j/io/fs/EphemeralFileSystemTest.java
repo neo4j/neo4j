@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -159,10 +160,7 @@ class EphemeralFileSystemTest
                 }
 
                 List<Future<Void>> futures = executorService.invokeAll( workers );
-                for ( Future<Void> future : futures )
-                {
-                    future.get();
-                }
+                Futures.getAllResults( futures );
                 verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.write( aFile ) );
             }
         }
@@ -212,10 +210,7 @@ class EphemeralFileSystemTest
                     }
 
                     List<Future<Void>> futures = executorService.invokeAll( workers );
-                    for ( Future<Void> future : futures )
-                    {
-                        future.get();
-                    }
+                    Futures.getAllResults( futures );
 
                     fs.crash();
                     verifyFileIsFullOfLongIntegerOnes( fs.write( aFile ) );

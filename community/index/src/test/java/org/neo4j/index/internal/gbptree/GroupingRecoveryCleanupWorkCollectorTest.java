@@ -34,8 +34,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.scheduler.DispatchService;
-import org.neo4j.scheduler.ExecutorDispatchService;
+import org.neo4j.scheduler.CallableExecutor;
+import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
@@ -185,7 +185,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
         private final Group mainGroup;
         private final Group workGroup;
-        private DispatchService createdExecutor;
+        private CallableExecutor createdExecutor;
 
         SingleGroupJobScheduler( Group mainGroup, Group workGroup )
         {
@@ -194,10 +194,10 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public DispatchService executor( Group group )
+        public CallableExecutor executor( Group group )
         {
             assertGroup( group, workGroup );
-            createdExecutor = new ExecutorDispatchService( executorService );
+            createdExecutor = new CallableExecutorService( executorService );
             return createdExecutor;
         }
 
@@ -249,7 +249,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
     private static class EvilJob extends CleanupJob.Adaptor
     {
         @Override
-        public void run( DispatchService executor )
+        public void run( CallableExecutor executor )
         {
             throw new RuntimeException( "Resilient to run attempts" );
         }
@@ -280,7 +280,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void run( DispatchService executor )
+        public void run( CallableExecutor executor )
         {
             allRuns.add( this );
         }
@@ -296,7 +296,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         private Executor targetExecutor;
 
         @Override
-        public void run( DispatchService executor )
+        public void run( CallableExecutor executor )
         {
             targetExecutor = executor;
         }

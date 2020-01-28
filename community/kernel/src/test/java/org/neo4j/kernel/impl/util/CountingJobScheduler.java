@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
-import org.neo4j.scheduler.DispatchService;
+import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -63,7 +63,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public DispatchService executor( Group group )
+    public CallableExecutor executor( Group group )
     {
         return delegate.executor( group );
     }

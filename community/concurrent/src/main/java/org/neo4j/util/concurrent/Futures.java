@@ -21,11 +21,14 @@ package org.neo4j.util.concurrent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.neo4j.internal.helpers.Exceptions;
 
 /**
  * Constructors for basic {@link Future} types
@@ -47,6 +50,60 @@ public class Futures
     public static <V> Future<List<V>> combine( final Future<? extends V>... futures )
     {
         return combine( Arrays.asList( futures ) );
+    }
+
+    /**
+     * This method guarantees that {@link Future#get()} is called on all futures.
+     * If no exception occur, the results from the futures are returned in a list.
+     * If exceptions occur, they are all chained together and thrown after looping over all futures.
+     *
+     * @param futures the {@link Future futures}
+     * @param <V> The result type returned by the futures get method.
+     * @return A {@link List<V> list} of results.
+     * @throws ExecutionException If any of the futures throw.
+     */
+    public static <V> List<V> getAllResults( Iterable<Future<V>> futures ) throws ExecutionException
+    {
+        List<V> result = futures instanceof Collection
+                         ? new ArrayList<>( ((Collection) futures).size() )
+                         : new ArrayList<>();
+        Throwable finalError = null;
+        for ( Future<V> future : futures )
+        {
+            try
+            {
+                result.add( future.get() );
+            }
+            catch ( Throwable e )
+            {
+                finalError = Exceptions.chain( finalError, e );
+            }
+        }
+        if ( finalError != null )
+        {
+            throw new ExecutionException( finalError );
+        }
+        return result;
+    }
+
+    public static void getAll( Iterable<Future<?>> futures ) throws ExecutionException
+    {
+        Throwable finalError = null;
+        for ( Future<?> future : futures )
+        {
+            try
+            {
+                future.get();
+            }
+            catch ( Throwable e )
+            {
+                finalError = Exceptions.chain( finalError, e );
+            }
+        }
+        if ( finalError != null )
+        {
+            throw new ExecutionException( finalError );
+        }
     }
 
     /**

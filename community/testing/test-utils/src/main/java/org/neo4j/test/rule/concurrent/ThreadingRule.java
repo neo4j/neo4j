@@ -22,7 +22,6 @@ package org.neo4j.test.rule.concurrent;
 import org.junit.rules.ExternalResource;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -93,43 +92,6 @@ public class ThreadingRule extends ExternalResource
         {
             result.add( executor.submit( task(
                     function, function.toString() + ":task=" + i, parameter, NULL_CONSUMER ) ) );
-        }
-        return result;
-    }
-
-    public static <T> List<T> await( Iterable<Future<T>> futures ) throws InterruptedException, ExecutionException
-    {
-        List<T> result = futures instanceof Collection
-                ? new ArrayList<>( ((Collection) futures).size() )
-                : new ArrayList<>();
-        List<Throwable> failures = null;
-        for ( Future<T> future : futures )
-        {
-            try
-            {
-                result.add( future.get() );
-            }
-            catch ( ExecutionException e )
-            {
-                if ( failures == null )
-                {
-                    failures = new ArrayList<>();
-                }
-                failures.add( e.getCause() );
-            }
-        }
-        if ( failures != null )
-        {
-            if ( failures.size() == 1 )
-            {
-                throw new ExecutionException( failures.get( 0 ) );
-            }
-            ExecutionException exception = new ExecutionException( null );
-            for ( Throwable failure : failures )
-            {
-                exception.addSuppressed( failure );
-            }
-            throw exception;
         }
         return result;
     }

@@ -49,6 +49,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -87,7 +88,7 @@ class PageCacheCountersIT
     {
 
         List<NodeCreator> nodeCreators = new ArrayList<>( numberOfWorkers );
-        List<Future> nodeCreatorFutures = new ArrayList<>( numberOfWorkers );
+        List<Future<?>> nodeCreatorFutures = new ArrayList<>( numberOfWorkers );
         PageCacheTracer pageCacheTracer = getPageCacheTracer( db );
 
         long initialPins = pageCacheTracer.pins();
@@ -132,17 +133,14 @@ class PageCacheCountersIT
                 sumCounters( nodeCreators, NodeCreator::getHits, initialHits ) );
     }
 
-    private static void stopNodeCreators( List<NodeCreator> nodeCreators, List<Future> nodeCreatorFutures )
-            throws InterruptedException, java.util.concurrent.ExecutionException
+    private static void stopNodeCreators( List<NodeCreator> nodeCreators, List<Future<?>> nodeCreatorFutures )
+            throws java.util.concurrent.ExecutionException
     {
         nodeCreators.forEach( NodeCreator::cancel );
-        for ( Future creatorFuture : nodeCreatorFutures )
-        {
-            creatorFuture.get();
-        }
+        Futures.getAll( nodeCreatorFutures );
     }
 
-    private void startNodeCreators( List<NodeCreator> nodeCreators, List<Future> nodeCreatorFutures )
+    private void startNodeCreators( List<NodeCreator> nodeCreators, List<Future<?>> nodeCreatorFutures )
     {
         for ( int i = 0; i < numberOfWorkers; i++ )
         {
