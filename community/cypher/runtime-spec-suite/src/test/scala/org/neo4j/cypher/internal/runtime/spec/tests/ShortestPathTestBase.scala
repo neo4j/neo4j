@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.TestPath
 import org.neo4j.graphdb.Direction.INCOMING
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Label
+import org.neo4j.internal.helpers.collection.Iterables.single
 
 abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -97,8 +98,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // given
     val (start, end, rels) = given {
       val g = sineGraph()
-      val r2 = g.ea1.getRelationships(INCOMING).iterator().next()
-      val r3 = g.ea1.getRelationships(OUTGOING).iterator().next()
+      val r2 = single(g.ea1.getRelationships(INCOMING))
+      val r3 = single(g.ea1.getRelationships(OUTGOING))
       (g.start, g.end, Seq(g.startMiddle, r2, r3))
     }
 
@@ -123,12 +124,12 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // given
     val (start, end, rels) = given {
       val g = sineGraph()
-      val r1 = g.sb1.getRelationships(INCOMING).iterator().next()
-      val r2 = g.sb2.getRelationships(INCOMING).iterator().next()
-      val r3 = g.sb2.getRelationships(OUTGOING).iterator().next()
-      val r4 = g.eb1.getRelationships(INCOMING).iterator().next()
-      val r5 = g.eb2.getRelationships(INCOMING).iterator().next()
-      val r6 = g.eb2.getRelationships(OUTGOING).iterator().next()
+      val r1 = single(g.sb1.getRelationships(INCOMING))
+      val r2 = single(g.sb2.getRelationships(INCOMING))
+      val r3 = single(g.sb2.getRelationships(OUTGOING))
+      val r4 = single(g.eb1.getRelationships(INCOMING))
+      val r5 = single(g.eb2.getRelationships(INCOMING))
+      val r6 = single(g.eb2.getRelationships(OUTGOING))
       (g.start, g.end, Seq(r1, r2, r3, r4, r5, r6))
     }
 
@@ -155,10 +156,10 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // given
     val (start, end, forbidden, rels) = given {
       val g = sineGraph()
-      val r2 = g.ec1.getRelationships(INCOMING).iterator().next()
-      val r3 = g.ec2.getRelationships(INCOMING).iterator().next()
-      val r4 = g.ec3.getRelationships(INCOMING).iterator().next()
-      val r5 = g.ec3.getRelationships(OUTGOING).iterator().next()
+      val r2 = single(g.ec1.getRelationships(INCOMING))
+      val r3 = single(g.ec2.getRelationships(INCOMING))
+      val r4 = single(g.ec3.getRelationships(INCOMING))
+      val r5 = single(g.ec3.getRelationships(OUTGOING))
       (g.start, g.end, g.ea1, Seq(g.startMiddle, r2, r3, r4, r5))
     }
 
@@ -228,10 +229,10 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // given
     val (start, end, forbidden, rels) = given {
       val g = sineGraph()
-      val r1 = g.sa1.getRelationships(INCOMING).iterator().next()
-      val r2 = g.sa1.getRelationships(OUTGOING).iterator().next()
-      val r3 = g.ea1.getRelationships(INCOMING).iterator().next()
-      val r4 = g.ea1.getRelationships(OUTGOING).iterator().next()
+      val r1 = single(g.sa1.getRelationships(INCOMING))
+      val r2 = single(g.sa1.getRelationships(OUTGOING))
+      val r3 = single(g.ea1.getRelationships(INCOMING))
+      val r4 = single(g.ea1.getRelationships(OUTGOING))
       (g.start, g.end, g.startMiddle, Seq(r1, r2, r3, r4))
     }
 
