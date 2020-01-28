@@ -912,7 +912,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long id = record.getId() + 1;
             record.setId( id );
             long pageId = cursor.getCurrentPageId();
-            if ( offset != RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage ) || pageId < 0 )
+            if ( (offset >= (recordsPerPage * recordSize)) || (pageId < 0) )
             {
                 if ( !cursor.next() )
                 {
