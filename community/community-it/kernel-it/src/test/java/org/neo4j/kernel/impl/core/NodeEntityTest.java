@@ -96,7 +96,7 @@ public class NodeEntityTest extends EntityTest
             source.getDegree( Direction.OUTGOING );
 
             assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         }
     }
@@ -127,7 +127,7 @@ public class NodeEntityTest extends EntityTest
             source.getDegree( relationshipType, Direction.INCOMING );
 
             assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         }
     }
@@ -158,7 +158,7 @@ public class NodeEntityTest extends EntityTest
             assertThat( count( source.getRelationships( Direction.INCOMING, relationshipType ) ) ).isGreaterThan( 0 );
 
             assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         }
     }

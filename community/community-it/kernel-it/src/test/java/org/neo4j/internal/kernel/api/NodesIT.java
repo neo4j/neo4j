@@ -64,7 +64,7 @@ public class NodesIT
 
                 assertEquals( 2, Nodes.countOutgoing( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 1 );
+                assertCursorEvents( cursorTracer, 1 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             }
         }
@@ -90,7 +90,7 @@ public class NodesIT
 
                 assertEquals( 2, Nodes.countOutgoing( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 1 );
+                assertCursorEvents( cursorTracer, 1 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             }
         }
@@ -115,7 +115,9 @@ public class NodesIT
 
                 assertEquals( 100, Nodes.countOutgoing( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -140,7 +142,9 @@ public class NodesIT
 
                 assertEquals( 100, Nodes.countOutgoing( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -164,7 +168,7 @@ public class NodesIT
 
                 assertEquals( 2, Nodes.countIncoming( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 1 );
+                assertCursorEvents( cursorTracer, 1 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             }
         }
@@ -190,7 +194,7 @@ public class NodesIT
 
                 assertEquals( 2, Nodes.countIncoming( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 1 );
+                assertCursorEvents( cursorTracer, 1 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             }
         }
@@ -215,7 +219,9 @@ public class NodesIT
 
                 assertEquals( 100, Nodes.countIncoming( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -240,7 +246,9 @@ public class NodesIT
 
                 assertEquals( 100, Nodes.countIncoming( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -268,7 +276,7 @@ public class NodesIT
                 assertFalse( nodeCursor.isDense() );
                 assertEquals( 2, Nodes.countAll( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertCursorEvents( cursorTracer, 2 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
             }
         }
@@ -297,7 +305,7 @@ public class NodesIT
                 assertFalse( nodeCursor.isDense() );
                 assertEquals( 2, Nodes.countAll( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 2 );
+                assertCursorEvents( cursorTracer, 2 );
                 assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
             }
         }
@@ -326,7 +334,9 @@ public class NodesIT
                 assertTrue( nodeCursor.isDense() );
                 assertEquals( 100, Nodes.countAll( nodeCursor, cursors, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 4 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -354,7 +364,9 @@ public class NodesIT
                 assertTrue( nodeCursor.isDense() );
                 assertEquals( 100, Nodes.countAll( nodeCursor, cursors, typeId, cursorTracer ) );
 
-                assertHitsAndPins( cursorTracer, 4 );
+                assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+                assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+                assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
             }
         }
     }
@@ -365,7 +377,7 @@ public class NodesIT
         assertTrue( nodeCursor.next() );
     }
 
-    private void assertHitsAndPins( PageCursorTracer cursorTracer, long events )
+    private void assertCursorEvents( PageCursorTracer cursorTracer, long events )
     {
         assertThat( cursorTracer.hits() ).isEqualTo( events );
         assertThat( cursorTracer.pins() ).isEqualTo( events );
