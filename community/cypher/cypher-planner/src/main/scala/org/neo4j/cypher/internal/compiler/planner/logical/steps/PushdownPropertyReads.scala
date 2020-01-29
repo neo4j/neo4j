@@ -157,15 +157,6 @@ case object PushdownPropertyReads {
 
               val propertiesFromPlan: Seq[Property] =
                 plan match {
-                  case multi: MultiNodeIndexSeek =>
-                    multi.nodeIndexSeeks.flatMap(indexPlan => {
-                      // TODO: Extract method?
-                      indexPlan.properties
-                        .filter(_.getValueFromIndex == CanGetValue) // NOTE: as we pushdown before inserting cached properties
-                                                                    //       the getValue behaviour will still be CanGetValue
-                                                                    //       instead of GetValue
-                        .map(asProperty(indexPlan.idName))
-                    })
                   case indexPlan: IndexLeafPlan =>
                     indexPlan.properties
                       .filter(_.getValueFromIndex == CanGetValue) // NOTE: as we pushdown before inserting cached properties

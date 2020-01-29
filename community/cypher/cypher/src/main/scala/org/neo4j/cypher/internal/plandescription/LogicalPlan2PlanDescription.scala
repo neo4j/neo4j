@@ -281,8 +281,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (indexModes, indexDescs) = indexLeafPlans.map { l =>
           getDescriptions(l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = true, readOnly, p.cachedProperties)
         }.unzip
-
-        // TODO: Convey the uniqueness and index mode information (locking etc.) in a user friendly way
         PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren,
                             indexDescs, variables)
 
