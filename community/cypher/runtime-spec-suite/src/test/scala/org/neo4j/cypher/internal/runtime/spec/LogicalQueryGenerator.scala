@@ -24,29 +24,37 @@ import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
+import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.attribution.Default
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.logging.NullLog
 import org.scalacheck.Gen
 
-class LogicalQueryGenerator(labels: Seq[String], relTypes: Seq[String]) {
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
-  def logicalQuery: Gen[WithState[LogicalQuery]] = {
+object LogicalQueryGenerator {
+
+  def logicalQuery(txContext: TransactionalContext, costLimit: Cost): Gen[WithState[LogicalQuery]] = {
     val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
-    val cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
-      override protected def defaultValue: Cardinality = Cardinality(1)
-    }
+
+    val tokenRead = txContext.kernelTransaction().tokenRead()
+    val stats = TransactionBoundGraphStatistics(txContext, NullLog.getInstance())
+
+    val labelMap = tokenRead.labelsGetAllTokens().asScala.map(l => l.name() -> l.id()).toMap
+    val relTypes = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(_.name())
+
     for {
-      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labels, relTypes).logicalPlan
+      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relTypes, stats, costLimit).logicalPlan
     } yield WithState(LogicalQuery(logicalPlan,
       "<<queryText>>",
       readOnly = true,
       logicalPlan.availableSymbols.toArray,
       state.semanticTable,
-      cardinalities,
+      state.cardinalities,
       providedOrders,
       hasLoadCSV = false,
       None), state)

@@ -83,7 +83,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
 
   private var _tx: InternalTransaction = _
-  private var txContext: TransactionalContext = _
+  private var _txContext: TransactionalContext = _
 
   def start(): Unit = {
     lifeSupport.init()
@@ -97,27 +97,27 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def startTx(): Unit = {
     _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
-    txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
   def restartTx(): Unit = {
-    txContext.close()
+    _txContext.close()
     _tx.commit()
     _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
-    txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
   def stopTx(): Unit = {
-    txContext.close()
+    _txContext.close()
     _tx.close()
   }
 
   def tx: InternalTransaction = _tx
-
+  def txContext: TransactionalContext = _txContext
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
-    compileWithTx(logicalQuery, runtime, newQueryContext(txContext))
+    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext))
 
   override def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
@@ -224,7 +224,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   subscriber: QuerySubscriber,
                   profile: Boolean,
                   parameters: Map[String, Any] = Map.empty): RESULT = {
-    runWithTx(executableQuery, input, resultMapper, subscriber, profile, parameters, _tx, txContext)
+    runWithTx(executableQuery, input, resultMapper, subscriber, profile, parameters, _tx, _txContext)
   }
 
   private def runWithTx[RESULT](executableQuery: ExecutionPlan,
@@ -257,7 +257,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   // CONTEXTS
 
   def newQueryTransactionalContext(): QueryTransactionalContext = {
-    TransactionalContextWrapper(txContext, null)
+    TransactionalContextWrapper(_txContext, null)
   }
 
   protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {

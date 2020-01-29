@@ -17,6 +17,9 @@
 package org.neo4j.cypher.internal.ast.generator
 
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
@@ -27,9 +30,8 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.StdDev
 import org.neo4j.cypher.internal.expressions.functions.StdDevP
 import org.neo4j.cypher.internal.expressions.functions.Sum
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.Namespace
 import org.scalacheck.Gen
+import org.scalacheck.Gen.frequency
 import org.scalacheck.Gen.listOfN
 import org.scalacheck.Gen.oneOf
 
@@ -38,19 +40,25 @@ import org.scalacheck.Gen.oneOf
  */
 class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None)
   extends AstGenerator(simpleStrings, allowedVarNames) {
-  // FIXME this generates too many invalid combinations
-  def aggregationFunctionInvocation: Gen[FunctionInvocation] = {
 
-    for {
-      function <- oneOf(Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum)
-      signature <- oneOf(function.signatures)
-      numArgs = signature.argumentTypes.length
-      distinct <- boolean
-      args <- listOfN(numArgs, _expression)
-    } yield {
-      val x = FunctionInvocation(Namespace()(pos), function.asFunctionName(pos), distinct, args.toIndexedSeq)(pos)
-      println(x)
-      x
-    }
-  }
+  private val supportedAggregationFunctions = Seq(Avg, Collect, Count, Max, Min, PercentileCont, PercentileDisc, StdDev, StdDevP, Sum)
+
+  // FIXME this generates too many invalid combinations
+  def aggregationFunctionInvocation: Gen[FunctionInvocation] = for {
+    function <- oneOf(supportedAggregationFunctions)
+    signature <- oneOf(function.signatures)
+    numArgs = signature.argumentTypes.length
+    distinct <- boolean
+    args <- listOfN(numArgs, nonAggregatingExpression)
+  } yield FunctionInvocation(Namespace()(pos), function.asFunctionName(pos), distinct, args.toIndexedSeq)(pos)
+
+  def aggregatingExpression: Gen[Expression] =
+    frequency(
+      supportedAggregationFunctions.size ->
+        aggregationFunctionInvocation,
+      1 ->
+        _countStar
+    )
+
+  def nonAggregatingExpression: Gen[Expression] = _expression.suchThat(!_.containsAggregate)
 }
