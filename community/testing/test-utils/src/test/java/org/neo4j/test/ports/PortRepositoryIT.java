@@ -29,14 +29,14 @@ import java.util.HashSet;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.test.ports.PortConstants.EphemeralPortMinimum;
+import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MINIMUM;
 
 class PortRepositoryIT
 {
     @Test
     void shouldReservePorts() throws Exception
     {
-        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EPHEMERAL_PORT_MINIMUM );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -49,8 +49,8 @@ class PortRepositoryIT
     void shouldCoordinateUsingFileSystem() throws Exception
     {
         Path temporaryDirectory = temporaryDirectory();
-        PortRepository portRepository1 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory, EPHEMERAL_PORT_MINIMUM );
+        PortRepository portRepository2 = new PortRepository( temporaryDirectory, EPHEMERAL_PORT_MINIMUM );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );

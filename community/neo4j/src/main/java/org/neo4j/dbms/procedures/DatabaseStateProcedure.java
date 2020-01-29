@@ -37,6 +37,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProcedure
@@ -83,7 +84,7 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
         var status = stateService.stateOfDatabase( namedDatabaseId );
         var formattedStatus = stringValue( status.description() );
         var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage );
-        var formattedError = error.map( Values::stringValue ).orElse( stringValue( "" ) );
+        var formattedError = error.map( Values::stringValue ).orElse( EMPTY_STRING );
         return new AnyValue[]{ stringValue( role ), stringValue( address ), formattedStatus, formattedError };
     }
 }

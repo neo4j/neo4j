@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -77,14 +78,14 @@ abstract class DefaultCursors
             if ( !c.isClosed() )
             {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream( out );
+                PrintStream printStream = new PrintStream( out, false, StandardCharsets.UTF_8 );
 
                 for ( StackTraceElement traceElement : stackTrace )
                 {
                     printStream.println( "\tat " + traceElement );
                 }
                 printStream.println();
-                throw new IllegalStateException( format( "Closeable %s was not closed!\n%s", c, out.toString() ) );
+                throw new IllegalStateException( format( "Closeable %s was not closed!%n%s", c, out.toString( StandardCharsets.UTF_8) ) );
             }
         }
     }

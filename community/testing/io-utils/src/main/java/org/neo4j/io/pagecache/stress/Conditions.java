@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
 import static java.lang.System.nanoTime;
 
-public class Conditions
+public final class Conditions
 {
     private Conditions()
     {

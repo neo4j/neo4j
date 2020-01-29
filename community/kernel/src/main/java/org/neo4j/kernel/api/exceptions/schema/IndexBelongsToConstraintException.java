@@ -30,19 +30,19 @@ public class IndexBelongsToConstraintException extends SchemaKernelException
 {
     private final SchemaDescriptor descriptor;
     private final String indexName;
-    private static final String messageSchema = "Index belongs to constraint: %s";
-    private static final String messageName = "Index belongs to constraint: `%s`";
+    private static final String MESSAGE_SCHEMA = "Index belongs to constraint: %s";
+    private static final String MESSAGE_NAME = "Index belongs to constraint: `%s`";
 
     public IndexBelongsToConstraintException( SchemaDescriptor descriptor )
     {
-        super( Status.Schema.ForbiddenOnConstraintIndex, format( messageSchema, descriptor ) );
+        super( Status.Schema.ForbiddenOnConstraintIndex, format( MESSAGE_SCHEMA, descriptor ) );
         this.descriptor = descriptor;
         this.indexName = null;
     }
 
     public IndexBelongsToConstraintException( String indexName, SchemaDescriptor descriptor )
     {
-        super( Status.Schema.ForbiddenOnConstraintIndex, format( messageName, indexName ) );
+        super( Status.Schema.ForbiddenOnConstraintIndex, format( MESSAGE_NAME, indexName ) );
         this.descriptor = descriptor;
         this.indexName = indexName;
     }
@@ -52,11 +52,11 @@ public class IndexBelongsToConstraintException extends SchemaKernelException
     {
         if ( indexName == null )
         {
-            return format( messageSchema, descriptor.userDescription( tokenNameLookup ) );
+            return format( MESSAGE_SCHEMA, descriptor.userDescription( tokenNameLookup ) );
         }
         else
         {
-            return format( messageName, indexName );
+            return format( MESSAGE_NAME, indexName );
         }
     }
 }

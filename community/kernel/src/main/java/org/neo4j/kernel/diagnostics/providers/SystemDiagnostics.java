@@ -34,10 +34,10 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
+import java.time.ZoneId;
 import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TimeZone;
 
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -111,8 +110,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
 
         private String getLocalTimeZone()
         {
-            TimeZone tz = Calendar.getInstance().getTimeZone();
-            return tz.getID();
+            return ZoneId.systemDefault().getId();
         }
     },
     JAVA_VIRTUAL_MACHINE( "JVM information" )

@@ -87,7 +87,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             // Verify that the relationship reports that it is associated with
             // firstNode and secondNode
             Node[] relNodes = rel.getNodes();
-            assertEquals( relNodes.length, 2, "A relationship should always be connected to exactly two nodes" );
+            assertEquals( 2, relNodes.length, "A relationship should always be connected to exactly two nodes" );
             assertTrue( objectExistsInArray( firstNode, relNodes ), "Relationship says that it isn't connected to firstNode" );
             assertTrue( objectExistsInArray( secondNode, relNodes ), "Relationship says that it isn't connected to secondNode" );
             assertEquals( rel.getOtherNode( firstNode ), secondNode, "The other node should be secondNode but it isn't" );

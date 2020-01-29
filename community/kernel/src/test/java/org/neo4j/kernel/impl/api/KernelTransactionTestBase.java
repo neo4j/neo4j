@@ -97,7 +97,6 @@ class KernelTransactionTestBase
     protected final CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
-    protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     protected final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
@@ -110,7 +109,6 @@ class KernelTransactionTestBase
     public void before() throws Exception
     {
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
-        when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ) ) ).thenReturn( commandCreationContext );
         when( storageEngine.transactionIdStore() ).thenReturn( transactionIdStore );

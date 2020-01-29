@@ -41,19 +41,19 @@ public class Properties implements Answer<Object>, Iterable<String>
         return new Properties( properties );
     }
 
-    private final SortedMap<String, Object> properties = new TreeMap<>();
+    private final SortedMap<String, Object> propertiesMap = new TreeMap<>();
 
     private Properties( Property[] properties )
     {
         for ( Property property : properties )
         {
-            this.properties.put( property.key(), property.value() );
+            this.propertiesMap.put( property.key(), property.value() );
         }
     }
 
     private Properties( Map<String, Object> properties )
     {
-        this.properties.putAll( properties );
+        this.propertiesMap.putAll( properties );
     }
 
     @Override
@@ -61,7 +61,7 @@ public class Properties implements Answer<Object>, Iterable<String>
     {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings( "SuspiciousMethodCalls" )
-        Object result = properties.get( arguments[0] );
+        Object result = propertiesMap.get( arguments[0] );
         if ( result == null )
         {
             if ( arguments.length == 2 )
@@ -79,11 +79,11 @@ public class Properties implements Answer<Object>, Iterable<String>
     @Override
     public Iterator<String> iterator()
     {
-        return properties.keySet().iterator();
+        return propertiesMap.keySet().iterator();
     }
 
     public SortedMap<String, Object> getProperties()
     {
-        return properties;
+        return propertiesMap;
     }
 }

@@ -30,18 +30,18 @@ public class NoSuchConstraintException extends SchemaKernelException
 {
     private final SchemaDescriptorSupplier constraint;
     private final String name;
-    private static final String message = "No such constraint %s.";
+    private static final String MESSAGE = "No such constraint %s.";
 
     public NoSuchConstraintException( SchemaDescriptorSupplier constraint, TokenNameLookup lookup )
     {
-        super( Status.Schema.ConstraintNotFound, format( message, constraint.userDescription( lookup ) ) );
+        super( Status.Schema.ConstraintNotFound, format( MESSAGE, constraint.userDescription( lookup ) ) );
         this.constraint = constraint;
         this.name = "";
     }
 
     public NoSuchConstraintException( String name )
     {
-        super( Status.Schema.ConstraintNotFound, format( message, name ) );
+        super( Status.Schema.ConstraintNotFound, format( MESSAGE, name ) );
         this.constraint = null;
         this.name = name;
     }
@@ -51,11 +51,11 @@ public class NoSuchConstraintException extends SchemaKernelException
     {
         if ( constraint == null )
         {
-            return format( message, name );
+            return format( MESSAGE, name );
         }
         else
         {
-            return format( message, constraint.userDescription( tokenNameLookup ) );
+            return format( MESSAGE, constraint.userDescription( tokenNameLookup ) );
         }
     }
 }

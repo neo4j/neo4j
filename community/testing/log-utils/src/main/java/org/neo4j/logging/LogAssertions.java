@@ -21,7 +21,7 @@ package org.neo4j.logging;
 
 import org.assertj.core.api.Assertions;
 
-public class LogAssertions extends Assertions
+public final class LogAssertions extends Assertions
 {
     private LogAssertions()
     {

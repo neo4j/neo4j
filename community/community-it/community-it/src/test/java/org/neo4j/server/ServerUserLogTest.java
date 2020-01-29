@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,7 +83,7 @@ class ServerUserLogTest
         // when
         try
         {
-            int returnCode = neoBootstrapper.start( dir, Optional.empty(), connectorsConfig() );
+            int returnCode = neoBootstrapper.start( dir, connectorsConfig() );
 
             // then no exceptions are thrown and
             assertThat( getStdOut(), not( empty() ) );
@@ -119,7 +118,7 @@ class ServerUserLogTest
         {
             Map<String,String> configOverrides = stringMap( store_user_log_to_stdout.name(), FALSE );
             configOverrides.putAll( connectorsConfig() );
-            int returnCode = neoBootstrapper.start( dir, Optional.empty(), configOverrides );
+            int returnCode = neoBootstrapper.start( dir, configOverrides );
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( neoBootstrapper.isRunning() );
@@ -154,9 +153,7 @@ class ServerUserLogTest
                             store_user_log_rotation_threshold.name(), "16",
                             store_user_log_max_archives.name(), Integer.toString( maxArchives ) );
             configOverrides.putAll( connectorsConfig() );
-            int returnCode = neoBootstrapper.start( dir, Optional.empty(),
-                    configOverrides
-            );
+            int returnCode = neoBootstrapper.start( dir, configOverrides );
 
             // then
             assertEquals( OK, returnCode );

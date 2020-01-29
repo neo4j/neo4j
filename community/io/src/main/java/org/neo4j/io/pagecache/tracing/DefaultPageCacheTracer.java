@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  */
 public class DefaultPageCacheTracer implements PageCacheTracer
 {
-    public static DefaultPageCacheTracer TRACER = new DefaultPageCacheTracer();
+    public static final DefaultPageCacheTracer TRACER = new DefaultPageCacheTracer();
 
     protected final LongAdder faults = new LongAdder();
     protected final LongAdder evictions = new LongAdder();

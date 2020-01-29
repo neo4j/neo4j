@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.ports;
 
-import static org.neo4j.test.ports.PortConstants.EphemeralPortMaximum;
+import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
 
 /**
  * Port provider that relies on state in a single JVM. Not suitable for parallel test execution (as in, several JVM
@@ -41,7 +41,7 @@ public class SimplePortProvider implements PortProvider
     @Override
     public synchronized int getNextFreePort( String ignored )
     {
-        while ( currentPort <= EphemeralPortMaximum )
+        while ( currentPort <= EPHEMERAL_PORT_MAXIMUM )
         {
             if ( !portProbe.isOccupied( currentPort ) )
             {

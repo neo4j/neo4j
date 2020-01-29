@@ -20,7 +20,6 @@
 package org.neo4j.test.scheduler;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -186,7 +185,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         }
 
         @Override
-        public void waitTermination() throws InterruptedException, ExecutionException, CancellationException
+        public void waitTermination() throws InterruptedException, ExecutionException
         {
             future.get();
         }

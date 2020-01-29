@@ -25,7 +25,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.neo4j.test.ports.PortConstants.EphemeralPortMaximum;
+import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
 
 class PortRepository
 {
@@ -43,7 +43,7 @@ class PortRepository
     // synchronize between threads in this JVM
     synchronized int reserveNextPort( String trace )
     {
-        while ( currentPort <= EphemeralPortMaximum )
+        while ( currentPort <= EPHEMERAL_PORT_MAXIMUM )
         {
             Path portFilePath = directory.resolve( "port" + currentPort );
 

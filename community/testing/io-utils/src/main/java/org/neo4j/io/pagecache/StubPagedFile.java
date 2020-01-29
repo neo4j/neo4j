@@ -57,7 +57,6 @@ public class StubPagedFile implements PagedFile
     @Override
     public long fileSize()
     {
-        final long lastPageId = getLastPageId();
         if ( lastPageId < 0 )
         {
             return 0L;

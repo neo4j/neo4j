@@ -681,7 +681,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         samplingController.sampleIndex( index.getId(), mode );
     }
 
-    private void dropRecoveringIndexes( IndexMap indexMap, LongIterable indexesToRebuild )
+    private static void dropRecoveringIndexes( IndexMap indexMap, LongIterable indexesToRebuild )
     {
         indexesToRebuild.forEach( idx ->
         {

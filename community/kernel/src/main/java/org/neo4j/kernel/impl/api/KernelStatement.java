@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -276,7 +277,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
             String paddingString = "=";
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PrintStream printStream = new PrintStream( out );
+            PrintStream printStream = new PrintStream( out, false, StandardCharsets.UTF_8 );
             printStream.println();
             printStream.println( "Last " + STATEMENT_TRACK_HISTORY_MAX_SIZE + " statements open/close stack traces are:" );
             int element = 0;
@@ -292,7 +293,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
                 element++;
             }
             printStream.println( "All statement open/close stack traces printed." );
-            return out.toString();
+            return out.toString( StandardCharsets.UTF_8 );
         }
 
         private static class StatementTraceException extends RuntimeException

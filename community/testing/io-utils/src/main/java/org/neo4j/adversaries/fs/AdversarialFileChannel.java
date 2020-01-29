@@ -115,7 +115,7 @@ public class AdversarialFileChannel extends StoreFileChannel
         return delegate.read( dst, position );
     }
 
-    private int mischiefLimit( ByteBuffer buf )
+    private static int mischiefLimit( ByteBuffer buf )
     {
         int oldLimit = buf.limit();
         int newLimit = oldLimit - buf.remaining() / 2;

@@ -23,14 +23,13 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 
-public abstract class IndexPopulationFailure
+public interface IndexPopulationFailure
 {
-    public abstract String asString();
+    String asString();
 
-    public abstract IndexPopulationFailedKernelException asIndexPopulationFailure(
-            SchemaDescriptor descriptor, String indexUserDescriptor );
+    IndexPopulationFailedKernelException asIndexPopulationFailure( SchemaDescriptor descriptor, String indexUserDescriptor );
 
-    public static IndexPopulationFailure failure( final Throwable failure )
+    static IndexPopulationFailure failure( final Throwable failure )
     {
         return new IndexPopulationFailure()
         {
@@ -49,7 +48,7 @@ public abstract class IndexPopulationFailure
         };
     }
 
-    public static IndexPopulationFailure failure( final String failure )
+    static IndexPopulationFailure failure( final String failure )
     {
         return new IndexPopulationFailure()
         {
@@ -68,7 +67,7 @@ public abstract class IndexPopulationFailure
         };
     }
 
-    public static String appendCauseOfFailure( String message, String causeOfFailure )
+    static String appendCauseOfFailure( String message, String causeOfFailure )
     {
         return String.format( "%s: Cause of failure:%n" +
                 "==================%n%s%n==================", message, causeOfFailure );

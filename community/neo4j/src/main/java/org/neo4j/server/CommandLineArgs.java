@@ -22,7 +22,6 @@ package org.neo4j.server;
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.Args;
@@ -67,10 +66,10 @@ public class CommandLineArgs
         return configOverrides;
     }
 
-    public Optional<File> configFile()
+    public File configFile()
     {
-        return Optional.ofNullable( args.get( CONFIG_DIR_ARG ) )
-                .map( dirPath -> new File( dirPath, Config.DEFAULT_CONFIG_FILE_NAME ) );
+        String configDirectory = args.get( CONFIG_DIR_ARG );
+        return configDirectory == null ? null : new File( configDirectory, Config.DEFAULT_CONFIG_FILE_NAME );
     }
 
     private static Map<String, String> parseConfigOverrides( Args arguments )

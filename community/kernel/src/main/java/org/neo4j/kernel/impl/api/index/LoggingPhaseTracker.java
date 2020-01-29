@@ -118,10 +118,7 @@ public class LoggingPhaseTracker implements PhaseTracker
     private String mainReportString( String title )
     {
         StringJoiner joiner = new StringJoiner( ", ", title + ": ", "" );
-        times.values().forEach( logger ->
-        {
-            reportToJoiner( joiner, logger );
-        } );
+        times.values().forEach( logger -> reportToJoiner( joiner, logger ) );
         return joiner.toString();
     }
 

@@ -182,7 +182,8 @@ public class StubPageCursor extends PageCursor
     @Override
     public PageCursor openLinkedCursor( long pageId )
     {
-        return linkedCursor = new StubPageCursor( pageId, pageSize );
+        linkedCursor = new StubPageCursor( pageId, pageSize );
+        return linkedCursor;
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.values.storable.ValueCategory;
 
 public class FusionIndexCapability implements IndexCapability
 {
-    private static final Function<ValueCategory,ValueCategory> categoryOf = vc -> vc;
+    private static final Function<ValueCategory,ValueCategory> categoryOf = Function.identity();
     private final SlotSelector slotSelector;
     private final InstanceSelector<IndexCapability> instanceSelector;
     private final IndexLimitation[] limitations;
@@ -41,7 +41,7 @@ public class FusionIndexCapability implements IndexCapability
         this.limitations = buildLimitations( slotSelector );
     }
 
-    private IndexLimitation[] buildLimitations( SlotSelector slotSelector )
+    private static IndexLimitation[] buildLimitations( SlotSelector slotSelector )
     {
         // If we delegate single property text queries to anything else than Lucene, we have slow contains
         IndexSlot slot = slotSelector.selectSlot( new ValueCategory[]{ValueCategory.TEXT}, categoryOf );

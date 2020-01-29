@@ -21,10 +21,11 @@ package org.neo4j.test.jar;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
@@ -35,12 +36,12 @@ public class JarBuilder
 {
     public URL createJarFor( File f, Class<?>... classesToInclude ) throws IOException
     {
-        try ( FileOutputStream fout = new FileOutputStream( f );
+        try ( OutputStream fout = Files.newOutputStream( f.toPath() );
               JarOutputStream jarOut = new JarOutputStream( fout ) )
         {
             for ( Class<?> target : classesToInclude )
             {
-                String fileName = target.getName().replace( ".", "/" ) + ".class";
+                String fileName = target.getName().replace( '.', '/' ) + ".class";
                 jarOut.putNextEntry( new ZipEntry( fileName ) );
                 jarOut.write( classCompiledBytes( fileName ) );
                 jarOut.closeEntry();

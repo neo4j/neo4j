@@ -297,11 +297,11 @@ public class DbRepresentation
                 rel.compareWith( otherRel, diff );
             }
 
-            for ( Long id : other.outRelationships.keySet() )
+            for ( Long relId : other.outRelationships.keySet() )
             {
-                if ( !outRelationships.containsKey( id ) )
+                if ( !outRelationships.containsKey( relId ) )
                 {
-                    diff.add( "Other has relationship " + id + " which I don't" );
+                    diff.add( "Other has relationship " + relId + " which I don't" );
                 }
             }
         }

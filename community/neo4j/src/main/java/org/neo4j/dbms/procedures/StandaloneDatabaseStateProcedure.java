@@ -20,8 +20,6 @@
 package org.neo4j.dbms.procedures;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -32,20 +30,20 @@ import org.neo4j.values.AnyValue;
 public class StandaloneDatabaseStateProcedure extends DatabaseStateProcedure
 {
     private final DatabaseStateService stateService;
-    private final String address;
+    private final String advertisedAddress;
 
-    public StandaloneDatabaseStateProcedure( DatabaseStateService stateService, DatabaseIdRepository idRepository, Config config )
+    public StandaloneDatabaseStateProcedure( DatabaseStateService stateService, DatabaseIdRepository idRepository, String advertisedAddress )
     {
         super( idRepository );
         this.stateService = stateService;
-        this.address = config.get( BoltConnector.advertised_address ).toString();
+        this.advertisedAddress = advertisedAddress;
     }
 
     @Override
     public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         var databaseId = extractDatabaseId( input );
-        var resultRow = resultRowFactory( databaseId, "standalone", address, stateService );
+        var resultRow = resultRowFactory( databaseId, "standalone", advertisedAddress, stateService );
         return RawIterator.<AnyValue[],ProcedureException>of( resultRow );
     }
 }

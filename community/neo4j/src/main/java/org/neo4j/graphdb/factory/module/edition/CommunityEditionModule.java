@@ -30,6 +30,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -213,7 +214,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager ) throws KernelException
     {
         globalProcedures.register( new StandaloneDatabaseStateProcedure( databaseStateService,
-                databaseManager.databaseIdRepository(), globalModule.getGlobalConfig() ) );
+                databaseManager.databaseIdRepository(), globalModule.getGlobalConfig().get( BoltConnector.advertised_address ).toString() ) );
     }
 
     @Override

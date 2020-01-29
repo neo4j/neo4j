@@ -67,7 +67,6 @@ class KernelDiagnosticsIT
     @Test
     void shouldIncludeNativeIndexFilesInTotalMappedSize()
     {
-        int i = 0;
         for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
             // given

@@ -47,8 +47,5 @@ public interface CallableUserFunction
         {
             return signature;
         }
-
-        @Override
-        public abstract AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
     }
 }

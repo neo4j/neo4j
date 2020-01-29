@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -330,7 +331,7 @@ public class TestDirectory extends ExternalResource
     private void register( String test, String dir )
     {
         try ( PrintStream printStream =
-                    new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ) ) )
+                new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ), false, StandardCharsets.UTF_8 ) )
         {
             printStream.print( format( "%s = %s%n", dir, test ) );
         }

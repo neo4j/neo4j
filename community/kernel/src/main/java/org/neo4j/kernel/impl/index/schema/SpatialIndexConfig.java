@@ -64,7 +64,6 @@ public final class SpatialIndexConfig
 
     public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, double[] min, double[] max )
     {
-        String crsName = crs.getName();
         String minKey = IndexSettingUtil.spatialMinSettingForCrs( crs ).getSettingName();
         String maxKey = IndexSettingUtil.spatialMaxSettingForCrs( crs ).getSettingName();
         map.put( minKey, Values.doubleArray( min ) );

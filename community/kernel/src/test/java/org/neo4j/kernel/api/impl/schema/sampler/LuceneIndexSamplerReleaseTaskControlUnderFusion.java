@@ -118,7 +118,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
             }
             catch ( RuntimeException e )
             {
-                assertSame( e, sampleException );
+                assertSame( sampleException, e );
             }
 
             // then

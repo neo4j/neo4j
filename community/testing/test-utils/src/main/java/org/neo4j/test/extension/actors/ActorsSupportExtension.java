@@ -62,7 +62,7 @@ public class ActorsSupportExtension implements TestInstancePostProcessor, AfterE
         }
     }
 
-    private TestInstance.Lifecycle getLifecycle( ExtensionContext context )
+    private static TestInstance.Lifecycle getLifecycle( ExtensionContext context )
     {
         return context.getTestInstanceLifecycle().orElse( PER_METHOD );
     }
@@ -110,7 +110,7 @@ public class ActorsSupportExtension implements TestInstancePostProcessor, AfterE
         }
     }
 
-    private ExtensionContext.Store getStore( ExtensionContext extensionContext )
+    private static ExtensionContext.Store getStore( ExtensionContext extensionContext )
     {
         return extensionContext.getStore( NAMESPACE );
     }

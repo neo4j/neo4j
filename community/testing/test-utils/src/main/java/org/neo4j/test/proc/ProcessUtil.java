@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Utility methods for accessing information about the current Java process.
  */
-public class ProcessUtil
+public final class ProcessUtil
 {
     private ProcessUtil()
     {

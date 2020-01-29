@@ -77,7 +77,7 @@ class StreamingJsonFormatTest
     void canFormatString()
     {
         json.assemble( ValueRepresentation.string( "expected value" ) );
-        assertEquals( stream.toString(), "\"expected value\"" );
+        assertEquals( "\"expected value\"", stream.toString() );
     }
 
     @Test

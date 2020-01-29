@@ -22,13 +22,14 @@ package org.neo4j.kernel.diagnostics.providers;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
-import java.util.TimeZone;
+import java.util.Set;
 
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,16 +38,15 @@ import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.fs.FileUtils.getFileStoreType;
 
 public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 {
-    private static final String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
     private final StorageEngineFactory storageEngineFactory;
     private final FileSystemAbstraction fs;
     private final DatabaseLayout databaseLayout;
-    private final SimpleDateFormat dateFormat;
 
     public StoreFilesDiagnostics( StorageEngineFactory storageEngineFactory, FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
@@ -54,8 +54,6 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         this.storageEngineFactory = storageEngineFactory;
         this.fs = fs;
         this.databaseLayout = databaseLayout;
-        dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
-        dateFormat.setTimeZone( TimeZone.getDefault() );
     }
 
     @Override
@@ -117,8 +115,10 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private String getFileModificationDate( File file )
     {
-        Date modifiedDate = new Date( file.lastModified() );
-        return dateFormat.format( modifiedDate );
+        ZonedDateTime modifiedDate = Instant.ofEpochMilli( file.lastModified() )
+                .atZone( ZoneId.systemDefault() )
+                .withNano( 0 ); // truncate milliseconds
+        return ISO_OFFSET_DATE_TIME.format( modifiedDate );
     }
 
     private static String getDiskSpace( DatabaseLayout databaseLayout )
@@ -132,7 +132,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private class MappedFileCounter
     {
-        private final List<File> mappedCandidates = new ArrayList<>();
+        private final Set<File> mappedCandidates = new HashSet<>();
         private long size;
         private final FileFilter mappedIndexFilter;
 

@@ -85,7 +85,7 @@ public class TestDirectorySupportExtension extends StatefullFieldExtension<TestD
         }
     }
 
-    private TestInstance.Lifecycle getLifecycle( ExtensionContext context )
+    private static TestInstance.Lifecycle getLifecycle( ExtensionContext context )
     {
         return context.getTestInstanceLifecycle().orElse( PER_METHOD );
     }

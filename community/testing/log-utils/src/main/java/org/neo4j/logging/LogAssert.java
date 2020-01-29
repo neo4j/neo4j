@@ -170,7 +170,7 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
                 matchedMessage( message, call ) );
     }
 
-    private boolean matchedMessage( String message, LogCall call )
+    private static boolean matchedMessage( String message, LogCall call )
     {
         return call.getMessage().contains( message ) || call.toLogLikeString().contains( message );
     }

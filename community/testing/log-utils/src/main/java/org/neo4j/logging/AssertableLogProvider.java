@@ -303,13 +303,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         return serialize( logCalls.iterator(), LogCall::toLogLikeString );
     }
 
-    private String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )
+    private static String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )
     {
         StringBuilder sb = new StringBuilder();
         while ( events.hasNext() )
         {
             sb.append( serializer.apply( events.next() ) );
-            sb.append( "\n" );
+            sb.append( '\n' );
         }
         return sb.toString();
     }

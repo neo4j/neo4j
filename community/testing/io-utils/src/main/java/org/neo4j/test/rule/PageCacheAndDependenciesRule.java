@@ -80,11 +80,6 @@ public class PageCacheAndDependenciesRule implements TestRule
         return chain.apply( base, description );
     }
 
-    public FileSystemRule<? extends FileSystemAbstraction> fileSystemRule()
-    {
-        return fs;
-    }
-
     public FileSystemAbstraction fileSystem()
     {
         return fs.get();

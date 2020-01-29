@@ -56,9 +56,9 @@ public class SelfSignedCertificateFactory
     private static final String DEFAULT_ENCRYPTION = "RSA";
     private final SecureRandom random;
     /** Current time minus 1 year, just in case software clock goes back due to time synchronization */
-    private static final Date NOT_BEFORE = new Date( System.currentTimeMillis() - 86400000L * 365 );
+    private static final Date NOT_BEFORE = new Date( System.currentTimeMillis() - 86_400_000L * 365 );
     /** The maximum possible value in X.509 specification: 9999-12-31 23:59:59 */
-    private static final Date NOT_AFTER = new Date( 253402300799000L );
+    private static final Date NOT_AFTER = new Date( 253_402_300_799_000L );
     private static final Provider PROVIDER = new BouncyCastleProvider();
 
     private static final String DEFAULT_KEY_FILE_NAME = "private.key";

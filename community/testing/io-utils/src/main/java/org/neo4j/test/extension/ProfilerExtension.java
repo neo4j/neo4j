@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.resources.Profiler;
@@ -108,7 +109,7 @@ public class ProfilerExtension extends StatefullFieldExtension<Profiler> impleme
             {
                 String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                profiler.printProfile( new PrintStream( buffer ), displayName );
+                profiler.printProfile( new PrintStream( buffer, false, StandardCharsets.UTF_8 ), displayName );
                 buffer.writeTo( System.err );
 
                 ExtensionContext.Store testDirStore = getStore( context, TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE );

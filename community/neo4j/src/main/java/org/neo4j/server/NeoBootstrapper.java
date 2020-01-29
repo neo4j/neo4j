@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,6 +49,7 @@ import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.Group;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -89,14 +89,20 @@ public abstract class NeoBootstrapper implements Bootstrapper
         return boot.start( args.homeDir(), args.configFile(), args.configOverrides() );
     }
 
+    @VisibleForTesting
+    public final int start( File homeDir, Map<String, String> configOverrides )
+    {
+        return start( homeDir, null, configOverrides );
+    }
+
     @Override
-    public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
+    public final int start( File homeDir, File configFile, Map<String, String> configOverrides )
     {
         addShutdownHook();
         installSignalHandlers();
         Config config = Config.newBuilder()
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .fromFileNoThrow( configFile.orElse( null ) )
+                .fromFileNoThrow( configFile )
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
                 .addValidators( configurationValidators() )
@@ -201,7 +207,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         installSignalHandler( SIGINT, true ); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
     }
 
-    private void installSignalHandler( String sig, boolean tolerateErrors )
+    private static void installSignalHandler( String sig, boolean tolerateErrors )
     {
         try
         {

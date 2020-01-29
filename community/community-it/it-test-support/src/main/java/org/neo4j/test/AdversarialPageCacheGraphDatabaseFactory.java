@@ -38,7 +38,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
-public class AdversarialPageCacheGraphDatabaseFactory
+public final class AdversarialPageCacheGraphDatabaseFactory
 {
     private AdversarialPageCacheGraphDatabaseFactory()
     {

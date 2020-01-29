@@ -149,7 +149,7 @@ public abstract class FormatCompatibilityVerifier
         return name.replace( '.', File.separatorChar );
     }
 
-    public class FormatViolationException extends Throwable
+    public static class FormatViolationException extends Exception
     {
         public FormatViolationException( Throwable cause )
         {

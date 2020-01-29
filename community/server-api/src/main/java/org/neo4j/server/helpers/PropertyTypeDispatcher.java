@@ -34,15 +34,11 @@ import org.neo4j.internal.helpers.collection.ArrayIterator;
  */
 public abstract class PropertyTypeDispatcher<K, T>
 {
-    public abstract static class PropertyArray<T> implements Iterable<T>
+    public interface PropertyArray<T> extends Iterable<T>
     {
-        private PropertyArray()
-        {
-        }
+        int length();
 
-        public abstract int length();
-
-        public abstract Class<?> getType();
+        Class<?> getType();
     }
 
     public static void consumeProperties( PropertyTypeDispatcher<String, Void> dispatcher,
@@ -622,7 +618,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         throw new UnsupportedOperationException( "Unhandled array type: " + array.getType() );
     }
 
-    private static final class BoxedArray<T> extends PropertyArray<T>
+    private static final class BoxedArray<T> implements PropertyArray<T>
     {
         private final T[] array;
 
@@ -650,7 +646,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    private abstract static class PrimitiveArray<T> extends PropertyArray<T>
+    private abstract static class PrimitiveArray<T> implements PropertyArray<T>
     {
         @Override
         public Iterator<T> iterator()

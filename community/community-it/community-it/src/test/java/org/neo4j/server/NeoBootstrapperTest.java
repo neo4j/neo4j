@@ -27,7 +27,6 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Optional;
 
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.test.extension.Inject;
@@ -70,7 +69,7 @@ class NeoBootstrapperTest
         dir.deleteOnExit();
 
         // when
-        neoBootstrapper.start( dir, Optional.empty(), MapUtil.stringMap() );
+        neoBootstrapper.start( dir, MapUtil.stringMap() );
 
         // then no exceptions are thrown and
         assertThat( suppress.getOutputVoice().lines(), not( empty() ) );

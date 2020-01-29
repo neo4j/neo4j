@@ -121,7 +121,7 @@ public class DiagnosticsReporter
         providers.forEach( provider -> allSources.addAll( provider.getDiagnosticsSources( classifiers ) ) );
         additionalSources.forEach( ( classifier, sources ) ->
         {
-            if ( classifiers.contains( "all" ) || classifier.contains( classifier ) )
+            if ( classifiers.contains( "all" ) || classifiers.contains( classifier ) )
             {
                 allSources.addAll( sources );
             }

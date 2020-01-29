@@ -30,7 +30,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -64,7 +63,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         CommunityBootstrapper bootstrapper = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        bootstrapper.start( testDir.homeDir(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        bootstrapper.start( testDir.homeDir(), new File( "nonexistent-file.conf" ), propertyPairs );
         var resolver = getDependencyResolver( bootstrapper.getDatabaseManagementService() );
         URI uri = resolver.resolveDependency( AbstractNeoWebServer.class ).getBaseUri();
         bootstrapper.stop();

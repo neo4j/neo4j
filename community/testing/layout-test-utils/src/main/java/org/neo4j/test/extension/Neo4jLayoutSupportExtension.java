@@ -149,7 +149,7 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
         }
     }
 
-    private TestInstance.Lifecycle getLifecycle( ExtensionContext context )
+    private static TestInstance.Lifecycle getLifecycle( ExtensionContext context )
     {
         return context.getTestInstanceLifecycle().orElse( PER_METHOD );
     }

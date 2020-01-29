@@ -22,7 +22,6 @@ package org.neo4j.server;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 
@@ -37,7 +36,7 @@ public class CommandLineArgsTest
     void shouldPickUpSpecifiedConfigFile()
     {
         File dir = new File( "/some-dir" ).getAbsoluteFile();
-        Optional<File> expectedFile = Optional.of( new File( dir, Config.DEFAULT_CONFIG_FILE_NAME ) );
+        File expectedFile = new File( dir, Config.DEFAULT_CONFIG_FILE_NAME );
         assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
     }
@@ -45,7 +44,7 @@ public class CommandLineArgsTest
     @Test
     void shouldResolveConfigFileRelativeToWorkingDirectory()
     {
-        Optional<File> expectedFile = Optional.of( new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME ) );
+        File expectedFile = new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
@@ -53,7 +52,7 @@ public class CommandLineArgsTest
     @Test
     void shouldReturnNullIfConfigDirIsNotSpecified()
     {
-        assertEquals( Optional.empty(), parse().configFile() );
+        assertEquals( null, parse().configFile() );
     }
 
     @Test

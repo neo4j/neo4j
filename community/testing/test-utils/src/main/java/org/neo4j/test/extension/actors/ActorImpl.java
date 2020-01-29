@@ -199,7 +199,7 @@ class ActorImpl implements Actor
         thread.interrupt();
     }
 
-    private Predicate<StackTraceElement> methodPredicate( Executable constructorOrMethod )
+    private static Predicate<StackTraceElement> methodPredicate( Executable constructorOrMethod )
     {
         String targetMethodName = constructorOrMethod.getName();
         String targetClassName = constructorOrMethod.getDeclaringClass().getName();
@@ -207,7 +207,7 @@ class ActorImpl implements Actor
             element.getMethodName().equals( targetMethodName ) && element.getClassName().equals( targetClassName );
     }
 
-    private Predicate<StackTraceElement> methodPredicate( String methodName )
+    private static Predicate<StackTraceElement> methodPredicate( String methodName )
     {
         return element -> element.getMethodName().equals( methodName );
     }

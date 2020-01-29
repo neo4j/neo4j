@@ -42,8 +42,5 @@ public interface CallableUserAggregationFunction
         {
             return signature;
         }
-
-        @Override
-        public abstract UserAggregator create( Context ctx ) throws ProcedureException;
     }
 }

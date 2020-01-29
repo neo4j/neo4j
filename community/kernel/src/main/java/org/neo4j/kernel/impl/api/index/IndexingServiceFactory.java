@@ -33,7 +33,7 @@ import org.neo4j.scheduler.JobScheduler;
 /**
  * Factory to create {@link IndexingService}
  */
-public class IndexingServiceFactory
+public final class IndexingServiceFactory
 {
     private IndexingServiceFactory()
     {

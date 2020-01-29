@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -204,7 +205,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
             final FileObject file = processingEnv.getFiler().getResource( CLASS_OUTPUT, "", path );
             final List<String> lines = new ArrayList<>();
             try ( InputStream is = file.openInputStream();
-                  BufferedReader in = new BufferedReader( new InputStreamReader( is ) ) )
+                  BufferedReader in = new BufferedReader( new InputStreamReader( is, StandardCharsets.UTF_8 ) ) )
             {
                 String line;
                 while ( (line = in.readLine()) != null )

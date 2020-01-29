@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterables.reverse;
 
-public class GraphMock
+public final class GraphMock
 {
     private GraphMock()
     {
