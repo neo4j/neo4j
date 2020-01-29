@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
@@ -678,7 +678,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -699,7 +699,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -720,7 +720,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ),
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ),
                         IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
                 // then
@@ -742,7 +742,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -763,7 +763,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.range( prop,
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop,
                         Values.of( new String[]{"first", "second", "third"} ), true,
                         Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
@@ -786,7 +786,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             for ( IndexOrder orderCapability : orderCapabilities )
             {
                 // when
-                read.nodeIndexSeek( index, node, ordered( orderCapability, needsValues ), IndexQuery.exists( prop ) );
+                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.exists( prop ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );

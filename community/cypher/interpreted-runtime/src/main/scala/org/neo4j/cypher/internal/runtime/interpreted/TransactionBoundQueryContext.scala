@@ -263,7 +263,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
 
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    reads().nodeIndexSeek(index, nodeCursor, IndexQueryConstraints.ordered(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
+    reads().nodeIndexSeek(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
     if (needsValues && actualValues != null)
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
     else
@@ -274,7 +274,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, IndexQueryConstraints.ordered(asKernelIndexOrder(indexOrder), needsValues))
+    reads().nodeIndexScan(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValues))
     nodeCursor
   }
 

@@ -50,7 +50,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -136,7 +136,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
-        reader.query( NULL_CONTEXT, client, ordered( order, false ), NULL, predicates );
+        reader.query( NULL_CONTEXT, client, constrained( order, false ), NULL, predicates );
         return reader;
     }
 

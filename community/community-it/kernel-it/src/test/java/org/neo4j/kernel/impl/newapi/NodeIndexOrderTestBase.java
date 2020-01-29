@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
@@ -84,7 +84,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 nodeWithProp( tx, "willow" );
 
                 IndexQuery query = IndexQuery.range( prop, "hello", true, "trello", true );
-                tx.dataRead().nodeIndexSeek( index, cursor, ordered( indexOrder, true ), query );
+                tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, true ), query );
 
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
@@ -126,7 +126,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 nodeWithProp( tx, "willow" );
 
                 IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "b" ) );
-                tx.dataRead().nodeIndexSeek( index, cursor, ordered( indexOrder, true ), query );
+                tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, true ), query );
 
                 assertResultsInOrder( expected, cursor, indexOrder );
             }

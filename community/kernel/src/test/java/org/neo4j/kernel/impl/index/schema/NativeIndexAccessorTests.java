@@ -76,7 +76,7 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.internal.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -778,7 +778,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                 }
 
                 SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( NULL_CONTEXT, client, ordered( supportedOrder, true ), NULL, supportedQuery );
+                reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), NULL, supportedQuery );
                 int i = 0;
                 while ( client.next() )
                 {
@@ -800,7 +800,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
-                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), ordered( unsupportedOrder, false ), NULL, unsupportedQuery ) );
+                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), constrained( unsupportedOrder, false ), NULL, unsupportedQuery ) );
             assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
         }
     }

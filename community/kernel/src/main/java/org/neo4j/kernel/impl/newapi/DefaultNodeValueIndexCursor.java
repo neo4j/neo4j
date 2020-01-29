@@ -88,10 +88,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         assert query != null;
         super.initialize( progressor );
-        sortedMergeJoin.initialize( indexOrder );
-
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
+        sortedMergeJoin.initialize( indexOrder );
+
         this.query = query;
 
         if ( tracer != null )

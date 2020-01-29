@@ -50,9 +50,8 @@ public interface Read
      * Seek all nodes matching the provided index query in an index.
      * @param index {@link IndexReadSession} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
-     * @param constraints constraints on the index query result, which can include a specific {@link IndexOrder} of result, or if the index should fetch
-     * property values together with node ids for index queries. Not all indexes can honour all kinds of constraints. For instance, if the
-     * {@link IndexDescriptor referenced index} have no index ordering capabilities, then no ordering constraints can be requested.
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
+     * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
     void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
