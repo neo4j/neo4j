@@ -35,6 +35,6 @@ class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
-        return new CountsStoreTransactionApplier( countsStore.apply( transaction.transactionId() ) );
+        return new CountsStoreTransactionApplier( countsStore.apply( transaction.transactionId(), transaction.cursorTracer() ) );
     }
 }

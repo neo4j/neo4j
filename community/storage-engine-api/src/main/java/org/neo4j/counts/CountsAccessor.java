@@ -19,6 +19,8 @@
  */
 package org.neo4j.counts;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Interface for reading counts. Basically the read-parts of a {@link CountsStore}.
  */
@@ -26,17 +28,19 @@ public interface CountsAccessor extends CountsVisitor.Visitable
 {
     /**
      * @param labelId node label token id to get count for.
+     * @param cursorTracer underlying page cursor tracer
      * @return the count for the label token id, i.e. number of nodes with that label.
      */
-    long nodeCount( int labelId );
+    long nodeCount( int labelId, PageCursorTracer cursorTracer );
 
     /**
      * @param startLabelId node label token id of start node.
      * @param typeId relationship type token id of relationship.
      * @param endLabelId node label token id of end node.
+     * @param cursorTracer underlying page cursor tracer
      * @return the count for the start/end node label and relationship type combination.
      */
-    long relationshipCount( int startLabelId, int typeId, int endLabelId );
+    long relationshipCount( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer );
 
     /**
      * Updater of counts. Matches {@link CountsAccessor} and has the writing equivalence of those methods.

@@ -295,7 +295,7 @@ class MetaDataStoreTest
         long byteOffset = 777L;
 
         // WHEN
-        metaDataStore.transactionClosed( transactionId, version, byteOffset );
+        metaDataStore.transactionClosed( transactionId, version, byteOffset, NULL );
         // long[] with the highest offered gap-free number and its meta data.
         long[] closedTransactionFlags = metaDataStore.getLastClosedTransaction();
 
@@ -463,7 +463,7 @@ class MetaDataStoreTest
         {
             PagedFile pf = store.pagedFile;
             int initialValue = 2;
-            store.transactionClosed( initialValue, initialValue, initialValue );
+            store.transactionClosed( initialValue, initialValue, initialValue, NULL );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();

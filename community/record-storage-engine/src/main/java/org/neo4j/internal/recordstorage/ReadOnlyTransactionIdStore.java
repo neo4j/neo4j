@@ -117,7 +117,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long logByteOffset )
+    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

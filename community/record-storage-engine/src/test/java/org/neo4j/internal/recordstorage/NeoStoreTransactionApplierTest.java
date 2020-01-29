@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -133,6 +134,7 @@ class NeoStoreTransactionApplierTest
         when( lockService.acquireRelationshipLock( anyLong(), any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
+        when( transactionToApply.cursorTracer() ).thenReturn( NULL );
     }
 
     private <T extends CommonAbstractStore> T mockedStore( Class<T> cls, IdType idType )
@@ -453,7 +455,7 @@ class NeoStoreTransactionApplierTest
         Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( relationshipTypeTokenStore.getToken( command.tokenId(), NULL ) ).thenReturn( token );
+        when( relationshipTypeTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -500,7 +502,7 @@ class NeoStoreTransactionApplierTest
         Command.LabelTokenCommand command =
                 new Command.LabelTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( labelTokenStore.getToken( command.tokenId(), NULL ) ).thenReturn( token );
+        when( labelTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -548,7 +550,7 @@ class NeoStoreTransactionApplierTest
         Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( propertyKeyTokenStore.getToken( command.tokenId(), NULL ) ).thenReturn( token );
+        when( propertyKeyTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -730,7 +732,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -754,7 +756,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -776,7 +778,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -799,7 +801,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -820,7 +822,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
@@ -853,11 +855,11 @@ class NeoStoreTransactionApplierTest
         {
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
         }
-        BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, cacheAccess, lockService, idGeneratorWorkSyncs, NULL );
+        BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, cacheAccess, lockService, idGeneratorWorkSyncs );
         if ( recovery )
         {
             applier = newApplierFacade( new HighIdBatchTransactionApplier( neoStores ), applier,
-                    new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess, NULL ) );
+                    new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
         return applier;
     }
@@ -871,7 +873,7 @@ class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore, propertyStore,
-                mock( StorageEngine.class ), schemaCache, indexActivator, NULL );
+                mock( StorageEngine.class ), schemaCache, indexActivator );
     }
 
     private boolean apply( BatchTransactionApplier applier, ApplyFunction function, CommandsToApply transactionToApply ) throws Exception

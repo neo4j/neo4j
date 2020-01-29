@@ -64,9 +64,9 @@ class ChangedIds
         } );
     }
 
-    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, PageCursorTracer cursorTracer )
+    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync )
     {
-        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this, cursorTracer ) );
+        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this ) );
     }
 
     void awaitApply() throws ExecutionException

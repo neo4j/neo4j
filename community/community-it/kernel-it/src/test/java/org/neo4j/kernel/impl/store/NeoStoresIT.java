@@ -180,12 +180,11 @@ class NeoStoresIT
         var neoStores = storageEngine.testAccessNeoStores();
         var propertyKeys = neoStores.getPropertyKeyTokenStore();
 
-        long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
             var node = transaction.createNode();
             node.setProperty( "a", "b" );
-            nodeId = node.getId();
+            node.getId();
             transaction.commit();
         }
 

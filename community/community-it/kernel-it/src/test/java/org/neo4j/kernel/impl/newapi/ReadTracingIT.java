@@ -35,9 +35,12 @@ import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @DbmsExtension
@@ -166,6 +169,91 @@ class ReadTracingIT
 
             assertOneCursor( cursorTracer );
             assertThat( cursorTracer.faults() ).isZero();
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeWithoutTxStateCount()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var kernelTransaction = transaction.kernelTransaction();
+            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var dataRead = kernelTransaction.dataRead();
+
+            assertZeroCursor( cursorTracer );
+
+            dataRead.countsForNodeWithoutTxState( 0 );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeCountByLabel()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var kernelTransaction = transaction.kernelTransaction();
+            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var dataRead = kernelTransaction.dataRead();
+
+            assertZeroCursor( cursorTracer );
+
+            dataRead.countsForNode( 0 );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeCount()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var kernelTransaction = transaction.kernelTransaction();
+            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var dataRead = kernelTransaction.dataRead();
+
+            assertZeroCursor( cursorTracer );
+
+            assertEquals( 0, dataRead.nodesGetCount() );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnRelationshipWithoutTxStateCount()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var kernelTransaction = transaction.kernelTransaction();
+            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var dataRead = kernelTransaction.dataRead();
+
+            assertZeroCursor( cursorTracer );
+
+            dataRead.countsForRelationshipWithoutTxState( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+
+            assertOneCursor( cursorTracer );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnRelationshipCount()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var kernelTransaction = transaction.kernelTransaction();
+            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var dataRead = kernelTransaction.dataRead();
+
+            assertZeroCursor( cursorTracer );
+
+            dataRead.countsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+
+            assertOneCursor( cursorTracer );
         }
     }
 

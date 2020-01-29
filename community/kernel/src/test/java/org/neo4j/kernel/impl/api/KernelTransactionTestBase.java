@@ -120,7 +120,7 @@ class KernelTransactionTestBase
                     any( CommandCreationContext.class ),
                     any( ResourceLocker.class ),
                     anyLong(),
-                    any( TxStateVisitor.Decorator.class ) );
+                    any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

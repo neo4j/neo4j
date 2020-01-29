@@ -650,7 +650,7 @@ class KernelTransactionsTest
                 any( CommandCreationContext.class ),
                 any( ResourceLocker.class ),
                 anyLong(),
-                any( TxStateVisitor.Decorator.class ) );
+                any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ) );
 
         return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions, config );
     }

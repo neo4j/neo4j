@@ -21,13 +21,15 @@ package org.neo4j.tracers;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -36,6 +38,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @DbmsExtension
@@ -45,6 +48,8 @@ class TransactionTracingIT
 
     @Inject
     private GraphDatabaseAPI database;
+    @Inject
+    private DatabaseManagementService managementService;
 
     @Test
     void tracePageCacheAccessOnAllNodesAccess()
@@ -68,6 +73,27 @@ class TransactionTracingIT
             assertThat( cursorTracer.pins() ).isEqualTo( 2 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeCreation()
+    {
+        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
+        {
+            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
+
+            var commitCursorChecker = new CommitCursorChecker( cursorTracer );
+            managementService.registerTransactionEventListener( database.databaseName(), commitCursorChecker );
+
+            for ( int i = 0; i < ENTITY_COUNT; i++ )
+            {
+                transaction.createNode();
+            }
+            assertZeroCursor( cursorTracer );
+
+            transaction.commit();
+            assertTrue( commitCursorChecker.isInvoked() );
         }
     }
 
@@ -160,5 +186,31 @@ class TransactionTracingIT
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.faults() ).isZero();
+    }
+
+    private static class CommitCursorChecker extends TransactionEventListenerAdapter<Object>
+    {
+        private final PageCursorTracer cursorTracer;
+        private volatile boolean invoked;
+
+        CommitCursorChecker( PageCursorTracer cursorTracer )
+        {
+            this.cursorTracer = cursorTracer;
+        }
+
+        public boolean isInvoked()
+        {
+            return invoked;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            assertThat( cursorTracer.pins() ).isEqualTo( 1003 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1003 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 1001 );
+            assertThat( cursorTracer.faults() ).isEqualTo( 2 );
+            invoked = true;
+        }
     }
 }

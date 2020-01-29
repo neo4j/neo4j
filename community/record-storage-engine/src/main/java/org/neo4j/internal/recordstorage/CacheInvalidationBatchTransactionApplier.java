@@ -28,19 +28,16 @@ public class CacheInvalidationBatchTransactionApplier extends BatchTransactionAp
 {
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
-    private final PageCursorTracer cursorTracer;
 
-    public CacheInvalidationBatchTransactionApplier( NeoStores neoStores,
-            CacheAccessBackDoor cacheAccess, PageCursorTracer cursorTracer )
+    public CacheInvalidationBatchTransactionApplier( NeoStores neoStores, CacheAccessBackDoor cacheAccess )
     {
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
-        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, cursorTracer );
+        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, transaction.cursorTracer() );
     }
 }

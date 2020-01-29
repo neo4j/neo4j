@@ -129,7 +129,7 @@ class ApplyRecoveredTransactionsTest
         }
 
         NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
-                lockService, idGeneratorWorkSyncs, NULL );
+                lockService, idGeneratorWorkSyncs );
         CommandsToApply tx = new GroupOfCommands( transactionId, commands );
         CommandHandlerContract.apply( applier, txApplier ->
         {

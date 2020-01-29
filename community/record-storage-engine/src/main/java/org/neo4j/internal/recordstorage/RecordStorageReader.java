@@ -214,29 +214,29 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId )
+    public long countsForNode( int labelId, PageCursorTracer cursorTracer )
     {
-        return counts.nodeCount( labelId );
+        return counts.nodeCount( labelId, cursorTracer );
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
     {
         if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.relationshipCount( startLabelId, typeId, endLabelId );
+        return counts.relationshipCount( startLabelId, typeId, endLabelId, cursorTracer );
     }
 
     @Override
-    public long nodesGetCount()
+    public long nodesGetCount( PageCursorTracer cursorTracer )
     {
         if ( counts != null )
         {
             try
             {
-                return counts.nodeCount( ANY_LABEL );
+                return counts.nodeCount( ANY_LABEL, cursorTracer );
             }
             catch ( IllegalStateException e )
             {

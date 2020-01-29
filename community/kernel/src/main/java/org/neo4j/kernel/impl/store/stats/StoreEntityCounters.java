@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.stats;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public interface StoreEntityCounters
 {
     long nodes();
@@ -29,7 +31,7 @@ public interface StoreEntityCounters
 
     long relationshipTypes();
 
-    long allNodesCountStore();
+    long allNodesCountStore( PageCursorTracer cursorTracer );
 
-    long allRelationshipsCountStore();
+    long allRelationshipsCountStore( PageCursorTracer cursorTracer );
 }

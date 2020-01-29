@@ -51,6 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -85,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
@@ -419,7 +421,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0 );
-        return new TransactionToApply( tx );
+        return new TransactionToApply( tx, NULL );
     }
 
     private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )

@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.toIntExact;
@@ -45,7 +46,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     private final Map<Key,MutableLong> counts = new HashMap<>();
 
     @Override
-    public long nodeCount( int labelId )
+    public long nodeCount( int labelId, PageCursorTracer cursorTracer )
     {
         return counts( nodeKey( labelId ) ).longValue();
     }
@@ -57,7 +58,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
     {
         return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).longValue();
     }
@@ -78,7 +79,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     }
 
     @Override
-    public void accept( CountsVisitor visitor )
+    public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
     {
         for ( Map.Entry<Key, MutableLong> entry : counts.entrySet() )
         {
@@ -92,10 +93,10 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         return !counts.isEmpty();
     }
 
-    public List<Difference> verify( CountsVisitor.Visitable visitable )
+    public List<Difference> verify( CountsVisitor.Visitable visitable, PageCursorTracer cursorTracer )
     {
         Verifier verifier = new Verifier( counts );
-        visitable.accept( verifier );
+        visitable.accept( verifier, cursorTracer );
         return verifier.differences();
     }
 

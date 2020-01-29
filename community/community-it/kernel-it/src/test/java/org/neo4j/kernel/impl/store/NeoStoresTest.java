@@ -132,8 +132,6 @@ public class NeoStoresTest
     private DatabaseLayout databaseLayout;
 
     private PropertyStore pStore;
-    private RelationshipTypeTokenStore rtStore;
-    private RelationshipStore relStore;
     private NodeStore nodeStore;
     private Database database;
     private KernelTransaction tx;
@@ -166,7 +164,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void impossibleToGetStoreFromClosedNeoStoresContainer()
+    void impossibleToGetStoreFromClosedNeoStoresContainer()
     {
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, NullLogProvider.getInstance() );
@@ -181,7 +179,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void notAllowCreateDynamicStoreWithNegativeBlockSize()
+    void notAllowCreateDynamicStoreWithNegativeBlockSize()
     {
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, NullLogProvider.getInstance() );
@@ -197,7 +195,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void impossibleToGetNotRequestedStore()
+    void impossibleToGetNotRequestedStore()
     {
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, NullLogProvider.getInstance() );
@@ -259,7 +257,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testRels1() throws Exception
+    void testRels1() throws Exception
     {
         reinitializeStores( databaseLayout );
         startTx();
@@ -307,7 +305,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testRels2() throws Exception
+    void testRels2() throws Exception
     {
         reinitializeStores( databaseLayout );
         startTx();
@@ -339,7 +337,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testRels3() throws Exception
+    void testRels3() throws Exception
     {
         // test linked list stuff during relationship delete
         reinitializeStores( databaseLayout );
@@ -384,7 +382,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void setVersion() throws Exception
+    void setVersion() throws Exception
     {
         File storeDir = dir.homeDir();
         createShutdownTestDatabase( fs, storeDir );
@@ -400,7 +398,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldNotReadNonRecordDataAsRecord() throws Exception
+    void shouldNotReadNonRecordDataAsRecord() throws Exception
     {
         StoreFactory factory = newStoreFactory( databaseLayout, pageCache, fs );
         long recordVersion = defaultStoreVersion();
@@ -440,7 +438,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testSetLatestConstraintTx() throws IOException
+    void testSetLatestConstraintTx() throws IOException
     {
         // given
         Config config = Config.defaults();
@@ -471,7 +469,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldInitializeTheTxIdToOne()
+    void shouldInitializeTheTxIdToOne()
     {
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
@@ -487,7 +485,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
+    void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
     {
         FileSystemAbstraction fileSystem = fs;
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fileSystem, LOG_PROVIDER );
@@ -509,7 +507,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
+    void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
     {
         StoreFactory factory = newStoreFactory( databaseLayout, pageCache, fs );
         long recordVersion = defaultStoreVersion();
@@ -560,7 +558,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldSetHighestTransactionIdWhenNeeded()
+    void shouldSetHighestTransactionIdWhenNeeded()
     {
         // GIVEN
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
@@ -582,7 +580,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void tracePageCacheAccessOnTransactionCommittedCall()
+    void tracePageCacheAccessOnTransactionCloseCall()
     {
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
 
@@ -590,7 +588,25 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             var cacheTracer = new DefaultPageCacheTracer();
-            var cursorTracer = cacheTracer.createPageCursorTracer( "cursor" );
+            var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCloseCall" );
+            store.transactionClosed( 0, 6666, 15, cursorTracer );
+
+            assertEquals( 1, cursorTracer.pins() );
+            assertEquals( 1, cursorTracer.hits() );
+            assertEquals( 1, cursorTracer.unpins() );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnTransactionCommittedCall()
+    {
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
+
+        try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
+        {
+            MetaDataStore store = neoStore.getMetaDataStore();
+            var cacheTracer = new DefaultPageCacheTracer();
+            var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCommittedCall" );
             store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, cursorTracer );
 
             assertEquals( 1, cursorTracer.pins() );
@@ -600,7 +616,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldNotSetHighestTransactionIdWhenNeeded()
+    void shouldNotSetHighestTransactionIdWhenNeeded()
     {
         // GIVEN
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs, LOG_PROVIDER );
@@ -622,7 +638,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown()
+    void shouldCloseAllTheStoreEvenIfExceptionsAreThrown()
     {
         // given
         Config defaults = Config.defaults( counts_store_rotation_timeout, Duration.ofMinutes( 60 ) );
@@ -636,7 +652,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void isPresentAfterCreatingAllStores() throws Exception
+    void isPresentAfterCreatingAllStores() throws Exception
     {
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
@@ -652,7 +668,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void isPresentFalseAfterCreatingAllButLastStoreType() throws Exception
+    void isPresentFalseAfterCreatingAllButLastStoreType() throws Exception
     {
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
@@ -700,8 +716,6 @@ public class NeoStoresTest
         NeoStores neoStores = database.getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         pStore = neoStores.getPropertyStore();
-        rtStore = neoStores.getRelationshipTypeTokenStore();
-        relStore = neoStores.getRelationshipStore();
         nodeStore = neoStores.getNodeStore();
         storageReader = database.getDependencyResolver().resolveDependency( StorageEngine.class ).newReader();
     }
@@ -745,39 +759,6 @@ public class NeoStoresTest
         throw new IllegalArgumentException( clazz.getName() );
     }
 
-    private int validateAndCountRelationships( long node, long rel1, long rel2, int relType1, int relType2 )
-            throws IOException
-    {
-        int count = 0;
-        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
-        {
-            assertTrue( nodeCursor.next() );
-            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
-            {
-                while ( relationships.next() )
-                {
-                    long rel = relationships.entityReference();
-                    if ( rel == rel1 )
-                    {
-                        assertEquals( node, relationships.sourceNodeReference() );
-                        assertEquals( relType1, relationships.type() );
-                    }
-                    else if ( rel == rel2 )
-                    {
-                        assertEquals( node, relationships.targetNodeReference() );
-                        assertEquals( relType2, relationships.type() );
-                    }
-                    else
-                    {
-                        throw new IOException();
-                    }
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
         StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL );
@@ -790,111 +771,6 @@ public class NeoStoresTest
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
         nodeCursor.single( nodeId );
         return nodeCursor;
-    }
-
-    private PropertyReceiver<PropertyKeyValue> newPropertyReceiver( Map<Integer, Pair<StorageProperty, Long>> props )
-    {
-        return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
-    }
-
-    private boolean nodeExists( long nodeId )
-    {
-        try ( StorageNodeCursor node = allocateNodeCursor( nodeId ) )
-        {
-            return node.next();
-        }
-    }
-
-    private void assertRelationshipData( long rel, long firstNode, long secondNode,
-            int relType )
-    {
-        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL ) )
-        {
-            cursor.single( rel );
-            assertTrue( cursor.next() );
-            assertEquals( firstNode, cursor.sourceNodeReference() );
-            assertEquals( secondNode, cursor.targetNodeReference() );
-            assertEquals( relType, cursor.type() );
-        }
-    }
-
-    private static class CountingPropertyReceiver implements PropertyReceiver<PropertyKeyValue>
-    {
-        private int count;
-
-        @Override
-        public void receive( PropertyKeyValue property, long propertyRecordId )
-        {
-            count++;
-        }
-    }
-
-    private void assertHasRelationships( long node )
-    {
-        try ( StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
-        {
-            assertTrue( nodeCursor.next() );
-            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
-            {
-                assertTrue( relationships.next() );
-            }
-        }
-    }
-
-    private void deleteNode2( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
-    {
-        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
-        nodeLoadProperties( node, newPropertyReceiver( props ) );
-        int count = 0;
-        for ( int keyId : props.keySet() )
-        {
-            long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL, NULL );
-            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
-            StorageProperty data = block.newPropertyKeyValue( pStore, NULL );
-            if ( data.propertyKeyId() == prop1.propertyKeyId() )
-            {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( "-string2", data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop2.propertyKeyId() )
-            {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( -2, data.value().asObject() );
-            }
-            else if ( data.propertyKeyId() == prop3.propertyKeyId() )
-            {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
-                assertEquals( true, data.value().asObject() );
-                transactionState.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
-            }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
-        }
-        assertEquals( 3, count );
-        CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
-        nodeLoadProperties( node, propertyCounter );
-        assertEquals( 3, propertyCounter.count );
-
-        assertHasRelationships( node );
-
-        transactionState.nodeDoDelete( node );
-    }
-
-    private void testGetRels( long[] relIds )
-    {
-        for ( long relId : relIds )
-        {
-            try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL ) )
-            {
-                relationship.single( relId );
-                assertFalse( relationship.next() );
-            }
-        }
     }
 
     private void deleteRelationships( long nodeId )
@@ -925,12 +801,6 @@ public class NeoStoresTest
     {
         NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
         loadProperties( nodeRecord.getNextProp(), receiver );
-    }
-
-    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void relLoadProperties( long relId, RECEIVER receiver )
-    {
-        RelationshipRecord relRecord = relStore.getRecord( relId, relStore.newRecord(), NORMAL, NULL );
-        loadProperties( relRecord.getNextProp(), receiver );
     }
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void loadProperties( long nextProp, RECEIVER receiver )

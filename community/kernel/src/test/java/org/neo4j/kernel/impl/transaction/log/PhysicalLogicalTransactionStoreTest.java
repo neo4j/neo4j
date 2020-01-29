@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -68,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
@@ -335,7 +337,7 @@ class PhysicalLogicalTransactionStoreTest
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleTestCommand() );
         transaction.setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1 );
-        appender.append( new TransactionToApply( transaction ), LogAppendEvent.NULL );
+        appender.append( new TransactionToApply( transaction, NULL ), LogAppendEvent.NULL );
     }
 
     private Collection<StorageCommand> singleTestCommand()

@@ -49,11 +49,10 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
     private final LockService lockService;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs;
     private final IdUpdateListener idUpdateListener;
-    private final PageCursorTracer cursorTracer;
     private final EnumMap<IdType,ChangedIds> idUpdatesMap = new EnumMap<>( IdType.class );
 
     NeoStoreBatchTransactionApplier( TransactionApplicationMode mode, NeoStores store, CacheAccessBackDoor cacheAccess, LockService lockService,
-            Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs, PageCursorTracer cursorTracer )
+            Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs )
     {
         this.version = mode.version();
         this.neoStores = store;
@@ -63,14 +62,13 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
 
         // There's no need to update the id generators when recovery is on its way back
         this.idUpdateListener = mode == TransactionApplicationMode.REVERSE_RECOVERY ? IdUpdateListener.IGNORE : new EnqueuingIdUpdateListener( idUpdatesMap );
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), lockGroup, idUpdateListener,
-                cursorTracer );
+                transaction.cursorTracer() );
     }
 
     @Override
@@ -84,7 +82,7 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
             for ( Map.Entry<IdType,ChangedIds> idChanges : idUpdatesMap.entrySet() )
             {
                 ChangedIds unit = idChanges.getValue();
-                unit.applyAsync( idGeneratorWorkSyncs.get( idChanges.getKey() ), cursorTracer );
+                unit.applyAsync( idGeneratorWorkSyncs.get( idChanges.getKey() ) );
             }
 
             // Wait for all id updates to complete

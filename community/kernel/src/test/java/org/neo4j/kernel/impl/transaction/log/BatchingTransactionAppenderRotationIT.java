@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -62,6 +63,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -108,7 +110,7 @@ class BatchingTransactionAppenderRotationIT
         List<StorageCommand> commands = createCommands();
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation( commands );
         transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0 );
-        return new TransactionToApply( transactionRepresentation );
+        return new TransactionToApply( transactionRepresentation, NULL );
     }
 
     private static List<StorageCommand> createCommands()

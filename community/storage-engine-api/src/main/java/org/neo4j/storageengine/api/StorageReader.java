@@ -85,9 +85,10 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.
      *
      * @param labelId label id to match.
+     * @param cursorTracer underlying page cursor tracer
      * @return number of stored nodes with this label.
      */
-    long countsForNode( int labelId );
+    long countsForNode( int labelId, PageCursorTracer cursorTracer );
 
     /**
      * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled
@@ -96,11 +97,12 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @param startLabelId label id of start nodes to match.
      * @param typeId relationship type id to match.
      * @param endLabelId label id of end nodes to match.
+     * @param cursorTracer underlying page cursor tracer
      * @return number of stored relationships matching these criteria.
      */
-    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer );
 
-    long nodesGetCount();
+    long nodesGetCount( PageCursorTracer cursorTracer );
 
     long relationshipsGetCount();
 

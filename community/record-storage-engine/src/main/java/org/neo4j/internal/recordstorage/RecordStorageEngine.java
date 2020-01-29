@@ -169,7 +169,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
-            countsStore = openCountsStore( pageCache, databaseLayout, config, logProvider, recoveryCleanupWorkCollector );
+            countsStore = openCountsStore( pageCache, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseSettings.consistency_check_on_apply );
         }
@@ -181,7 +181,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, DatabaseLayout layout, Config config, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
         try
@@ -203,7 +203,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnly, GBPTreeCountsStore.NO_MONITOR );
+            }, readOnly, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
         }
         catch ( IOException e )
         {
@@ -257,12 +257,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             CommandCreationContext commandCreationContext,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
-            TxStateVisitor.Decorator additionalTxStateVisitor )
+            TxStateVisitor.Decorator additionalTxStateVisitor,
+            PageCursorTracer cursorTracer )
             throws KernelException
     {
         if ( txState != null )
         {
-            var cursorTracer = TRACER_SUPPLIER.get();
             // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
@@ -272,7 +272,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
                     schemaRuleAccess, constraintSemantics, cursorTracer );
-            CountsRecordState countsRecordState = new CountsRecordState();
+            CountsRecordState countsRecordState = new CountsRecordState( cursorTracer );
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorTracer );
             try ( TxStateVisitor visitor = txStateVisitor )
@@ -325,19 +325,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        var cursorTracer = TRACER_SUPPLIER.get();
         if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
         {
-            appliers.add( new ConsistencyCheckingBatchApplier( neoStores, cursorTracer ) );
+            appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
         }
-        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, cursorTracer ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
         }
         if ( mode.needsCacheInvalidationOnUpdates() )
         {
-            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess, cursorTracer ) );
+            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
         if ( mode.needsAuxiliaryStores() )
         {
@@ -346,7 +345,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
-                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator, cursorTracer ) );
+                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
         }
 
         // Perform the application

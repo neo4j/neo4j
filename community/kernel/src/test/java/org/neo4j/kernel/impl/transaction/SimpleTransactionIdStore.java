@@ -124,7 +124,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, PageCursorTracer cursorTracer )
     {
         closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset} );
     }

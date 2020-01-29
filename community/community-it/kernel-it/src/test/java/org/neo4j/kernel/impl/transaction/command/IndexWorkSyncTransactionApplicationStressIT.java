@@ -129,7 +129,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
     private static TransactionToApply tx( Collection<StorageCommand> commands )
     {
         PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1 );
-        TransactionToApply tx = new TransactionToApply( txRepresentation );
+        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;
     }
@@ -197,7 +197,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION );
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION, NULL );
             return tx( commands );
         }
 

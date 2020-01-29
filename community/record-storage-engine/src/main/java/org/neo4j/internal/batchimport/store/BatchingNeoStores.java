@@ -358,10 +358,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipGroupStore();
     }
 
-    public void buildCountsStore( CountsBuilder builder, PageCursorTracer cursorTracer )
+    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer )
     {
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
-                builder, false, GBPTreeCountsStore.NO_MONITOR ) )
+                builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start( cursorTracer );
             countsStore.checkpoint( UNLIMITED, cursorTracer );

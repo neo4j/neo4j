@@ -43,7 +43,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
-        super( storageReader, storageReader.nodesGetCount(), propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
+        super( storageReader, storageReader.nodesGetCount( TRACER_SUPPLIER.get() ), propertyKeyIdFilter,
+                id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;

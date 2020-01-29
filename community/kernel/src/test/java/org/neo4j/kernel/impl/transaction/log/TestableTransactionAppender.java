@@ -41,7 +41,7 @@ public class TestableTransactionAppender implements TransactionAppender
         {
             txId = transactionIdStore.nextCommittingTransactionId();
             batch.commitment( new FakeCommitment( txId, transactionIdStore ), txId );
-            batch.commitment().publishAsCommitted();
+            batch.publishAsCommitted();
             batch = batch.next();
         }
         return txId;

@@ -140,7 +140,7 @@ public class DefaultRecoveryService implements RecoveryService
         {
             TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
             long txId = transaction.getCommitEntry().getTxId();
-            TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
+            TransactionToApply tx = new TransactionToApply( txRepresentation, txId, TRACER_SUPPLIER.get() );
             tx.commitment( NO_COMMITMENT, txId );
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
             storageEngine.apply( tx, mode );

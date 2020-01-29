@@ -192,7 +192,7 @@ public class AllStoreHolder extends Read
         AccessMode mode = ktx.securityContext().mode();
         if ( mode.allowsTraverseAllLabels() )
         {
-            return storageReader.countsForNode( labelId );
+            return storageReader.countsForNode( labelId, cursorTracer );
         }
         else
         {
@@ -232,7 +232,7 @@ public class AllStoreHolder extends Read
                 }
                 if ( counts.hasChanges() )
                 {
-                    count += counts.nodeCount( labelId );
+                    count += counts.nodeCount( labelId, cursorTracer );
                 }
             }
             catch ( KernelException e )
@@ -257,7 +257,7 @@ public class AllStoreHolder extends Read
              mode.allowsTraverseNode( startLabelId ) &&
              mode.allowsTraverseNode( endLabelId ) )
         {
-            return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
+            return storageReader.countsForRelationship( startLabelId, typeId, endLabelId, cursorTracer );
         }
         else
         {
@@ -297,7 +297,7 @@ public class AllStoreHolder extends Read
                 }
                 if ( counts.hasChanges() )
                 {
-                    count += counts.relationshipCount( startLabelId, typeId, endLabelId );
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, cursorTracer );
                 }
             }
             catch ( KernelException e )
@@ -673,7 +673,7 @@ public class AllStoreHolder extends Read
     public long nodesGetCount( )
     {
         ktx.assertOpen();
-        long base = storageReader.nodesGetCount();
+        long base = storageReader.nodesGetCount( cursorTracer );
         return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedNodes().delta() : base;
     }
 

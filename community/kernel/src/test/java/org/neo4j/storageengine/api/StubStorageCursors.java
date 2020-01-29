@@ -229,19 +229,19 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId )
+    public long countsForNode( int labelId, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public long nodesGetCount()
+    public long nodesGetCount( PageCursorTracer cursorTracer )
     {
         return nodeData.size();
     }

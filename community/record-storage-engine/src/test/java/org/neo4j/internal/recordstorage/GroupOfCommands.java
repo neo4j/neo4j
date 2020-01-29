@@ -24,9 +24,12 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
+
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class GroupOfCommands implements CommandsToApply
 {
@@ -49,6 +52,12 @@ public class GroupOfCommands implements CommandsToApply
     public long transactionId()
     {
         return transactionId;
+    }
+
+    @Override
+    public PageCursorTracer cursorTracer()
+    {
+        return NULL;
     }
 
     @Override

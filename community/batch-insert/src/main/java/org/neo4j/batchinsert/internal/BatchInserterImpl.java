@@ -597,10 +597,10 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void rebuildCounts() throws IOException
+    private void rebuildCounts( PageCacheTracer cacheTracer ) throws IOException
     {
         new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
-                new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ).close();
+                new CountsComputer( neoStores, pageCache, databaseLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ).close();
     }
 
     private void createEmptyTransactionLog()
@@ -1076,7 +1076,7 @@ public class BatchInserterImpl implements BatchInserter
 
         try ( var ignore = new Lifespan( life ); locker; neoStores )
         {
-            rebuildCounts();
+            rebuildCounts( PageCacheTracer.NULL );
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );

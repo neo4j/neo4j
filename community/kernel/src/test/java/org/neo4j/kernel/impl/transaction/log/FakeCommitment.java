@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -44,16 +45,16 @@ public class FakeCommitment implements Commitment
     }
 
     @Override
-    public void publishAsCommitted()
+    public void publishAsCommitted( PageCursorTracer cursorTracer )
     {
         committed = true;
         transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP, NULL );
     }
 
     @Override
-    public void publishAsClosed()
+    public void publishAsClosed( PageCursorTracer cursorTracer )
     {
-        transactionIdStore.transactionClosed( id, 1, 2 );
+        transactionIdStore.transactionClosed( id, 1, 2, cursorTracer );
     }
 
     @Override

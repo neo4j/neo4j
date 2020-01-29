@@ -73,6 +73,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -163,7 +164,7 @@ class RecordStorageEngineTest
         };
 
         RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, databaseLayout ).build();
-        engine.flushAndForce( limiter, PageCursorTracer.NULL );
+        engine.flushAndForce( limiter, NULL );
 
         assertThat( observedLimiter.get() ).isSameAs( limiter );
     }
@@ -197,6 +198,7 @@ class RecordStorageEngineTest
                 .transactionApplierTransformer( applier::wrapAroundActualApplier )
                 .build();
         CommandsToApply commandsToApply = mock( CommandsToApply.class );
+        when( commandsToApply.cursorTracer() ).thenReturn( NULL );
         when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
         {
             // Visit one node command

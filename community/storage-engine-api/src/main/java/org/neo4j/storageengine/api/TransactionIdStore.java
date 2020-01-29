@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
- * completion of those are marked using {@link #transactionClosed(long, long, long)}.
+ * completion of those are marked using {@link #transactionClosed(long, long, long, PageCursorTracer)}.
  * <p>
  * A transaction ID passes through a {@link TransactionIdStore} like this:
  * <ol>
@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * <li>{@link #transactionCommitted(long, int, long, PageCursorTracer)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
- * <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
+ * <li>{@link #transactionClosed(long, long, long, PageCursorTracer)} is called with this id again, this time after all changes the
  * transaction imposes have been applied to the store.
  * </ol>
  */
@@ -108,7 +108,7 @@ public interface TransactionIdStore
     TransactionId getUpgradeTransaction();
 
     /**
-     * @return highest seen gap-free {@link #transactionClosed(long, long, long) closed transaction id}.
+     * @return highest seen gap-free {@link #transactionClosed(long, long, long, PageCursorTracer)}  closed transaction id}.
      */
     long getLastClosedTransactionId();
 
@@ -144,8 +144,9 @@ public interface TransactionIdStore
      * @param transactionId the applied transaction id.
      * @param logVersion version of log the committed entry has been written into.
      * @param byteOffset offset in the log file where start writing the next log entry.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void transactionClosed( long transactionId, long logVersion, long byteOffset );
+    void transactionClosed( long transactionId, long logVersion, long byteOffset, PageCursorTracer cursorTracer );
 
     /**
      * Unconditionally set last closed transaction info. Should be used for cases where last closed transaction info should be

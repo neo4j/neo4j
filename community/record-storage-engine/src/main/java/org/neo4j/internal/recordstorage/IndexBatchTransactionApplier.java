@@ -54,7 +54,6 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final IndexActivator indexActivator;
-    private final PageCursorTracer cursorTracer;
     private final PropertyStore propertyStore;
     private final StorageEngine storageEngine;
     private final SchemaCache schemaCache;
@@ -62,13 +61,14 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
     private long txId;
+    private PageCursorTracer cursorTracer;
 
     public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
             WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore,
             PropertyStore propertyStore, StorageEngine storageEngine,
-            SchemaCache schemaCache, IndexActivator indexActivator, PageCursorTracer cursorTracer )
+            SchemaCache schemaCache, IndexActivator indexActivator )
     {
         this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;
@@ -78,13 +78,13 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.schemaCache = schemaCache;
         this.transactionApplier = new SingleTransactionApplier( nodeStore );
         this.indexActivator = indexActivator;
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         txId = transaction.transactionId();
+        cursorTracer = transaction.cursorTracer();
         return transactionApplier;
     }
 

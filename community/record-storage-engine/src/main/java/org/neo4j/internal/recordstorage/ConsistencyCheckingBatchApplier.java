@@ -41,18 +41,16 @@ import static org.neo4j.util.Preconditions.checkState;
 class ConsistencyCheckingBatchApplier extends BatchTransactionApplier.Adapter
 {
     private final RelationshipStore relationshipStore;
-    private final PageCursorTracer cursorTracer;
 
-    ConsistencyCheckingBatchApplier( NeoStores neoStores, PageCursorTracer cursorTracer )
+    ConsistencyCheckingBatchApplier( NeoStores neoStores )
     {
         this.relationshipStore = neoStores.getRelationshipStore();
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
-        return new ConsistencyCheckingApplier( relationshipStore, cursorTracer );
+        return new ConsistencyCheckingApplier( relationshipStore, transaction.cursorTracer() );
     }
 
     static class ConsistencyCheckingApplier extends TransactionApplier.Adapter

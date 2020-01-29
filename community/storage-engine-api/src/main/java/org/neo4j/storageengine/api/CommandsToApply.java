@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
  * The linked list will form a batch.
@@ -29,6 +31,12 @@ public interface CommandsToApply extends CommandStream
      * @return transaction id representing this group of commands.
      */
     long transactionId();
+
+    /**
+     * Page cursor tracer to trace access to underlying page cache
+     * @return underlying page cursor tracer
+     */
+    PageCursorTracer cursorTracer();
 
     /**
      * @return next group of commands in this batch.

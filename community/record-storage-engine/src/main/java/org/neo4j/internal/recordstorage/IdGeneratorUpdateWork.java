@@ -24,17 +24,19 @@ import java.util.List;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.concurrent.Work;
+
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
 {
     private final List<ChangedIds> changeList = new ArrayList<>();
-    private final PageCursorTracer cursorTracer;
 
-    IdGeneratorUpdateWork( ChangedIds changes, PageCursorTracer cursorTracer )
+    IdGeneratorUpdateWork( ChangedIds changes )
     {
-        this.cursorTracer = cursorTracer;
         this.changeList.add( changes );
     }
 
@@ -48,7 +50,8 @@ public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdate
     @Override
     public void apply( IdGenerator idGenerator )
     {
-        try ( Marker marker = idGenerator.marker( cursorTracer ) )
+        //TODO: how we can find out who is who here. Do this per transaction instead?
+        try ( Marker marker = idGenerator.marker( TRACER_SUPPLIER.get() ) )
         {
             for ( ChangedIds changes : this.changeList )
             {

@@ -79,8 +79,8 @@ public interface StorageEngine extends Lifecycle
      * The EntityLocker interface is a subset of Locks.Client interface, just to fit in while it's here.
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
-     * TODO Transitional (Collection), might be {@link Stream} or whatever.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
+     * @param cursorTracer underlying page cursor tracer
      * @throws KernelException on known errors while creating commands.
      */
     void createCommands(
@@ -90,7 +90,8 @@ public interface StorageEngine extends Lifecycle
             CommandCreationContext creationContext,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
-            TxStateVisitor.Decorator additionalTxStateVisitor )
+            TxStateVisitor.Decorator additionalTxStateVisitor,
+            PageCursorTracer cursorTracer )
             throws KernelException;
 
     /**

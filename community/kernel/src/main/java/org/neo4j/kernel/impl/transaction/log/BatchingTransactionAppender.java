@@ -122,8 +122,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     // really recover from and would point to a bug somewhere.
                     matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
 
-                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent,
-                            previousChecksum, TRACER_SUPPLIER.get() );
+                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent, previousChecksum );
                     previousChecksum = commitment.getTransactionChecksum();
                     tx.commitment( commitment, transactionId );
                     tx.logPosition( commitment.logPosition() );
@@ -172,7 +171,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     {
         while ( batch != null )
         {
-            batch.commitment().publishAsCommitted();
+            batch.publishAsCommitted();
             batch = batch.next();
         }
     }
@@ -203,8 +202,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
      * this transaction contains any explicit index changes.
      */
-    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent, int previousChecksum,
-            PageCursorTracer cursorTracer ) throws IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent, int previousChecksum )
+            throws IOException
     {
         // The outcome of this try block is either of:
         // a) transaction successfully appended, at which point we return a Commitment to be used after force
@@ -222,7 +221,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit, checksum, transaction.getTimeCommitted() );
 
             return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit,
-                    transactionIdStore, cursorTracer );
+                    transactionIdStore );
         }
         catch ( final Throwable panic )
         {

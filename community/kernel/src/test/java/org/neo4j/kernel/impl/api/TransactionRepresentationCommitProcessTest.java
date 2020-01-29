@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -99,7 +100,7 @@ class TransactionRepresentationCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -107,7 +108,6 @@ class TransactionRepresentationCommitProcessTest
     {
         // GIVEN
         long txId = 11;
-        long commitTimestamp = System.currentTimeMillis();
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new TestableTransactionAppender( transactionIdStore );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
@@ -121,7 +121,7 @@ class TransactionRepresentationCommitProcessTest
 
         // WHEN
 
-        commitProcess.commit( new TransactionToApply( noCommandTx ), commitEvent, INTERNAL );
+        commitProcess.commit( new TransactionToApply( noCommandTx, NULL ), commitEvent, INTERNAL );
 
         verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL );
     }
@@ -130,6 +130,6 @@ class TransactionRepresentationCommitProcessTest
     {
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        return new TransactionToApply( transaction );
+        return new TransactionToApply( transaction, NULL );
     }
 }

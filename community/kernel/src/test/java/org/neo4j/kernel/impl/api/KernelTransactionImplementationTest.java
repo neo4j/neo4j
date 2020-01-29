@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -402,7 +403,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             any( StorageReader.class ),
             any( CommandCreationContext.class ),
             any( ResourceLocker.class ),
-            anyLong(), any( TxStateVisitor.Decorator.class ) );
+            anyLong(), any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ) );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) ) )
         {

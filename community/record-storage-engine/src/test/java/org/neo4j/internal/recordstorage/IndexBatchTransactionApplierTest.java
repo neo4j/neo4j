@@ -62,8 +62,7 @@ class IndexBatchTransactionApplierTest
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore,
-                mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ), NULL ) )
+                mock( NodeStore.class ), propertyStore, mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ) ) )
         {
             try ( var lockGroup = new LockGroup();
                   TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )
@@ -102,7 +101,7 @@ class IndexBatchTransactionApplierTest
         IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ), propertyStore,
-                mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator, NULL ) )
+                mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
         {
             try ( var lockGroup = new LockGroup();
                   TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )

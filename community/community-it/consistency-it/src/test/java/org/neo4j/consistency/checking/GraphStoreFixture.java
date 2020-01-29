@@ -120,6 +120,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class GraphStoreFixture implements AutoCloseable
 {
@@ -233,7 +234,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
             indexStatisticsStore = startIndexStatisticsStore( readOnly );
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore, PageCursorTracer.NULL ),
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore, NULL ),
                     indexStatisticsStore, idGeneratorFactory );
             storeReader = new RecordStorageReader( neoStore );
         }
@@ -274,8 +275,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
                     {
                         return 0;
                     }
-                }, true, NO_MONITOR );
-                counts.start( PageCursorTracer.NULL );
+                }, true, PageCacheTracer.NULL, NO_MONITOR );
+                counts.start( NULL );
             }
             return counts;
         };
@@ -321,8 +322,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
-        try ( StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( PageCursorTracer.NULL );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( PageCursorTracer.NULL ) )
+        try ( StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL ) )
         {
             nodeCursor.single( nodeId );
             long[] labels;
@@ -367,7 +368,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             return id;
         } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores().getRawNeoStores() ), PageCursorTracer.NULL );
+        tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores().getRawNeoStores() ), NULL );
         return tokenHolders;
     }
 
@@ -512,7 +513,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             }, TokenHolder.TYPE_RELATIONSHIP_TYPE );
 
             this.tokenHolders = new TokenHolders( propTokens, labelTokens, relTypeTokens );
-            tokenHolders.setInitialTokens( allReadableTokens( neoStores ), PageCursorTracer.NULL );
+            tokenHolders.setInitialTokens( allReadableTokens( neoStores ), NULL );
             tokenHolders.propertyKeyTokens().getAllTokens().forEach( token -> propKeyDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
             tokenHolders.labelTokens().getAllTokens().forEach( token -> labelDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
             tokenHolders.relationshipTypeTokens().getAllTokens().forEach( token -> relTypeDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
@@ -630,7 +631,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         private void updateCounts( NodeRecord node, int delta )
         {
             writer.incrementNodeCount( ANY_LABEL, delta );
-            for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes, PageCursorTracer.NULL ) )
+            for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes, NULL ) )
             {
                 writer.incrementNodeCount( (int)label, delta );
             }
@@ -706,7 +707,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         {
             TransactionRepresentation representation =
                     transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
-            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            commitProcess.commit( new TransactionToApply( representation, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
         }
 
         @Override

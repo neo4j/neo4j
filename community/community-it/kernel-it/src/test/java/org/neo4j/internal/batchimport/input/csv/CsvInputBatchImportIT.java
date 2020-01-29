@@ -368,7 +368,7 @@ class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                assertEquals( count.other().longValue(), counts.nodeCount( count.first() ), "Label count mismatch for label " + count.first() );
+                assertEquals( count.other().longValue(), counts.nodeCount( count.first(), NULL ), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -377,7 +377,7 @@ class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                assertEquals( count.other().longValue(), counts.relationshipCount( key.startLabel, key.type, key.endLabel ),
+                assertEquals( count.other().longValue(), counts.relationshipCount( key.startLabel, key.type, key.endLabel, NULL ),
                         "Label count mismatch for label " + key );
             }
 

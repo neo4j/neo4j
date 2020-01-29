@@ -30,6 +30,7 @@ import org.neo4j.storageengine.api.CountsDelta;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CountsRecordStateTest
 {
@@ -37,8 +38,8 @@ class CountsRecordStateTest
     void shouldReportDifferencesBetweenDifferentStates()
     {
         // given
-        CountsRecordState oracle = new CountsRecordState();
-        CountsRecordState victim = new CountsRecordState();
+        CountsRecordState oracle = new CountsRecordState( NULL );
+        CountsRecordState victim = new CountsRecordState( NULL );
         oracle.incrementNodeCount( 17, 5 );
         victim.incrementNodeCount( 17, 3 );
         oracle.incrementNodeCount( 12, 9 );
@@ -49,7 +50,7 @@ class CountsRecordStateTest
         victim.incrementRelationshipCount( 1, 4, 3, 25 );
 
         // when
-        Set<CountsRecordState.Difference> differences = Iterables.asSet( oracle.verify( victim ) );
+        Set<CountsRecordState.Difference> differences = Iterables.asSet( oracle.verify( victim, NULL ) );
 
         // then
         assertEquals( differences, asSet(
@@ -62,8 +63,8 @@ class CountsRecordStateTest
     void shouldNotReportAnythingForEqualStates()
     {
         // given
-        CountsRecordState oracle = new CountsRecordState();
-        CountsRecordState victim = new CountsRecordState();
+        CountsRecordState oracle = new CountsRecordState( NULL );
+        CountsRecordState victim = new CountsRecordState( NULL );
         oracle.incrementNodeCount( 17, 5 );
         victim.incrementNodeCount( 17, 5 );
         oracle.incrementNodeCount( 12, 9 );
@@ -72,7 +73,7 @@ class CountsRecordStateTest
         victim.incrementRelationshipCount( 1, 4, 3, 25 );
 
         // when
-        List<CountsRecordState.Difference> differences = oracle.verify( victim );
+        List<CountsRecordState.Difference> differences = oracle.verify( victim, NULL );
 
         // then
         assertTrue( differences.isEmpty(), differences.toString() );

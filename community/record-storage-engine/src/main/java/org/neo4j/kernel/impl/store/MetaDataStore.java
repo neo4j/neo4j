@@ -784,7 +784,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, PageCursorTracer cursorTracer )
     {
         if ( lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset} ) )
         {
@@ -792,8 +792,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             assert pageId == pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET.id );
             synchronized ( transactionClosedLock )
             {
-                try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
-                      PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
                 {
                     if ( cursor.next() )
                     {

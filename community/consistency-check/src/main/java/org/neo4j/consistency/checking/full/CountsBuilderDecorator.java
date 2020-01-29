@@ -155,7 +155,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                         CHECK_RELATIONSHIP_COUNT );
                 listener.add( 1 );
             }
-        } );
+        }, TRACER_SUPPLIER.get() );
         nodeCounts.forEachKeyValue( ( key, count ) -> reporter.forCounts( new CountsEntry( key, 0 ), CHECK_NODE_COUNT ) );
         relationshipCounts.forEachKeyValue( ( key, count ) -> reporter.forCounts( new CountsEntry( key, 0 ), CHECK_RELATIONSHIP_COUNT ) );
         listener.done();

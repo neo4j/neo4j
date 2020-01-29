@@ -702,7 +702,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commandCreationContext,
                         commitLocks,
                         lastTransactionIdWhenStarted,
-                        this::enforceConstraints );
+                        this::enforceConstraints, pageCursorTracer );
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
@@ -725,7 +725,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation,
-                            versionContextSupplier.getVersionContext() );
+                            versionContextSupplier.getVersionContext(), pageCursorTracer );
                     txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

@@ -87,7 +87,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         }
 
         // when
-        long count = storageReader.nodesGetCount();
+        long count = storageReader.nodesGetCount( NULL );
 
         // then
         assertEquals( nodeCountPerLabel, count );

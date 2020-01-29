@@ -53,6 +53,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consist
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 import static org.neo4j.consistency.newchecker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * A consistency checker for a {@link RecordStorageEngine}, focused on keeping abstractions to a minimum and having clean and understandable
@@ -209,7 +210,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             // Report unexpected counts from existing counts store --> counts collected in this consistency check
             try ( CountsState.CountsChecker checker = observedCounts.checker( reporter ) )
             {
-                counts.accept( checker );
+                counts.accept( checker, TRACER_SUPPLIER.get() );
             } // Here when closing we report counts that we've seen, but the counts store doesn't have
         }
     }

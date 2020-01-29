@@ -49,6 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @EphemeralTestDirectoryExtension
 class KernelRecoveryTest
@@ -103,7 +104,7 @@ class KernelRecoveryTest
         TransactionCommitProcess commitProcess = rebuilt.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         for ( TransactionRepresentation transaction : transactions )
         {
-            commitProcess.commit( new TransactionToApply( transaction ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            commitProcess.commit( new TransactionToApply( transaction, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
         }
     }
 

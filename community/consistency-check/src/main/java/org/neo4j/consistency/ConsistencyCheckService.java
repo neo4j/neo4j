@@ -202,7 +202,7 @@ public class ConsistencyCheckService
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, PageCacheTracer.NULL );
-        CountsManager countsManager = new CountsManager( pageCache, databaseLayout );
+        CountsManager countsManager = new CountsManager( pageCache, databaseLayout, PageCacheTracer.NULL );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         life.add( countsManager );
@@ -391,19 +391,21 @@ public class ConsistencyCheckService
     {
         private final PageCache pageCache;
         private final DatabaseLayout databaseLayout;
+        private final PageCacheTracer pageCacheTracer;
         private GBPTreeCountsStore counts;
 
-        CountsManager( PageCache pageCache, DatabaseLayout databaseLayout )
+        CountsManager( PageCache pageCache, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
         {
             this.pageCache = pageCache;
             this.databaseLayout = databaseLayout;
+            this.pageCacheTracer = pageCacheTracer;
         }
 
         @Override
         public CountsStore get() throws IOException
         {
             counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.ignore(),
-                    new RebuildPreventingCountsInitializer(), true, GBPTreeCountsStore.NO_MONITOR );
+                    new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
             counts.start( NULL );
             return counts;
         }

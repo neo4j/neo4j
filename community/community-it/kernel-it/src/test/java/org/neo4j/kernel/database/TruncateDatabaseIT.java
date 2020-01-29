@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 @DbmsExtension
@@ -252,16 +253,16 @@ class TruncateDatabaseIT
         int typeId = tokenHolders.relationshipTypeTokens().getIdByName( relationshipType.name() );
         try ( RecordStorageReader reader = getRecordStorageEngine().newReader() )
         {
-            assertEquals( 20, reader.countsForNode( labelId ) );
-            assertEquals( 10, reader.countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) );
+            assertEquals( 20, reader.countsForNode( labelId, NULL ) );
+            assertEquals( 10, reader.countsForRelationship( ANY_LABEL, typeId, ANY_LABEL, NULL ) );
         }
 
         truncator.truncate( database );
 
         try ( RecordStorageReader reader = getRecordStorageEngine().newReader() )
         {
-            assertEquals( 0, reader.countsForNode( labelId ) );
-            assertEquals( 0, reader.countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) );
+            assertEquals( 0, reader.countsForNode( labelId, NULL ) );
+            assertEquals( 0, reader.countsForRelationship( ANY_LABEL, typeId, ANY_LABEL, NULL ) );
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.stats;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -62,14 +63,14 @@ public class DatabaseEntityCounters implements StoreEntityCounters
     }
 
     @Override
-    public long allNodesCountStore()
+    public long allNodesCountStore( PageCursorTracer cursorTracer )
     {
-        return countsAccessor.nodeCount( ANY_LABEL );
+        return countsAccessor.nodeCount( ANY_LABEL, cursorTracer );
     }
 
     @Override
-    public long allRelationshipsCountStore()
+    public long allRelationshipsCountStore( PageCursorTracer cursorTracer )
     {
-        return countsAccessor.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+        return countsAccessor.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, cursorTracer );
     }
 }

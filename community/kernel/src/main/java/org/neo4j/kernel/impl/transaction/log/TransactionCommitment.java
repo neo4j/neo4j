@@ -29,18 +29,16 @@ class TransactionCommitment implements Commitment
     private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
     private final TransactionIdStore transactionIdStore;
-    private final PageCursorTracer cursorTracer;
     private boolean markedAsCommitted;
 
     TransactionCommitment( long transactionId, int transactionChecksum, long transactionCommitTimestamp, LogPosition logPosition,
-            TransactionIdStore transactionIdStore, PageCursorTracer cursorTracer )
+            TransactionIdStore transactionIdStore )
     {
         this.transactionId = transactionId;
         this.transactionChecksum = transactionChecksum;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
         this.logPosition = logPosition;
         this.transactionIdStore = transactionIdStore;
-        this.cursorTracer = cursorTracer;
     }
 
     public LogPosition logPosition()
@@ -49,16 +47,16 @@ class TransactionCommitment implements Commitment
     }
 
     @Override
-    public void publishAsCommitted()
+    public void publishAsCommitted( PageCursorTracer cursorTracer )
     {
         markedAsCommitted = true;
         transactionIdStore.transactionCommitted( transactionId, transactionChecksum, transactionCommitTimestamp, cursorTracer );
     }
 
     @Override
-    public void publishAsClosed()
+    public void publishAsClosed( PageCursorTracer cursorTracer )
     {
-        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset() );
+        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset(), cursorTracer );
     }
 
     @Override

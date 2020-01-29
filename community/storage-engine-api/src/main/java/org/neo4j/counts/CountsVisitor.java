@@ -19,12 +19,14 @@
  */
 package org.neo4j.counts;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public interface CountsVisitor
 {
     @FunctionalInterface
     interface Visitable
     {
-        void accept( CountsVisitor visitor );
+        void accept( CountsVisitor visitor, PageCursorTracer cursorTracer );
     }
 
     void visitNodeCount( int labelId, long count );
@@ -43,30 +45,6 @@ public interface CountsVisitor
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
             // override in subclasses
-        }
-
-        public static CountsVisitor multiplex( final CountsVisitor... visitors )
-        {
-            return new CountsVisitor()
-            {
-                @Override
-                public void visitNodeCount( int labelId, long count )
-                {
-                    for ( CountsVisitor visitor : visitors )
-                    {
-                        visitor.visitNodeCount( labelId, count );
-                    }
-                }
-
-                @Override
-                public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-                {
-                    for ( CountsVisitor visitor : visitors )
-                    {
-                        visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
-                    }
-                }
-            };
         }
     }
 }

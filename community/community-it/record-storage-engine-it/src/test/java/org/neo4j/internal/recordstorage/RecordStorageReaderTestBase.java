@@ -270,7 +270,7 @@ public abstract class RecordStorageReaderTestBase
     {
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, txId, state -> state );
+        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, txId, state -> state, NULL );
         storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 

@@ -42,8 +42,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent,
-            TransactionApplicationMode mode ) throws TransactionFailureException
+    public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode ) throws TransactionFailureException
     {
         long lastTxId = appendToLog( batch, commitEvent );
         try
@@ -88,10 +87,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     {
         while ( batch != null )
         {
-            if ( batch.commitment().markedAsCommitted() )
-            {
-                batch.commitment().publishAsClosed();
-            }
+            batch.publishAsClosed();
             batch.close();
             batch = batch.next();
         }

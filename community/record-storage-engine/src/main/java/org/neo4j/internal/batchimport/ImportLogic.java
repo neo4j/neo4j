@@ -522,7 +522,7 @@ public class ImportLogic implements Closeable
             {
                 return neoStore.getLastCommittedTransactionId();
             }
-        }, TRACER_SUPPLIER.get() );
+        }, PageCacheTracer.NULL, TRACER_SUPPLIER.get() );
     }
 
     public void success()

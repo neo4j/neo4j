@@ -25,6 +25,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -56,10 +57,8 @@ import static org.neo4j.internal.helpers.Format.date;
  * <li>Pass into {@link TransactionCommitProcess#commit(TransactionToApply, CommitEvent, TransactionApplicationMode)}</li>
  * <li>=== COMMIT PROCESS ===</li>
  * <li>Commit, where {@link #commitment(Commitment, long)} is called to store the {@link Commitment} and transaction id</li>
- * <li>Apply, where {@link #commitment()},
+ * <li>Apply, where {@link #publishAsCommitted()} ()},
  * {@link #transactionRepresentation()} and {@link #next()} are called</li>
- * <li>=== USER ===</li>
- * <li>Data about the commit can now also be accessed using f.ex {@link #commitment()} or {@link #transactionId()}</li>
  * </ol>
  */
 public class TransactionToApply implements CommandsToApply, AutoCloseable
@@ -70,6 +69,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     private final TransactionRepresentation transactionRepresentation;
     private long transactionId;
     private final VersionContext versionContext;
+    private final PageCursorTracer cursorTracer;
     private TransactionToApply nextTransactionInBatch;
 
     // These fields are provided by commit process, storage engine, or recovery process
@@ -80,30 +80,31 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, PageCursorTracer cursorTracer )
     {
-        this( transactionRepresentation, EmptyVersionContext.EMPTY );
+        this( transactionRepresentation, EmptyVersionContext.EMPTY, cursorTracer );
     }
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, VersionContext versionContext )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, VersionContext versionContext, PageCursorTracer cursorTracer )
     {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContext );
+        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContext, cursorTracer );
     }
 
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, PageCursorTracer cursorTracer )
     {
-        this( transactionRepresentation, transactionId, EmptyVersionContext.EMPTY );
+        this( transactionRepresentation, transactionId, EmptyVersionContext.EMPTY, cursorTracer );
     }
 
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId,
-            VersionContext versionContext )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, VersionContext versionContext,
+            PageCursorTracer cursorTracer )
     {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
         this.versionContext = versionContext;
+        this.cursorTracer = cursorTracer;
     }
 
     // These methods are called by the user when building a batch
@@ -112,16 +113,29 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         nextTransactionInBatch = next;
     }
 
-    // These methods are called by the commit process
-    public Commitment commitment()
+    public void publishAsCommitted()
     {
-        return commitment;
+        commitment.publishAsCommitted( cursorTracer );
+    }
+
+    public void publishAsClosed()
+    {
+        if ( commitment.markedAsCommitted() )
+        {
+            commitment.publishAsClosed( cursorTracer );
+        }
     }
 
     @Override
     public long transactionId()
     {
         return transactionId;
+    }
+
+    @Override
+    public PageCursorTracer cursorTracer()
+    {
+        return cursorTracer;
     }
 
     @Override
@@ -211,4 +225,5 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     {
         return transactionRepresentation.iterator();
     }
+
 }

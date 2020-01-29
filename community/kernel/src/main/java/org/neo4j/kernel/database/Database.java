@@ -432,8 +432,8 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexStatisticsStore );
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
-            databaseDependencies.satisfyDependency( new DatabaseEntityCounters( this.idGeneratorFactory,
-            databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
+            databaseDependencies.satisfyDependency(
+                    new DatabaseEntityCounters( this.idGeneratorFactory, databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
 
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );

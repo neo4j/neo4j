@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -74,7 +76,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -120,7 +121,7 @@ class TransactionLogAppendAndRotateIT
                 {
                     try
                     {
-                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ) ), NULL );
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), PageCursorTracer.NULL ), LogAppendEvent.NULL );
                     }
                     catch ( Exception e )
                     {

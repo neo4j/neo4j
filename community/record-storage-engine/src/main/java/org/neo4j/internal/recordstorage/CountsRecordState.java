@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.util.Collection;
 
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -30,10 +31,17 @@ import org.neo4j.storageengine.api.StorageCommand;
  */
 public class CountsRecordState extends CountsDelta implements RecordState
 {
+    private final PageCursorTracer cursorTracer;
+
+    public CountsRecordState( PageCursorTracer cursorTracer )
+    {
+        this.cursorTracer = cursorTracer;
+    }
+
     @Override
     public void extractCommands( Collection<StorageCommand> target )
     {
-        accept( new CommandCollector( target ) );
+        accept( new CommandCollector( target ), cursorTracer );
     }
 
     // CountsDelta already implements hasChanges
