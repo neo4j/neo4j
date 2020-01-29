@@ -89,7 +89,11 @@ public enum Group
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
     /** Pulls updates from the leader. */
-    PULL_UPDATES( "PullUpdates" );
+    PULL_UPDATES( "PullUpdates" ),
+
+    // FABRIC
+    FABRIC_IDLE_DRIVER_MONITOR( "FabricIdleDriverMonitor" ),
+    FABRIC_WORKER( "FabricWorker" );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
