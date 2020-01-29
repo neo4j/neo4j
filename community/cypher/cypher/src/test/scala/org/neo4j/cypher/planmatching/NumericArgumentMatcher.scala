@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
+import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
+import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -40,7 +42,7 @@ import org.scalatest.matchers.Matcher
 trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
 
   /**
-    * Obtains the value of the arguemnt from the plan description, if it exists
+    * Obtains the value of the argument from the plan description, if it exists
     */
   def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long]
 
@@ -150,5 +152,29 @@ trait TimeMatcher extends NumericArgumentMatcher {
   override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
     plan.arguments.collectFirst {
       case Time(value) => value
+    }
+}
+
+/**
+  * Matches the Memory from profiling
+  */
+trait MemoryMatcher extends NumericArgumentMatcher {
+  override val argString: String = "Memory"
+
+  override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
+    plan.arguments.collectFirst {
+      case Memory(value) => value
+    }
+}
+
+/**
+  * Matches the Global Memory from profiling
+  */
+trait GlobalMemoryMatcher extends NumericArgumentMatcher {
+  override val argString: String = "GlobalMemory"
+
+  override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
+    plan.arguments.collectFirst {
+      case GlobalMemory(value) => value
     }
 }

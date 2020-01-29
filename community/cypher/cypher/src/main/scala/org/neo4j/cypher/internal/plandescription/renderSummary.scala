@@ -19,14 +19,27 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription.TotalHits
 
 object renderSummary extends (InternalPlanDescription => String) {
-  def apply(plan: InternalPlanDescription): String =
-    "Total database accesses: " + (plan.totalDbHits match {
+  def apply(plan: InternalPlanDescription): String = {
+    val memStr = memory(plan).map(bytes => s", total allocated memory: $bytes").getOrElse("")
+    s"Total database accesses: ${dbhits(plan)}$memStr"
+  }
+
+  private def dbhits(plan: InternalPlanDescription): String = {
+    plan.totalDbHits match {
       case TotalHits(0, false) => "0"
       case TotalHits(0, true) => "?"
       case TotalHits(x, false) => x.toString
       case TotalHits(x, true) => s"$x + ?"
-    })
+    }
+  }
+
+  private def memory(plan: InternalPlanDescription): Option[String] = {
+    plan.arguments.collectFirst {
+      case GlobalMemory(x) => x.toString
+    }
+  }
 }

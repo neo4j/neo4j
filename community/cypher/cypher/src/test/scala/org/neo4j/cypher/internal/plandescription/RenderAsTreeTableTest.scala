@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.scalatest.BeforeAndAfterAll
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -336,20 +337,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("plan information is rendered on the corresponding row to the tree") {
-    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
+    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
     val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("prop"), Seq.empty), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderAsTreeTable(plan2) should equal(
-      """+----------+----------------+------+---------+-----------+--------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other        |
-        |+----------+----------------+------+---------+-----------+--------------+
-        || +NAME    |              1 |    2 |     633 | b         | :Label(prop) |
-        || |        +----------------+------+---------+-----------+--------------+
-        || +NAME    |              1 |   42 |      33 | a         |              |
-        |+----------+----------------+------+---------+-----------+--------------+
+      """+----------+----------------+------+---------+----------------+-----------+--------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Variables | Other        |
+        |+----------+----------------+------+---------+----------------+-----------+--------------+
+        || +NAME    |              1 |    2 |     633 |                | b         | :Label(prop) |
+        || |        +----------------+------+---------+----------------+-----------+--------------+
+        || +NAME    |              1 |   42 |      33 |              5 | a         |              |
+        |+----------+----------------+------+---------+----------------+-----------+--------------+
         |""".stripMargin)
   }
 

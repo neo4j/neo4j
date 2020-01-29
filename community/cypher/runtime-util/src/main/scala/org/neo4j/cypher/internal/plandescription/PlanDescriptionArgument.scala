@@ -38,6 +38,10 @@ object Arguments {
 
   case class DbHits(value: Long) extends Argument
 
+  case class Memory(value: Long) extends Argument
+
+  case class GlobalMemory(value: Long) extends Argument
+
   case class Order(order: ProvidedOrder) extends Argument
 
   case class PageCacheHits(value: Long) extends Argument

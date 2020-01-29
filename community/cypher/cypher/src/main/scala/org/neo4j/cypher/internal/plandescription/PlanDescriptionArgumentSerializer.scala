@@ -37,12 +37,14 @@ import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
+import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
 import org.neo4j.cypher.internal.plandescription.Arguments.IndexName
 import org.neo4j.cypher.internal.plandescription.Arguments.InequalityIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyExpressions
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
+import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.MergePattern
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
@@ -98,6 +100,8 @@ object PlanDescriptionArgumentSerializer {
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
+      case Memory(value) => Long.box(value)
+      case GlobalMemory(value) => Long.box(value)
       case PageCacheHits(value) => Long.box(value)
       case PageCacheMisses(value) => Long.box(value)
       case PageCacheHitRatio(value) => Double.box(value)

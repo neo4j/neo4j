@@ -50,7 +50,9 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
 
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 
-    val planDescription = explain()
+    val planDescription = BuildPlanDescription(explain())
+        .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
+        .plan
 
     planDescription map {
       input: InternalPlanDescription =>
@@ -63,7 +65,8 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
           .addArgument(Arguments.PageCacheHitRatio, data.pageCacheHitRatio())
           .addArgument(Arguments.Time, data.time())
-          .plan
+          .addArgument(Arguments.Memory, data.maxAllocatedMemory())
+        .plan
     }
   }
 

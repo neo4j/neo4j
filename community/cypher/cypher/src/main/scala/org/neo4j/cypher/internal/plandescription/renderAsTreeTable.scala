@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
+import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
@@ -48,6 +50,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val ESTIMATED_ROWS = "Estimated Rows"
   private val ROWS = "Rows"
   private val HITS = "DB Hits"
+  private val MEMORY = "Memory (Bytes)"
   private val PAGE_CACHE_HITS = "Page Cache Hits"
   private val PAGE_CACHE_MISSES = "Page Cache Misses"
   private val PAGE_CACHE_HIT_RATIO = "Page Cache Hit Ratio"
@@ -56,7 +59,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   val VARIABLES = "Variables"
   val MAX_VARIABLE_COLUMN_WIDTH = 100
   private val OTHER = "Other"
-  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
+  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
     ORDER, VARIABLES, OTHER)
   private val newLine = System.lineSeparator()
 
@@ -164,6 +167,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case EstimatedRows(count) => mapping(ESTIMATED_ROWS, Right(format(count)), columns)
     case Rows(count) => mapping(ROWS, Right(count.toString), columns)
     case DbHits(count) => mapping(HITS, Right(count.toString), columns)
+    case Memory(count) => mapping(MEMORY, Right(count.toString), columns)
     case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, Right(count.toString), columns)
     case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, Right(count.toString), columns)
     case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)), columns)
@@ -186,6 +190,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     description.arguments.collect { case x
       if !x.isInstanceOf[Rows] &&
         !x.isInstanceOf[DbHits] &&
+        !x.isInstanceOf[Memory] &&
+        !x.isInstanceOf[GlobalMemory] &&
         !x.isInstanceOf[PageCacheHits] &&
         !x.isInstanceOf[PageCacheMisses] &&
         !x.isInstanceOf[PageCacheHitRatio] &&
