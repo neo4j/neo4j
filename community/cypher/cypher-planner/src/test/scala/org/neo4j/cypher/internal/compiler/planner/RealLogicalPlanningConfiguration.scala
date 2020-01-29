@@ -37,10 +37,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
 
   //noinspection ScalaUnnecessaryParentheses
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
-    val model: Metrics.CostModel = CardinalityCostModel(cypherCompilerConfig)
-    ({
-      case (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => model(plan, input, cardinalities)
-    })
+    case (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => CardinalityCostModel(plan, input, cardinalities)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics

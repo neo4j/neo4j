@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -32,7 +31,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Multiplier
 
-case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
+object CardinalityCostModel extends CostModel {
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
   private val PROBE_BUILD_COST: CostPerRow = 3.1
