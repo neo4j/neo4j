@@ -1093,8 +1093,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
         try ( KernelTransaction tx = beginTransaction( loginContext );
-                NodeCursor node = tx.cursors().allocateNodeCursor();
-                RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor() )
+                NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
         {
             Write write = tx.dataWrite();
             long r1 = write.relationshipCreate( sourceNode, typeId1, targetNode ); // OUTGOING :R

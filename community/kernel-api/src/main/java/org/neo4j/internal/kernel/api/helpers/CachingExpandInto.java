@@ -162,7 +162,7 @@ public class CachingExpandInto
             long toNode,
             PageCursorTracer cursorTracer )
     {
-        return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor(), fromNode, types, toNode );
+        return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorTracer ), fromNode, types, toNode );
     }
 
     private int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
