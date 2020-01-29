@@ -1068,7 +1068,6 @@ class IndexingServiceTest
     }
 
     @Test
-    @Timeout( 60 )
     void shouldReportCauseOfPopulationFailureIfPopulationFailsDuringRecovery() throws Exception
     {
         // given
