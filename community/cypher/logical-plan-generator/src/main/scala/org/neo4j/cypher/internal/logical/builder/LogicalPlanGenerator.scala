@@ -33,19 +33,15 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext.Results
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.WithState
+import org.neo4j.cypher.internal.logical.generator.CardinalityCalculator
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -65,7 +61,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
-import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.scalacheck.Gen
@@ -181,7 +176,6 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
 
   private val labels = labelsWithIds.keys.toVector
   private val costModel = CardinalityCostModel(null)
-  private val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, IndependenceCombiner)
 
   /**
    * Main entry point to obtain logical plans and associated state.
@@ -189,11 +183,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
   def logicalPlan: Gen[WithState[LogicalPlan]] = for {
     initialState <- delay(State())
     WithState(source, state) <- innerLogicalPlan(initialState)
-  } yield {
-    val plan = ProduceResult(source, source.availableSymbols.toSeq)(state.idGen)
-    state.cardinalities.copy(source.id, plan.id)
-    WithState(plan, state)
-  }
+  } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
 
   def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = oneOf(
     argument(state),
@@ -216,9 +206,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     WithState(node, state) <- state.newVariable
     state <- state.newNode(node)
   } yield {
-    val scan = AllNodesScan(node, state.arguments)(state.idGen)
-    state.cardinalities.set(scan.id, state.leafCardinalityMultipliers.head * stats.nodesAllCardinality())
-    WithState(scan, state)
+    val plan = AllNodesScan(node, state.arguments)(state.idGen)
+    annotate(plan, state)
   }
 
   def nodeByLabelScan(state: State): Gen[WithState[NodeByLabelScan]] = for {
@@ -228,15 +217,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     state <- state.recordLabel(node, labelName.name)
   } yield {
     val plan = NodeByLabelScan(node, labelName, state.arguments)(state.idGen)
-    val labelId = Some(LabelId(labelsWithIds(labelName.name)))
-    state.cardinalities.set(plan.id, state.leafCardinalityMultipliers.head * stats.nodesWithLabelCardinality(labelId))
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   def argument(state: State): Gen[WithState[Argument]] = {
     val plan = Argument(state.arguments)(state.idGen)
-    state.cardinalities.set(plan.id, state.leafCardinalityMultipliers.head)
-    const(WithState(plan, state))
+    const(annotate(plan, state))
   }
 
   // One child plans
@@ -252,21 +238,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     state <- state.newRelationship(rel)
   } yield {
     val plan = Expand(source, from, dir, relTypes, to, rel)(state.idGen)
-
-    val qg = QueryGraph(
-      patternNodes = Set(from, to),
-      patternRelationships = Set(PatternRelationship(rel, (from, to), dir, relTypes, SimplePatternLength)),
-      argumentIds = state.arguments
-    )
-    val qgsi = QueryGraphSolverInput(
-      labelInfo = state.labelInfo,
-      inboundCardinality = state.cardinalities.get(source.id),
-      strictness = None
-    )
-
-    val c = qgCardinalityModel(qg, qgsi, state.semanticTable)
-    state.cardinalities.set(plan.id, c)
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   def skip(state: State): Gen[WithState[Skip]] = for {
@@ -274,9 +246,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     count <- chooseNum(0, Long.MaxValue, 1)
   } yield {
     val plan = Skip(source, literalInt(count))(state.idGen)
-    val sourceCardinality = state.cardinalities.get(source.id)
-    state.cardinalities.set(plan.id, Cardinality.max(Cardinality.EMPTY, sourceCardinality + Cardinality(-count)))
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   def limit(state: State): Gen[WithState[Limit]] = for {
@@ -285,9 +255,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     ties <- if (source.isInstanceOf[Sort] && count == 1) oneOf(DoNotIncludeTies, IncludeTies) else const(DoNotIncludeTies)
   } yield {
     val plan = Limit(source, literalInt(count), ties)(state.idGen)
-    val sourceCardinality = state.cardinalities.get(source.id)
-    state.cardinalities.set(plan.id, Cardinality.min(sourceCardinality, Cardinality(count)))
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   def projection(state: State): Gen[WithState[Projection]] = for {
@@ -295,8 +263,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     WithState(map, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression)
   } yield {
     val plan = Projection(source, map)(state.idGen)
-    state.cardinalities.copy(source.id, plan.id)
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   private def projectionList(state: State, availableSymbols: Seq[String], expressionGen: SemanticAwareAstGenerator => Gen[Expression], minSize: Int = 0): Gen[WithState[Map[String, Expression]]] =
@@ -319,14 +286,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     WithState(aggregatingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.aggregatingExpression, minSize = 1)
   } yield {
     val plan = Aggregation(source, groupingExpressions, aggregatingExpressions)(state.idGen)
-    val in = state.cardinalities.get(source.id)
-    val c =
-      if (groupingExpressions.isEmpty)
-        Cardinality.min(in, Cardinality.SINGLE)
-      else
-        Cardinality.min(in, Cardinality.sqrt(in))
-    state.cardinalities.set(plan.id, c)
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   // Two child plans
@@ -340,20 +300,23 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     state <- state.popLeafCardinalityMultiplier()
   } yield {
     val plan = Apply(left, right)(state.idGen)
-    state.cardinalities.copy(right.id, plan.id)
-    WithState(plan, state)
+    annotate(plan, state)
   }
 
   def cartesianProduct(state: State): Gen[WithState[CartesianProduct]] = for {
-      WithState(left, state) <- innerLogicalPlan(state)
-      WithState(right, state) <- innerLogicalPlan(state)
-    } yield {
-      val plan = CartesianProduct(left, right)(state.idGen)
-      state.cardinalities.set(plan.id, state.cardinalities.get(left.id) * state.cardinalities.get(right.id))
-      WithState(plan, state)
-    }
+    WithState(left, state) <- innerLogicalPlan(state)
+    WithState(right, state) <- innerLogicalPlan(state)
+  } yield {
+    val plan = CartesianProduct(left, right)(state.idGen)
+    annotate(plan, state)
+  }
 
   // Other stuff
+
+  private def annotate[T <: LogicalPlan](plan: T, state: State)(implicit cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
+    state.cardinalities.set(plan.id, cardinalityCalculator(plan, state, stats, labelsWithIds))
+    WithState(plan, state)
+  }
 
   private def semanticDirection: Gen[SemanticDirection] = oneOf(
     SemanticDirection.INCOMING,
