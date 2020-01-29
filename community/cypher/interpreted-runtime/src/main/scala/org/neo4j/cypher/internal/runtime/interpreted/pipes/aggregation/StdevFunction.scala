@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class StdevFunction(val value: Expression, val population:Boolean)
+class StdevFunction(val value: Expression, val population:Boolean, operatorId: Id)
   extends AggregationFunction
   with NumericExpressionOnly {
 
@@ -59,7 +60,7 @@ class StdevFunction(val value: Expression, val population:Boolean)
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()
-      state.memoryTracker.allocated(java.lang.Double.BYTES)
+      state.memoryTracker.allocated(java.lang.Double.BYTES, operatorId.x)
     })
   }
 }

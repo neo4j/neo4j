@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.StdevFunction
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols._
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction = new StdevFunction(anInner, false)
+  override def createAggregationFunction(operatorId: Id): AggregationFunction = new StdevFunction(anInner, false, operatorId)
 
   override def expectedInnerType: CypherType = CTNumber
 
@@ -34,7 +36,7 @@ case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anI
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction = new StdevFunction(anInner, true)
+  override def createAggregationFunction(operatorId: Id): AggregationFunction = new StdevFunction(anInner, true, operatorId)
 
   override def expectedInnerType: CypherType = CTNumber
 

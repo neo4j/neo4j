@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CountFunction
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols._
 
 case class Count(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction = new CountFunction(anInner)
+  override def createAggregationFunction(operatorId: Id): AggregationFunction = new CountFunction(anInner)
 
   override def expectedInnerType: CypherType = CTAny
 

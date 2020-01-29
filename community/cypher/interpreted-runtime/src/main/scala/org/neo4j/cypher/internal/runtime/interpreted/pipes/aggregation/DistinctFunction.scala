@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
-class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
+class DistinctFunction(value: Expression, inner: AggregationFunction, operatorId: Id) extends AggregationFunction {
   private val seen = scala.collection.mutable.Set[AnyValue]()
 
   override def apply(ctx: ExecutionContext, state: QueryState): Unit = {
     val data = value(ctx, state)
     if (seen.add(data)) {
-      state.memoryTracker.allocated(data)
+      state.memoryTracker.allocated(data, operatorId.x)
       inner(ctx, state)
     }
   }

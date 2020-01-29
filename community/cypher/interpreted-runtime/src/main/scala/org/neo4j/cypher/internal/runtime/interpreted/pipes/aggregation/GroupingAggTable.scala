@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, ExecutionContextFactory, Pipe, QueryState}
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 /**
@@ -36,7 +37,8 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        groupingFunction: (ExecutionContext, QueryState) => AnyValue,
                        aggregations: Array[AggregatingCol],
                        state: QueryState,
-                       executionContextFactory: ExecutionContextFactory) extends AggregationTable {
+                       executionContextFactory: ExecutionContextFactory,
+                       operatorId: Id) extends AggregationTable {
 
   protected var resultMap: java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]] = _
   protected val addKeys: (ExecutionContext, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
@@ -48,11 +50,11 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
   override def processRow(row: ExecutionContext): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
     val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
-      state.memoryTracker.allocated(groupingValue)
+      state.memoryTracker.allocated(groupingValue, operatorId.x)
       val functions = new Array[AggregationFunction](aggregations.length)
       var i = 0
       while (i < aggregations.length) {
-        functions(i) = aggregations(i).expression.createAggregationFunction
+        functions(i) = aggregations(i).expression.createAggregationFunction(operatorId)
         i += 1
       }
       functions
@@ -93,8 +95,8 @@ object GroupingAggTable {
   case class Factory(groupingColumns: Array[GroupingCol],
                      groupingFunction: (ExecutionContext, QueryState) => AnyValue,
                      aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable =
-      new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, executionContextFactory)
+    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
+      new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, executionContextFactory, operatorId)
 
     override def registerOwningPipe(pipe: Pipe): Unit = {
       aggregations.foreach(_.expression.registerOwningPipe(pipe))

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, DistinctPipe, ExecutionContextFactory, OrderedAggregationTableFactory, OrderedChunkReceiver, Pipe, QueryState}
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 /**
@@ -42,8 +43,9 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
                               unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                               aggregations: Array[AggregationPipe.AggregatingCol],
                               state: QueryState,
-                              executionContextFactory: ExecutionContextFactory)
-  extends GroupingAggTable(unorderedGroupingColumns, unorderedGroupingFunction, aggregations, state, executionContextFactory) with OrderedChunkReceiver {
+                              executionContextFactory: ExecutionContextFactory,
+                              operatorId: Id)
+  extends GroupingAggTable(unorderedGroupingColumns, unorderedGroupingFunction, aggregations, state, executionContextFactory, operatorId) with OrderedChunkReceiver {
 
   private var currentGroupKey: AnyValue = _
 
@@ -76,8 +78,8 @@ object OrderedGroupingAggTable {
                      unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
                      unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                      aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable with OrderedChunkReceiver =
-      new OrderedGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregations, state, executionContextFactory)
+    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =
+      new OrderedGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregations, state, executionContextFactory, operatorId)
 
     override def registerOwningPipe(pipe: Pipe): Unit = {
       aggregations.foreach(_.expression.registerOwningPipe(pipe))

@@ -29,7 +29,7 @@ case class SortPipe(source: Pipe, comparator: Comparator[ExecutionContext])
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val array = state.memoryTracker.memoryTrackingIterator(input).toArray
+    val array = state.memoryTracker.memoryTrackingIterator(input, id.x).toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
   }

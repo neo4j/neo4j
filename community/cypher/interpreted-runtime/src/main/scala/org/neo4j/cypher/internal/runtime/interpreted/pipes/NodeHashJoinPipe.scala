@@ -39,7 +39,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(state.memoryTracker.memoryTrackingIterator(input))
+    val table = buildProbeTable(state.memoryTracker.memoryTrackingIterator(input, id.x))
 
     if (table.isEmpty)
       return Iterator.empty

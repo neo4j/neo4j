@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.MinFunction
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols._
 
 case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction = new MinFunction(anInner)
+  override def createAggregationFunction(operatorId: Id): AggregationFunction = new MinFunction(anInner)
 
   override val expectedInnerType: CypherType = CTNumber
 

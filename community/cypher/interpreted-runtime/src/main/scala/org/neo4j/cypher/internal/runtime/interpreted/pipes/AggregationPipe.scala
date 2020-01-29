@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
@@ -53,7 +54,7 @@ object AggregationPipe {
     * A Factory to obtain [[AggregationTable]]s at runtime.
     */
   trait AggregationTableFactory {
-    def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable
+    def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable
 
     def registerOwningPipe(pipe: Pipe): Unit
   }

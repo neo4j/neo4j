@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExecutionContextFactory, Pipe, QueryState}
+import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
   * This table can be used when we have no grouping columns, or there is a provided order for all grouping columns.
@@ -29,13 +30,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExecutionContextFact
   */
 class NonGroupingAggTable(aggregations: Array[AggregatingCol],
                           state: QueryState,
-                          executionContextFactory: ExecutionContextFactory) extends AggregationTable {
+                          executionContextFactory: ExecutionContextFactory,
+                          operatorId: Id) extends AggregationTable {
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length)
 
   override def clear(): Unit = {
     var i = 0
     while (i < aggregationFunctions.length) {
-      aggregationFunctions(i) = aggregations(i).expression.createAggregationFunction
+      aggregationFunctions(i) = aggregations(i).expression.createAggregationFunction(operatorId)
       i += 1
     }
   }
@@ -65,8 +67,8 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
 
 object NonGroupingAggTable {
   case class Factory(aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable =
-      new NonGroupingAggTable(aggregations, state, executionContextFactory)
+    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
+      new NonGroupingAggTable(aggregations, state, executionContextFactory, operatorId)
 
     override def registerOwningPipe(pipe: Pipe): Unit = {
       aggregations.foreach(_.expression.registerOwningPipe(pipe))

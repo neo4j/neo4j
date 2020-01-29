@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-abstract class PercentileFunction(val value: Expression, val percentile: Expression) extends AggregationFunction
+abstract class PercentileFunction(val value: Expression, val percentile: Expression, operatorId: Id) extends AggregationFunction
   with NumericExpressionOnly {
 
   protected var temp = Vector[AnyValue]()
@@ -43,13 +44,13 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       }
       count += 1
       temp = temp :+ number
-      state.memoryTracker.allocated(number)
+      state.memoryTracker.allocated(number, operatorId.x)
     })
   }
 }
 
-class PercentileContFunction(value: Expression, percentile: Expression)
-  extends PercentileFunction(value, percentile) {
+class PercentileContFunction(value: Expression, percentile: Expression, operatorId: Id)
+  extends PercentileFunction(value, percentile, operatorId) {
 
   def name = "PERCENTILE_CONT"
 
@@ -71,8 +72,8 @@ class PercentileContFunction(value: Expression, percentile: Expression)
   }
 }
 
-class PercentileDiscFunction(value: Expression, percentile: Expression)
-  extends PercentileFunction(value, percentile) {
+class PercentileDiscFunction(value: Expression, percentile: Expression, operatorId: Id)
+  extends PercentileFunction(value, percentile, operatorId) {
 
   def name = "PERCENTILE_DISC"
 

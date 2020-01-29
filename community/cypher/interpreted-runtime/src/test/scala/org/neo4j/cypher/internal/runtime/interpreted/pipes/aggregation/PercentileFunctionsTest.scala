@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
@@ -43,7 +44,7 @@ trait PercentileTest {
 }
 
 class PercentileDiscTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc: Expression) = new PercentileDiscFunction(inner, perc)
+  def createAggregator(inner: Expression, perc: Expression) = new PercentileDiscFunction(inner, perc, Id.INVALID_ID)
 
   test("singleOne") {
     val values = List(1.0)
@@ -123,7 +124,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
 }
 
 class PercentileContTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc)
+  def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc, Id.INVALID_ID)
 
   test("singleOne") {
     val values = List(1.0)

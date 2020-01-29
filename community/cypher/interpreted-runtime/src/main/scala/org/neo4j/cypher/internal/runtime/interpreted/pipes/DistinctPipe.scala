@@ -52,7 +52,7 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
       val added = seen.add(groupingValue)
       if (added) {
-        state.memoryTracker.allocated(groupingValue)
+        state.memoryTracker.allocated(groupingValue, id.x)
       }
       added
     }

@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, UserDefinedAggregator}
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, override val arguments: IndexedSeq[Expression])
   extends AggregationExpression {
 
-  override def createAggregationFunction: AggregationFunction = new AggregationFunction {
+  override def createAggregationFunction(operatorId: Id): AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = _
 
     override def result(state: QueryState): AnyValue = {

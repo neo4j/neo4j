@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.DoubleValue
@@ -44,7 +45,7 @@ trait StdevTest {
 }
 
 class StdevSampleTest extends CypherFunSuite with StdevTest {
-  def createAggregator(inner: Expression) = new StdevFunction(inner, false)
+  def createAggregator(inner: Expression) = new StdevFunction(inner, false, Id.INVALID_ID)
 
   test("singleOne") {
     val values = List(1)
@@ -83,7 +84,7 @@ class StdevSampleTest extends CypherFunSuite with StdevTest {
 }
 
 class StdevPopulationTest extends CypherFunSuite with StdevTest {
-  def createAggregator(inner: Expression) = new StdevFunction(inner, true)
+  def createAggregator(inner: Expression) = new StdevFunction(inner, true, Id.INVALID_ID)
 
   test("singleOne") {
     val values = List(1)

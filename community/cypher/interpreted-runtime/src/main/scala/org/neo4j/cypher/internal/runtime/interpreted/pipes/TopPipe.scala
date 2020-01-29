@@ -65,7 +65,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
       while (input.hasNext) {
         val row = input.next()
         buffer += row
-        state.memoryTracker.allocated(row)
+        state.memoryTracker.allocated(row, id.x)
       }
       val array = buffer.toArray
       java.util.Arrays.sort(array, comparator)
@@ -83,7 +83,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         topTable.add(row)
         if (i < count) {
           // This makes the assumption that rows have more or less the same size, since we don't know which ones are actually kept in the TopTable here.
-          state.memoryTracker.allocated(row)
+          state.memoryTracker.allocated(row, id.x)
         }
         i += 1
       }

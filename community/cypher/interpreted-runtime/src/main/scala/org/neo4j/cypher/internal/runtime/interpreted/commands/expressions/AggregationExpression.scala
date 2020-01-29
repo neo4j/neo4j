@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
 
@@ -29,7 +30,7 @@ abstract class AggregationExpression extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState) =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
-  def createAggregationFunction: AggregationFunction
+  def createAggregationFunction(operatorId: Id): AggregationFunction
 }
 
 abstract class AggregationWithInnerExpression(inner:Expression) extends AggregationExpression {
