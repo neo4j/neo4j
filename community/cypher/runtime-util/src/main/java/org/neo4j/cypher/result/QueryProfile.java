@@ -36,5 +36,23 @@ public interface QueryProfile
      */
     OperatorProfile operatorProfile( int operatorId );
 
-    QueryProfile NONE = operatorId -> OperatorProfile.NONE;
+    /**
+     * The maximum amount of memory that this query held onto while executing.
+     */
+    long maxAllocatedMemory();
+
+    QueryProfile NONE = new QueryProfile()
+    {
+        @Override
+        public OperatorProfile operatorProfile( int operatorId )
+        {
+            return OperatorProfile.NONE;
+        }
+
+        @Override
+        public long maxAllocatedMemory()
+        {
+            return OperatorProfile.NO_DATA;
+        }
+    };
 }

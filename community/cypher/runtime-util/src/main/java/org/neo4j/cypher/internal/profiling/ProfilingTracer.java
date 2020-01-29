@@ -65,6 +65,12 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
     }
 
+    @Override
+    public long maxAllocatedMemory()
+    {
+        return OperatorProfile.NO_DATA;
+    }
+
     public long timeOf( Id operatorId )
     {
         return operatorProfile( operatorId.x() ).time();
@@ -122,7 +128,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         {
             long pageCacheHits = statisticProvider.getPageCacheHits();
             long pageCacheFaults = statisticProvider.getPageCacheMisses();
-            data.update( OperatorProfile.NO_DATA, hitCount, rowCount, pageCacheHits, pageCacheFaults );
+            data.update( OperatorProfile.NO_DATA, hitCount, rowCount, pageCacheHits, pageCacheFaults, OperatorProfile.NO_DATA );
         }
 
         @Override
@@ -177,7 +183,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
             long pageCacheHits = statisticProvider.getPageCacheHits();
             long pageCacheFaults = statisticProvider.getPageCacheMisses();
             long executionTime = clock.nanoTime() - start;
-            data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults );
+            data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults, OperatorProfile.NO_DATA );
         }
     }
 }

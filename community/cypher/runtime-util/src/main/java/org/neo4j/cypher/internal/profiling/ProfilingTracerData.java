@@ -30,14 +30,16 @@ public class ProfilingTracerData implements OperatorProfile
     private long rows;
     private long pageCacheHits;
     private long pageCacheMisses;
+    private long maxAllocatedMemory;
 
-    public void update( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses )
+    public void update( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses, long maxAllocatedMemory )
     {
         this.time += time;
         this.dbHits += dbHits;
         this.rows += rows;
         this.pageCacheHits += pageCacheHits;
         this.pageCacheMisses += pageCacheMisses;
+        this.maxAllocatedMemory += maxAllocatedMemory;
     }
 
     @Override
@@ -70,6 +72,12 @@ public class ProfilingTracerData implements OperatorProfile
         return pageCacheMisses;
     }
 
+    @Override
+    public long maxAllocatedMemory()
+    {
+        return maxAllocatedMemory;
+    }
+
     public void sanitize()
     {
         if ( time < OperatorProfile.NO_DATA )
@@ -92,12 +100,16 @@ public class ProfilingTracerData implements OperatorProfile
         {
             pageCacheMisses = OperatorProfile.NO_DATA;
         }
+        if ( maxAllocatedMemory < OperatorProfile.NO_DATA )
+        {
+            maxAllocatedMemory = OperatorProfile.NO_DATA;
+        }
     }
 
     @Override
     public int hashCode()
     {
-        return Arrays.hashCode( new long[] { this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses()} );
+        return Arrays.hashCode( new long[]{this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory()} );
     }
 
     @Override
@@ -116,17 +128,19 @@ public class ProfilingTracerData implements OperatorProfile
                this.dbHits() == that.dbHits() &&
                this.rows() == that.rows() &&
                this.pageCacheHits() == that.pageCacheHits() &&
-               this.pageCacheMisses() == that.pageCacheMisses();
+               this.pageCacheMisses() == that.pageCacheMisses() &&
+               this.maxAllocatedMemory() == that.maxAllocatedMemory();
     }
 
     @Override
     public String toString()
     {
-        return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d }",
+        return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d, max allocated: %d }",
                               this.time(),
                               this.dbHits(),
                               this.rows(),
                               this.pageCacheHits(),
-                              this.pageCacheMisses() );
+                              this.pageCacheMisses(),
+                              this.maxAllocatedMemory() );
     }
 }

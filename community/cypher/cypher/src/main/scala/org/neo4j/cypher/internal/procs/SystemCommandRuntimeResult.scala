@@ -110,8 +110,10 @@ case class SystemCommandProfile(rows: Long, dbHits: Long) extends QueryProfile w
 
   override def pageCacheMisses(): Long = OperatorProfile.NO_DATA
 
+  override def maxAllocatedMemory(): Long = OperatorProfile.NO_DATA
+
   override def hashCode: Int = util.Arrays.hashCode(
-    Array(this.time(), this.dbHits, this.rows, this.pageCacheHits(), this.pageCacheMisses()))
+    Array(this.time(), this.dbHits, this.rows, this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory()))
 
   override def equals(o: Any): Boolean = o match {
     case that: OperatorProfile =>
@@ -119,9 +121,10 @@ case class SystemCommandProfile(rows: Long, dbHits: Long) extends QueryProfile w
         this.dbHits == that.dbHits &&
         this.rows == that.rows &&
         this.pageCacheHits == that.pageCacheHits &&
-        this.pageCacheMisses == that.pageCacheMisses
+        this.pageCacheMisses == that.pageCacheMisses &&
+        this.maxAllocatedMemory == that.maxAllocatedMemory()
     case _ => false
   }
 
-  override def toString: String = s"Operator Profile { time: ${this.time()}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits()}, page cache misses: ${this.pageCacheMisses()} }"
+  override def toString: String = s"Operator Profile { time: ${this.time()}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits()}, page cache misses: ${this.pageCacheMisses()}, max allocated: ${this.maxAllocatedMemory} }"
 }

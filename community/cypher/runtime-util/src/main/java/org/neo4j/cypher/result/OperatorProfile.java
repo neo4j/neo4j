@@ -54,6 +54,11 @@ public interface OperatorProfile
      */
     long pageCacheMisses();
 
+    /**
+     * The maximum amount of memory that this operator held onto while executing the query.
+     */
+    long maxAllocatedMemory();
+
     default double pageCacheHitRatio()
     {
         return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA) ?
@@ -73,19 +78,21 @@ public interface OperatorProfile
         private final long rows;
         private final long pageCacheHits;
         private final long pageCacheMisses;
+        private final long maxAllocatedMemory;
 
         ConstOperatorProfile( long value )
         {
-            this( value, value, value, value, value );
+            this( value, value, value, value, value, value );
         }
 
-        public ConstOperatorProfile( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses )
+        public ConstOperatorProfile( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses, long maxAllocatedMemory )
         {
             this.time = time;
             this.dbHits = dbHits;
             this.rows = rows;
             this.pageCacheHits = pageCacheHits;
             this.pageCacheMisses = pageCacheMisses;
+            this.maxAllocatedMemory = maxAllocatedMemory;
         }
 
         @Override
@@ -119,9 +126,16 @@ public interface OperatorProfile
         }
 
         @Override
+        public long maxAllocatedMemory()
+        {
+            return maxAllocatedMemory;
+        }
+
+        @Override
         public int hashCode()
         {
-            return Arrays.hashCode( new long[]{this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses()} );
+            return Arrays
+                    .hashCode( new long[]{this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses(), this.maxAllocatedMemory()} );
         }
 
         @Override
@@ -140,18 +154,20 @@ public interface OperatorProfile
                    this.dbHits() == that.dbHits() &&
                    this.rows() == that.rows() &&
                    this.pageCacheHits() == that.pageCacheHits() &&
-                   this.pageCacheMisses() == that.pageCacheMisses();
+                   this.pageCacheMisses() == that.pageCacheMisses() &&
+                   this.maxAllocatedMemory() == that.maxAllocatedMemory();
         }
 
         @Override
         public String toString()
         {
-            return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d }",
+            return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d, max allocated: %d }",
                                   this.time(),
                                   this.dbHits(),
                                   this.rows(),
                                   this.pageCacheHits(),
-                                  this.pageCacheMisses() );
+                                  this.pageCacheMisses(),
+                                  this.maxAllocatedMemory() );
         }
     }
 }
