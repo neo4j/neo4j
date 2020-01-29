@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.exceptions.{InvalidArgumentException, InvalidSemanticsException}
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.string.UTF8
 
 /**
@@ -193,8 +193,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val admin = Some(plans.AssertDbmsAdmin(DropRoleAction))
-        val checkFrozenRole = Some(plans.CheckFrozenRole(admin, roleName))
-        val source = if (ifExists) Some(plans.DoNothingIfNotExists(checkFrozenRole, "Role", roleName)) else Some(plans.EnsureNodeExists(checkFrozenRole, "Role", roleName))
+        val source = if (ifExists) Some(plans.DoNothingIfNotExists(admin, "Role", roleName)) else Some(plans.EnsureNodeExists(admin, "Role", roleName))
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users

@@ -539,9 +539,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"EnsureNodeExists($label)", NoChildren, Seq(nameArgument), variables)
 
-      case CheckFrozenRole(_, roleName) =>
-        PlanDescriptionImpl(id, "CheckFrozenRole", NoChildren, Seq(Role(Prettifier.escapeName(roleName))), variables)
-
       case AssertDbmsAdmin(action) =>
         PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(DbmsAction(action.name)), variables)
 
@@ -884,9 +881,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case EnsureNodeExists(_, label, name) =>
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"EnsureNodeExists($label)", children, Seq(nameArgument), variables)
-
-      case CheckFrozenRole(_, roleName) =>
-        PlanDescriptionImpl(id, "CheckFrozenRole", children, Seq(Role(Prettifier.escapeName(roleName))), variables)
 
       case AssertNotCurrentUser(_, userName, _) =>
         PlanDescriptionImpl(id, "AssertNotCurrentUser", children, Seq(User(Prettifier.escapeName(userName))), variables)
