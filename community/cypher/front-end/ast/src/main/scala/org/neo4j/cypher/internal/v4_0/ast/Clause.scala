@@ -674,6 +674,13 @@ object ProjectionClause {
       case Return(distinct, ri, orderBy, skip, limit, _) => Some((distinct, ri, orderBy, skip, limit, None))
     }
   }
+
+  def checkAliasedReturnItems(returnItems: ReturnItemsDef, clauseName: String): SemanticState => Seq[SemanticError] =
+    state => returnItems match {
+      case li: ReturnItems =>
+        li.items.filter(item => item.alias.isEmpty).map(i => SemanticError(s"Expression in $clauseName must be aliased (use AS)", i.position))
+      case _ => Seq()
+    }
 }
 
 sealed trait ProjectionClause extends HorizonClause {
@@ -835,16 +842,11 @@ case class With(distinct: Boolean,
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      checkAliasedReturnItems chain
+      ProjectionClause.checkAliasedReturnItems(returnItems, "WITH") chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
 
   override def withReturnItems(items: Seq[ReturnItem]): With =
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
-
-  private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
-    case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
-    case _ => Seq()
-  }
 }
 
 object Return {
@@ -870,6 +872,7 @@ case class Return(distinct: Boolean,
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       checkVariableScope chain
+      ProjectionClause.checkAliasedReturnItems(returnItems, "CALL { RETURN ... }") chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
 
   override def withReturnItems(items: Seq[ReturnItem]): Return =

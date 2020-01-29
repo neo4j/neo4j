@@ -747,6 +747,24 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .shouldEqual(Seq("x"))
   }
 
+  test("subquery RETURN should not allow un-aliased general expressions") {
+    // CALL {
+    //   WITH {title: 1} AS m
+    //   RETURN m.title
+    // }
+    // RETURN 1 AS x
+    singleQuery(
+      subQuery(
+        with_(mapOfInt("title" -> 1).as("m")),
+        return_(UnaliasedReturnItem(prop(varFor("m"), "title"), "m.title")(pos))
+      ),
+      return_(literalInt(1).as("x"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors(0).msg.should(include("Expression in CALL { RETURN ... } must be aliased (use AS)")))
+  }
+
   /** https://github.com/scala/scala/blob/v2.13.0/src/library/scala/util/ChainingOps.scala#L37 */
   implicit class AnyOps[A](a: A) {
     def tap[X](e: A => X): A = {
