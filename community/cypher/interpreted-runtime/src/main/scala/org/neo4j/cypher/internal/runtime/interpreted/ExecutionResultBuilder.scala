@@ -33,7 +33,8 @@ trait ExecutionResultBuilder {
             queryProfile: QueryProfile,
             prePopulateResults: Boolean,
             input: InputDataStream,
-            subscriber: QuerySubscriber): RuntimeResult
+            subscriber: QuerySubscriber,
+            doProfile: Boolean): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

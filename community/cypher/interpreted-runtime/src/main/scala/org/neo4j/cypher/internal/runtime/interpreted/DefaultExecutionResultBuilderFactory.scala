@@ -41,7 +41,8 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
     protected def createQueryState(params: MapValue,
                                    prePopulateResults: Boolean,
                                    input: InputDataStream,
-                                   subscriber: QuerySubscriber): QueryState
+                                   subscriber: QuerySubscriber,
+                                   doProfile: Boolean): QueryState
 
     def queryContext: QueryContext
 
@@ -54,13 +55,8 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
       case _ => pipeDecorator = profileDecorator
     }
 
-    override def build(params: MapValue,
-                       readOnly: Boolean,
-                       queryProfile: QueryProfile,
-                       prePopulateResults: Boolean,
-                       input: InputDataStream,
-                       subscriber: QuerySubscriber): RuntimeResult = {
-      val state = createQueryState(params, prePopulateResults, input, subscriber)
+    override def build(params: MapValue, readOnly: Boolean, queryProfile: QueryProfile, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): RuntimeResult = {
+      val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
       new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber)
     }
   }
@@ -82,17 +78,18 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
-    override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber): QueryState = {
+    override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): QueryState = {
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors, queryContext.transactionalContext.transaction.pageCursorTracer())
       queryContext.resources.trace(cursors)
-      new QueryState(queryContext,
+
+        new QueryState(queryContext,
                      externalResource,
                      createParameterArray(params, parameterMapping),
                      cursors,
                      queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
                      new Array[AnyValue](nExpressionSlots),
                      subscriber,
-                     QueryMemoryTracker(memoryTrackingController.memoryTracking),
+                     QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile)),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,

@@ -92,7 +92,11 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
       config.get(GraphDatabaseSettings.track_query_allocation),
       config.get(GraphDatabaseSettings.query_max_memory))
 
-  override def memoryTracking: MemoryTracking = _memoryTracking
+  override def memoryTracking(doProfile: Boolean): MemoryTracking = if (doProfile && _memoryTracking == NO_TRACKING) {
+    getMemoryTracking(trackQueryAllocation = true, config.get(GraphDatabaseSettings.query_max_memory))
+  } else {
+    _memoryTracking
+  }
 
   config.addListener(GraphDatabaseSettings.track_query_allocation,
     new SettingChangeListener[java.lang.Boolean] {
