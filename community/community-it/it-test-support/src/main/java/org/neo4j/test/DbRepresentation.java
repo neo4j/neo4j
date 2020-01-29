@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -61,7 +62,7 @@ public class DbRepresentation
 
     public static DbRepresentation of( GraphDatabaseService db )
     {
-        int retryCount = 5;
+        int retryCount = 30;
         while ( true )
         {
             try ( Transaction transaction = db.beginTx() )
@@ -86,11 +87,20 @@ public class DbRepresentation
                 }
                 return result;
             }
-            catch ( TransactionFailureException e )
+            catch ( TransactionFailureException | DatabaseShutdownException e )
             {
                 if ( retryCount-- < 0 )
                 {
                     throw e;
+                }
+
+                try
+                {
+                    Thread.sleep( 1000 );
+                }
+                catch ( InterruptedException ex )
+                {
+                    throw new RuntimeException( e );
                 }
             }
         }
