@@ -67,12 +67,6 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction )
-    {
-        throw new RuntimeException( "NeoStoreTransactionApplier requires a LockGroup" );
-    }
-
-    @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), lockGroup, idUpdateListener,

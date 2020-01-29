@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -43,7 +44,8 @@ class CountsStoreTransactionApplierTest
         final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( counts );
 
         // WHEN
-        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ) ) )
+        try ( var lockGroup = new LockGroup();
+              TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), lockGroup ) )
         {
             txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
         }

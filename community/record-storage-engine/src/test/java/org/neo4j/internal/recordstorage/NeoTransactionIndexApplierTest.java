@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -53,6 +54,7 @@ class NeoTransactionIndexApplierTest
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
+    private final LockGroup lockGroup = new LockGroup();
 
     @Test
     void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
@@ -67,7 +69,7 @@ class NeoTransactionIndexApplierTest
 
         // when
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
         {
             result = txApplier.visitNodeCommand( command );
         }
@@ -97,7 +99,7 @@ class NeoTransactionIndexApplierTest
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
         {
             result = txApplier.visitSchemaRuleCommand( command );
         }
@@ -126,7 +128,7 @@ class NeoTransactionIndexApplierTest
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
         {
             result = txApplier.visitSchemaRuleCommand( command );
         }

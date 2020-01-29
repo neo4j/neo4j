@@ -289,12 +289,6 @@ class RecordStorageEngineTest
         }
 
         @Override
-        public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
-        {
-            return actual.startTx( transaction );
-        }
-
-        @Override
         public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
         {
             return actual.startTx( transaction, lockGroup );

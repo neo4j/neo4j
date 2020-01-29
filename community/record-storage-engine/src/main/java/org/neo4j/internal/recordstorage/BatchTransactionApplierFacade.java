@@ -26,7 +26,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
  * This class wraps several {@link BatchTransactionApplier}s which will do their work sequentially. See also {@link
- * TransactionApplierFacade} which is used to wrap the {@link #startTx(CommandsToApply)} and {@link
+ * TransactionApplierFacade} which is used to wrap the {@link #startTx(CommandsToApply, LockGroup)} and {@link
  * #startTx(CommandsToApply, LockGroup)} methods.
  */
 public class BatchTransactionApplierFacade implements BatchTransactionApplier
@@ -37,17 +37,6 @@ public class BatchTransactionApplierFacade implements BatchTransactionApplier
     public BatchTransactionApplierFacade( BatchTransactionApplier... appliers )
     {
         this.appliers = appliers;
-    }
-
-    @Override
-    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
-    {
-        TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
-        for ( int i = 0; i < appliers.length; i++ )
-        {
-            txAppliers[i] = appliers[i].startTx( transaction );
-        }
-        return new TransactionApplierFacade( txAppliers );
     }
 
     @Override

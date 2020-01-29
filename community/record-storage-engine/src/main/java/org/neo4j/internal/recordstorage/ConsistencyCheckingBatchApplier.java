@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -49,7 +50,7 @@ class ConsistencyCheckingBatchApplier extends BatchTransactionApplier.Adapter
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         return new ConsistencyCheckingApplier( relationshipStore, cursorTracer );
     }

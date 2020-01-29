@@ -56,32 +56,7 @@ public interface BatchTransactionApplier extends AutoCloseable
 {
     /**
      * Get the suitable {@link TransactionApplier} for a given transaction, and the store which this {@link
-     * BatchTransactionApplier} is associated with. See also {@link #startTx(CommandsToApply, LockGroup)} if
-     * your operations need to share a {@link LockGroup}.
-     *
-     * Typically you'd want to use this in a try-with-resources block to automatically close the {@link
-     * TransactionApplier} when finished with the transaction, f.ex. as:
-     * <pre>
-     * try ( TransactionApplier txApplier = batchTxApplier.startTx( txToApply )
-     * {
-     *     // Apply the transaction
-     *     txToApply.transactionRepresentation().accept( txApplier );
-     *     // Or apply other commands
-     *     // txApplier.visit( command );
-     * }
-     * </pre>
-     *
-     * @param transaction The transaction which this applier is going to apply. Once we don't have to validate index
-     * updates anymore, we can change this to simply be the transactionId
-     * @return a {@link TransactionApplier} which can apply this transaction and other commands to the store.
-     * @throws IOException on error.
-     */
-    TransactionApplier startTx( CommandsToApply transaction ) throws IOException;
-
-    /**
-     * Get the suitable {@link TransactionApplier} for a given transaction, and the store which this {@link
-     * BatchTransactionApplier} is associated with. See also {@link #startTx(CommandsToApply)} if your transaction
-     * does not require any locks.
+     * BatchTransactionApplier} is associated with.
      *
      * Typically you'd want to use this in a try-with-resources block to automatically close the {@link
      * TransactionApplier} when finished with the transaction, f.ex. as:
@@ -114,12 +89,6 @@ public interface BatchTransactionApplier extends AutoCloseable
 
     abstract class Adapter implements BatchTransactionApplier
     {
-        @Override
-        public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
-        {
-            return startTx( transaction );
-        }
-
         @Override
         public void close() throws Exception
         {   // Nothing to close

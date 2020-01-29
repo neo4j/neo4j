@@ -39,15 +39,9 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     private boolean hasUpdates;
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction )
-    {
-        return this;
-    }
-
-    @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
-        return startTx( transaction );
+        return this;
     }
 
     @Override

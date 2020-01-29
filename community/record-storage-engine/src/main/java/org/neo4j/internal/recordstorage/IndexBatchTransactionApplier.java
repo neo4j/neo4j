@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -81,7 +82,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         txId = transaction.transactionId();
         return transactionApplier;

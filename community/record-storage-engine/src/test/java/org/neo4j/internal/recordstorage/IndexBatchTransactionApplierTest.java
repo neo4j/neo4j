@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -64,7 +65,8 @@ class IndexBatchTransactionApplierTest
                 mock( NodeStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ), NULL ) )
         {
-            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
+            try ( var lockGroup = new LockGroup();
+                  TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )
             {
                 // WHEN
                 txApplier.visitNodeCommand( node( 15 ) );
@@ -102,7 +104,8 @@ class IndexBatchTransactionApplierTest
                 indexUpdatesSync, mock( NodeStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator, NULL ) )
         {
-            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
+            try ( var lockGroup = new LockGroup();
+                  TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )
             {
                 // WHEN
                 // activate index 1

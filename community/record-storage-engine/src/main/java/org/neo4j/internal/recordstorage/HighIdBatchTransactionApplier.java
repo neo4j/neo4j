@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 public class HighIdBatchTransactionApplier extends BatchTransactionApplier.Adapter
@@ -32,7 +33,7 @@ public class HighIdBatchTransactionApplier extends BatchTransactionApplier.Adapt
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         return new HighIdTransactionApplier( neoStores );
     }

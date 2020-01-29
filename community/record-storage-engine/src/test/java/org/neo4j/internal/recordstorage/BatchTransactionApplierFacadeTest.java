@@ -47,17 +47,14 @@ class BatchTransactionApplierFacadeTest
     {
         txApplier1 = mock( TransactionApplier.class );
         applier1 = mock( BatchTransactionApplier.class );
-        when( applier1.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier1 );
         when( applier1.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier1 );
 
         txApplier2 = mock( TransactionApplier.class );
         applier2 = mock( BatchTransactionApplier.class );
-        when( applier2.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier2 );
         when( applier2.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier2 );
 
         txApplier3 = mock( TransactionApplier.class );
         applier3 = mock( BatchTransactionApplier.class );
-        when( applier3.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier3 );
         when( applier3.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier3 );
 
         facade = new BatchTransactionApplierFacade( applier1, applier2, applier3 );
@@ -67,17 +64,18 @@ class BatchTransactionApplierFacadeTest
     void testStartTxCorrectOrder() throws Exception
     {
         // GIVEN
-        CommandsToApply tx = mock( CommandsToApply.class );
+        var tx = mock( CommandsToApply.class );
+        var lockGroup = mock( LockGroup.class );
 
         // WHEN
-        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx );
+        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, lockGroup );
 
         // THEN
         InOrder inOrder = inOrder( applier1, applier2, applier3 );
 
-        inOrder.verify( applier1 ).startTx( tx );
-        inOrder.verify( applier2 ).startTx( tx );
-        inOrder.verify( applier3 ).startTx( tx );
+        inOrder.verify( applier1 ).startTx( tx, lockGroup );
+        inOrder.verify( applier2 ).startTx( tx, lockGroup );
+        inOrder.verify( applier3 ).startTx( tx, lockGroup );
 
         assertEquals( txApplier1, result.appliers[0] );
         assertEquals( txApplier2, result.appliers[1] );
