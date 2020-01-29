@@ -282,7 +282,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill node hash join query before it runs out of memory") {
     // given
-    val nodes = nodeGraph(1)
+    val nodes = given { nodeGraph(1) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -302,7 +302,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill hash join query with large RHS") {
     // given
-    val nodes = nodeGraph(100000)
+    val nodes = given { nodeGraph(100000) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -359,7 +359,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct + node hash join query before it runs out of memory") {
     // given
-    val nodes = nodeGraph(1)
+    val nodes = given { nodeGraph(1) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -397,7 +397,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill cartesian product query") {
     // given
-    nodeGraph(1)
+    given { nodeGraph(1) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .cartesianProduct()
@@ -416,7 +416,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill cartesian product query with large RHS") {
     // given
-    nodeGraph(100000)
+    given { nodeGraph(1) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .cartesianProduct()
