@@ -360,7 +360,10 @@ public class IndexStatisticsTest
         // sum result into empty result
         UpdatesTracker result = new UpdatesTracker();
         result.notifyPopulationCompleted();
-        Futures.getAllResults( futures );
+        for ( UpdatesTracker jobTracker : Futures.getAllResults( futures ) )
+        {
+            result.add( jobTracker );
+        }
         awaitIndexesOnline();
 
         executorService.shutdown();
