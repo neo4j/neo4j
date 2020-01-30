@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +57,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
@@ -88,7 +88,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Call to {@link #flipAfterPopulation(boolean)} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
  */
-public class MultipleIndexPopulator implements IndexPopulator
+public class MultipleIndexPopulator
 {
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
     public static final String BATCH_SIZE_NAME = "batch_size";
@@ -152,7 +152,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         return !populations.isEmpty();
     }
 
-    @Override
     public void create()
     {
         forEachPopulation( population ->
@@ -160,18 +159,6 @@ public class MultipleIndexPopulator implements IndexPopulator
             log.info( "Index population started: [%s]", population.indexUserDescription );
             population.create();
         } );
-    }
-
-    @Override
-    public void drop()
-    {
-        throw new UnsupportedOperationException( "Can't drop indexes from this populator implementation" );
-    }
-
-    @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-    {
-        throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
 
     StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
@@ -264,14 +251,8 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor accessor )
-    {
-        throw new UnsupportedOperationException( "Should not be called directly" );
-    }
-
-    @Override
-    public MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
+    @VisibleForTesting
+    MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
         Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
         forEachPopulation( population ->
@@ -282,36 +263,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         return new MultipleIndexUpdater( this, updaters, logProvider );
     }
 
-    @Override
     public void close( boolean populationCompletedSuccessfully )
     {
         phaseTracker.stop();
         // closing the populators happens in flip, fail or individually when they are completed
         propertyAccessor.close();
-    }
-
-    @Override
-    public void markAsFailed( String failure )
-    {
-        throw new UnsupportedOperationException( "Multiple index populator can't be marked as failed." );
-    }
-
-    @Override
-    public void includeSample( IndexEntryUpdate<?> update )
-    {
-        throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
-    }
-
-    @Override
-    public IndexSample sample()
-    {
-        throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
-    }
-
-    @Override
-    public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler )
-    {
-        throw new UnsupportedOperationException( "Not supposed to be called" );
     }
 
     void resetIndexCounts()
