@@ -19,17 +19,19 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JsonInputTest
 {
@@ -40,7 +42,7 @@ public class JsonInputTest
     {
         Map<String, Object> map = input.readMap( "{}" );
         assertNotNull( map );
-        assertTrue( "map is not empty", map.isEmpty() );
+        assertTrue( map.isEmpty(), "map is not empty" );
     }
 
     @Test
@@ -50,7 +52,7 @@ public class JsonInputTest
         assertNotNull( map );
         assertThat( map, hasEntry( "key1", "value1" ) );
         assertThat( map, hasEntry( "key2", "value11" ) );
-        assertEquals( "map contained extra values", 2, map.size() );
+        assertEquals( 2, map.size(), "map contained extra values" );
     }
 
     @Test
@@ -59,7 +61,7 @@ public class JsonInputTest
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
         assertThat( map, hasKey( "nested" ) );
-        assertEquals( "map contained extra values", 1, map.size() );
+        assertEquals( 1, map.size(), "map contained extra values" );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
         @SuppressWarnings( "unchecked" )
@@ -72,6 +74,6 @@ public class JsonInputTest
     {
         Map<String, Object> map = input.readMap( "{\"key\": \"v1\\nv2\"}" );
         assertNotNull( map );
-        assertEquals( map.get( "key" ), "v1\nv2"  );
+        assertEquals( "v1\nv2", map.get( "key" ) );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -28,9 +28,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
@@ -41,47 +41,47 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class PathRepresentationTest
+class PathRepresentationTest
 {
 
     @Test
-    public void shouldHaveLength()
+    void shouldHaveLength()
     {
         assertNotNull( pathrep().length() );
     }
 
     @Test
-    public void shouldHaveStartNodeLink()
+    void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().startNode() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink()
+    void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().endNode() );
     }
 
     @Test
-    public void shouldHaveNodeList()
+    void shouldHaveNodeList()
     {
         assertNotNull( pathrep().nodes() );
     }
 
     @Test
-    public void shouldHaveRelationshipList()
+    void shouldHaveRelationshipList()
     {
         assertNotNull( pathrep().relationships() );
     }
 
     @Test
-    public void shouldHaveDirectionList()
+    void shouldHaveDirectionList()
     {
         assertNotNull( pathrep().directions() );
     }
 
     @Test
-    public void shouldSerialiseToMap()
+    void shouldSerialiseToMap()
     {
         Map<String, Object> repr = serialize( pathrep() );
         assertNotNull( repr );

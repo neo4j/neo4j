@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -37,9 +36,12 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 public class DataFactoriesTest
@@ -59,7 +61,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ',' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
+        Header header = defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -80,7 +82,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
+        Header header = defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -101,7 +103,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
+        Header header = defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -120,17 +122,9 @@ public class DataFactoriesTest
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
-        // WHEN
-        try
-        {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
-            fail( "Should fail" );
-        }
-        catch ( DuplicateHeaderException e )
-        {
-            Assert.assertEquals( entry( "name", Type.PROPERTY, extractors.string() ), e.getFirst() );
-            Assert.assertEquals( entry( "name", Type.PROPERTY, extractors.long_() ), e.getOther() );
-        }
+        var e = assertThrows( DuplicateHeaderException.class, () -> defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups ) );
+        assertEquals( entry( "name", Type.PROPERTY, extractors.string() ), e.getFirst() );
+        assertEquals( entry( "name", Type.PROPERTY, extractors.long_() ), e.getOther() );
         seeker.close();
     }
 
@@ -142,18 +136,9 @@ public class DataFactoriesTest
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
-        // WHEN
-        try
-        {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
-            fail( "Should fail" );
-        }
-        catch ( DuplicateHeaderException e )
-        {
-            Assert.assertEquals( entry( "one", Type.ID, extractors.long_() ), e.getFirst() );
-            Assert.assertEquals( entry( "two", Type.ID, extractors.long_() ), e.getOther() );
-        }
-        seeker.close();
+        var e = assertThrows( DuplicateHeaderException.class, () -> defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups ) );
+        assertEquals( entry( "one", Type.ID, extractors.long_() ), e.getFirst() );
+        assertEquals( entry( "two", Type.ID, extractors.long_() ), e.getOther() );
     }
 
     @Test
@@ -164,7 +149,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL, groups );
+        Header header = defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -181,7 +166,7 @@ public class DataFactoriesTest
         final CharReadable secondSource = wrap( "0\tThe node\t123456789" );
         DataFactory dataFactory = DataFactories.data( value -> value,
                 () -> new MultiReadable( Readables.iterator( IOFunctions.identity(), firstSource, secondSource ) ) );
-        Header.Factory headerFactory = DataFactories.defaultFormatNodeFileHeader();
+        Header.Factory headerFactory = defaultFormatNodeFileHeader();
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
@@ -209,7 +194,7 @@ public class DataFactoriesTest
         groups.getOrCreate( groupTwoName );
 
         // WHEN
-        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
+        Header header = defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -229,16 +214,8 @@ public class DataFactoriesTest
         IdType idType = IdType.ACTUAL;
 
         // WHEN
-        try
-        {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( "START_ID" );
-        }
+        var e = assertThrows( InputException.class, () -> defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups ) );
+        assertThat( e.getMessage() ).contains( "START_ID" );
     }
 
     @Test
@@ -249,16 +226,8 @@ public class DataFactoriesTest
         IdType idType = IdType.ACTUAL;
 
         // WHEN
-        try
-        {
-            DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType, groups );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( "LABEL" );
-        }
+        var e = assertThrows( InputException.class, () -> defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType, groups ) );
+        assertThat( e.getMessage() ).contains( "LABEL" );
     }
 
     private static final Configuration SEEKER_CONFIG = Configuration.TABS.toBuilder().withBufferSize( 1000 ).build();

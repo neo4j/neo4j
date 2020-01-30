@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
-
-import java.net.URISyntaxException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -29,14 +27,15 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.discovery.ServerVersionAndEdition;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.server.rest.repr.Serializer.joinBaseWithRelativePath;
 
-public class DiscoveryRepresentationTest
+class DiscoveryRepresentationTest
 {
     @Test
-    public void shouldCreateAMapContainingDataAndManagementURIs() throws URISyntaxException
+    void shouldCreateAMapContainingDataAndManagementURIs()
     {
         var baseUri = RepresentationTestBase.BASE_URI;
         var managementUri = "/management";
@@ -60,13 +59,13 @@ public class DiscoveryRepresentationTest
         assertNotNull( mappedDataUri );
         assertNotNull( mappedBoltUri );
 
-        assertEquals( Serializer.joinBaseWithRelativePath( baseUri, managementUri ), mappedManagementUri.toString() );
-        assertEquals( Serializer.joinBaseWithRelativePath( baseUri, dataUri ), mappedDataUri.toString() );
+        assertEquals( joinBaseWithRelativePath( baseUri, managementUri ), mappedManagementUri.toString() );
+        assertEquals( joinBaseWithRelativePath( baseUri, dataUri ), mappedDataUri.toString() );
         assertEquals( "bolt://neo4j.org:7687", mappedBoltUri.toString() );
     }
 
     @Test
-    public void shouldCreateAMapContainingServerVersionAndEditionInfo() throws URISyntaxException
+    void shouldCreateAMapContainingServerVersionAndEditionInfo()
     {
         var serverInfo = new ServerVersionAndEdition( "myVersion", "myEdition" );
         var dr = new DiscoveryRepresentation( mock( DiscoverableURIs.class ), serverInfo );
