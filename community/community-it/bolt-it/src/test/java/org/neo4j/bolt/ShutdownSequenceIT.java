@@ -132,7 +132,7 @@ public class ShutdownSequenceIT
         } ).when( schedulerLog ).debug( "Shutting down thread pool" );
 
         // Shutdown the server
-        server.getManagementService().shutdown();
+        server.shutdownManagementService();
 
         // Expect the connection to have the following interactions
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
@@ -150,7 +150,7 @@ public class ShutdownSequenceIT
         var connection = connectAndAuthenticate();
 
         // Shutdown the server
-        server.getManagementService().shutdown();
+        server.shutdownManagementService();
 
         // Expect the connection to be silently closed.
         assertThat( connection ).satisfies( eventuallyDisconnects() );
@@ -177,7 +177,7 @@ public class ShutdownSequenceIT
         } ).when( schedulerLog ).debug( "Shutting down thread pool" );
 
         // Initiate the shutdown
-        server.getManagementService().shutdown();
+        server.shutdownManagementService();
 
         // Expect the connection to have the following interactions
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );

@@ -33,6 +33,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
@@ -61,7 +62,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -87,8 +87,6 @@ class DefaultBoltConnectionTest
     {
         boltChannel = new BoltChannel( "bolt-1", "bolt", channel );
         stateMachine = mock( BoltStateMachine.class );
-        when( stateMachine.shouldStickOnThread() ).thenReturn( false );
-        when( stateMachine.hasOpenStatement() ).thenReturn( false );
     }
 
     @AfterEach
@@ -351,53 +349,36 @@ class DefaultBoltConnectionTest
     }
 
     @Test
-    void processNextBatchShouldThrowAssertionErrorIfStatementOpen()
+    void processNextBatchShouldReturnFalseIfConnectionIsStopped()
     {
         BoltConnection connection = newConnection( 1 );
-        connection.enqueue( Jobs.noop() );
-        connection.enqueue( Jobs.noop() );
-
-        // force to a message waiting loop
-        when( stateMachine.hasOpenStatement() ).thenReturn( true );
-
-        connection.processNextBatch();
-
-        assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
-                .assertExceptionForLogMessage( "Unexpected error" ).isInstanceOf( AssertionError.class );
-    }
-
-    @Test
-    void processNextBatchShouldNotThrowAssertionErrorIfStatementOpenButStopping()
-    {
-        BoltConnection connection = newConnection( 1 );
-        connection.enqueue( Jobs.noop() );
-        connection.enqueue( Jobs.noop() );
-
-        // force to a message waiting loop
-        when( stateMachine.hasOpenStatement() ).thenReturn( true );
-
         connection.stop();
-        connection.processNextBatch();
 
-        assertThat( logProvider ).doesNotHaveAnyLogs();
+        assertFalse( connection.processNextBatch() );
     }
 
     @Test
-    void processNextBatchShouldReturnWhenConnectionIsStopped() throws Exception
+    void processNextBatchShouldReturnTrueIfConnectionIsOpen()
     {
         BoltConnection connection = newConnection( 1 );
         connection.enqueue( Jobs.noop() );
         connection.enqueue( Jobs.noop() );
 
-        // force to a message waiting loop
-        when( stateMachine.shouldStickOnThread() ).thenReturn( true );
+        assertTrue( connection.processNextBatch() );
+    }
+
+    @Test
+    void processNextBatchShouldImmediatelyReturnWhenConnectionIsStopped() throws Exception
+    {
+        BoltConnection connection = newConnection( 1 );
+        connection.stop();
+        connection.enqueue( Jobs.noop() );
+        connection.enqueue( Jobs.noop() );
 
         Future<Boolean> future = otherThread.submit( connection::processNextBatch );
-
-        connection.stop();
-
         future.get( 1, TimeUnit.MINUTES );
 
+        verify( stateMachine, never() ).process( any( RequestMessage.class ), any( BoltResponseHandler.class ) );
         verify( stateMachine ).close();
     }
 

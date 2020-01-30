@@ -184,8 +184,8 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     private void handleSubmission( BoltConnection connection )
     {
         activeWorkItems.computeIfAbsent( connection.id(),
-                key -> scheduleBatchOrHandleError( connection ).whenCompleteAsync( ( result, error ) -> handleCompletion( connection, result, error ),
-                        forkJoinPool ) );
+                key -> scheduleBatchOrHandleError( connection )
+                        .whenCompleteAsync( ( result, error ) -> handleCompletion( connection, result, error ), forkJoinPool ) );
     }
 
     private CompletableFuture<Boolean> scheduleBatchOrHandleError( BoltConnection connection )
