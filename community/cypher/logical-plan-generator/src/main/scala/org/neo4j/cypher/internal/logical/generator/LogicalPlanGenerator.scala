@@ -151,8 +151,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
     def addParameters(ps: Set[String]): Gen[State] =
       const(copy(parameters = parameters ++ ps))
 
-    def pushLeafCardinalityMultiplier(c: Cardinality): Gen[State] =
-      const(copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers))
+    def pushLeafCardinalityMultiplier(c: Cardinality): State =
+      copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers)
 
     def popLeafCardinalityMultiplier(): Gen[State] =
       const(copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail))
@@ -202,7 +202,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
   // Leaf Plans
 
   def allNodesScan(state: State): Gen[WithState[AllNodesScan]] = for {
-    WithState(node, state) <- state.newVariable
+    WithState(node, state) <- newVariable(state)
     state <- state.newNode(node)
   } yield {
     val plan = AllNodesScan(node, state.arguments)(state.idGen)
@@ -211,7 +211,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
 
   def nodeByLabelScan(state: State): Gen[WithState[NodeByLabelScan]] = for {
     labelName <- label
-    WithState(node, state) <- state.newVariable
+    WithState(node, state) <- newVariable(state)
     state <- state.newNode(node)
     state <- state.recordLabel(node, labelName.name)
   } yield {
@@ -231,9 +231,9 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     from <- oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.isNode(varFor(name)))
     dir <- semanticDirection
     relTypes <- relTypeNames
-    WithState(to, state) <- state.newVariable
+    WithState(to, state) <- newVariable(state)
     state <- state.newNode(to)
-    WithState(rel, state) <- state.newVariable
+    WithState(rel, state) <- newVariable(state)
     state <- state.newRelationship(rel)
   } yield {
     val plan = Expand(source, from, dir, relTypes, to, rel)(state.idGen)
@@ -270,7 +270,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
       (0 until n).foldLeft(const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
         for {
           WithState(map, state) <- prevGen
-          WithState(name, state) <- state.newVariable
+          WithState(name, state) <- newVariable(state)
           WithState(xpr, state) <- validExpression(availableSymbols, state, expressionGen)
           state <- state.declareTypeAny(name)
         } yield {
@@ -293,7 +293,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
   def apply(state: State): Gen[WithState[Apply]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
     state <- state.addArguments(left.availableSymbols)
-    state <- state.pushLeafCardinalityMultiplier(state.cardinalities.get(left.id))
+    state <- const(state.pushLeafCardinalityMultiplier(state.cardinalities.get(left.id)))
     WithState(right, state) <- innerLogicalPlan(state)
     state <- state.removeArguments(left.availableSymbols)
     state <- state.popLeafCardinalityMultiplier()
@@ -331,6 +331,46 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     names <- zeroOrMore(relTypes)
     name <- names
   } yield RelTypeName(name)(pos)
+
+  // State
+
+  def newVariable(state: State): Gen[WithState[String]] =
+    state.newVariable
+
+//  {
+//    val name = s"var${state.varCount}"
+//    const(WithState(name, state.newVariable()))
+//  }
+
+//  def newNode(name: String): Gen[State] =
+//    const(copy(semanticTable = semanticTable.addNode(varFor(name))))
+//
+//  def newRelationship(name: String): Gen[State] =
+//    const(copy(semanticTable = semanticTable.addRelationship(varFor(name))))
+//
+//  def declareTypeAny(name: String): Gen[State] =
+//    const(copy(semanticTable = semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None)))))
+//
+//  def addArguments(args: Set[String]): Gen[State] =
+//    const(copy(arguments = arguments ++ args))
+//
+//  def removeArguments(args: Set[String]): Gen[State] =
+//    const(copy(arguments = arguments -- args))
+//
+//  def addParameters(ps: Set[String]): Gen[State] =
+//    const(copy(parameters = parameters ++ ps))
+//
+//  def pushLeafCardinalityMultiplier(c: Cardinality): Gen[State] =
+//    const(copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers))
+//
+//  def popLeafCardinalityMultiplier(): Gen[State] =
+//    const(copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail))
+//
+//  def recordLabel(variable: String, label: String): Gen[State] = {
+//    val newLabels = labelInfo(label) + LabelName(label)(pos)
+//    const(copy(labelInfo = labelInfo.updated(variable, newLabels)))
+//  }
+//}
 
   /**
    * This generates random expressions and then uses SematicChecking to see if they are valid. This works,
