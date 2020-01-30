@@ -93,7 +93,7 @@ class ParallelExecutionTest
         Exception e1 = new Exception( "A" );
         Exception e2 = new Exception( "B" );
         Exception e3 = new Exception( "C" );
-        Exception exception = assertThrows( Exception.class, () -> execution.run( getClass().getSimpleName(), () ->
+        Exception executionException = assertThrows( Exception.class, () -> execution.run( getClass().getSimpleName(), () ->
         {
             throw e1;
         }, () ->
@@ -103,6 +103,7 @@ class ParallelExecutionTest
         {
             throw e3;
         } ) );
+        Throwable exception = executionException.getCause();
         Throwable[] suppressed = exception.getSuppressed();
         List<String> messages = List.of( exception.getCause().getMessage(), suppressed[0].getCause().getMessage(), suppressed[1].getCause().getMessage() );
 
