@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -70,6 +71,9 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.resources.Profiler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Long.toHexString;
@@ -108,6 +112,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.ThreadTestUtils.fork;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
+@ExtendWith( {ProfilerExtension.class} )
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     // Sub-classes can override this. The reason this isn't a constructor parameter is that it would require this test class
@@ -116,6 +121,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     // constructors on a test class. Making this class abstract and have one sub-class with no specific open options and another for
     // specific open options seemed a bit excessive, that's all.
     protected OpenOption[] openOptions = new OpenOption[0];
+
+    @Inject
+    private Profiler profiler;
 
     protected PagedFile map( PageCache pageCache, File file, int filePageSize, OpenOption... options ) throws IOException
     {
@@ -1906,6 +1914,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
+            profiler.profile();
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordCount, recordSize );
             long lastFilePageId = (recordCount / recordsPerFilePage) - 1;
