@@ -19,19 +19,23 @@
  */
 package org.neo4j.cypher.internal
 
-import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.compiler.MissingLabelNotification
+import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
+import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
-  * The result of one cache lookup.
-  */
+ * The result of one cache lookup.
+ */
 sealed trait CacheLookup[EXECUTABLE_QUERY] {
   def executableQuery: EXECUTABLE_QUERY
 }
@@ -40,8 +44,8 @@ case class CacheMiss[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extend
 case class CacheDisabled[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
 
 /**
-  * Tracer for cache activity.
-  */
+ * Tracer for cache activity.
+ */
 trait CacheTracer[QUERY_KEY] {
   def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit
 
@@ -55,22 +59,20 @@ trait CacheTracer[QUERY_KEY] {
 }
 
 /**
-  * Cache which maps query strings into CachedExecutableQueries.
-  *
-  * This cache knows that CachedExecutableQueries can become stale, and uses a
-  * PlanStalenessCaller to verify that CEQs are reusable before returning. A CEQ
-  * which is detected in the cache, but is found to be stale
-  *
-  * @param maximumSize Maximum size of this cache
-  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
-  * @param tracer Traces cache activity
-  */
+ * Cache which maps query strings into CachedExecutableQueries.
+ *
+ * This cache knows that CachedExecutableQueries can become stale, and uses a
+ * PlanStalenessCaller to verify that CEQs are reusable before returning. A CEQ
+ * which is detected in the cache, but is found to be stale
+ *
+ * @param maximumSize Maximum size of this cache
+ * @param stalenessCaller Decided whether CachedExecutionPlans are stale
+ * @param tracer Traces cache activity
+ */
 class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
-    val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+                                                                                                                             val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
   private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
-
-  import QueryCache.NOT_PRESENT
 
   /*
     * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
@@ -104,16 +106,16 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   }
 
   /**
-    * Retrieve the CachedExecutionPlan associated with the given queryKey, or compile, cache and
-    * return the query if it is not in the cache, or the cached execution plan is stale.
-    *
-    * @param queryKey the queryKey to retrieve the execution plan for
-    * @param tc TransactionalContext in which to compile and compute staleness
-    * @param compile Compiler to use if the query is not cached or stale
-    * @param recompile Recompile function to use if the query is deemed hot
-    * @param metaData String which will be passed to the CacheTracer
-    * @return A CacheLookup with an CachedExecutionPlan
-    */
+   * Retrieve the CachedExecutionPlan associated with the given queryKey, or compile, cache and
+   * return the query if it is not in the cache, or the cached execution plan is stale.
+   *
+   * @param queryKey the queryKey to retrieve the execution plan for
+   * @param tc TransactionalContext in which to compile and compute staleness
+   * @param compile Compiler to use if the query is not cached or stale
+   * @param recompile Recompile function to use if the query is deemed hot
+   * @param metaData String which will be passed to the CacheTracer
+   * @return A CacheLookup with an CachedExecutionPlan
+   */
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
                              compile: () => EXECUTABLE_QUERY,
@@ -171,19 +173,19 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   }
 
   /**
-    * Ensure this query is recompiled and put it in the cache.
-    *
-    * Compilation is either done in this thread, or by some other thread if it got there
-    * first. Regardless of who does it, this is treated as a cache miss, because it will
-    * take a long time. The only exception is if hitCache is true, which should only happen
-    * when we are forced to recompile due to previously present warnings not being valid anymore
-    */
+   * Ensure this query is recompiled and put it in the cache.
+   *
+   * Compilation is either done in this thread, or by some other thread if it got there
+   * first. Regardless of who does it, this is treated as a cache miss, because it will
+   * take a long time. The only exception is if hitCache is true, which should only happen
+   * when we are forced to recompile due to previously present warnings not being valid anymore
+   */
   private def compileAndCache(queryKey: QUERY_KEY,
-                        tc: TransactionalContext,
-                        compile: () => EXECUTABLE_QUERY,
-                        metaData: String,
-                        hitCache: Boolean = false
-                       ): CacheLookup[EXECUTABLE_QUERY] = {
+                              tc: TransactionalContext,
+                              compile: () => EXECUTABLE_QUERY,
+                              metaData: String,
+                              hitCache: Boolean = false
+                             ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {
       val cachedValue = new CachedValue(newExecutableQuery, recompiled = false)
@@ -213,10 +215,10 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   }
 
   /**
-    * Method for clearing the LRUCache
-    *
-    * @return the number of elements in the cache prior to the clearing
-    */
+   * Method for clearing the LRUCache
+   *
+   * @return the number of elements in the cache prior to the clearing
+   */
   def clear(): Long = {
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()
@@ -231,11 +233,11 @@ object QueryCache {
   type ParameterTypeMap = Map[String, Class[_]]
 
   /**
-    * Use this method to extract ParameterTypeMap from MapValue that represents parameters
-    */
+   * Use this method to extract ParameterTypeMap from MapValue that represents parameters
+   */
   def extractParameterTypeMap(value: MapValue): ParameterTypeMap = {
     val resultMap = Map.newBuilder[String, Class[_]]
-    for(key <- value.keySet().iterator()) {
+    for(key <- value.keySet().iterator().asScala) {
       resultMap += ((key, value.get(key).getClass))
     }
     resultMap.result()

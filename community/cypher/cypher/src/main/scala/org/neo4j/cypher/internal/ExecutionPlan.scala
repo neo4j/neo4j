@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext, ResourceManager, ResourceMonitor}
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -37,9 +41,9 @@ abstract class ExecutionPlan {
           subscriber: QuerySubscriber): RuntimeResult
 
   /**
-    * @return if this ExecutionPlan needs a thread safe cursor factory and resource manager factory to be used from the TransactionBoundQueryContext,
-    *         then it has to override this method and provide it here.
-    */
+   * @return if this ExecutionPlan needs a thread safe cursor factory and resource manager factory to be used from the TransactionBoundQueryContext,
+   *         then it has to override this method and provide it here.
+   */
   def threadSafeExecutionResources(): Option[(CursorFactory, ResourceManagerFactory)] = None
 
   def runtimeName: RuntimeName

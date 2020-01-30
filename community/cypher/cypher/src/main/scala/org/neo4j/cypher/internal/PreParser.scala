@@ -19,32 +19,39 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.CypherExpressionEngineOption
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.{InvalidArgumentException, SyntaxException}
-import org.neo4j.cypher.internal.PreParser._
+import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.SyntaxException
 
 import scala.util.matching.Regex
 
 /**
-  * Preparses Cypher queries.
-  *
-  * The PreParser converts queries like
-  *
-  *   'CYPHER 3.5 planner=cost,runtime=slotted MATCH (n) RETURN n'
-  *
-  * into
-  *
-  * PreParsedQuery(
-  *   statement: 'MATCH (n) RETURN n'
-  *   options: QueryOptions(
-  *     planner: 'cost'
-  *     runtime: 'slotted'
-  *     version: '3.5'
-  *   )
-  * )
-  */
+ * Preparses Cypher queries.
+ *
+ * The PreParser converts queries like
+ *
+ *   'CYPHER 3.5 planner=cost,runtime=slotted MATCH (n) RETURN n'
+ *
+ * into
+ *
+ * PreParsedQuery(
+ *   statement: 'MATCH (n) RETURN n'
+ *   options: QueryOptions(
+ *     planner: 'cost'
+ *     runtime: 'slotted'
+ *     version: '3.5'
+ *   )
+ * )
+ */
 class PreParser(configuredVersion: CypherVersion,
                 configuredPlanner: CypherPlannerOption,
                 configuredRuntime: CypherRuntimeOption,
@@ -56,22 +63,22 @@ class PreParser(configuredVersion: CypherVersion,
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
   /**
-    * Clear the pre-parser query cache.
-    *
-    * @return the number of entries cleared
-    */
+   * Clear the pre-parser query cache.
+   *
+   * @return the number of entries cleared
+   */
   def clearCache(): Long = {
     preParsedQueries.clear()
   }
 
   /**
-    * Pre-parse a user-specified cypher query.
-    *
-    * @param queryText the query
-    * @param profile true if the query should be profiled even if profile is not given as a pre-parser option
-    * @throws SyntaxException if there are syntactic errors in the pre-parser options
-    * @return the pre-parsed query
-    */
+   * Pre-parse a user-specified cypher query.
+   *
+   * @param queryText the query
+   * @param profile true if the query should be profiled even if profile is not given as a pre-parser option
+   * @throws SyntaxException if there are syntactic errors in the pre-parser options
+   * @return the pre-parsed query
+   */
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
     val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
@@ -83,7 +90,7 @@ class PreParser(configuredVersion: CypherVersion,
     val preParsedStatement = CypherPreParser(queryText)
     val isPeriodicCommit = PreParser.periodicCommitHintRegex.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
-    val options = queryOptions(preParsedStatement.options,
+    val options = PreParser.queryOptions(preParsedStatement.options,
       preParsedStatement.offset,
       isPeriodicCommit,
       configuredVersion,

@@ -21,9 +21,15 @@ package org.neo4j.cypher.operations
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.operations.CursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
-import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.cypher.operations.CursorUtils.nodeGetProperty
+import org.neo4j.cypher.operations.CursorUtils.nodeHasLabel
+import org.neo4j.cypher.operations.CursorUtils.relationshipGetProperty
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 
 class CursorUtilsTest extends CypherFunSuite {
 

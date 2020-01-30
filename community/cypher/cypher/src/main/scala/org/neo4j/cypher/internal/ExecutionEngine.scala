@@ -19,34 +19,41 @@
  */
 package org.neo4j.cypher.internal
 
-import java.time.Clock
 import java.lang
+import java.time.Clock
 
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
+import org.neo4j.cypher.internal.ExecutionEngine.JitCompilation
+import org.neo4j.cypher.internal.ExecutionEngine.NEVER_COMPILE
+import org.neo4j.cypher.internal.ExecutionEngine.QueryCompilation
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
-import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput}
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
 
 /**
-  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
-  * operation. Please make sure this will be constructed only once and properly reused.
-  */
+ * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
+ * operation. Please make sure this will be constructed only once and properly reused.
+ */
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
@@ -83,10 +90,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val planStalenessCaller =
     new PlanStalenessCaller[ExecutableQuery](clock,
-                                             config.statsDivergenceCalculator,
-                                             lastCommittedTxIdProvider,
-                                             planReusabilitiy,
-                                             log)
+      config.statsDivergenceCalculator,
+      lastCommittedTxIdProvider,
+      planReusabilitiy,
+      log)
 
 
   private val toStringCacheTracer: CacheTracer[Pair[AnyRef, ParameterTypeMap]] = new CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
@@ -119,18 +126,18 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // ACTUAL FUNCTIONALITY
 
   /**
-    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
-    * This method assumes this is the only query running within the transaction, and therefor will register transaction closing
-    * with the TaskCloser
-    *
-    * @param query the query to execute
-    * @param params the parameters of the query
-    * @param context the transactional context in which to run the query
-    * @param profile if `true` run with profiling enabled
-    * @param prePopulate if `true` pre populate all results
-    * @param subscriber the subscriber where results will be streamed
-    * @return a `QueryExecution` that controls the demand to the subscriber
-    */
+   * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
+   * This method assumes this is the only query running within the transaction, and therefor will register transaction closing
+   * with the TaskCloser
+   *
+   * @param query the query to execute
+   * @param params the parameters of the query
+   * @param context the transactional context in which to run the query
+   * @param profile if `true` run with profiling enabled
+   * @param prePopulate if `true` pre populate all results
+   * @param subscriber the subscriber where results will be streamed
+   * @return a `QueryExecution` that controls the demand to the subscriber
+   */
   def execute(query: String,
               params: MapValue,
               context: TransactionalContext,
@@ -142,16 +149,16 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   /**
-    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
-    * Note. This method will monitor the query start after it has been parsed. The caller is responsible for monitoring any query failing before this point.
-    *
-    * @param query       the query to execute
-    * @param params      the parameters of the query
-    * @param context     the context in which to run the query
-    * @param prePopulate if `true` pre populate all results
-    * @param subscriber  the subscriber where results will be streamed
-    * @return a `QueryExecution` that controls the demand to the subscriber
-    */
+   * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
+   * Note. This method will monitor the query start after it has been parsed. The caller is responsible for monitoring any query failing before this point.
+   *
+   * @param query       the query to execute
+   * @param params      the parameters of the query
+   * @param context     the context in which to run the query
+   * @param prePopulate if `true` pre populate all results
+   * @param subscriber  the subscriber where results will be streamed
+   * @return a `QueryExecution` that controls the demand to the subscriber
+   */
   def execute(query: FullyParsedQuery,
               params: MapValue,
               context: TransactionalContext,
@@ -166,19 +173,19 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   /**
-    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
-    * This method assumes the query is running as one of many queries within a single transaction and therefor needs
-    * to be told using the shouldCloseTransaction field if the TaskCloser needs to have a transaction close registered.
-    *
-    * @param query the query to execute
-    * @param params the parameters of the query
-    * @param context the transactional context in which to run the query
-    * @param isOutermostQuery provide `true` if this is the outer-most query and should close the transaction when finished or error
-    * @param profile if `true` run with profiling enabled
-    * @param prePopulate if `true` pre populate all results
-    * @param subscriber the subscriber where results will be streamed
-    * @return a `QueryExecution` that controls the demand to the subscriber
-    */
+   * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
+   * This method assumes the query is running as one of many queries within a single transaction and therefor needs
+   * to be told using the shouldCloseTransaction field if the TaskCloser needs to have a transaction close registered.
+   *
+   * @param query the query to execute
+   * @param params the parameters of the query
+   * @param context the transactional context in which to run the query
+   * @param isOutermostQuery provide `true` if this is the outer-most query and should close the transaction when finished or error
+   * @param profile if `true` run with profiling enabled
+   * @param prePopulate if `true` pre populate all results
+   * @param subscriber the subscriber where results will be streamed
+   * @return a `QueryExecution` that controls the demand to the subscriber
+   */
   def executeSubQuery(query: String,
                       params: MapValue,
                       context: TransactionalContext,
@@ -241,7 +248,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         params: MapValue): (QueryCompilation, JitCompilation) = {
 
     val compiledExpressionCompiler = () => masterCompiler.compile(inputQuery.withRecompilationLimitReached,
-                                                                  tracer, transactionalContext, params)
+      tracer, transactionalContext, params)
     val interpretedExpressionCompiler = () => masterCompiler.compile(inputQuery, tracer, transactionalContext, params)
     //check if we need to jit compiling of queries
     if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0) {
@@ -252,7 +259,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       (compiledExpressionCompiler, NEVER_COMPILE)
     } else {
       //In the other cases we have no recompilation step
-     (interpretedExpressionCompiler, NEVER_COMPILE)
+      (interpretedExpressionCompiler, NEVER_COMPILE)
     }
   }
 
@@ -274,10 +281,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val (primaryCompiler, secondaryCompiler) = compilers(inputQuery, tracer, tc, params)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
-                                                            tc,
-                                                            primaryCompiler,
-                                                            secondaryCompiler,
-                                                            inputQuery.description)
+          tc,
+          primaryCompiler,
+          secondaryCompiler,
+          inputQuery.description)
         val executableQuery = cacheLookup.executableQuery
 
         if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {

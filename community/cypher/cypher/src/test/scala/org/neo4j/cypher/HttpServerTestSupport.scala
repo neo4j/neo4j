@@ -20,10 +20,13 @@
 package org.neo4j.cypher
 
 import java.io.IOException
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
 
 import scala.collection.mutable
 

@@ -23,12 +23,13 @@ import java.lang
 import java.util.Optional
 
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 
 /**
-  * Results, as produced by a updating system command.
-  */
+ * Results, as produced by a updating system command.
+ */
 case class UpdatingSystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext) extends RuntimeResult {
   override val fieldNames: Array[String] = Array.empty
 

@@ -19,10 +19,16 @@
  */
 package org.neo4j.cypher.internal.planning.notification
 
-import org.neo4j.cypher.internal.compiler.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
-import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, PlanContext, SlowContains}
-import org.neo4j.cypher.internal.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeIndexContainsScan, NodeIndexEndsWithScan}
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.util.InternalNotification
 
 case class checkForIndexLimitation(planContext: PlanContext) extends NotificationChecker {

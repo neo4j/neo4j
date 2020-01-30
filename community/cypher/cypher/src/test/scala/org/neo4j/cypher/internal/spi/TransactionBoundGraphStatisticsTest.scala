@@ -21,15 +21,20 @@ package org.neo4j.cypher.internal.spi
 
 import java.util.Collections.singletonList
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, Selectivity}
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{IndexPrototype, SchemaDescriptor}
+import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.logging.Log
 
 class TransactionBoundGraphStatisticsTest extends CypherFunSuite {

@@ -20,26 +20,29 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => legacy}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
+import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.{expressions => ast}
-import org.parboiled.scala._
+import org.neo4j.cypher.internal
+import org.parboiled.scala.EOI
 
-class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
+class CaseExpressionTest extends ParserTest[internal.expressions.Expression, commands.expressions.Expression] with Expressions {
   implicit val parserToTest = CaseExpression ~ EOI
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE"))), None)
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE"))), None)
 
     parsing(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), None)
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), None)
 
     parsing(
       """CASE 1
@@ -47,22 +50,22 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), Some(legacy.Literal("DEFAULT")))
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), Some(commands.expressions.Literal("DEFAULT")))
   }
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      legacy.GenericCase(IndexedSeq((True(), legacy.Literal("ONE"))), None)
+      commands.expressions.GenericCase(IndexedSeq((True(), commands.expressions.Literal("ONE"))), None)
 
-    val alt1 = (Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
-    val alt2 = (predicates.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
+    val alt1 = (Equals(commands.expressions.Literal(1), commands.expressions.Literal(2)), commands.expressions.Literal("ONE"))
+    val alt2 = (predicates.Equals(commands.expressions.Literal(2), commands.expressions.Literal("apa")), commands.expressions.Literal("TWO"))
 
     parsing(
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""") shouldGive
-      legacy.GenericCase(IndexedSeq(alt1, alt2), None)
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
 
     parsing(
       """CASE
@@ -70,9 +73,9 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""") shouldGive
-      legacy.GenericCase(IndexedSeq(alt1, alt2), Some(legacy.Literal("OTHER")))
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(commands.expressions.Literal("OTHER")))
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-  def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

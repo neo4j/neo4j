@@ -20,20 +20,21 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.util.matching.Regex
 
 /**
-  * Match on the name of a plan.
-  */
+ * Match on the name of a plan.
+ */
 trait PlanNameMatcher extends Matcher[InternalPlanDescription] {
   val expectedName: String
 }
 
 /**
-  * Match the name exactly
-  */
+ * Match the name exactly
+ */
 case class PlanExactNameMatcher(expectedName: String) extends PlanNameMatcher {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     MatchResult(
@@ -45,8 +46,8 @@ case class PlanExactNameMatcher(expectedName: String) extends PlanNameMatcher {
 }
 
 /**
-  * Match the name by Regex
-  */
+ * Match the name by Regex
+ */
 case class PlanRegexNameMatcher(expectedNameRegex: Regex) extends PlanNameMatcher {
   override val expectedName: String = expectedNameRegex.toString()
 

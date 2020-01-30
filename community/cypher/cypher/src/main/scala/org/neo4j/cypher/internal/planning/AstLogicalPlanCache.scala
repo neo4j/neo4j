@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.planning
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.CacheabilityInfo
+import org.neo4j.cypher.internal.PlanStalenessCaller
+import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -30,15 +34,15 @@ import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.logging.Log
 
 /**
-  * Cache which stores logical plans indexed by an AST statement.
-  *
-  * @param maximumSize Maximum size of this cache
-  * @param tracer Traces cache activity
-  * @param clock Clock used to compute logical plan staleness
-  * @param divergence Statistics divergence calculator used to compute logical plan staleness
-  * @param lastCommittedTxIdProvider Transation id provider used to compute logical plan staleness
-  * @tparam STATEMENT Type of AST statement used as key
-  */
+ * Cache which stores logical plans indexed by an AST statement.
+ *
+ * @param maximumSize Maximum size of this cache
+ * @param tracer Traces cache activity
+ * @param clock Clock used to compute logical plan staleness
+ * @param divergence Statistics divergence calculator used to compute logical plan staleness
+ * @param lastCommittedTxIdProvider Transation id provider used to compute logical plan staleness
+ * @tparam STATEMENT Type of AST statement used as key
+ */
 class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                override val tracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]],
                                                clock: Clock,
@@ -47,17 +51,17 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                log: Log)
   extends QueryCache[STATEMENT, Pair[STATEMENT, ParameterTypeMap],
     CacheableLogicalPlan](maximumSize,
-                          AstLogicalPlanCache.stalenessCaller(clock,
-                                                              divergence,
-                                                              lastCommittedTxIdProvider,
-                                                              log),
-                          tracer) {
+    AstLogicalPlanCache.stalenessCaller(clock,
+      divergence,
+      lastCommittedTxIdProvider,
+      log),
+    tracer) {
 
   def logStalePlanRemovalMonitor(log: Log): CacheTracer[STATEMENT] =
     new CacheTracer[STATEMENT] {
       override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String, maybeReason: Option[String]) {
         log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan " +
-                    s"seconds${maybeReason.fold("")(r => s". Reason: $r")}. Metadata: $metaData")
+          s"seconds${maybeReason.fold("")(r => s". Reason: $r")}. Metadata: $metaData")
       }
 
       override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}

@@ -22,56 +22,61 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.time.Clock
 
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherRuntimeOption}
-import org.neo4j.exceptions.{CantCompileQueryException, RuntimeUnsupportedException}
+import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.exceptions.RuntimeUnsupportedException
+import org.neo4j.internal.kernel.api.Cursor
+import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
 
 /**
-  * A cypher runtime. Compiles logical plans into a executable form, which can
-  * be used directly to serve the query.
-  */
+ * A cypher runtime. Compiles logical plans into a executable form, which can
+ * be used directly to serve the query.
+ */
 trait CypherRuntime[-CONTEXT <: RuntimeContext] {
 
   /**
-    * Compile a logical plan to an executable plan.
-    *
-    * WARNING: This code path is in the middle of a refactor and will be modified, changed and reworked.
-    *
-    * @param logicalQuery the logical query to compile
-    * @param context the compilation context
-    * @param securityContext the security context for the current user
-    * @return the executable plan
-    */
+   * Compile a logical plan to an executable plan.
+   *
+   * WARNING: This code path is in the middle of a refactor and will be modified, changed and reworked.
+   *
+   * @param logicalQuery the logical query to compile
+   * @param context the compilation context
+   * @param securityContext the security context for the current user
+   * @return the executable plan
+   */
   def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext = null): ExecutionPlan
 
   def name: String
 }
 
 /**
-  * LogicalQuery contains all information about a planned query that is need for a runtime
-  * to compile it to a ExecutionPlan.
-  *
-  * @param logicalPlan the logical plan
-  * @param queryText the text representation of the query (only for debugging)
-  * @param readOnly true if the query is read only
-  * @param resultColumns names of the returned result columns
-  * @param semanticTable semantic table with type information on the expressions in the query
-  * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
-  * @param providedOrders provided order of all operators in the logical plan tree
-  * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
-  * @param periodicCommitInfo periodic commit info if relevant
-  */
+ * LogicalQuery contains all information about a planned query that is need for a runtime
+ * to compile it to a ExecutionPlan.
+ *
+ * @param logicalPlan the logical plan
+ * @param queryText the text representation of the query (only for debugging)
+ * @param readOnly true if the query is read only
+ * @param resultColumns names of the returned result columns
+ * @param semanticTable semantic table with type information on the expressions in the query
+ * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
+ * @param providedOrders provided order of all operators in the logical plan tree
+ * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
+ * @param periodicCommitInfo periodic commit info if relevant
+ */
 case class LogicalQuery(logicalPlan: LogicalPlan,
                         queryText: String,
                         readOnly: Boolean,
@@ -83,8 +88,8 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         periodicCommitInfo: Option[PeriodicCommitInfo])
 
 /**
-  * Context in which the Runtime performs physical planning
-  */
+ * Context in which the Runtime performs physical planning
+ */
 abstract class RuntimeContext {
   def tokenContext: TokenContext
   def schemaRead: SchemaRead
@@ -94,15 +99,15 @@ abstract class RuntimeContext {
 }
 
 /**
-  * Manager of runtime contexts.
-  *
-  * @tparam CONTEXT type of runtime context managed
-  */
+ * Manager of runtime contexts.
+ *
+ * @tparam CONTEXT type of runtime context managed
+ */
 trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
 
   /**
-    * Create a new runtime context.
-    */
+   * Create a new runtime context.
+   */
   def create(tokenContext: TokenContext,
              schemaRead: SchemaRead,
              clock: Clock,
@@ -114,23 +119,23 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
             ): CONTEXT
 
   /**
-    * Assert that all acquired resources have been released back to their central pools.
-    *
-    * Examples of such resources would be worker threads and [[Cursor]]
-    */
+   * Assert that all acquired resources have been released back to their central pools.
+   *
+   * Examples of such resources would be worker threads and [[Cursor]]
+   */
   @throws[RuntimeResourceLeakException]
   def assertAllReleased(): Unit
 }
 
 /**
-  * Exception thrown by [[RuntimeContextManager.assertAllReleased()]] if some resource is
-  * found not to be released.
-  */
+ * Exception thrown by [[RuntimeContextManager.assertAllReleased()]] if some resource is
+ * found not to be released.
+ */
 class RuntimeResourceLeakException(msg: String) extends IllegalStateException(msg)
 
 /**
-  * Cypher runtime representing a user-selected runtime which is not supported.
-  */
+ * Cypher runtime representing a user-selected runtime which is not supported.
+ */
 case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
@@ -139,11 +144,11 @@ case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[Runtim
 }
 
 /**
-  * Composite cypher runtime, which attempts to compile using several different runtimes before giving up.
-  *
-  * @param runtimes the runtimes to attempt to compile with, in order of priority
-  * @param requestedRuntime the requested runtime, used to provide error messages
-  */
+ * Composite cypher runtime, which attempts to compile using several different runtimes before giving up.
+ *
+ * @param runtimes the runtimes to attempt to compile with, in order of priority
+ * @param requestedRuntime the requested runtime, used to provide error messages
+ */
 class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
                                                  requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
@@ -165,7 +170,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
         val plan = runtime.compileToExecutable(logicalQuery, context)
         val notifications = logger.notifications
         val notifiedPlan = if (notifications.isEmpty) plan else ExecutionPlanWithNotifications(plan, notifications)
-       return notifiedPlan
+        return notifiedPlan
       } catch {
         case e: CantCompileQueryException =>
           lastException = e

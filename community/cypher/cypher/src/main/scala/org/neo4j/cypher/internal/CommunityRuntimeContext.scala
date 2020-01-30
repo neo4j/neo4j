@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption}
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
 
 /**
-  * The regular community runtime context.
-  */
+ * The regular community runtime context.
+ */
 case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    schemaRead: SchemaRead,
                                    log: Log,

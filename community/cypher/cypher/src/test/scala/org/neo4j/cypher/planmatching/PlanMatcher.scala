@@ -19,24 +19,33 @@
  */
 package org.neo4j.cypher.planmatching
 
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
-import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
-import org.neo4j.cypher.internal.plandescription.{Arguments, _}
-import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.NoChildren
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionImpl
+import org.neo4j.cypher.internal.plandescription.SingleChild
+import org.neo4j.cypher.internal.plandescription.TwoChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.util.matching.Regex
 
 /**
-  * An immutable matcher for plan descriptions. The methods allow to obtain a new PlanMatcher and adding or overriding an assertion of this PlanMatcher.
-  */
+ * An immutable matcher for plan descriptions. The methods allow to obtain a new PlanMatcher and adding or overriding an assertion of this PlanMatcher.
+ */
 trait PlanMatcher extends Matcher[InternalPlanDescription] {
   /**
-    * @return a PlanDescription that looks like what this Matcher is trying to match.
-    */
+   * @return a PlanDescription that looks like what this Matcher is trying to match.
+   */
   def toPlanDescription: InternalPlanDescription
 
   def withName(name: String): PlanMatcher
@@ -81,10 +90,10 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 }
 
 /**
-  * Tries to find a matching plan somewhere in the tree.
-  *
-  * @param inner a PlanMatcher for the plan to find.
-  */
+ * Tries to find a matching plan somewhere in the tree.
+ *
+ * @param inner a PlanMatcher for the plan to find.
+ */
 case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def apply(plan: InternalPlanDescription): MatchResult = {
@@ -149,12 +158,12 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 }
 
 /**
-  * Tries to find a matching plan a certain amount of times in the tree.
-  *
-  * @param expectedCount the expected cound
-  * @param inner         a PlanMatcher for the plan to find.
-  * @param atLeast       if `expectedValue` is a lower bound or an expact expectation
-  */
+ * Tries to find a matching plan a certain amount of times in the tree.
+ *
+ * @param expectedCount the expected cound
+ * @param inner         a PlanMatcher for the plan to find.
+ * @param atLeast       if `expectedValue` is a lower bound or an expact expectation
+ */
 case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean = false) extends PlanMatcher {
 
   def allResults(plan: InternalPlanDescription): Seq[MatchResult] = inner(plan) +: plan.children.toIndexedSeq.flatMap(allResults)
@@ -215,8 +224,8 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 }
 
 /**
-  * Tries to match exactly against the root plan of a given InternalPlanDescription.
-  */
+ * Tries to match exactly against the root plan of a given InternalPlanDescription.
+ */
 case class ExactPlan(name: Option[PlanNameMatcher] = None,
                      estimatedRows: Option[EstimatedRowsMatcher] = None,
                      rows: Option[ActualRowsMatcher] = None,
@@ -301,16 +310,16 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     }
 
     val allResults = Seq(nameResult,
-                         estimatedRowsResult,
-                         rowsResult,
-                         dbHitsResult,
-                         timeResult,
-                         orderResult,
-                         variablesResult,
-                         otherResult,
-                         lhsResult,
-                         rhsResult,
-                         childrenResult).flatten
+      estimatedRowsResult,
+      rowsResult,
+      dbHitsResult,
+      timeResult,
+      orderResult,
+      variablesResult,
+      otherResult,
+      lhsResult,
+      rhsResult,
+      childrenResult).flatten
 
     val firstMatch = allResults.collectFirst {
       case mr if mr.matches => mr
@@ -389,11 +398,11 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
 }
 
 /**
-  * For [[PlanMatcher.toPlanDescription]] we need to sneak in arbitrary strings to the "Other" column.
-  * This Expression helps us do that.
-  *
-  * @param str the string to print in the "Other" column
-  */
+ * For [[PlanMatcher.toPlanDescription]] we need to sneak in arbitrary strings to the "Other" column.
+ * This Expression helps us do that.
+ *
+ * @param str the string to print in the "Other" column
+ */
 case class JustForToStringExpression(str: String) extends Expression {
   override def position: InputPosition = InputPosition.NONE
 

@@ -20,27 +20,30 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => legacy}
+import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.{expressions => ast}
+import org.neo4j.cypher.internal
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
-class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
+class ExpressionsTest extends ParserTest[internal.expressions.Expression, commands.expressions.Expression] with Expressions {
   implicit val parserToTest = Expression
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE"))), None)
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE"))), None)
 
     parsing(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), None)
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), None)
 
     parsing(
       """CASE 1
@@ -48,22 +51,22 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""") shouldGive
-      legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), Some(legacy.Literal("DEFAULT")))
+      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), Some(commands.expressions.Literal("DEFAULT")))
   }
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      legacy.GenericCase(IndexedSeq((True(), legacy.Literal("ONE"))), None)
+      commands.expressions.GenericCase(IndexedSeq((True(), commands.expressions.Literal("ONE"))), None)
 
-    val alt1 = (Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
-    val alt2 = (predicates.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
+    val alt1 = (Equals(commands.expressions.Literal(1), commands.expressions.Literal(2)), commands.expressions.Literal("ONE"))
+    val alt2 = (predicates.Equals(commands.expressions.Literal(2), commands.expressions.Literal("apa")), commands.expressions.Literal("TWO"))
 
     parsing(
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""") shouldGive
-      legacy.GenericCase(IndexedSeq(alt1, alt2), None)
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
 
     parsing(
       """CASE
@@ -71,60 +74,60 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""") shouldGive
-      legacy.GenericCase(IndexedSeq(alt1, alt2), Some(legacy.Literal("OTHER")))
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(commands.expressions.Literal("OTHER")))
   }
 
   test("array_indexing") {
-    val collection = legacy.ListLiteral(legacy.Literal(1), legacy.Literal(2), legacy.Literal(3), legacy.Literal(4))
+    val collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3), commands.expressions.Literal(4))
 
     parsing("[1,2,3,4][1..2]") shouldGive
-      legacy.ListSlice(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2)))
+      commands.expressions.ListSlice(collection, Some(commands.expressions.Literal(1)), Some(commands.expressions.Literal(2)))
 
     parsing("[1,2,3,4][1..2][2..3]") shouldGive
-      legacy.ListSlice(legacy.ListSlice(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2))), Some(legacy.Literal(2)), Some(legacy.Literal(3)))
+      commands.expressions.ListSlice(commands.expressions.ListSlice(collection, Some(commands.expressions.Literal(1)), Some(commands.expressions.Literal(2))), Some(commands.expressions.Literal(2)), Some(commands.expressions.Literal(3)))
 
     parsing("collection[1..2]") shouldGive
-      legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(commands.expressions.Literal(1)), Some(commands.expressions.Literal(2)))
 
     parsing("[1,2,3,4][2]") shouldGive
-      legacy.ContainerIndex(collection, legacy.Literal(2))
+      commands.expressions.ContainerIndex(collection, commands.expressions.Literal(2))
 
     parsing("[[1,2]][0][6]") shouldGive
-      legacy.ContainerIndex(legacy.ContainerIndex(legacy.ListLiteral(legacy.ListLiteral(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
+      commands.expressions.ContainerIndex(commands.expressions.ContainerIndex(commands.expressions.ListLiteral(commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2))), commands.expressions.Literal(0)), commands.expressions.Literal(6))
 
     parsing("collection[1..2][0]") shouldGive
-      legacy.ContainerIndex(legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
+      commands.expressions.ContainerIndex(commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(commands.expressions.Literal(1)), Some(commands.expressions.Literal(2))), commands.expressions.Literal(0))
 
     parsing("collection[..-2]") shouldGive
-      legacy.ListSlice(legacy.Variable("collection"), None, Some(legacy.Literal(-2)))
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), None, Some(commands.expressions.Literal(-2)))
 
     parsing("collection[1..]") shouldGive
-      legacy.ListSlice(legacy.Variable("collection"), Some(legacy.Literal(1)), None)
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(commands.expressions.Literal(1)), None)
   }
 
   test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive
-      legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))
+      commands.expressions.LiteralMap(Map("name" -> commands.expressions.Literal("Andres")))
 
     parsing("{ meta : { name: 'Andres' } }") shouldGive
-      legacy.LiteralMap(Map("meta" -> legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))))
+      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> commands.expressions.Literal("Andres")))))
 
     parsing("{ }") shouldGive
-      legacy.LiteralMap(Map())
+      commands.expressions.LiteralMap(Map())
   }
 
   test("better_map_support") {
     parsing("map.key1.key2.key3") shouldGive
-      legacy.Property(legacy.Property(legacy.Property(legacy.Variable("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
+      commands.expressions.Property(commands.expressions.Property(commands.expressions.Property(commands.expressions.Variable("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
 
     parsing("({ key: 'value' }).key") shouldGive
-      legacy.Property(legacy.LiteralMap(Map("key" -> legacy.Literal("value"))), PropertyKey("key"))
+      commands.expressions.Property(commands.expressions.LiteralMap(Map("key" -> commands.expressions.Literal("value"))), PropertyKey("key"))
 
     parsing("({ inner1: { inner2: 'Value' } }).key") shouldGive
-      legacy.Property(legacy.LiteralMap(Map("inner1" -> legacy.LiteralMap(Map("inner2" -> legacy.Literal("Value"))))), PropertyKey("key"))
+      commands.expressions.Property(commands.expressions.LiteralMap(Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> commands.expressions.Literal("Value"))))), PropertyKey("key"))
 
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-  def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

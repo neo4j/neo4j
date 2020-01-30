@@ -20,23 +20,46 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
-import org.neo4j.cypher.internal.planner.spi._
-import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.procsHelpers._
 import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, symbols => types}
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
+import org.neo4j.cypher.internal.spi.procsHelpers.asCypherType
+import org.neo4j.cypher.internal.spi.procsHelpers.asCypherValue
+import org.neo4j.cypher.internal.spi.procsHelpers.asOption
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
-import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.InternalIndexState
+import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexLimitation, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.IndexLimitation
+import org.neo4j.internal.schema.IndexOrder
+import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.IndexValueCapability
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
-
-import scala.collection.JavaConverters._
+import org.neo4j.cypher.internal.util.symbols
+import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
@@ -126,7 +149,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val isUnique = reference.isUnique
         val limitations = reference.getCapability.limitations().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
-           reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
+          reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
             case Array() => IndexOrderCapability.NONE
             case Array(IndexOrder.ASCENDING, IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
             case Array(IndexOrder.DESCENDING, schema.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
@@ -137,7 +160,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         }
         val valueCapability: ValueCapability = tps => {
           reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
-              // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
+            // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
             case IndexValueCapability.YES => tps.map(_ => CanGetValue)
             case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
@@ -154,20 +177,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   /**
-    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
-    */
+   * Translate a Cypher Type to a ValueCategory that IndexReference can handle
+   */
   private def typeToValueCategory(in: CypherType): ValueCategory = in match {
-    case _: types.IntegerType |
-         _: types.FloatType =>
+    case _: symbols.IntegerType |
+         _: symbols.FloatType =>
       ValueCategory.NUMBER
 
-    case _: types.StringType =>
+    case _: symbols.StringType =>
       ValueCategory.TEXT
 
-    case _: types.GeometryType | _: types.PointType =>
+    case _: symbols.GeometryType | _: symbols.PointType =>
       ValueCategory.GEOMETRY
 
-    case _: types.DateTimeType | _: types.LocalDateTimeType | _: types.DateType | _: types.TimeType | _: types.LocalTimeType | _: types.DurationType =>
+    case _: symbols.DateTimeType | _: symbols.LocalDateTimeType | _: symbols.DateType | _: symbols.TimeType | _: symbols.LocalTimeType | _: symbols.DurationType =>
       ValueCategory.TEMPORAL
 
     // For everything else, we don't know
@@ -176,7 +199,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-   try {
+    try {
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 

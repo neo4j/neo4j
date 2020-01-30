@@ -19,93 +19,126 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.internal.kernel.api.security.{PrivilegeAction => KernelPrivilegeAction}
+import org.neo4j.cypher.internal.ast.AccessDatabaseAction
+import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AllAdminAction
+import org.neo4j.cypher.internal.ast.AllDatabaseAction
+import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.ConstraintManagementAction
+import org.neo4j.cypher.internal.ast.CreateConstraintAction
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
+import org.neo4j.cypher.internal.ast.CreateRoleAction
+import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DenyPrivilegeAction
+import org.neo4j.cypher.internal.ast.DropConstraintAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropIndexAction
+import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
+import org.neo4j.cypher.internal.ast.IndexManagementAction
+import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
+import org.neo4j.cypher.internal.ast.SchemaManagementAction
+import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.TokenManagementAction
+import org.neo4j.internal.kernel.api.security
 
 object AdminActionMapper {
-  def asKernelAction(action: AdminAction): KernelPrivilegeAction = action match {
-    case AccessDatabaseAction => KernelPrivilegeAction.ACCESS
+  def asKernelAction(action: AdminAction): security.PrivilegeAction = action match {
+    case AccessDatabaseAction => security.PrivilegeAction.ACCESS
 
-    case StartDatabaseAction => KernelPrivilegeAction.START_DATABASE
-    case StopDatabaseAction => KernelPrivilegeAction.STOP_DATABASE
-    case CreateDatabaseAction => KernelPrivilegeAction.CREATE_DATABASE
-    case DropDatabaseAction => KernelPrivilegeAction.DROP_DATABASE
+    case StartDatabaseAction => security.PrivilegeAction.START_DATABASE
+    case StopDatabaseAction => security.PrivilegeAction.STOP_DATABASE
+    case CreateDatabaseAction => security.PrivilegeAction.CREATE_DATABASE
+    case DropDatabaseAction => security.PrivilegeAction.DROP_DATABASE
 
-    case IndexManagementAction => KernelPrivilegeAction.INDEX
-    case CreateIndexAction => KernelPrivilegeAction.CREATE_INDEX
-    case DropIndexAction => KernelPrivilegeAction.DROP_INDEX
-    case ConstraintManagementAction => KernelPrivilegeAction.CONSTRAINT
-    case SchemaManagementAction => KernelPrivilegeAction.SCHEMA
-    case CreateConstraintAction => KernelPrivilegeAction.CREATE_CONSTRAINT
-    case DropConstraintAction => KernelPrivilegeAction.DROP_CONSTRAINT
+    case IndexManagementAction => security.PrivilegeAction.INDEX
+    case CreateIndexAction => security.PrivilegeAction.CREATE_INDEX
+    case DropIndexAction => security.PrivilegeAction.DROP_INDEX
+    case ConstraintManagementAction => security.PrivilegeAction.CONSTRAINT
+    case SchemaManagementAction => security.PrivilegeAction.SCHEMA
+    case CreateConstraintAction => security.PrivilegeAction.CREATE_CONSTRAINT
+    case DropConstraintAction => security.PrivilegeAction.DROP_CONSTRAINT
 
-    case TokenManagementAction => KernelPrivilegeAction.TOKEN
-    case CreateNodeLabelAction => KernelPrivilegeAction.CREATE_LABEL
-    case CreateRelationshipTypeAction => KernelPrivilegeAction.CREATE_RELTYPE
-    case CreatePropertyKeyAction => KernelPrivilegeAction.CREATE_PROPERTYKEY
+    case TokenManagementAction => security.PrivilegeAction.TOKEN
+    case CreateNodeLabelAction => security.PrivilegeAction.CREATE_LABEL
+    case CreateRelationshipTypeAction => security.PrivilegeAction.CREATE_RELTYPE
+    case CreatePropertyKeyAction => security.PrivilegeAction.CREATE_PROPERTYKEY
 
-    case ShowUserAction => KernelPrivilegeAction.SHOW_USER
-    case CreateUserAction => KernelPrivilegeAction.CREATE_USER
-    case AlterUserAction => KernelPrivilegeAction.ALTER_USER
-    case DropUserAction => KernelPrivilegeAction.DROP_USER
+    case ShowUserAction => security.PrivilegeAction.SHOW_USER
+    case CreateUserAction => security.PrivilegeAction.CREATE_USER
+    case AlterUserAction => security.PrivilegeAction.ALTER_USER
+    case DropUserAction => security.PrivilegeAction.DROP_USER
 
-    case AllRoleActions => KernelPrivilegeAction.ROLE_MANAGEMENT
-    case ShowRoleAction => KernelPrivilegeAction.SHOW_ROLE
-    case CreateRoleAction => KernelPrivilegeAction.CREATE_ROLE
-    case DropRoleAction => KernelPrivilegeAction.DROP_ROLE
-    case AssignRoleAction => KernelPrivilegeAction.ASSIGN_ROLE
-    case RemoveRoleAction => KernelPrivilegeAction.REMOVE_ROLE
+    case AllRoleActions => security.PrivilegeAction.ROLE_MANAGEMENT
+    case ShowRoleAction => security.PrivilegeAction.SHOW_ROLE
+    case CreateRoleAction => security.PrivilegeAction.CREATE_ROLE
+    case DropRoleAction => security.PrivilegeAction.DROP_ROLE
+    case AssignRoleAction => security.PrivilegeAction.ASSIGN_ROLE
+    case RemoveRoleAction => security.PrivilegeAction.REMOVE_ROLE
 
-    case AllUserActions => KernelPrivilegeAction.USER_MANAGEMENT
-    case ShowPrivilegeAction => KernelPrivilegeAction.SHOW_PRIVILEGE
-    case GrantPrivilegeAction => KernelPrivilegeAction.GRANT_PRIVILEGE
-    case RevokePrivilegeAction => KernelPrivilegeAction.REVOKE_PRIVILEGE
-    case DenyPrivilegeAction => KernelPrivilegeAction.DENY_PRIVILEGE
+    case AllUserActions => security.PrivilegeAction.USER_MANAGEMENT
+    case ShowPrivilegeAction => security.PrivilegeAction.SHOW_PRIVILEGE
+    case GrantPrivilegeAction => security.PrivilegeAction.GRANT_PRIVILEGE
+    case RevokePrivilegeAction => security.PrivilegeAction.REVOKE_PRIVILEGE
+    case DenyPrivilegeAction => security.PrivilegeAction.DENY_PRIVILEGE
 
-    case AllDatabaseAction => KernelPrivilegeAction.DATABASE_ACTIONS
+    case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
 
-    case AllAdminAction => KernelPrivilegeAction.ADMIN
+    case AllAdminAction => security.PrivilegeAction.ADMIN
   }
 
-  def asCypherAdminAction(action: KernelPrivilegeAction): AdminAction = action match {
-    case KernelPrivilegeAction.START_DATABASE => StartDatabaseAction
-    case KernelPrivilegeAction.STOP_DATABASE => StopDatabaseAction
-    case KernelPrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
-    case KernelPrivilegeAction.DROP_DATABASE => DropDatabaseAction
+  def asCypherAdminAction(action: security.PrivilegeAction): AdminAction = action match {
+    case security.PrivilegeAction.START_DATABASE => StartDatabaseAction
+    case security.PrivilegeAction.STOP_DATABASE => StopDatabaseAction
+    case security.PrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
+    case security.PrivilegeAction.DROP_DATABASE => DropDatabaseAction
 
-    case KernelPrivilegeAction.INDEX => IndexManagementAction
-    case KernelPrivilegeAction.CREATE_INDEX => CreateIndexAction
-    case KernelPrivilegeAction.DROP_INDEX => DropIndexAction
-    case KernelPrivilegeAction.CONSTRAINT => ConstraintManagementAction
-    case KernelPrivilegeAction.SCHEMA => SchemaManagementAction
-    case KernelPrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
-    case KernelPrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
+    case security.PrivilegeAction.INDEX => IndexManagementAction
+    case security.PrivilegeAction.CREATE_INDEX => CreateIndexAction
+    case security.PrivilegeAction.DROP_INDEX => DropIndexAction
+    case security.PrivilegeAction.CONSTRAINT => ConstraintManagementAction
+    case security.PrivilegeAction.SCHEMA => SchemaManagementAction
+    case security.PrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
+    case security.PrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
 
-    case KernelPrivilegeAction.TOKEN => TokenManagementAction
-    case KernelPrivilegeAction.CREATE_LABEL => CreateNodeLabelAction
-    case KernelPrivilegeAction.CREATE_RELTYPE => CreateRelationshipTypeAction
-    case KernelPrivilegeAction.CREATE_PROPERTYKEY => CreatePropertyKeyAction
+    case security.PrivilegeAction.TOKEN => TokenManagementAction
+    case security.PrivilegeAction.CREATE_LABEL => CreateNodeLabelAction
+    case security.PrivilegeAction.CREATE_RELTYPE => CreateRelationshipTypeAction
+    case security.PrivilegeAction.CREATE_PROPERTYKEY => CreatePropertyKeyAction
 
-    case KernelPrivilegeAction.SHOW_USER => ShowUserAction
-    case KernelPrivilegeAction.CREATE_USER => CreateUserAction
-    case KernelPrivilegeAction.ALTER_USER => AlterUserAction
-    case KernelPrivilegeAction.DROP_USER => DropUserAction
+    case security.PrivilegeAction.SHOW_USER => ShowUserAction
+    case security.PrivilegeAction.CREATE_USER => CreateUserAction
+    case security.PrivilegeAction.ALTER_USER => AlterUserAction
+    case security.PrivilegeAction.DROP_USER => DropUserAction
 
-    case KernelPrivilegeAction.ROLE_MANAGEMENT => AllRoleActions
-    case KernelPrivilegeAction.SHOW_ROLE => ShowRoleAction
-    case KernelPrivilegeAction.CREATE_ROLE => CreateRoleAction
-    case KernelPrivilegeAction.DROP_ROLE => DropRoleAction
-    case KernelPrivilegeAction.ASSIGN_ROLE => AssignRoleAction
-    case KernelPrivilegeAction.REMOVE_ROLE => RemoveRoleAction
+    case security.PrivilegeAction.ROLE_MANAGEMENT => AllRoleActions
+    case security.PrivilegeAction.SHOW_ROLE => ShowRoleAction
+    case security.PrivilegeAction.CREATE_ROLE => CreateRoleAction
+    case security.PrivilegeAction.DROP_ROLE => DropRoleAction
+    case security.PrivilegeAction.ASSIGN_ROLE => AssignRoleAction
+    case security.PrivilegeAction.REMOVE_ROLE => RemoveRoleAction
 
-    case KernelPrivilegeAction.USER_MANAGEMENT => AllUserActions
-    case KernelPrivilegeAction.SHOW_PRIVILEGE => ShowPrivilegeAction
-    case KernelPrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction
-    case KernelPrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
-    case KernelPrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
+    case security.PrivilegeAction.USER_MANAGEMENT => AllUserActions
+    case security.PrivilegeAction.SHOW_PRIVILEGE => ShowPrivilegeAction
+    case security.PrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction
+    case security.PrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
+    case security.PrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
 
-    case KernelPrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
+    case security.PrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
 
-    case KernelPrivilegeAction.ADMIN => AllAdminAction
+    case security.PrivilegeAction.ADMIN => AllAdminAction
   }
 }

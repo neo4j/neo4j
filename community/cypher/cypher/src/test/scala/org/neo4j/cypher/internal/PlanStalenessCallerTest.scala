@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
-import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.time.{Clocks, FakeClock}
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodesWithLabelCardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.time.Clocks
+import org.neo4j.time.FakeClock
 
 class PlanStalenessCallerTest extends CypherFunSuite {
 

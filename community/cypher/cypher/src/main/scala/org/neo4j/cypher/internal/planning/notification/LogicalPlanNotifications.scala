@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.planning.notification
 
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InternalNotification
 
 trait NotificationChecker {

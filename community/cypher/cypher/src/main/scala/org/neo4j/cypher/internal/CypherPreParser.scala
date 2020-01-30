@@ -19,10 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.CypherPreParser.WS
+import org.neo4j.cypher.internal.CypherPreParser.keyword
+import org.neo4j.cypher.internal.CypherPreParser.parseOrThrow
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.parser.Base
 import org.neo4j.cypher.internal.util.InputPosition
-import org.parboiled.scala._
+import org.parboiled.scala.Rule0
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.group
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
@@ -46,10 +51,10 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
-      option("planner", "cost") ~ push(CostPlannerOption)
-    | option("planner", "greedy") ~ push(GreedyPlannerOption)
-    | option("planner", "idp") ~ push(IDPPlannerOption)
-    | option("planner", "dp") ~ push(DPPlannerOption)
+    option("planner", "cost") ~ push(CostPlannerOption)
+      | option("planner", "greedy") ~ push(GreedyPlannerOption)
+      | option("planner", "idp") ~ push(IDPPlannerOption)
+      | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
   def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
@@ -79,13 +84,13 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
 
   def OperatorEngine: Rule1[OperatorEnginePreParserOption] = rule("operator engine mode options") (
     option("operatorEngine", "compiled") ~ push(CompiledOperatorEngineOption)
-    | option("operatorEngine", "interpreted") ~ push(InterpretedOperatorEngineOption)
+      | option("operatorEngine", "interpreted") ~ push(InterpretedOperatorEngineOption)
   )
 
   def InterpretedPipesFallback: Rule1[InterpretedPipesFallbackPreParserOption] = rule("interpreted pipes fallback options") (
     option("interpretedPipesFallback", "disabled") ~ push(DisabledInterpretedPipesFallbackOption)
-    | option("interpretedPipesFallback", "default") ~ push(DefaultInterpretedPipesFallbackOption)
-    | option("interpretedPipesFallback", "all") ~ push(AllInterpretedPipesFallbackOption)
+      | option("interpretedPipesFallback", "default") ~ push(DefaultInterpretedPipesFallbackOption)
+      | option("interpretedPipesFallback", "all") ~ push(AllInterpretedPipesFallbackOption)
   )
 
   def Digits: Rule0 = oneOrMore("0" - "9")

@@ -23,18 +23,29 @@ import java.io.PrintWriter
 import java.lang
 import java.util.Optional
 
-import org.mockito.Mockito.{RETURNS_DEEP_STUBS, times, verify}
+import org.mockito.Mockito.RETURNS_DEEP_STUBS
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.READ_ONLY
+import org.neo4j.cypher.internal.runtime.READ_WRITE
+import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
+import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.storable.Values.intValue
 
 //noinspection NameBooleanParameters,RedundantDefaultArgument
@@ -149,7 +160,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       NormalMode,
       mock[PlanDescriptionBuilder],
       subscriber
-      )
+    )
 
   case class TestRuntimeResult(values: Seq[Int],
                                var resultRequested: Boolean = false,

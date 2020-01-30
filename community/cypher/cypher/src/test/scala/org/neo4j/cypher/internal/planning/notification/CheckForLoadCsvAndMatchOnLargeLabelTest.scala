@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal.planning.notification
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.HasHeaders
-import org.neo4j.cypher.internal.planner.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.logical.plans.{Argument, CartesianProduct, LoadCSV, NodeByLabelScan}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{Cardinality, LabelId}
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest
-    extends CypherFunSuite
-    with LogicalPlanningTestSupport {
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport {
 
   private val url = literalString("file:///tmp/foo.csv")
 
@@ -100,7 +105,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
     val start = NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty)
     val plan =
       LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false,
-              CSVResources.DEFAULT_BUFFER_SIZE)
+        CSVResources.DEFAULT_BUFFER_SIZE)
 
     checker(plan) should equal(List.empty)
   }

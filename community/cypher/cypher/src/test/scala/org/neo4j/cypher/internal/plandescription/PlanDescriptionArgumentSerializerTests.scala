@@ -19,15 +19,34 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments.{Expression => argExpression, _}
-import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
-import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
+import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.symbols.{CTBoolean, CTList, CTNode, CTString}
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
@@ -58,7 +77,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
     val nested = NestedPlanExpression(argument, expression)(pos)
 
-    serialize(argExpression(nested)) should equal("NestedPlanExpression(Argument)")
+    serialize(Arguments.Expression(nested)) should equal("NestedPlanExpression(Argument)")
   }
 
   test("projection should show multiple expressions") {

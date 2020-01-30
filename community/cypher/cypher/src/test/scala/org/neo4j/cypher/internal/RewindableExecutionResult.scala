@@ -21,11 +21,21 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscription, RecordingQuerySubscriber}
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QuerySubscription
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
+import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 trait RewindableExecutionResult {
@@ -58,8 +68,8 @@ trait RewindableExecutionResult {
 }
 
 /**
-  * Helper class to ease asserting on cypher results from scala.
-  */
+ * Helper class to ease asserting on cypher results from scala.
+ */
 class RewindableExecutionResultImplementation(val columns: Array[String],
                                               protected val result: Seq[Map[String, AnyRef]],
                                               val executionMode: ExecutionMode,
@@ -69,7 +79,6 @@ class RewindableExecutionResultImplementation(val columns: Array[String],
 
 object RewindableExecutionResult {
 
-  import scala.collection.JavaConverters._
   val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   def apply(in: Result): RewindableExecutionResult = {
@@ -77,11 +86,11 @@ object RewindableExecutionResult {
       val columns = in.columns().asScala.toArray
       val result = in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult).asInstanceOf[Map[String, AnyRef]]).toList
       new RewindableExecutionResultImplementation(columns,
-                                                  result,
-                                                  NormalMode,
-                                                  in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
-                                                  in.getQueryStatistics.asInstanceOf[QueryStatistics],
-                                                  Seq.empty)
+        result,
+        NormalMode,
+        in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
+        in.getQueryStatistics.asInstanceOf[QueryStatistics],
+        Seq.empty)
     } finally in.close()
   }
 
@@ -89,13 +98,13 @@ object RewindableExecutionResult {
             subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
     try {
       apply(runtimeResult,
-            queryContext,
-            subscriber,
-            runtimeResult.fieldNames(),
-            NormalMode,
-            () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
-            Set.empty
-            )
+        queryContext,
+        subscriber,
+        runtimeResult.fieldNames(),
+        NormalMode,
+        () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
+        Set.empty
+      )
     } finally runtimeResult.close()
   }
 
@@ -108,13 +117,13 @@ object RewindableExecutionResult {
       }
 
       apply(result,
-            queryContext,
-            subscriber,
-            result.fieldNames(),
-            executionMode,
-            () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
-            notifications
-            )
+        queryContext,
+        subscriber,
+        result.fieldNames(),
+        executionMode,
+        () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
+        notifications
+      )
     } finally result.cancel()
   }
 
@@ -137,11 +146,11 @@ object RewindableExecutionResult {
         if (row.nonEmpty) result.append(row.toMap)
       })
       new RewindableExecutionResultImplementation(columns,
-                                                  result,
-                                                  executionMode,
-                                                  planDescription(),
-                                                  subscriber.queryStatistics().asInstanceOf[QueryStatistics],
-                                                  notifications)
+        result,
+        executionMode,
+        planDescription(),
+        subscriber.queryStatistics().asInstanceOf[QueryStatistics],
+        notifications)
     } finally subscription.cancel()
   }
 }

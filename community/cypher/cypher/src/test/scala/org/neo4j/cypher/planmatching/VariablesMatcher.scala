@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.util.matching.Regex
 
 /**
-  * Asserts that a plan has certain variables
-  */
+ * Asserts that a plan has certain variables
+ */
 trait VariablesMatcher extends Matcher[InternalPlanDescription] {
   val expected: Set[String]
   def planVars(plan: InternalPlanDescription): Set[String] = plan.variables.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
 }
 
 /**
-  * Asserts that a plan has exactly the provided variables.
-  */
+ * Asserts that a plan has exactly the provided variables.
+ */
 case class ExactVariablesMatcher(expected: Set[String]) extends VariablesMatcher {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val vars = planVars(plan)
@@ -47,8 +49,8 @@ case class ExactVariablesMatcher(expected: Set[String]) extends VariablesMatcher
 }
 
 /**
-  * Asserts that a plan contains the provided variables (among others).
-  */
+ * Asserts that a plan contains the provided variables (among others).
+ */
 case class ContainsVariablesMatcher(expected: Set[String]) extends VariablesMatcher {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val vars = planVars(plan)
@@ -61,8 +63,8 @@ case class ContainsVariablesMatcher(expected: Set[String]) extends VariablesMatc
 }
 
 /**
-  * Asserts that a plan contains variables matching the provided regex (among others).
-  */
+ * Asserts that a plan contains variables matching the provided regex (among others).
+ */
 case class ContainsRegexVariablesMatcher(expectedRegexes: Set[Regex]) extends VariablesMatcher {
   override val expected: Set[String] = expectedRegexes.map(_.toString())
 

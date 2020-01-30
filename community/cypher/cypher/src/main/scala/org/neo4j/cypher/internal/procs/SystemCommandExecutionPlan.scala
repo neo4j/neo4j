@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode}
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.kernel.api.security.AccessMode
@@ -33,8 +38,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
-  */
+ * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
+ */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                       queryHandler: QueryHandler = QueryHandler.handleError(identity),
                                       source: Option[ExecutionPlan] = None,
@@ -78,9 +83,9 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 }
 
 /**
-  * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
-  * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
-  */
+ * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
+ * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
+ */
 class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
   @volatile private var ignore = false

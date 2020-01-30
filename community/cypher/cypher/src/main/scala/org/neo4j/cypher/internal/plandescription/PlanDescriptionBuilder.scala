@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.plandescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
+import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.cypher.result.QueryProfile
 
 class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              plannerName: PlannerName,
@@ -60,7 +63,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
           .addArgument(Arguments.PageCacheHitRatio, data.pageCacheHitRatio())
           .addArgument(Arguments.Time, data.time())
-        .plan
+          .plan
     }
   }
 

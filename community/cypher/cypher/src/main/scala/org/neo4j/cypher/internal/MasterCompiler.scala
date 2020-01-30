@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compiler.{DeprecatedCompiledRuntimeNotification, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.compiler.DeprecatedCompiledRuntimeNotification
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -41,28 +43,28 @@ object MasterCompiler {
 }
 
 /**
-  * Selects the correct cypher implementation based on a pre-parsed query.
-  */
+ * Selects the correct cypher implementation based on a pre-parsed query.
+ */
 class MasterCompiler(config: CypherConfiguration,
                      compilerLibrary: CompilerLibrary) {
 
   /**
-    * Clear all compiler caches.
-    *
-    * @return the maximum number of entries clear from any cache
-    */
+   * Clear all compiler caches.
+   *
+   * @return the maximum number of entries clear from any cache
+   */
   def clearCaches(): Long = {
     compilerLibrary.clearCaches()
   }
 
   /**
-    * Compile submitted query into executable query. TODO where is this used from?
-    *
-    * @param query                   query to convert
-    * @param tracer                  compilation tracer to which events of the compilation process are reported
-    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
-    * @return a compiled and executable query
-    */
+   * Compile submitted query into executable query. TODO where is this used from?
+   *
+   * @param query                   query to convert
+   * @param tracer                  compilation tracer to which events of the compilation process are reported
+   * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
+   * @return a compiled and executable query
+   */
   def compile(query: InputQuery,
               tracer: CompilationPhaseTracer,
               transactionalContext: TransactionalContext,

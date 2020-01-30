@@ -20,15 +20,207 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.plandescription.Arguments._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.functions.Point
-import org.neo4j.cypher.internal.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AlterUser
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertValidRevoke
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.CheckFrozenRole
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ConditionalApply
+import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
+import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateDatabase
+import org.neo4j.cypher.internal.logical.plans.CreateIndex
+import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRole
+import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.CrossApply
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
+import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
+import org.neo4j.cypher.internal.logical.plans.DenyRead
+import org.neo4j.cypher.internal.logical.plans.DenyTraverse
+import org.neo4j.cypher.internal.logical.plans.DenyWrite
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
+import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
+import org.neo4j.cypher.internal.logical.plans.DropDatabase
+import org.neo4j.cypher.internal.logical.plans.DropIndex
+import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
+import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
+import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.DropResult
+import org.neo4j.cypher.internal.logical.plans.DropRole
+import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.DropUser
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
+import org.neo4j.cypher.internal.logical.plans.EnsureValidNonSystemDatabase
+import org.neo4j.cypher.internal.logical.plans.EnsureValidNumberOfDatabases
+import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
+import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
+import org.neo4j.cypher.internal.logical.plans.GrantRead
+import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
+import org.neo4j.cypher.internal.logical.plans.GrantTraverse
+import org.neo4j.cypher.internal.logical.plans.GrantWrite
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSemiApply
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.LockNodes
+import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeBetween
+import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
+import org.neo4j.cypher.internal.logical.plans.RangeLessThan
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RequireRole
+import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
+import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
+import org.neo4j.cypher.internal.logical.plans.RevokeRead
+import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
+import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
+import org.neo4j.cypher.internal.logical.plans.RevokeWrite
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowDatabase
+import org.neo4j.cypher.internal.logical.plans.ShowDatabases
+import org.neo4j.cypher.internal.logical.plans.ShowDefaultDatabase
+import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
+import org.neo4j.cypher.internal.logical.plans.ShowRoles
+import org.neo4j.cypher.internal.logical.plans.ShowUsers
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StartDatabase
+import org.neo4j.cypher.internal.logical.plans.StopDatabase
+import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
+import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.plandescription.Arguments.ConstraintName
+import org.neo4j.cypher.internal.plandescription.Arguments.CountNodesExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.CountRelationshipsExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Database
+import org.neo4j.cypher.internal.plandescription.Arguments.DatabaseAction
+import org.neo4j.cypher.internal.plandescription.Arguments.DbmsAction
+import org.neo4j.cypher.internal.plandescription.Arguments.EntityByIdRhs
+import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Expression
+import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
+import org.neo4j.cypher.internal.plandescription.Arguments.Index
+import org.neo4j.cypher.internal.plandescription.Arguments.IndexName
+import org.neo4j.cypher.internal.plandescription.Arguments.InequalityIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.Arguments.Planner
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
+import org.neo4j.cypher.internal.plandescription.Arguments.Role
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.Scope
+import org.neo4j.cypher.internal.plandescription.Arguments.Signature
+import org.neo4j.cypher.internal.plandescription.Arguments.User
+import org.neo4j.cypher.internal.plandescription.Arguments.Version
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.exceptions.InternalException
 
 object LogicalPlan2PlanDescription {
@@ -118,7 +310,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name),
-                                               endLabel.map(_.name))
+          endLabel.map(_.name))
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
 
       case _: UndirectedRelationshipByIdSeek =>
@@ -386,11 +578,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case Aggregation(_, groupingExpressions, _) =>
         PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
-                            variables)
+          variables)
 
       case OrderedAggregation(_, groupingExpressions, _, _) =>
         PlanDescriptionImpl(id, "OrderedAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
-                            variables)
+          variables)
 
       case _: Create =>
         PlanDescriptionImpl(id, "Create", children, Seq.empty, variables)
@@ -412,17 +604,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case NodeCountFromCountStore(idName, labelName, _) =>
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren,
-                            Seq(CountNodesExpression(idName, labelName.map(l => l.map(_.name)))), variables)
+          Seq(CountNodesExpression(idName, labelName.map(l => l.map(_.name)))), variables)
 
       case RelationshipCountFromCountStore(idName, start, types, end, _) =>
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren,
-                            Seq(
-                              CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
-                            variables)
+          Seq(
+            CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
+          variables)
 
       case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
         PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
+          Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -495,7 +687,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case PruningVarExpand(_, fromName, dir, types, toName, min, max, maybeNodePredicate, maybeRelationshipPredicate) =>
         val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
-                                          maxLength = Some(max))
+          maxLength = Some(max))
         val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate)
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec) ++ predicatesDescription, variables)
 
@@ -536,14 +728,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, maybeNodePredicate, maybeRelationshipPredicate) =>
         val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir,
-                                                 minLength = length.min, maxLength = length.max)
+          minLength = length.min, maxLength = length.max)
         val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate)
         val modeDescr = mode match {
           case ExpandAll => "All"
           case ExpandInto => "Into"
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children,
-                            Seq(expandDescription) ++ predicatesDescription, variables)
+          Seq(expandDescription) ++ predicatesDescription, variables)
 
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
       case ShowUsers(_) =>
@@ -822,10 +1014,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def getDescriptions(label: LabelToken,
                               propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[ASTExpression],
+                              valueExpr: QueryExpression[expressions.Expression],
                               unique: Boolean,
                               readOnly: Boolean,
-                              caches: Seq[ASTExpression]): (String, Argument) = {
+                              caches: Seq[expressions.Expression]): (String, Argument) = {
 
     def findName(exactOnly: Boolean =  true) =
       if (unique && !readOnly && exactOnly) "NodeUniqueIndexSeek(Locking)"

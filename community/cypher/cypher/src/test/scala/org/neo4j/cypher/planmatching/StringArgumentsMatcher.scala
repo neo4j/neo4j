@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.planmatching
 
+import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
 import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PATTERN
-import org.neo4j.cypher.internal.plandescription.{Argument, InternalPlanDescription}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.util.matching.Regex
 
 /**
-  * Asserts that the arguments of a PlanDescription (of which some are printed in the "Other" column, while some have their own columns)
-  * contain some arguments, as serialized with [[PlanDescriptionArgumentSerializer.serialize()]]
-  */
+ * Asserts that the arguments of a PlanDescription (of which some are printed in the "Other" column, while some have their own columns)
+ * contain some arguments, as serialized with [[PlanDescriptionArgumentSerializer.serialize()]]
+ */
 trait StringArgumentsMatcher extends Matcher[InternalPlanDescription] {
   val expected: Set[String]
   def planArgs(plan: InternalPlanDescription): Set[String] = plan.arguments.toSet.map { arg: Argument =>
@@ -38,8 +40,8 @@ trait StringArgumentsMatcher extends Matcher[InternalPlanDescription] {
 }
 
 /**
-  * Asserts that the arguments contain all of what is provided as `expected`
-  */
+ * Asserts that the arguments contain all of what is provided as `expected`
+ */
 case class ContainsExactStringArgumentsMatcher(expected: Set[String]) extends StringArgumentsMatcher {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val args = planArgs(plan)
@@ -52,8 +54,8 @@ case class ContainsExactStringArgumentsMatcher(expected: Set[String]) extends St
 }
 
 /**
-  * Asserts that the arguments contain all of what is provided as `expectedRegexes` by regex matching.
-  */
+ * Asserts that the arguments contain all of what is provided as `expectedRegexes` by regex matching.
+ */
 case class ContainsRegexStringArgumentsMatcher(expectedRegexes: Set[Regex]) extends StringArgumentsMatcher {
   override val expected: Set[String] = expectedRegexes.map(_.toString())
 

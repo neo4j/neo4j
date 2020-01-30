@@ -21,11 +21,15 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
 
 import scala.util.Random
@@ -53,8 +57,8 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
       whenever(joinNode.isDefined) {
         val query =
           s"""MATCH $patternString
-              |USING JOIN ON ${joinNode.get}
-              |RETURN count(*)""".stripMargin
+             |USING JOIN ON ${joinNode.get}
+             |RETURN count(*)""".stripMargin
 
         val plan = logicalPlan(query, solver)
         joinSymbolsIn(plan) should contain(Set(joinNode.get))

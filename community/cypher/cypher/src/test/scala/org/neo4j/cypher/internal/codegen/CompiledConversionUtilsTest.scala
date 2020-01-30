@@ -20,15 +20,26 @@
 package org.neo4j.cypher.internal.codegen
 
 import java.util
-import java.util.stream.{DoubleStream, IntStream, LongStream}
+import java.util.stream.DoubleStream
+import java.util.stream.IntStream
+import java.util.stream.LongStream
 
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.BooleanArray
+import org.neo4j.values.storable.ByteArray
+import org.neo4j.values.storable.DoubleArray
+import org.neo4j.values.storable.FloatArray
+import org.neo4j.values.storable.IntArray
+import org.neo4j.values.storable.LongArray
+import org.neo4j.values.storable.ShortArray
+import org.neo4j.values.storable.StringArray
+import org.neo4j.values.storable.Values
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.collection.JavaConverters.setAsJavaSetConverter
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
@@ -73,7 +84,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   }
 
   test("should handle toSet") {
-    import scala.collection.JavaConverters._
     CompiledConversionUtils.toSet(null) should equal(Set.empty.asJava)
     CompiledConversionUtils.toSet(List(1, 1, 2, 3).asJava) should equal(Set(1, 2, 3).asJava)
     CompiledConversionUtils.toSet(IntStream.of(1, 0, 0, 1)) should equal(Set(true, false).asJava)

@@ -19,15 +19,23 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.CypherExpressionEngineOption
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
-  * Input to query execution
-  */
+ * Input to query execution
+ */
 sealed trait InputQuery {
   def options: QueryOptions
 
@@ -39,8 +47,8 @@ sealed trait InputQuery {
 }
 
 /**
-  * Query execution input as a pre-parsed Cypher query.
-  */
+ * Query execution input as a pre-parsed Cypher query.
+ */
 case class PreParsedQuery(statement: String, rawStatement: String, options: QueryOptions) extends InputQuery {
 
   val statementWithVersionAndPlanner: String = {
@@ -58,8 +66,8 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
 }
 
 /**
-  * Query execution input as a fully parsed Cypher query.
-  */
+ * Query execution input as a fully parsed Cypher query.
+ */
 case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends InputQuery {
 
   override lazy val description: String = FullyParsedQuery.prettify(this)
@@ -81,8 +89,8 @@ object FullyParsedQuery {
 }
 
 /**
-  * Query execution options
-  */
+ * Query execution options
+ */
 case class QueryOptions(offset: InputPosition,
                         isPeriodicCommit: Boolean,
                         version: CypherVersion,

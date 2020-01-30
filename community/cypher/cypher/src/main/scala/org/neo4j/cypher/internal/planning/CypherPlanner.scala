@@ -21,26 +21,76 @@ package org.neo4j.cypher.internal.planning
 
 import java.time.Clock
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.internal.AdministrationCommandRuntime
+import org.neo4j.cypher.internal.Assertion.assertionsEnabled
+import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.CypherQueryObfuscator
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.FineToReuse
+import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.MaybeReusable
+import org.neo4j.cypher.internal.PlanFingerprint
+import org.neo4j.cypher.internal.PlanFingerprintReference
+import org.neo4j.cypher.internal.PreParsedQuery
+import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.cache.LFUCache
-import org.neo4j.cypher.internal.compiler._
-import org.neo4j.cypher.internal.compiler.phases.{CypherCompatibilityVersion, LogicalPlanState, PlannerContext, PlannerContextCreator}
-import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
-import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
+import org.neo4j.cypher.internal.QueryOptions
+import org.neo4j.cypher.internal.ReusabilityState
+import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.cypher.internal.compiler
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
+import org.neo4j.cypher.internal.compiler.MissingParametersNotification
+import org.neo4j.cypher.internal.compiler.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
+import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
+import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.phases.PlannerContextCreator
+import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MultiDatabaseLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.planner.spi.DPPlannerName
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newValidating
+import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
+import org.neo4j.cypher.internal.spi.ExceptionTranslatingPlanContext
+import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.{InputPosition, InternalNotification}
-import org.neo4j.cypher.internal.{compiler, _}
-import org.neo4j.exceptions.{DatabaseAdministrationException, Neo4jException, SyntaxException}
+import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.Neo4jException
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.impl.api.SchemaStateKey
@@ -51,15 +101,15 @@ import org.neo4j.values.virtual.MapValue
 
 object CypherPlanner {
   /**
-    * This back-door is intended for quick handling of bugs and support cases
-    * where we need to inject some specific indexes and statistics.
-    */
+   * This back-door is intended for quick handling of bugs and support cases
+   * where we need to inject some specific indexes and statistics.
+   */
   var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger, Log) => PlanContext] = None
 }
 
 /**
-  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
-  */
+ * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
+ */
 case class CypherPlanner(config: CypherPlannerConfiguration,
                          clock: Clock,
                          kernelMonitors: monitoring.Monitors,
@@ -77,11 +127,11 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private val planCache: AstLogicalPlanCache[Statement] =
     new AstLogicalPlanCache(config.queryCacheSize,
-                            cacheTracer,
-                            clock,
-                            config.statsDivergenceCalculator,
-                            txIdProvider,
-                            log)
+      cacheTracer,
+      clock,
+      config.statsDivergenceCalculator,
+      txIdProvider,
+      log)
 
   monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
 
@@ -93,9 +143,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   }
 
   private val rewriterSequencer: String => RewriterStepSequencer = {
-    import Assertion._
-    import RewriterStepSequencer._
-
     if (assertionsEnabled()) newValidating else newPlain
   }
 
@@ -114,25 +161,25 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
   /**
-    * Clear the caches of this caching compiler.
-    *
-    * @return the number of entries that were cleared
-    */
+   * Clear the caches of this caching compiler.
+   *
+   * @return the number of entries that were cleared
+   */
   def clearCaches(): Long = {
     Math.max(parsedQueries.clear(), planCache.clear())
   }
 
   /**
-    * Get the parsed query from cache, or parses and caches it.
-    */
+   * Get the parsed query from cache, or parses and caches it.
+   */
   @throws(classOf[SyntaxException])
   private def getOrParse(preParsedQuery: PreParsedQuery,
-                           params: MapValue,
-                           notificationLogger: InternalNotificationLogger,
-                           offset: InputPosition,
-                           tracer: CompilationPhaseTracer,
-                           innerVariableNamer: InnerVariableNamer,
-                          ): BaseState = {
+                         params: MapValue,
+                         notificationLogger: InternalNotificationLogger,
+                         offset: InputPosition,
+                         tracer: CompilationPhaseTracer,
+                         innerVariableNamer: InnerVariableNamer,
+                        ): BaseState = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
@@ -150,14 +197,14 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   }
 
   /**
-    * Compile pre-parsed query into a logical plan.
-    *
-    * @param preParsedQuery       pre-parsed query to convert
-    * @param tracer               tracer to which events of the parsing and planning are reported
-    * @param transactionalContext transactional context to use during parsing and planning
-    * @throws Neo4jException public cypher exceptions on compilation problems
-    * @return a logical plan result
-    */
+   * Compile pre-parsed query into a logical plan.
+   *
+   * @param preParsedQuery       pre-parsed query to convert
+   * @param tracer               tracer to which events of the parsing and planning are reported
+   * @param transactionalContext transactional context to use during parsing and planning
+   * @throws Neo4jException public cypher exceptions on compilation problems
+   * @return a logical plan result
+   */
   def parseAndPlan(preParsedQuery: PreParsedQuery,
                    tracer: CompilationPhaseTracer,
                    transactionalContext: TransactionalContext,
@@ -178,14 +225,14 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   }
 
   /**
-    * Plan fully-parsed query into a logical plan.
-    *
-    * @param fullyParsedQuery     a fully-parsed query to plan
-    * @param tracer               tracer to which events of the parsing and planning are reported
-    * @param transactionalContext transactional context to use during parsing and planning
-    * @throws Neo4jException public cypher exceptions on compilation problems
-    * @return a logical plan result
-    */
+   * Plan fully-parsed query into a logical plan.
+   *
+   * @param fullyParsedQuery     a fully-parsed query to plan
+   * @param tracer               tracer to which events of the parsing and planning are reported
+   * @param transactionalContext transactional context to use during parsing and planning
+   * @throws Neo4jException public cypher exceptions on compilation problems
+   * @return a logical plan result
+   */
   @throws[Neo4jException]
   def plan(fullyParsedQuery: FullyParsedQuery,
            tracer: CompilationPhaseTracer,

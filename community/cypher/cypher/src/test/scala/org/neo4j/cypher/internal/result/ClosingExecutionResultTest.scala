@@ -20,14 +20,18 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.Neo4jException
-import org.neo4j.graphdb.{Notification, Result}
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriberAdapter}
+import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 
 class ClosingExecutionResultTest extends CypherFunSuite {
 

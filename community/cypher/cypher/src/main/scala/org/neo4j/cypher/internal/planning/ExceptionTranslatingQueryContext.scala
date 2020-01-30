@@ -22,18 +22,39 @@ package org.neo4j.cypher.internal.planning
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.graphdb.{Entity, Path}
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
+import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Path
+import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
-import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{TextValue, Value}
-import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 import scala.collection.Iterator
 
@@ -275,7 +296,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.nodeCountByCountStore(labelId))
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
-  translateException(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
+    translateException(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
 
   override def lockNodes(nodeIds: Long*): Unit =
     translateException(inner.lockNodes(nodeIds:_*))

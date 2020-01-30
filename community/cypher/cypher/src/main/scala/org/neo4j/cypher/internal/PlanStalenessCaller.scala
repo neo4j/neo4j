@@ -28,13 +28,13 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 
 /**
-  * Decides whether a plan is stale or not, depending on it's fingerprint.
-  *
-  * @param clock Clock for measuring elapsed time.
-  * @param divergenceCalculator Computes is the plan i stale depending on changes in the underlying
-  *                   statistics, and how much time has passed.
-  * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
-  */
+ * Decides whether a plan is stale or not, depending on it's fingerprint.
+ *
+ * @param clock Clock for measuring elapsed time.
+ * @param divergenceCalculator Computes is the plan i stale depending on changes in the underlying
+ *                   statistics, and how much time has passed.
+ * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
+ */
 class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
                                             divergenceCalculator: StatsDivergenceCalculator,
                                             lastCommittedTxIdProvider: () => Long,
@@ -68,9 +68,9 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
       val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
       if (divergence.divergence > threshold) {
         Stale(((currentTimeMillis - f.creationTimeMillis) / 1000).toInt,
-              Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
-                       s"which is a divergence of ${divergence.divergence} which is greater than " +
-                       s"threshold $threshold"))
+          Option(s"${divergence.key} changed from ${divergence.before} to ${divergence.after}, " +
+            s"which is a divergence of ${divergence.divergence} which is greater than " +
+            s"threshold $threshold"))
       } else {
         ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)
         NotStale

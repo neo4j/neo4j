@@ -19,20 +19,26 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.planning.CypherPlanner
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.phases.{Compatibility3_5, Compatibility4_0, Compatibility4_1}
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
+import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_0
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_1
+import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.logging.{Log, LogProvider}
-import org.neo4j.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
+import org.neo4j.logging.LogProvider
+import org.neo4j.monitoring
 
 /**
-  * Factory which creates cypher compilers.
-  */
+ * Factory which creates cypher compilers.
+ */
 class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
-                               kernelMonitors: KernelMonitors,
+                               kernelMonitors: monitoring.Monitors,
                                logProvider: LogProvider,
                                plannerConfig: CypherPlannerConfiguration,
                                runtimeConfig: CypherRuntimeConfiguration

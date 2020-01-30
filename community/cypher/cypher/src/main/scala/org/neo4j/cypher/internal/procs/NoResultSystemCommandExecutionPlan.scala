@@ -22,18 +22,25 @@ package org.neo4j.cypher.internal.procs
 import java.lang
 import java.util.Optional
 
+import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext, QueryStatistics}
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
+import org.neo4j.cypher.result.EmptyQuerySubscription
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{EmptyQuerySubscription, QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing system commands, i.e. creating or dropping roles and users.
-  */
+ * Execution plan for performing system commands, i.e. creating or dropping roles and users.
+ */
 case class NoResultSystemCommandExecutionPlan()
   extends ExecutionPlan {
 

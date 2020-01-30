@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, Rows, Time}
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 

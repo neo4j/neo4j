@@ -22,27 +22,30 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
-import org.neo4j.kernel.api.query.{CompilerInfo, QueryObfuscator}
-import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * A fully compiled query in executable form.
-  */
+ * A fully compiled query in executable form.
+ */
 trait ExecutableQuery extends CacheabilityInfo {
 
   /**
-    * Execute this executable query.
-    *
-    * @param transactionalContext           the transaction in which to execute
-    * @param isOutermostQuery               provide `true` if this is the outer-most query and should close the transaction when finished or error
-    * @param queryOptions                   execution options
-    * @param params                         the parameters
-    * @param prePopulateResults             if false, nodes and relationships might be returned as references in the results
-    * @param input                          stream of existing records as input
-    * @param subscriber                     The subscriber where results should be streamed to.
-    * @return the QueryExecution that controls the demand to the subscriber
-    */
+   * Execute this executable query.
+   *
+   * @param transactionalContext           the transaction in which to execute
+   * @param isOutermostQuery               provide `true` if this is the outer-most query and should close the transaction when finished or error
+   * @param queryOptions                   execution options
+   * @param params                         the parameters
+   * @param prePopulateResults             if false, nodes and relationships might be returned as references in the results
+   * @param input                          stream of existing records as input
+   * @param subscriber                     The subscriber where results should be streamed to.
+   * @return the QueryExecution that controls the demand to the subscriber
+   */
   def execute(transactionalContext: TransactionalContext,
               isOutermostQuery: Boolean,
               queryOptions: QueryOptions,
@@ -52,33 +55,33 @@ trait ExecutableQuery extends CacheabilityInfo {
               subscriber: QuerySubscriber): QueryExecution
 
   /**
-    * The reusability state of this executable query.
-    */
+   * The reusability state of this executable query.
+   */
   def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState
 
   /**
-    * Plan desc.
-    */
+   * Plan desc.
+   */
   def planDescription(): InternalPlanDescription
 
   /**
-    * Meta-data about the compiled used for this query.
-    */
+   * Meta-data about the compiled used for this query.
+   */
   val compilerInfo: CompilerInfo // val to force eager calculation
 
   /**
-    * Names of all parameters for this query, explicit and auto-parametrized.
-    */
+   * Names of all parameters for this query, explicit and auto-parametrized.
+   */
   val paramNames: Array[String]
 
   /**
-    * The names and values of the auto-parametrized parameters for this query.
-    */
+   * The names and values of the auto-parametrized parameters for this query.
+   */
   val extractedParams: MapValue
 
   /**
-    * Type of this query.
-    */
+   * Type of this query.
+   */
   def queryType: QueryType
 
   /**

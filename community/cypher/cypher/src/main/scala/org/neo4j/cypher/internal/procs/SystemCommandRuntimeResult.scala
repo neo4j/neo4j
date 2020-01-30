@@ -19,19 +19,24 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.{lang, util}
+import java.lang
+import java.util
 import java.util.Optional
 
-import org.neo4j.cypher.internal.result.{Error, InternalExecutionResult}
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
+import org.neo4j.cypher.internal.result.Error
+import org.neo4j.cypher.internal.result.InternalExecutionResult
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 
 /**
-  * Results, as produced by a system command.
-  */
+ * Results, as produced by a system command.
+ */
 case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
                                       execution: SystemCommandExecutionResult,
                                       subscriber: SystemCommandQuerySubscriber,

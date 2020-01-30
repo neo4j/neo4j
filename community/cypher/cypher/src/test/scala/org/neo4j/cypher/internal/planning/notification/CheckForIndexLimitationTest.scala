@@ -19,15 +19,21 @@
  */
 package org.neo4j.cypher.internal.planning.notification
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
-import org.neo4j.cypher.internal.planner.spi
-import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, PlanContext, SlowContains}
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.planner.spi
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.SlowContains
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId}
 
 class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

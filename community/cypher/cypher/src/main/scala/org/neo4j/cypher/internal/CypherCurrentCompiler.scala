@@ -19,43 +19,83 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.planning._
-import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult, _}
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.logical.plans.AlterUser
+import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MultiDatabaseLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.SchemaIndexScanUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaIndexSeekUsage
+import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planning.CypherPlanner
+import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.result.ClosingExecutionResult
+import org.neo4j.cypher.internal.result.ExplainExecutionResult
+import org.neo4j.cypher.internal.result.FailedExecutionResult
+import org.neo4j.cypher.internal.result.InternalExecutionResult
+import org.neo4j.cypher.internal.result.StandardInternalExecutionResult
+import org.neo4j.cypher.internal.runtime.DBMS
+import org.neo4j.cypher.internal.runtime.ExplainMode
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.READ_ONLY
+import org.neo4j.cypher.internal.runtime.READ_WRITE
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.ResourceMonitor
+import org.neo4j.cypher.internal.runtime.WRITE
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.{InternalNotification, TaskCloser}
-import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
-import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
-import org.neo4j.graphdb.{Notification, QueryExecutionType}
-import org.neo4j.kernel.api.query.{CompilerInfo, QueryObfuscator, SchemaIndexUsage}
-import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
+import org.neo4j.exceptions.Neo4jException
+import org.neo4j.exceptions.ParameterNotFoundException
+import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.QueryExecutionType
+import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.api.query.SchemaIndexUsage
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.monitoring.Monitors
 import org.neo4j.string.UTF8
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 /**
-  * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
-  * a query into a [[ExecutableQuery]].
-  *
-  * @param planner the planner
-  * @param runtime the runtime
-  * @param contextManager the runtime context manager
-  * @param kernelMonitors monitors support
-  * @tparam CONTEXT type of runtime context used
-  */
+ * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
+ * a query into a [[ExecutableQuery]].
+ *
+ * @param planner the planner
+ * @param runtime the runtime
+ * @param contextManager the runtime context manager
+ * @param kernelMonitors monitors support
+ * @tparam CONTEXT type of runtime context used
+ */
 case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlanner,
                                                             runtime: CypherRuntime[CONTEXT],
                                                             contextManager: RuntimeContextManager[CONTEXT],
@@ -63,15 +103,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                            ) extends org.neo4j.cypher.internal.Compiler {
 
   /**
-    * Compile [[InputQuery]] into [[ExecutableQuery]].
-    *
-    * @param query                   query to convert
-    * @param tracer                  compilation tracer to which events of the compilation process are reported
-    * @param preParsingNotifications notifications from pre-parsing
-    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
-    * @throws Neo4jException public cypher exceptions on compilation problems
-    * @return a compiled and executable query
-    */
+   * Compile [[InputQuery]] into [[ExecutableQuery]].
+   *
+   * @param query                   query to convert
+   * @param tracer                  compilation tracer to which events of the compilation process are reported
+   * @param preParsingNotifications notifications from pre-parsing
+   * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
+   * @throws Neo4jException public cypher exceptions on compilation problems
+   * @return a compiled and executable query
+   */
   override def compile(query: InputQuery,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[Notification],
@@ -117,23 +157,23 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val queryType = getQueryType(planState)
 
     val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
-                                               transactionalContext.kernelTransaction().schemaRead(),
-                                               logicalPlanResult.plannerContext.clock,
-                                               logicalPlanResult.plannerContext.debugOptions,
-                                               query.options.useCompiledExpressions,
-                                               query.options.materializedEntitiesMode,
-                                               query.options.operatorEngine,
-                                               query.options.interpretedPipesFallback)
+      transactionalContext.kernelTransaction().schemaRead(),
+      logicalPlanResult.plannerContext.clock,
+      logicalPlanResult.plannerContext.debugOptions,
+      query.options.useCompiledExpressions,
+      query.options.materializedEntitiesMode,
+      query.options.operatorEngine,
+      query.options.interpretedPipesFallback)
 
     val logicalQuery = LogicalQuery(logicalPlan,
-                                    planState.queryText,
-                                    queryType == READ_ONLY,
-                                    planState.returnColumns().toArray,
-                                    planState.semanticTable(),
-                                    planState.planningAttributes.cardinalities,
-                                    planState.planningAttributes.providedOrders,
-                                    planState.hasLoadCSV,
-                                    planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))))
+      planState.queryText,
+      queryType == READ_ONLY,
+      planState.returnColumns().toArray,
+      planState.semanticTable(),
+      planState.planningAttributes.cardinalities,
+      planState.planningAttributes.providedOrders,
+      planState.hasLoadCSV,
+      planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))))
 
     val securityContext = transactionalContext.securityContext()
     val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, securityContext)
@@ -172,7 +212,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     // check system and procedure runtimes first, because if this is true solveds will be empty
     runtime match {
       case m:AdministrationCommandRuntime if m.isApplicableAdministrationCommand(planState) =>
-          DBMS
+        DBMS
       case _ =>
         val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)
         if (procedureOrSchema.isDefined)
@@ -301,8 +341,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
             .map(asKernelNotification(Some(queryOptions.offset)))
         new ExplainExecutionResult(columns,
-                               planDescriptionBuilder.explain(),
-                               internalQueryType, allNotifications, subscriber)
+          planDescriptionBuilder.explain(),
+          internalQueryType, allNotifications, subscriber)
       } else {
 
         val runtimeResult = executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
@@ -313,13 +353,13 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         taskCloser.addTask(_ => runtimeResult.close())
 
         new StandardInternalExecutionResult(queryContext,
-                                            executionPlan.runtimeName,
-                                            runtimeResult,
-                                            taskCloser,
-                                            internalQueryType,
-                                            innerExecutionMode,
-                                            planDescriptionBuilder,
-                                            subscriber)
+          executionPlan.runtimeName,
+          runtimeResult,
+          taskCloser,
+          internalQueryType,
+          innerExecutionMode,
+          planDescriptionBuilder,
+          subscriber)
       }
 
       ClosingExecutionResult.wrapAndInitiate(

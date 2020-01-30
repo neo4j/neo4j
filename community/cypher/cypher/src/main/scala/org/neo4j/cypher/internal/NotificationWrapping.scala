@@ -19,12 +19,43 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler._
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
+import org.neo4j.cypher.internal.compiler.DeprecatedCompiledRuntimeNotification
+import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
+import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
+import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
+import org.neo4j.cypher.internal.compiler.ExperimentalFeatureNotification
+import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.MissingLabelNotification
+import org.neo4j.cypher.internal.compiler.MissingParametersNotification
+import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
+import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
+import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
+import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
+import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
+import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
+import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
+import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.graphdb
-import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationDetail
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.collection.JavaConverters.setAsJavaSetConverter
 
 object NotificationWrapping {
 

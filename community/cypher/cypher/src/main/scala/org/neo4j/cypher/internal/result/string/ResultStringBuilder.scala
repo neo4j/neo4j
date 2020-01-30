@@ -21,38 +21,46 @@ package org.neo4j.cypher.internal.result.string
 
 import java.io.PrintWriter
 
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.{QueryTransactionalContext, RuntimeScalaValueConverter, isGraphKernelResultValue}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb._
+import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Assembles result rows into a nicely formatted string table.
-  *
-  * Note: this class might be used by the docs build. Consider not changing it's
-  * signature if that's what you are doing.
-  */
+ * Assembles result rows into a nicely formatted string table.
+ *
+ * Note: this class might be used by the docs build. Consider not changing it's
+ * signature if that's what you are doing.
+ */
 object ResultStringBuilder {
 
   /**
-    * Create [[ResultStringBuilder]] without the capability to determine if
-    * entities have been deleted in this transaction.
-    *
-    * @param columns the result columns
-    */
+   * Create [[ResultStringBuilder]] without the capability to determine if
+   * entities have been deleted in this transaction.
+   *
+   * @param columns the result columns
+   */
   def apply(columns: Array[String]): ResultStringBuilder =
     new ResultStringBuilder(columns, NoTransactionSupport)
 
   /**
-    * Create [[ResultStringBuilder]] which uses a [[QueryTransactionalContext]] to annotate if
-    * entities have been deleted in this transaction.
-    *
-    * @param columns the result columns
-    * @param context the transactional context
-    */
+   * Create [[ResultStringBuilder]] which uses a [[QueryTransactionalContext]] to annotate if
+   * entities have been deleted in this transaction.
+   *
+   * @param columns the result columns
+   * @param context the transactional context
+   */
   def apply(columns: Array[String], context: TransactionalContext): ResultStringBuilder =
     new ResultStringBuilder(columns, InternalTransactionSupport(context))
 
@@ -78,8 +86,8 @@ object ResultStringBuilder {
 }
 
 /**
-  * The actual builder.
-  */
+ * The actual builder.
+ */
 class ResultStringBuilder private(columns: Array[String],
                                   deletedInTx: ResultStringBuilder.DeletedInTx) extends ResultVisitor[Exception] {
 
@@ -89,8 +97,8 @@ class ResultStringBuilder private(columns: Array[String],
   // ADD ROWS
 
   /**
-    * Add a row to this result string.
-    */
+   * Add a row to this result string.
+   */
   def addRow(row: ResultRow): Unit = {
     val stringRow = new Array[String](columns.length)
     for (i <- columns.indices) {
@@ -100,8 +108,8 @@ class ResultStringBuilder private(columns: Array[String],
   }
 
   /**
-    * addRow variant that implements [[ResultVisitor]]
-    */
+   * addRow variant that implements [[ResultVisitor]]
+   */
   override def visit(row: ResultRow): Boolean = {
     addRow(row)
     true
@@ -110,8 +118,8 @@ class ResultStringBuilder private(columns: Array[String],
   // PRODUCE RESULT
 
   /**
-    * Produce result by constructing a String which is returned.
-    */
+   * Produce result by constructing a String which is returned.
+   */
   def result(queryStatistics: QueryStatistics): String = {
     val sb = new StringBuilder
     result(sb, queryStatistics)
@@ -119,14 +127,14 @@ class ResultStringBuilder private(columns: Array[String],
   }
 
   /**
-    * Produce result by printing all lines to a provided [[PrintWriter]].
-    */
+   * Produce result by printing all lines to a provided [[PrintWriter]].
+   */
   def result(writer: PrintWriter, queryStatistics: QueryStatistics): Unit =
     FormatOutput.format(PrintWriterWrapper(writer), columns, rows, queryStatistics)
 
   /**
-    * Produce result by printing all lines to a provided [[StringBuilder]].
-    */
+   * Produce result by printing all lines to a provided [[StringBuilder]].
+   */
   def result(sb: StringBuilder, queryStatistics: QueryStatistics): Unit =
     FormatOutput.format(StringBuilderWrapper(sb), columns, rows, queryStatistics)
 

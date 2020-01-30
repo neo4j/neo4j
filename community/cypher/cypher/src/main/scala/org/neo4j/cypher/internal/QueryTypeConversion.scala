@@ -19,7 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.DBMS
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.READ_ONLY
+import org.neo4j.cypher.internal.runtime.READ_WRITE
+import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
+import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 

@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.planmatching.{CountInTree, ExactPlan, PlanInTree, PlanMatcher}
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.planmatching.CountInTree
+import org.neo4j.cypher.planmatching.ExactPlan
+import org.neo4j.cypher.planmatching.PlanInTree
+import org.neo4j.cypher.planmatching.PlanMatcher
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 trait QueryPlanTestSupport {
 
   /**
-    * Allows the syntax
-    * `plan should haveAsRoot.aPlan("ProduceResults")`
-    */
+   * Allows the syntax
+   * `plan should haveAsRoot.aPlan("ProduceResults")`
+   */
   object haveAsRoot {
     def aPlan: PlanMatcher = ExactPlan()
 
@@ -40,13 +44,13 @@ trait QueryPlanTestSupport {
   }
 
   /**
-    * Allows the syntax
-    * ```
-    * plan should includeSomewhere.aPlan("Filter")
-    * plan should includeSomewhere.nTimes(2, aPlan("Filter"))
-    * plan should includeSomewhere.atLeastNTimes(2, aPlan("Filter"))
-    * ```
-    */
+   * Allows the syntax
+   * ```
+   * plan should includeSomewhere.aPlan("Filter")
+   * plan should includeSomewhere.nTimes(2, aPlan("Filter"))
+   * plan should includeSomewhere.atLeastNTimes(2, aPlan("Filter"))
+   * ```
+   */
   object includeSomewhere {
     def aPlan: PlanMatcher = PlanInTree(ExactPlan())
 
@@ -58,12 +62,12 @@ trait QueryPlanTestSupport {
   }
 
   /**
-    * Allows the syntax
-    * ```
-    * plan should haveAsRoot.aPlan("ProduceResults")
-    * .withLHS(aPlan("Filter"))
-    * ```
-    */
+   * Allows the syntax
+   * ```
+   * plan should haveAsRoot.aPlan("ProduceResults")
+   * .withLHS(aPlan("Filter"))
+   * ```
+   */
   object aPlan {
     def apply(): PlanMatcher = haveAsRoot.aPlan
 
@@ -71,12 +75,12 @@ trait QueryPlanTestSupport {
   }
 
   /**
-    * Same as `aPlan`, but skips over plans that may be sporadically inserted by optimization passes
-    * that is of no interest to the test assertion,
-    * e.g. CacheProperties.
-    * This can make a test more resilient to changes in how those optimizations are applied, that
-    * are irrelevant to what is being tested.
-    */
+   * Same as `aPlan`, but skips over plans that may be sporadically inserted by optimization passes
+   * that is of no interest to the test assertion,
+   * e.g. CacheProperties.
+   * This can make a test more resilient to changes in how those optimizations are applied, that
+   * are irrelevant to what is being tested.
+   */
   object aSourcePlan {
     def apply(): PlanMatcher = haveAsRoot.aSourcePlan
 

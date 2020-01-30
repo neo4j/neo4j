@@ -22,17 +22,22 @@ package org.neo4j.cypher.internal.result
 import java.lang
 
 import org.neo4j.cypher.internal.QueryTypeConversion
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.{Notification, QueryExecutionType}
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.ExplainMode
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.impl.query.QueryExecution
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asJavaIterableConverter
 
 trait InternalExecutionResult extends QueryExecution {
 
   /**
-    * Perform any initial logic, such a materialization and early closing.
-    */
+   * Perform any initial logic, such a materialization and early closing.
+   */
   def initiate(): Unit
 
   def executionMode: ExecutionMode

@@ -20,16 +20,27 @@
 package org.neo4j.cypher.internal
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.mock.MockitoSugar
+import QueryCacheTest.newTracer
+import QueryCacheTest.newKey
+import QueryCacheTest.alwaysStale
+import QueryCacheTest.compileKey
+import QueryCacheTest.recompile
+import QueryCacheTest.newCache
+import QueryCacheTest.valueFromKey
+import QueryCacheTest.TC
 
 class QueryCacheTest extends CypherFunSuite {
-  import QueryCacheTest._
+
 
   test("first time accessing the cache should be a cache miss") {
     // Given
@@ -146,34 +157,34 @@ class QueryCacheTest extends CypherFunSuite {
   }
 }
 
-  object QueryCacheTest extends MockitoSugar {
-    case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
-      override def shouldBeCached: Boolean = true
+object QueryCacheTest extends MockitoSugar {
+  case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
+    override def shouldBeCached: Boolean = true
 
-      override def notifications: Set[InternalNotification] = Set.empty
-    }
+    override def notifications: Set[InternalNotification] = Set.empty
+  }
 
-    private val RECOMPILE_LIMIT = 2
-    def recompile(key: Key): Int => Option[MyValue] = (count: Int) => {
-      if (count > RECOMPILE_LIMIT) Some(MyValue(key.first())(recompiled = true))
-      else None
-    }
+  private val RECOMPILE_LIMIT = 2
+  def recompile(key: Key): Int => Option[MyValue] = (count: Int) => {
+    if (count > RECOMPILE_LIMIT) Some(MyValue(key.first())(recompiled = true))
+    else None
+  }
 
-    val TC: TransactionalContext = mock[TransactionalContext]
-    type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
-    type Key = Pair[String, Map[String, Class[_]]]
+  val TC: TransactionalContext = mock[TransactionalContext]
+  type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
+  type Key = Pair[String, Map[String, Class[_]]]
 
-    def compileKey(key: Key): () => MyValue = () => valueFromKey(key)
+  def compileKey(key: Key): () => MyValue = () => valueFromKey(key)
 
-    def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
+  def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
 
-   def newCache(tracer: Tracer = newTracer(), stalenessCaller:PlanStalenessCaller[MyValue] = neverStale()): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
+  def newCache(tracer: Tracer = newTracer(), stalenessCaller:PlanStalenessCaller[MyValue] = neverStale()): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
     new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](10, stalenessCaller, tracer)
   }
 
-   def newTracer(): Tracer = mock[Tracer]
+  def newTracer(): Tracer = mock[Tracer]
 
-   def neverStale(): PlanStalenessCaller[MyValue] = {
+  def neverStale(): PlanStalenessCaller[MyValue] = {
     val stalenessCaller: PlanStalenessCaller[MyValue] = mock[PlanStalenessCaller[MyValue]]
     when(stalenessCaller.staleness(any[TransactionalContext], any[MyValue])).thenReturn(NotStale)
     stalenessCaller

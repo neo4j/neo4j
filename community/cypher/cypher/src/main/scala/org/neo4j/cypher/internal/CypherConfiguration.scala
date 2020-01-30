@@ -21,14 +21,26 @@ package org.neo4j.cypher.internal
 
 import java.io.File
 
-import org.neo4j.configuration.{Config, GraphDatabaseSettings, SettingChangeListener}
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.SettingChangeListener
+import org.neo4j.cypher.CypherExpressionEngineOption
+import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.runtime.MEMORY_BOUND
+import org.neo4j.cypher.internal.runtime.MEMORY_TRACKING
+import org.neo4j.cypher.internal.runtime.MemoryTracking
+import org.neo4j.cypher.internal.runtime.MemoryTrackingController
+import org.neo4j.cypher.internal.runtime.NO_TRACKING
 
 /**
-  * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
-  */
+ * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
+ */
 object CypherConfiguration {
   def fromConfig(config: Config): CypherConfiguration = {
     CypherConfiguration(
@@ -66,10 +78,10 @@ object CypherConfiguration {
     val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
     val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm).toString
     StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm,
-                                                      divergenceThreshold,
-                                                      targetThreshold,
-                                                      minReplanTime,
-                                                      targetReplanTime)
+      divergenceThreshold,
+      targetThreshold,
+      minReplanTime,
+      targetReplanTime)
   }
 }
 
@@ -83,16 +95,16 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
   override def memoryTracking: MemoryTracking = _memoryTracking
 
   config.addListener(GraphDatabaseSettings.track_query_allocation,
-                     new SettingChangeListener[java.lang.Boolean] {
-                       override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
-                         _memoryTracking = getMemoryTracking(after, config.get(GraphDatabaseSettings.query_max_memory))
-                     })
+    new SettingChangeListener[java.lang.Boolean] {
+      override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
+        _memoryTracking = getMemoryTracking(after, config.get(GraphDatabaseSettings.query_max_memory))
+    })
 
   config.addListener(GraphDatabaseSettings.query_max_memory,
-                     new SettingChangeListener[java.lang.Long] {
-                       override def accept(before: java.lang.Long, after: java.lang.Long): Unit =
-                        _memoryTracking = getMemoryTracking(config.get(GraphDatabaseSettings.track_query_allocation), after)
-                     })
+    new SettingChangeListener[java.lang.Long] {
+      override def accept(before: java.lang.Long, after: java.lang.Long): Unit =
+        _memoryTracking = getMemoryTracking(config.get(GraphDatabaseSettings.track_query_allocation), after)
+    })
 
   private def getMemoryTracking(trackQueryAllocation: Boolean, queryMaxMemory: Long): MemoryTracking =
     if (trackQueryAllocation && queryMaxMemory > 0) MEMORY_BOUND(queryMaxMemory)

@@ -19,7 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.CompiledExpressionOption
+import org.neo4j.cypher.internal.CompiledRuntimeOption
+import org.neo4j.cypher.internal.ConfigurationOptions
+import org.neo4j.cypher.internal.CostPlannerOption
+import org.neo4j.cypher.internal.CypherPreParser
+import org.neo4j.cypher.internal.DPPlannerOption
+import org.neo4j.cypher.internal.DebugOption
+import org.neo4j.cypher.internal.EagerOption
+import org.neo4j.cypher.internal.ExplainOption
+import org.neo4j.cypher.internal.IDPPlannerOption
+import org.neo4j.cypher.internal.InterpretedExpressionOption
+import org.neo4j.cypher.internal.InterpretedRuntimeOption
+import org.neo4j.cypher.internal.PreParsedStatement
+import org.neo4j.cypher.internal.ProfileOption
+import org.neo4j.cypher.internal.SlottedRuntimeOption
+import org.neo4j.cypher.internal.VersionOption
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -52,11 +67,11 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
     ("CYPHER 2.3 planner=dp runtime=legacy_compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(DPPlannerOption, CompiledRuntimeOption))), (1, 47, 46))),
     ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
-      (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
+    (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
     ("CYPHER 2.3 planner=idp runtime=legacy_compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(IDPPlannerOption, CompiledRuntimeOption))), (1, 48, 47))),
     ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
-      (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
+    (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
     ("explainmatch", PreParsedStatement("explainmatch", Seq.empty, (1, 1, 0))),
     ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(EagerOption))), (1, 29, 28))),
     ("CYPHER debug=one debug=two RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(DebugOption("one"), DebugOption("two")))), (1, 28, 27))),

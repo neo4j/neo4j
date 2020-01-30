@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 
 /**
-  * Factory which creates cypher compilers.
-  */
+ * Factory which creates cypher compilers.
+ */
 trait CompilerFactory {
   def createCompiler(cypherVersion: CypherVersion,
                      cypherPlanner: CypherPlannerOption,

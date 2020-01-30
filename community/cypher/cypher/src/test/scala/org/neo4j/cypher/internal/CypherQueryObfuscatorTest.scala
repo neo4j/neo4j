@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
 class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("empty obfuscator should not change query text") {
@@ -168,7 +170,6 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
   }
 
   private def makeParams(params: (String, String)*): MapValue = {
-    import scala.collection.JavaConverters._
     ValueUtils.asMapValue(Map(params: _*).asJava)
   }
 

@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal
 
-import org.mockito.Mockito.{atLeastOnce, verify}
+import org.mockito.Mockito.atLeastOnce
+import org.mockito.Mockito.verify
+import org.neo4j.cypher.internal.QueryCacheTest.TC
+import org.neo4j.cypher.internal.QueryCacheTest.compileKey
+import org.neo4j.cypher.internal.QueryCacheTest.newCache
+import org.neo4j.cypher.internal.QueryCacheTest.newKey
+import org.neo4j.cypher.internal.QueryCacheTest.newTracer
+import org.neo4j.cypher.internal.QueryCacheTest.recompile
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
 
 class QueryCacheStressTest extends CypherFunSuite {
 
-  import QueryCacheTest._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   test("should recompile at least once when running from multiple threads") {
     // Given

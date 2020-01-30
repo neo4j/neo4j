@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.cache
 
 import java.util.function.Function
 
-import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 
 /**
-  * Simple thread-safe cache with a least-frequently-used eviction policy.
-  */
+ * Simple thread-safe cache with a least-frequently-used eviction policy.
+ */
 class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) {
 
   val inner: Cache[K, V] = Caffeine.newBuilder().maximumSize(size).build[K, V]()
@@ -39,9 +40,9 @@ class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) {
   def put(key: K, value: V): Unit = inner.put(key, value)
 
   /**
-    * Method for clearing the LRUCache
-    * @return the number of elements in the cache prior to the clearing
-    */
+   * Method for clearing the LRUCache
+   * @return the number of elements in the cache prior to the clearing
+   */
   def clear(): Long = {
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()

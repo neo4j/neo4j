@@ -19,12 +19,53 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
+import org.neo4j.cypher.internal.plandescription.Arguments.ConstraintName
+import org.neo4j.cypher.internal.plandescription.Arguments.CountNodesExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.CountRelationshipsExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Database
+import org.neo4j.cypher.internal.plandescription.Arguments.DatabaseAction
+import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.DbmsAction
+import org.neo4j.cypher.internal.plandescription.Arguments.EntityByIdRhs
+import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Expression
+import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
+import org.neo4j.cypher.internal.plandescription.Arguments.Index
+import org.neo4j.cypher.internal.plandescription.Arguments.IndexName
+import org.neo4j.cypher.internal.plandescription.Arguments.InequalityIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.KeyExpressions
+import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
+import org.neo4j.cypher.internal.plandescription.Arguments.MergePattern
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
+import org.neo4j.cypher.internal.plandescription.Arguments.Planner
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
+import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
+import org.neo4j.cypher.internal.plandescription.Arguments.Role
+import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.Scope
+import org.neo4j.cypher.internal.plandescription.Arguments.Signature
+import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
+import org.neo4j.cypher.internal.plandescription.Arguments.Time
+import org.neo4j.cypher.internal.plandescription.Arguments.UpdateActionName
+import org.neo4j.cypher.internal.plandescription.Arguments.User
+import org.neo4j.cypher.internal.plandescription.Arguments.Version
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "

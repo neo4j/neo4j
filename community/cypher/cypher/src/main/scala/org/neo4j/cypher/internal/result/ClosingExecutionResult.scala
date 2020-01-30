@@ -20,27 +20,31 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.NonFatalCypherError
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.{ExecutionPlanDescription, Notification, Result}
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.QuerySubscriber
 
 /**
-  * Ensures execution results are closed. This is tricky because we try to be smart about
-  * closing results automatically when
-  *
-  *  1) all result rows have been seen through the reactive API
-  *  2) any operator throws an exception
-  *
-  * In addition we also have special handling for suppressing exceptions thrown on close()
-  * after responding to a 4).
-  *
-  * Finally this class report to the [[innerMonitor]] when the query is closed.
-  *
-  * @param query metadata about the executing query
-  * @param inner the actual result
-  * @param innerMonitor monitor to report closing of the query to
-  */
+ * Ensures execution results are closed. This is tricky because we try to be smart about
+ * closing results automatically when
+ *
+ *  1) all result rows have been seen through the reactive API
+ *  2) any operator throws an exception
+ *
+ * In addition we also have special handling for suppressing exceptions thrown on close()
+ * after responding to a 4).
+ *
+ * Finally this class report to the [[innerMonitor]] when the query is closed.
+ *
+ * @param query metadata about the executing query
+ * @param inner the actual result
+ * @param innerMonitor monitor to report closing of the query to
+ */
 class ClosingExecutionResult private(val query: ExecutingQuery,
                                      val inner: InternalExecutionResult,
                                      innerMonitor: QueryExecutionMonitor,
@@ -97,7 +101,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       close(Error(t))
     } catch {
       case _: Throwable =>
-        // ignore
+      // ignore
     }
     throw t
   }

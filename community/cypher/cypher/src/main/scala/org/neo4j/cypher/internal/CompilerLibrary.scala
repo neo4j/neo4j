@@ -22,15 +22,18 @@ package org.neo4j.cypher.internal
 import java.util.concurrent.ConcurrentHashMap
 
 import org.neo4j.cypher.internal.planning.CypherPlanner
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 /**
-  * Keeps track of all cypher compilers, and finds the relevant compiler for a preparsed query.
-  *
-  * @param factory factory to create compilers
-  */
+ * Keeps track of all cypher compilers, and finds the relevant compiler for a preparsed query.
+ *
+ * @param factory factory to create compilers
+ */
 class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => ExecutionEngine) {
 
   private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
@@ -45,7 +48,7 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   def clearCaches(): Long = {
     val numClearedEntries =
-      compilers.values().collect {
+      compilers.values().asScala.collect {
         case c: CypherPlanner => c.clearCaches()
         case c: CypherCurrentCompiler[_] if c.planner.isInstanceOf[CypherPlanner] => c.planner.clearCaches()
       }

@@ -20,16 +20,27 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.javacompat.{ResultRowImpl, ResultSubscriber}
-import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.javacompat.ResultSubscriber
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.READ_ONLY
+import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.util.TaskCloser
+import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryResult, RuntimeResult, VisitableRuntimeResult}
+import org.neo4j.cypher.result.VisitableRuntimeResult
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class StandardInternalExecutionResult(context: QueryContext,

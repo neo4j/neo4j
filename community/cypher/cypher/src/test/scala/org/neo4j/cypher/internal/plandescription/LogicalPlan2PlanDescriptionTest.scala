@@ -20,16 +20,61 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments._
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.plandescription.Arguments.Index
+import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.Arguments.Planner
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.expressions.{SemanticDirection, LabelName => AstLabelName, _}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.util.attribution.{Id, IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor2
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
@@ -62,65 +107,65 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))) ->
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren,
-                            Seq(EstimatedRows(1), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
-                                PLANNER_VERSION), Set("a"))
+          Seq(EstimatedRows(1), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+            PLANNER_VERSION), Set("a"))
 
       , attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))) ->
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren,
-                            Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
-                                PLANNER_VERSION), Set("b"))
+          Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+            PLANNER_VERSION), Set("b"))
 
-      , attach(NodeByLabelScan("node", AstLabelName("X")(pos), Set.empty), 33.0) ->
+      , attach(NodeByLabelScan("node", expressions.LabelName("X")(pos), Set.empty), 33.0) ->
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren,
-                            Seq(LabelName("X"), EstimatedRows(33), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
-                                PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
+          Seq(LabelName("X"), EstimatedRows(33), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
+            PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
       , attach(
         NodeByIdSeek("node", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty),
         333.0) ->
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren,
-                            Seq(EstimatedRows(333), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
-                                PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
+          Seq(EstimatedRows(333), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
+            PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
       , attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
-                            Seq(Index("Label", Seq("Prop"), Seq.empty), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
-                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+          Seq(Index("Label", Seq("Prop"), Seq.empty), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
-                            Seq(Index("Label", Seq("Prop"), Seq(CachedProperty("x", Variable("x")(pos), PropertyKeyName("Prop")(pos), NODE_TYPE)(pos))), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
-                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+          Seq(Index("Label", Seq("Prop"), Seq(CachedProperty("x", Variable("x")(pos), PropertyKeyName("Prop")(pos), NODE_TYPE)(pos))), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(
         NodeUniqueIndexSeek("x", LabelToken("Lebal", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
-                            ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
+          ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index("Lebal", Seq("Prop"), Seq.empty), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
-                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+          Seq(Index("Lebal", Seq("Prop"), Seq.empty), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(Expand(lhsLP, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll), 95.0) ->
         PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD),
-                            Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING, 1, Some(1)),
-                                EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
-                                PLANNER_VERSION), Set("a", "r1", "b"))
+          Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING, 1, Some(1)),
+            EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+            PLANNER_VERSION), Set("a", "r1", "b"))
 
       , attach(Expand(lhsLP, "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r1", ExpandInto), 113.0) ->
         PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD),
-                            Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING, 1, Some(1)),
-                                EstimatedRows(113), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
-                                PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "r1"))
+          Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING, 1, Some(1)),
+            EstimatedRows(113), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
+            PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "r1"))
 
       , attach(NodeHashJoin(Set("a"), lhsLP, rhsLP), 2345.0) ->
         PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD),
-                            Seq(KeyNames(Seq("a")), EstimatedRows(2345), CYPHER_VERSION, RUNTIME_VERSION,
-                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
+          Seq(KeyNames(Seq("a")), EstimatedRows(2345), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
 
       , attach(Input(Seq("a", "b")), 4.0) ->
         PlanDescriptionImpl(id, "Input", NoChildren,
-                            Seq(EstimatedRows(4), CYPHER_VERSION, RUNTIME_VERSION,
-                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
+          Seq(EstimatedRows(4), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
     )
 
     forAll(modeCombinations) {

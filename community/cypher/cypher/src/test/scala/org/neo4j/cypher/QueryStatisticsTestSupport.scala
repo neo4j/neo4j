@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 trait QueryStatisticsTestSupport extends MockitoSugar {
   self: Assertions =>
@@ -43,7 +43,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                   existenceConstraintsRemoved: Int = 0,
                   nodekeyConstraintsAdded: Int = 0,
                   nodekeyConstraintsRemoved: Int = 0
-  ): Unit = {
+                 ): Unit = {
     val expected =
       QueryStatistics(
         nodesCreated,

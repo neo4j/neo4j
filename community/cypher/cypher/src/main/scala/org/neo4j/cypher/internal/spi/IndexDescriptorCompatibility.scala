@@ -19,24 +19,27 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.SlowContains
+import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptor, IndexLimitation => KernelIndexLimitation}
+import org.neo4j.internal.schema.LabelSchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptor
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(limitation: schema.IndexLimitation): IndexLimitation = {
     limitation match {
-      case KernelIndexLimitation.SLOW_CONTAINS => SlowContains
+      case schema.IndexLimitation.SLOW_CONTAINS => SlowContains
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for limitation: " + limitation)
     }
   }
 
-  def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
+  def cypherToKernelSchema(index: spi.IndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptor.forLabel(index.label.id, index.properties.map(_.id):_*)
 
   def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
-      SchemaDescriptor.forLabel(labelId, propertyKeyIds.toArray:_*)
+    SchemaDescriptor.forLabel(labelId, propertyKeyIds.toArray:_*)
 
   def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.getLabelId(labelName)

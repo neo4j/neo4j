@@ -21,24 +21,49 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs._
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.security.{SecureHasher, SystemGraphCredential}
-import org.neo4j.exceptions.{CantCompileQueryException, DatabaseAdministrationOnFollowerException}
+import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
+import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
+import org.neo4j.cypher.internal.logical.plans.DropUser
+import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
+import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.logical.plans.ShowDatabase
+import org.neo4j.cypher.internal.logical.plans.ShowDatabases
+import org.neo4j.cypher.internal.logical.plans.ShowDefaultDatabase
+import org.neo4j.cypher.internal.logical.plans.ShowUsers
+import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
+import org.neo4j.cypher.internal.procs.AdminActionMapper
+import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan
+import org.neo4j.cypher.internal.procs.QueryHandler
+import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.cypher.internal.runtime.ParameterMapping
+import org.neo4j.cypher.internal.runtime.slottedParameters
+import org.neo4j.cypher.internal.security.SecureHasher
+import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
+import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
-import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext}
+import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
-import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
 import org.neo4j.kernel.api.security.AuthManager
-import org.neo4j.values.storable.{TextValue, Values}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * This runtime takes on queries that require no planning, such as multidatabase administration commands
-  */
+ * This runtime takes on queries that require no planning, such as multidatabase administration commands
+ */
 case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver,
                                                  extraLogicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = CommunityAdministrationCommandRuntime.emptyLogicalToExecutable
                                                 ) extends AdministrationCommandRuntime {
@@ -282,10 +307,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     val defaultColumn = if (isDefault) "" else ", d.default as default"
 
     s"""
-      |MATCH (d: Database $props)
-      |CALL dbms.database.state(d.name) yield status, error, address, role
-      |WITH d, status as currentStatus, error, address, role
-      |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
+       |MATCH (d: Database $props)
+       |CALL dbms.database.state(d.name) yield status, error, address, role
+       |WITH d, status as currentStatus, error, address, role
+       |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
     """.stripMargin
   }
 

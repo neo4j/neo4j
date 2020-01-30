@@ -19,17 +19,31 @@
  */
 package org.neo4j.cypher.internal.codegen
 
-import java.{lang, util}
+import java.lang
+import java.util
 
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor1}
-import org.scalatest.{Assertions, Matchers, PropSpec}
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.FloatValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.TemporalValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
+import org.scalatest.Assertions
+import org.scalatest.Matchers
+import org.scalatest.PropSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor1
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks with Matchers with Assertions {
 
@@ -123,11 +137,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       )
       case (l1: ListValue, l2: util.List[_], Right(result)) => result should equal(
         VirtualValues.fromList(concat(l1.asArray().toList.asJava,
-                                      ValueUtils.of(l2).asInstanceOf[ListValue].asArray.toList.asJava).asInstanceOf[util.List[AnyValue]])
+          ValueUtils.of(l2).asInstanceOf[ListValue].asArray.toList.asJava).asInstanceOf[util.List[AnyValue]])
       )
       case (l1: util.List[_], l2: ListValue, Right(result)) => result should equal(
         VirtualValues.fromList(concat(ValueUtils.of(l1).asInstanceOf[ListValue].asArray.toList.asJava,
-                                      l2.asArray().toList.asJava).asInstanceOf[util.List[AnyValue]])
+          l2.asArray().toList.asJava).asInstanceOf[util.List[AnyValue]])
       )
       case (x, l: ListValue, Right(result)) => result should equal(
         VirtualValues.fromList(prepend(ValueUtils.asAnyValue(x), l.asArray().toList.asJava).asInstanceOf[util.List[AnyValue]])

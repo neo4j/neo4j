@@ -21,11 +21,18 @@ package org.neo4j.cypher.internal.spi
 
 import java.lang.Math.min
 
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
-import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
@@ -33,8 +40,8 @@ import org.neo4j.logging.Log
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext, log: Log): MinimumGraphStatistics =
     apply(transactionalContext.kernelTransaction().dataRead(),
-          transactionalContext.kernelTransaction().schemaRead(),
-          log)
+      transactionalContext.kernelTransaction().schemaRead(),
+      log)
 
   def apply(read: Read, schemaRead: SchemaRead, log: Log): MinimumGraphStatistics = {
     new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead, log))
@@ -102,6 +109,6 @@ object TransactionBoundGraphStatistics {
     }
 
     override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-     Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
   }
 }
