@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.builder
+package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -39,9 +39,8 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.State
-import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.WithState
-import org.neo4j.cypher.internal.logical.generator.CardinalityCalculator
+import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
+import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
