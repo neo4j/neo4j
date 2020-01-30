@@ -106,7 +106,7 @@ public class CachingExpandInto
         {
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean fromNodeHasCheapDegrees = nodeCursor.hasCheapDegrees();
+        boolean fromNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
 
         //Both can determine degree cheaply, start with the one with the lesser degree
         if ( fromNodeHasCheapDegrees && toNodeHasCheapDegrees )
@@ -172,7 +172,7 @@ public class CachingExpandInto
         {
             return 0;
         }
-        if ( !nodeCursor.hasCheapDegrees() )
+        if ( !nodeCursor.supportsFastDegreeLookup() )
         {
             return EXPENSIVE_DEGREE;
         }

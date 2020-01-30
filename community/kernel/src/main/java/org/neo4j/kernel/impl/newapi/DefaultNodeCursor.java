@@ -205,9 +205,9 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public boolean hasCheapDegrees()
+    public boolean supportsFastDegreeLookup()
     {
-        return currentAddedInTx == NO_ID && storeCursor.hasCheapDegrees();
+        return currentAddedInTx == NO_ID && storeCursor.supportsFastDegreeLookup();
     }
 
     @Override

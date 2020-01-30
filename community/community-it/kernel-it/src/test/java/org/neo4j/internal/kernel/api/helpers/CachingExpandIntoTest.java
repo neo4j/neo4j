@@ -393,7 +393,7 @@ class CachingExpandIntoTest
 
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
-                assertThat( nodes.hasCheapDegrees() ).isEqualTo( true );
+                assertThat( nodes.supportsFastDegreeLookup() ).isEqualTo( true );
                 Degrees degrees = nodes.degrees( ALL_RELATIONSHIPS );
                 assertThat( degrees.outgoingDegree() ).isEqualTo( 45 );
                 assertThat( degrees.incomingDegree() ).isEqualTo( 2 );
@@ -433,7 +433,7 @@ class CachingExpandIntoTest
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING );
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
-                assertThat( nodes.hasCheapDegrees() ).isEqualTo( true );
+                assertThat( nodes.supportsFastDegreeLookup() ).isEqualTo( true );
                 Degrees degrees = nodes.degrees( ALL_RELATIONSHIPS );
                 assertThat( degrees.outgoingDegree( out ) ).isEqualTo( 2 );
                 assertThat( degrees.outgoingDegree( in ) ).isEqualTo( 0 );
