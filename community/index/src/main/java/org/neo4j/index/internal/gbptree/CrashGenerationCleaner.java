@@ -36,7 +36,6 @@ import org.neo4j.util.FeatureToggles;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
@@ -46,9 +45,6 @@ class CrashGenerationCleaner
     private static final String NUMBER_OF_WORKERS_NAME = "number_of_workers";
     private static final int NUMBER_OF_WORKERS_DEFAULT = min( 8, Runtime.getRuntime().availableProcessors() );
     private static final int NUMBER_OF_WORKERS = FeatureToggles.getInteger( CrashGenerationCleaner.class, NUMBER_OF_WORKERS_NAME, NUMBER_OF_WORKERS_DEFAULT );
-    private static final String BATCH_TIMEOUT_NAME = "batch_timeout";
-    private static final int BATCH_TIMEOUT_DEFAULT = 300;
-    private static final int BATCH_TIMEOUT = FeatureToggles.getInteger( CrashGenerationCleaner.class, BATCH_TIMEOUT_NAME, BATCH_TIMEOUT_DEFAULT );
 
     private static final long MIN_BATCH_SIZE = 10;
     static final long MAX_BATCH_SIZE = 100;
@@ -102,18 +98,7 @@ class CrashGenerationCleaner
 
         try
         {
-            long lastProgression = nextId.get();
-            // Have max no-progress-timeout quite high to be able to cope with huge
-            // I/O congestion spikes w/o failing in vain.
-            while ( !activeThreadLatch.await( BATCH_TIMEOUT, SECONDS ) )
-            {
-                if ( lastProgression == nextId.get() )
-                {
-                    // No progression at all, abort
-                    error.compareAndSet( null, new IOException( "No progress, so forcing abort" ) );
-                }
-                lastProgression = nextId.get();
-            }
+            activeThreadLatch.await();
         }
         catch ( InterruptedException e )
         {
