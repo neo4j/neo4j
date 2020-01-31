@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -29,101 +27,56 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 abstract class ScanLock
 {
+    final ReentrantLock lock = new ReentrantLock( true );
+
     /**
      * Tries to acquire the lock, returning {@code true} if it succeeds, otherwise {@code false}.
      * @return {@code true} if the lock was acquired. Potentially this call blocks.
      */
     abstract boolean tryLock();
 
-    abstract void lock();
-
     /**
      * Releases the lock, if it was previous acquired in {@link #tryLock()}, i.e. if it returned {@code true}.
      */
-    abstract void unlock();
+    void lock()
+    {
+        lock.lock();
+    }
+
+    void unlock()
+    {
+        lock.unlock();
+    }
 
     /**
-     * Implemented with a simple {@link AtomicBoolean}. Will not block if the lock is already acquired.
+     * Optimistic {@link ScanLock} which will never block in {@link #tryLock()}, but simply return {@code false} if it was acquire by someone else.
      * @return an optimistic and lock-free {@link ScanLock}.
      */
     static ScanLock lockFreeAndOptimistic()
     {
         return new ScanLock()
         {
-            private final AtomicBoolean lockState = new AtomicBoolean();
-
             @Override
             boolean tryLock()
             {
-                return lockState.compareAndSet( false, true );
-            }
-
-            @Override
-            void lock()
-            {
-                while ( !tryLock() )
-                {
-                    try
-                    {
-                        Thread.sleep( 10 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException( e );
-                    }
-                }
-            }
-
-            @Override
-            void unlock()
-            {
-                boolean unlocked = lockState.compareAndSet( true, false );
-                if ( !unlocked )
-                {
-                    throw new IllegalStateException( "Call to unlock was made on an unlocked instance" );
-                }
+                return lock.tryLock();
             }
         };
     }
 
     /**
-     * Implemented with a {@link ReentrantLock}. {@link #tryLock() Locking} may block if the lock is already acquired by another thread,
-     * but will only return {@code true} if the lock could be acquired with {@link Lock#tryLock()}, otherwise block until the lock
-     * has been released and return {@code false}.
+     * Pessimistic {@link ScanLock} which may block if the lock is already acquired by someone else.
      * @return a pessimistic and blocking {@link ScanLock}.
      */
     static ScanLock lockyAndPessimistic()
     {
         return new ScanLock()
         {
-            private final ReentrantLock lock = new ReentrantLock();
-
             @Override
             boolean tryLock()
             {
-                // The idea is that either we get the lock right away, and then this is our queue to do scanning
-                if ( lock.tryLock() )
-                {
-                    return true;
-                }
-
-                // Or someone else has it and we just wait for that someone to be done and not do scanning on our own
                 lock.lock();
-                lock.unlock();
-                return false;
-            }
-
-            @Override
-            void lock()
-            {
-                lock.lock();
-            }
-
-            @Override
-            void unlock()
-            {
-                lock.unlock();
+                return true;
             }
         };
     }
