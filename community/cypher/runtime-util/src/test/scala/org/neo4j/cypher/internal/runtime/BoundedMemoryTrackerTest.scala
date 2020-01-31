@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.util.Optional
-
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
@@ -39,8 +37,8 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.deallocated(6, 0)
     tracker.allocated(4, 0)
     // Then
-    tracker.totalAllocatedMemory should be(Optional.of(15L))
-    tracker.maxMemoryOfOperator(0) should be(Optional.of(15L))
+    tracker.totalAllocatedMemory should be(15L)
+    tracker.maxMemoryOfOperator(0) should be(15L)
   }
 
   test("Tracks overall memory high water mark with AnyValues") {
@@ -57,8 +55,8 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.allocated(v4, 0)
     // Then
     val expected = Math.max(v1.estimatedHeapUsage() + v2.estimatedHeapUsage(), v1.estimatedHeapUsage() + v2.estimatedHeapUsage() - v3.estimatedHeapUsage() + v4.estimatedHeapUsage())
-    tracker.totalAllocatedMemory should be(Optional.of(expected))
-    tracker.maxMemoryOfOperator(0) should be(Optional.of(expected))
+    tracker.totalAllocatedMemory should be(expected)
+    tracker.maxMemoryOfOperator(0) should be(expected)
   }
 
   test("Tracks overall memory high water mark with WithHeapUsageEstimation") {
@@ -70,8 +68,8 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.deallocated(IMem(6), 0)
     tracker.allocated(IMem(4), 0)
     // Then
-    tracker.totalAllocatedMemory should be(Optional.of(15L))
-    tracker.maxMemoryOfOperator(0) should be(Optional.of(15L))
+    tracker.totalAllocatedMemory should be(15L)
+    tracker.maxMemoryOfOperator(0) should be(15L)
   }
 
   test("Iterator tracks memory") {
@@ -85,8 +83,8 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.deallocated(3, 0) // 14
     iterator.next() // 16
     // Then
-    tracker.totalAllocatedMemory should be(Optional.of(17L))
-    tracker.maxMemoryOfOperator(0) should be(Optional.of(17L))
+    tracker.totalAllocatedMemory should be(17L)
+    tracker.maxMemoryOfOperator(0) should be(17L)
   }
 
   test("Throws exception if memory exceeds threshold") {
@@ -122,9 +120,9 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.deallocated(2, 1) // [10, 4, 7] / 21
     iterator1.next() // [10, 11, 7] / 28
     // Then
-    tracker.totalAllocatedMemory should be(Optional.of(32L))
-    tracker.maxMemoryOfOperator(0) should be(Optional.of(10L))
-    tracker.maxMemoryOfOperator(1) should be(Optional.of(11L))
-    tracker.maxMemoryOfOperator(2) should be(Optional.of(28L))
+    tracker.totalAllocatedMemory should be(32L)
+    tracker.maxMemoryOfOperator(0) should be(10L)
+    tracker.maxMemoryOfOperator(1) should be(11L)
+    tracker.maxMemoryOfOperator(2) should be(28L)
   }
 }

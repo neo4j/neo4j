@@ -23,7 +23,8 @@ import java.util
 
 import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
+import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.cypher.result.QueryProfile
 
 import scala.collection.mutable
 
@@ -66,12 +67,12 @@ class InterpretedProfileInformation extends QueryProfile {
     val rows = rowMap.get(id).map(_.count).getOrElse(0L)
     val dbHits = dbHitsMap.get(id).map(_.count).getOrElse(0L)
     val pageCacheStats = pageCacheMap(id)
-    val maxMemoryAllocated = memoryTracker.maxMemoryOfOperator(operatorId).orElseGet(() => OperatorProfile.NO_DATA)
+    val maxMemoryAllocated = QueryMemoryTracker.memoryAsProfileData(memoryTracker.maxMemoryOfOperator(operatorId))
 
     OperatorData(dbHits, rows, pageCacheStats.hits, pageCacheStats.misses, maxMemoryAllocated)
   }
 
-  override def maxAllocatedMemory(): Long = memoryTracker.totalAllocatedMemory.orElseGet(() => OperatorProfile.NO_DATA)
+  override def maxAllocatedMemory(): Long = QueryMemoryTracker.memoryAsProfileData(memoryTracker.totalAllocatedMemory)
 }
 
 case class PageCacheStats(hits: Long, misses: Long) {

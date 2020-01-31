@@ -481,7 +481,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val nRows = 8
     val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i)))
     consume(result)
-    result.runtimeResult.totalAllocatedMemory().get() / nRows
+    result.runtimeResult.totalAllocatedMemory() / nRows
   }
 }
 

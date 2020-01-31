@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.lang
-import java.util.Optional
-
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.SystemCommandRuntimeName
@@ -36,6 +33,7 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -68,7 +66,7 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
+  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 
@@ -80,7 +78,7 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 case object IgnoredRuntimeResult extends RuntimeResult {
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
-  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
+  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE

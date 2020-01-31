@@ -19,8 +19,6 @@
  */
 package org.neo4j.test;
 
-import java.util.Optional;
-
 import org.neo4j.memory.OptionalMemoryTracker;
 
 public class FakeMemoryTracker implements OptionalMemoryTracker
@@ -33,9 +31,9 @@ public class FakeMemoryTracker implements OptionalMemoryTracker
     }
 
     @Override
-    public Optional<Long> totalAllocatedMemory()
+    public long totalAllocatedMemory()
     {
-        return Optional.of( allocatedBytes );
+        return allocatedBytes;
     }
 
     public FakeMemoryTracker add( long bytes )

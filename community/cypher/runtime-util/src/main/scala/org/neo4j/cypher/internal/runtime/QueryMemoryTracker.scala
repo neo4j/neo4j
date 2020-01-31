@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.lang
-import java.util.Optional
-
-import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.TransactionOutOfMemoryException
-import org.neo4j.values.AnyValue
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.MemoryTracker
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.exceptions.TransactionOutOfMemoryException
+import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.values.AnyValue
 
 trait QueryMemoryTracker {
 
@@ -86,16 +85,16 @@ trait QueryMemoryTracker {
   /**
     * Get the total allocated memory of this query, in bytes.
     *
-    * @return the total number of allocated memory bytes, or None, if memory tracking was not enabled.
+    * @return the total number of allocated memory bytes, or [[OptionalMemoryTracker]].ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
     */
-  def totalAllocatedMemory: Optional[lang.Long]
+  def totalAllocatedMemory: Long
 
   /**
    * Get the maximum allocated memory of this operator, in bytes.
    *
-   * @return the maximum number of allocated memory bytes, or None, if memory tracking was not enabled.
+   * @return the maximum number of allocated memory bytes, or [[OptionalMemoryTracker]].ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
    */
-  def maxMemoryOfOperator(operatorId: Int): Optional[lang.Long]
+  def maxMemoryOfOperator(operatorId: Int): Long
 }
 
 object QueryMemoryTracker {
@@ -105,6 +104,14 @@ object QueryMemoryTracker {
       case MEMORY_TRACKING => new BoundedMemoryTracker(Long.MaxValue)
       case MEMORY_BOUND(maxAllocatedBytes) => new BoundedMemoryTracker(maxAllocatedBytes)
     }
+  }
+
+  /**
+   * Convert a value returned from `totalAllocatedMemory` or `maxMemoryOfOperator` to a value to be given to a QueryProfile.
+   */
+  def memoryAsProfileData(value: Long): Long = value match {
+    case OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED => OperatorProfile.NO_DATA
+    case x => x
   }
 }
 
@@ -125,9 +132,9 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 
   override def deallocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = {}
 
-  override def totalAllocatedMemory: Optional[lang.Long] = Optional.empty()
+  override def totalAllocatedMemory: Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 
-  override def maxMemoryOfOperator(operatorId: Int): Optional[lang.Long] = Optional.empty()
+  override def maxMemoryOfOperator(operatorId: Int): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 }
 
 object BoundedMemoryTracker {
@@ -183,9 +190,12 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
 
   override def deallocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = deallocated(instance.estimatedHeapUsage, operatorId)
 
-  override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(highWaterMark)
+  override def totalAllocatedMemory: Long = highWaterMark
 
-  override def maxMemoryOfOperator(operatorId: Int): Optional[lang.Long] = Optional.ofNullable(maxMemoryPerOperator.get(operatorId)).map(_.highWaterMark)
+  override def maxMemoryOfOperator(operatorId: Int): Long = {
+    val maxOrNull = maxMemoryPerOperator.get(operatorId)
+    if (maxOrNull == null) OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED else maxOrNull.highWaterMark
+  }
 
   override def memoryTrackingIterator[T <: WithHeapUsageEstimation](input: Iterator[T], operatorId: Int): Iterator[T] = new MemoryTrackingIterator[T](input, operatorId)
 

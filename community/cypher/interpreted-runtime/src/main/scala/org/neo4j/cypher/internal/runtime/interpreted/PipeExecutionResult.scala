@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.lang
-import java.util.Optional
-
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class PipeExecutionResult(pipe: Pipe,
@@ -42,7 +41,7 @@ class PipeExecutionResult(pipe: Pipe,
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
-  override def totalAllocatedMemory: Optional[lang.Long] = state.memoryTracker.totalAllocatedMemory
+  override def totalAllocatedMemory: Long = state.memoryTracker.totalAllocatedMemory
 
   override def close(): Unit = {
     state.close()

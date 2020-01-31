@@ -22,10 +22,9 @@ package org.neo4j.cypher.result;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.util.Optional;
-
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.memory.OptionalMemoryTracker;
 import org.neo4j.values.AnyValue;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -171,9 +170,9 @@ class NaiveQuerySubscriptionTest
         }
 
         @Override
-        public Optional<Long> totalAllocatedMemory()
+        public long totalAllocatedMemory()
         {
-            return Optional.empty();
+            return OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED;
         }
     }
 

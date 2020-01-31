@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.result
 
 import java.io.PrintWriter
-import java.lang
-import java.util.Optional
 
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.times
@@ -46,6 +44,7 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.storable.Values.intValue
 
 //noinspection NameBooleanParameters,RedundantDefaultArgument
@@ -182,7 +181,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
 
     override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-    override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
+    override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 
     override def queryProfile(): QueryProfile = QueryProfile.NONE
 

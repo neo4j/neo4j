@@ -33,11 +33,11 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
+import org.neo4j.memory.OptionalMemoryTracker;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.test.FakeMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -47,11 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
-import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.map;
 
 class ExecutingQueryTest
 {
@@ -236,7 +233,7 @@ class ExecutingQueryTest
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertTrue( snapshot.allocatedBytes().isEmpty() );
+        assertEquals( OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes() );
     }
 
     @Test

@@ -44,14 +44,14 @@ public class QuerySnapshot
     private final Map<String,Object> resourceInfo;
     private final List<ActiveLock> waitingLocks;
     private final long activeLockCount;
-    private final Optional<Long> allocatedBytes;
+    private final long allocatedBytes;
     private final PageCounterValues page;
     private final Optional<String> obfuscatedQueryText;
     private final Optional<MapValue> obfuscatedQueryParameters;
 
     QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
-                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, Optional<Long> allocatedBytes,
+                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes,
                    Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters )
     {
         this.query = query;
@@ -230,7 +230,7 @@ public class QuerySnapshot
      *
      * @return the number of bytes allocated by the execution of the query, or Optional.empty() if measurement was not possible or not enabled.
      */
-    public Optional<Long> allocatedBytes()
+    public long allocatedBytes()
     {
         return allocatedBytes;
     }
