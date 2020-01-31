@@ -233,7 +233,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    private class AssertableLog extends AbstractLog
+    protected class AssertableLog extends AbstractLog
     {
         private final Logger debugLogger;
         private final Logger infoLogger;
