@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -85,7 +86,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
- * <li>Call to {@link #flipAfterPopulation(boolean)} after successful population, or {@link #fail(Throwable)} if not</li>
+ * <li>Call to {@link #flipAfterStoreScan(boolean)} after successful population, or {@link #cancel(Throwable)} if not</li>
  * </ol>
  */
 public class MultipleIndexPopulator
@@ -199,19 +200,27 @@ public class MultipleIndexPopulator
     }
 
     /**
-     * Called if forced failure from the outside
+     * Cancel all {@link IndexPopulation index populations}, putting the indexes in {@link InternalIndexState#FAILED failed state}.
+     * To repopulate them they will need to be dropped and recreated.
      *
-     * @param failure index population failure.
+     * @param failure the cause.
      */
-    public void fail( Throwable failure )
+    public void cancel( Throwable failure )
     {
         for ( IndexPopulation population : populations )
         {
-            fail( population, failure );
+            cancel( population, failure );
         }
     }
 
-    protected void fail( IndexPopulation population, Throwable failure )
+    /**
+     * Cancel a single {@link IndexPopulation index population}, putting the index in {@link InternalIndexState#FAILED failed state}.
+     * To repopulate the index it needs to be dropped and recreated.
+     *
+     * @param population Index population to cancel.
+     * @param failure the cause.
+     */
+    protected void cancel( IndexPopulation population, Throwable failure )
     {
         if ( !removeFromOngoingPopulations( population ) )
         {
@@ -238,7 +247,7 @@ public class MultipleIndexPopulator
         // place is that we would otherwise introduce a race condition where updates could come
         // in to the old context, if something failed in the job we send to the flipper.
         IndexPopulationFailure indexPopulationFailure = failure( failure );
-        population.flipToFailed( indexPopulationFailure );
+        population.cancel( indexPopulationFailure );
         try
         {
             population.populator.markAsFailed( indexPopulationFailure.asString() );
@@ -263,10 +272,17 @@ public class MultipleIndexPopulator
         return new MultipleIndexUpdater( this, updaters, logProvider );
     }
 
-    public void close( boolean populationCompletedSuccessfully )
+    /**
+     * Close this {@link MultipleIndexPopulator multiple index populator}.
+     * This means population job has finished, successfully or unsuccessfully and resources can be released.
+     *
+     * Note that {@link IndexPopulation index populations} cannot be closed. Instead, the underlying
+     * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(boolean)},
+     * {@link #cancel(IndexPopulation, Throwable)} or {@link #stop(IndexPopulation)}.
+     */
+    public void close()
     {
         phaseTracker.stop();
-        // closing the populators happens in flip, fail or individually when they are completed
         propertyAccessor.close();
     }
 
@@ -280,7 +296,20 @@ public class MultipleIndexPopulator
         indexStatisticsStore.replaceStats( indexPopulation.indexId, new IndexSample( 0, 0, 0 ) );
     }
 
-    void flipAfterPopulation( boolean verifyBeforeFlipping )
+    /**
+     * This concludes a successful index population.
+     *
+     * The last updates will be applied to every index,
+     * tell {@link IndexPopulator index populators} that scan has been completed,
+     * {@link IndexStatisticsStore index statistics store} will be updated with {@link IndexSample index samples},
+     * {@link SchemaState schema cache} will be cleared,
+     * {@link IndexPopulator index populators} will be closed and
+     * {@link IndexProxy index proxy} will be {@link FlippableIndexProxy#flip(Callable, FailedIndexProxyFactory) flipped}
+     * to {@link OnlineIndexProxy online}, given that nothing goes wrong.
+     *
+     * @param verifyBeforeFlipping Whether to verify deferred constraints before flipping index proxy. This is used by batch inserter.
+     */
+    void flipAfterStoreScan( boolean verifyBeforeFlipping )
     {
         for ( IndexPopulation population : populations )
         {
@@ -291,7 +320,7 @@ public class MultipleIndexPopulator
             }
             catch ( Throwable t )
             {
-                fail( population, t );
+                cancel( population, t );
             }
         }
     }
@@ -311,19 +340,32 @@ public class MultipleIndexPopulator
         return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 
-    public void cancel()
+    /**
+     * Stop all {@link IndexPopulation index populations}, closing backing {@link IndexPopulator index populators},
+     * keeping them in {@link InternalIndexState#POPULATING populating state}.
+     */
+    public void stop()
     {
-        forEachPopulation( this::cancelIndexPopulation );
+        forEachPopulation( this::stop );
     }
 
-    void cancelIndexPopulation( IndexPopulation indexPopulation )
+    /**
+     * Close specific {@link IndexPopulation index population}, closing backing {@link IndexPopulator index populator},
+     * keeping it in {@link InternalIndexState#POPULATING populating state}.
+     * @param indexPopulation {@link IndexPopulation} to stop.
+     */
+    void stop( IndexPopulation indexPopulation )
     {
-        indexPopulation.cancel();
+        indexPopulation.disconnectAndStop();
     }
 
+    /**
+     * Stop population of given {@link IndexPopulation} and drop the index.
+     * @param indexPopulation {@link IndexPopulation} to drop.
+     */
     void dropIndexPopulation( IndexPopulation indexPopulation )
     {
-        indexPopulation.cancelAndDrop();
+        indexPopulation.disconnectAndDrop();
     }
 
     private boolean removeFromOngoingPopulations( IndexPopulation indexPopulation )
@@ -355,7 +397,7 @@ public class MultipleIndexPopulator
         }
         catch ( Throwable failure )
         {
-            fail( population, failure );
+            cancel( population, failure );
         }
     }
 
@@ -410,7 +452,7 @@ public class MultipleIndexPopulator
             }
             catch ( Throwable failure )
             {
-                fail( population, failure );
+                cancel( population, failure );
             }
         }
     }
@@ -454,7 +496,7 @@ public class MultipleIndexPopulator
                         log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                     }
                     populationsWithUpdaters.remove( update.indexKey().schema() );
-                    multipleIndexPopulator.fail( population, t );
+                    multipleIndexPopulator.cancel( population, t );
                 }
             }
         }
@@ -473,7 +515,7 @@ public class MultipleIndexPopulator
                 }
                 catch ( Throwable t )
                 {
-                    multipleIndexPopulator.fail( population, t );
+                    multipleIndexPopulator.cancel( population, t );
                 }
             }
             populationsWithUpdaters.clear();
@@ -505,7 +547,7 @@ public class MultipleIndexPopulator
             this.batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
         }
 
-        private void flipToFailed( IndexPopulationFailure failure )
+        private void cancel( IndexPopulationFailure failure )
         {
             flipper.flipTo( new FailedIndexProxy( indexDescriptor, indexUserDescription, populator, failure, indexStatisticsStore, logProvider ) );
         }
@@ -526,21 +568,25 @@ public class MultipleIndexPopulator
             }
         }
 
-        void cancel()
+        /**
+         * Disconnect this single {@link IndexPopulation index population} from ongoing multiple index population
+         * and close {@link IndexPopulator index populator}, leaving it in {@link InternalIndexState#POPULATING populating state}.
+         */
+        void disconnectAndStop()
         {
-            cancel( () -> populator.close( false ) );
-        }
-
-        void cancelAndDrop()
-        {
-            cancel( populator::drop );
+            disconnect( () -> populator.close( false ) );
         }
 
         /**
-         * Cancels population also executing a specific operation on the populator
-         * @param specificPopulatorOperation specific operation in addition to closing the populator.
+         * Disconnect this single {@link IndexPopulation index population} from ongoing multiple index population
+         * and {@link IndexPopulator#drop() drop} the index.
          */
-        private void cancel( Runnable specificPopulatorOperation )
+        void disconnectAndDrop()
+        {
+            disconnect( populator::drop );
+        }
+
+        private void disconnect( Runnable specificPopulatorOperation )
         {
             populatorLock.lock();
             try

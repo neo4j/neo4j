@@ -115,7 +115,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public void close()
     {
-        job.cancelPopulation( indexPopulation );
+        job.stop( indexPopulation );
     }
 
     @Override

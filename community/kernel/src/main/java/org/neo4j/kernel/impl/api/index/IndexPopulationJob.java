@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -52,7 +53,7 @@ public class IndexPopulationJob implements Runnable
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
-    private volatile boolean cancelled;
+    private volatile boolean stopped;
     /**
      * The {@link JobHandle} that represents the scheduling of this index population job.
      * This is used in the cancellation of the job.
@@ -114,24 +115,24 @@ public class IndexPopulationJob implements Runnable
                 monitor.indexPopulationScanStarting();
                 indexAllEntities();
                 monitor.indexPopulationScanComplete();
-                if ( cancelled )
+                if ( stopped )
                 {
-                    multiPopulator.cancel();
+                    multiPopulator.stop();
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterPopulation( verifyBeforeFlipping );
+                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping );
             }
             catch ( Throwable t )
             {
-                multiPopulator.fail( t );
+                multiPopulator.cancel( t );
             }
         }
         finally
         {
             // will only close "additional" resources, not the actual populators, since that's managed by flip
             Runnables.runAll( "Failed to close resources in IndexPopulationJob",
-                    () -> multiPopulator.close( true ),
+                    multiPopulator::close,
                     () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
                     bufferFactory::close,
                     doneSignal::countDown,
@@ -156,23 +157,36 @@ public class IndexPopulationJob implements Runnable
         return indexPopulation.progress( storeScanProgress );
     }
 
-    public void cancel()
+    /**
+     * Signal to stop index population.
+     * All populating indexes will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
+     * Asynchronous call, need to {@link #awaitCompletion(long, TimeUnit) await completion}.
+     */
+    public void stop()
     {
         // Stop the population
         if ( storeScan != null )
         {
-            cancelled = true;
+            stopped = true;
             storeScan.stop();
             jobHandle.cancel();
             monitor.populationCancelled();
         }
     }
 
-    void cancelPopulation( MultipleIndexPopulator.IndexPopulation population )
+    /**
+     * Stop population of specific index. Index will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
+     * @param population {@link MultipleIndexPopulator.IndexPopulation} to be stopped.
+     */
+    void stop( MultipleIndexPopulator.IndexPopulation population )
     {
-        multiPopulator.cancelIndexPopulation( population );
+        multiPopulator.stop( population );
     }
 
+    /**
+     * Stop population of specific index and drop it.
+     * @param population {@link MultipleIndexPopulator.IndexPopulation} to be dropped.
+     */
     void dropPopulation( MultipleIndexPopulator.IndexPopulation population )
     {
         multiPopulator.dropIndexPopulation( population );
@@ -216,6 +230,8 @@ public class IndexPopulationJob implements Runnable
 
     /**
      * Assign the job-handle that was created when this index population job was scheduled.
+     * This makes it possible to {@link JobHandle#cancel() cancel} the scheduled index population,
+     * making it never start, through {@link IndexPopulationJob#stop()}.
      */
     public void setHandle( JobHandle handle )
     {

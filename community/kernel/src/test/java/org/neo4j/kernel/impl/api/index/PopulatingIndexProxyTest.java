@@ -44,11 +44,11 @@ class PopulatingIndexProxyTest
     }
 
     @Test
-    void cancelPopulationJobOnClose()
+    void stopPopulationJobOnClose()
     {
         populatingIndexProxy.close();
 
-        verify( indexPopulationJob ).cancelPopulation( indexPopulation );
+        verify( indexPopulationJob ).stop( indexPopulation );
     }
 
     @Test

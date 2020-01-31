@@ -50,7 +50,7 @@ import static java.util.stream.Collectors.joining;
  * updates are inserted in the queue. When store scan notices that queue size has reached {@link #QUEUE_THRESHOLD} than
  * it drains all batched updates and waits for all submitted to the executor tasks to complete and flushes updates from
  * the queue using {@link MultipleIndexUpdater}. If queue size never reaches {@link #QUEUE_THRESHOLD} than all queued
- * concurrent updates are flushed after the store scan in {@link MultipleIndexPopulator#flipAfterPopulation(boolean)}.
+ * concurrent updates are flushed after the store scan in {@link MultipleIndexPopulator#flipAfterStoreScan(boolean)}.
  * <p>
  * Inner {@link ExecutorService executor} is shut down after the store scan completes.
  */
@@ -176,7 +176,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             }
             catch ( Throwable failure )
             {
-                fail( population, failure );
+                cancel( population, failure );
             }
             finally
             {

@@ -41,7 +41,7 @@ class IndexPopulationJobController
     {
         for ( IndexPopulationJob job : populationJobs )
         {
-            job.cancel();
+            job.stop();
         }
 
         InterruptedException interrupted = null;

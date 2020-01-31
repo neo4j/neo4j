@@ -57,8 +57,8 @@ class IndexPopulationJobControllerTest
 
         jobController.stop();
 
-        verify( populationJob ).cancel();
-        verify( populationJob2 ).cancel();
+        verify( populationJob ).stop();
+        verify( populationJob2 ).stop();
     }
 
     @Test

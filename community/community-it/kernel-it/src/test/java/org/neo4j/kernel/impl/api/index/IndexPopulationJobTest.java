@@ -359,7 +359,7 @@ class IndexPopulationJobTest
     }
 
     @Test
-    void shouldBeAbleToCancelPopulationJob() throws Exception
+    void shouldBeAbleToStopPopulationJob() throws Exception
     {
         // GIVEN
         createNode( map( name, "Mattias" ), FIRST );
@@ -390,7 +390,7 @@ class IndexPopulationJobTest
                 } );
 
             storeScan.latch.waitForAllToStart();
-            job.cancel();
+            job.stop();
             job.awaitCompletion( 0, TimeUnit.SECONDS );
             storeScan.latch.waitForAllToFinish();
 
@@ -862,10 +862,10 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close()
         {
             closed = true;
-            super.close( populationCompletedSuccessfully );
+            super.close();
         }
     }
 
