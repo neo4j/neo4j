@@ -191,6 +191,21 @@ class SettingMigratorsTest
     }
 
     @Test
+    void testMultiThreadedSchemaIndexPopulationEnabled() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "unsupported.dbms.multi_threaded_schema_index_population_enabled=false" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( "Setting %s is removed. It's no longer possible to disable multi-threaded index population.",
+                        "unsupported.dbms.multi_threaded_schema_index_population_enabled" );
+    }
+
+    @Test
     void testDefaultSchemaProvider() throws IOException
     {
         Map<String,String> migrationMap = Map.of(

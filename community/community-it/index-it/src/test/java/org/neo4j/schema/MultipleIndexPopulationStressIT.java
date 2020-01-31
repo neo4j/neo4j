@@ -82,7 +82,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
@@ -112,21 +111,9 @@ public class MultipleIndexPopulationStressIT
                                                 .around( cleanup ).around( fileSystemRule );
 
     @Test
-    public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
-    {
-        prepareAndRunTest( false, 10, TimeUnit.SECONDS.toMillis( 5 ) );
-    }
-
-    @Test
     public void populateMultipleIndexWithSeveralNodesMultiThreaded() throws Exception
     {
-        prepareAndRunTest( true, 10, TimeUnit.SECONDS.toMillis( 5 ) );
-    }
-
-    @Test
-    public void shouldPopulateMultipleIndexPopulatorsUnderStressSingleThreaded() throws Exception
-    {
-        readConfigAndRunTest( false );
+        prepareAndRunTest( 10, TimeUnit.SECONDS.toMillis( 5 ) );
     }
 
     @Test
@@ -137,7 +124,7 @@ public class MultipleIndexPopulationStressIT
                 concurrentUpdatesQueueFlushThreshold );
         try
         {
-            readConfigAndRunTest( true );
+            readConfigAndRunTest();
         }
         finally
         {
@@ -146,15 +133,15 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
+    private void readConfigAndRunTest() throws Exception
     {
         // GIVEN a database with random data in it
         int nodeCount = (int) SettingValueParsers.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
-        prepareAndRunTest( multiThreaded, nodeCount, duration );
+        prepareAndRunTest( nodeCount, duration );
     }
 
-    private void prepareAndRunTest( boolean multiThreaded, int nodeCount, long durationMillis ) throws Exception
+    private void prepareAndRunTest( int nodeCount, long durationMillis ) throws Exception
     {
         createRandomData( nodeCount );
         long endTime = currentTimeMillis() + durationMillis;
@@ -162,14 +149,14 @@ public class MultipleIndexPopulationStressIT
         // WHEN/THEN run tests for at least the specified durationMillis
         for ( int i = 0; currentTimeMillis() < endTime; i++ )
         {
-            runTest( nodeCount, multiThreaded );
+            runTest( nodeCount );
         }
     }
 
-    private void runTest( int nodeCount, boolean multiThreaded ) throws Exception
+    private void runTest( int nodeCount ) throws Exception
     {
         // WHEN creating the indexes under stressful updates
-        populateDbAndIndexes( nodeCount, multiThreaded );
+        populateDbAndIndexes( nodeCount );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Config config = Config.newBuilder()
                 .set( neo4j_home, directory.homeDir().toPath() )
@@ -182,12 +169,10 @@ public class MultipleIndexPopulationStressIT
         dropIndexes();
     }
 
-    private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
+    private void populateDbAndIndexes( int nodeCount ) throws InterruptedException
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
-                        .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded )
-                        .build();
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

@@ -21,51 +21,19 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
- * Factory that is able to create either {@link MultipleIndexPopulator} or {@link BatchingMultipleIndexPopulator}
- * depending on the given config.
- *
- * @see GraphDatabaseSettings#multi_threaded_schema_index_population_enabled
+ * Factory that is able to create {@link BatchingMultipleIndexPopulator}.
  */
-public abstract class MultiPopulatorFactory
+public class MultiPopulatorFactory
 {
-    private MultiPopulatorFactory()
+    public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
-    }
-
-    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup );
-
-    public static MultiPopulatorFactory forConfig( Config config )
-    {
-        boolean multiThreaded = config.get( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled );
-        return multiThreaded ? new MultiThreadedPopulatorFactory() : new SingleThreadedPopulatorFactory();
-    }
-
-    private static class SingleThreadedPopulatorFactory extends MultiPopulatorFactory
-    {
-        @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
-        {
-            return new MultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
-        }
-    }
-
-    private static class MultiThreadedPopulatorFactory extends MultiPopulatorFactory
-    {
-        @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
-        {
-            return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
-        }
+        return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
     }
 }

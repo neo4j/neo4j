@@ -38,12 +38,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -56,7 +56,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class MultipleIndexPopulatorUpdatesTest
 {
@@ -73,8 +72,9 @@ class MultipleIndexPopulatorUpdatesTest
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, () -> reader );
         InMemoryTokens tokens = new InMemoryTokens();
-        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
-                storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore, mock( JobScheduler.class ), tokens );
+        MultipleIndexPopulator indexPopulator = new BatchingMultipleIndexPopulator(
+                storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
+                JobSchedulerFactory.createInitialisedScheduler(), tokens );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 

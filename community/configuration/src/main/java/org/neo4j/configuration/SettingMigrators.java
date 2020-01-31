@@ -320,6 +320,22 @@ public final class SettingMigrators
     }
 
     @ServiceProvider
+    public static class MultiThreadedSchemaIndexPopulationEnabledMigrator implements SettingMigrator
+    {
+        private static final String settingName = "unsupported.dbms.multi_threaded_schema_index_population_enabled";
+
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            if ( values.containsKey( settingName ) )
+            {
+                log.warn( "Setting %s is removed. It's no longer possible to disable multi-threaded index population.", settingName );
+                values.remove( settingName );
+            }
+        }
+    }
+
+    @ServiceProvider
     public static class QueryLoggerMigrator implements SettingMigrator
     {
         private static final String deprecationMessage = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";

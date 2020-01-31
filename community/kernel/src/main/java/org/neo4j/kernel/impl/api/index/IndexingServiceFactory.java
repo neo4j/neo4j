@@ -54,7 +54,7 @@ public final class IndexingServiceFactory
                                           boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
+        MultiPopulatorFactory multiPopulatorFactory = new MultiPopulatorFactory();
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
                 new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler, tokenNameLookup, internalLogProvider, pageCacheTracer );

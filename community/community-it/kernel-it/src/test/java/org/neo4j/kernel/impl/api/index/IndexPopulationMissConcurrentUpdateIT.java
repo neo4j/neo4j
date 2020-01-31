@@ -88,8 +88,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         {
             return new TestDatabaseManagementServiceBuilder().impermanent().noOpSystemGraphInitializer().addExtension( index );
         }
-    }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, false )
-     .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
+    }.withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
     // The single-threaded setting makes the test deterministic. The multi-threaded variant has the same problem tested below.
 
     @Before

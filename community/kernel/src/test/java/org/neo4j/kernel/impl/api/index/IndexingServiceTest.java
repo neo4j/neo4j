@@ -128,7 +128,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -142,7 +141,6 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
-import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
@@ -316,7 +314,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
+        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( JobScheduler.class ) );
         order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor );
@@ -1348,7 +1346,7 @@ class IndexingServiceTest
         when( indexProxyCreator.createRecoveringIndexProxy( any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createFailedIndexProxy( any(), any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createPopulatingIndexProxy( any(), anyBoolean(), any(), any() ) ).thenReturn( indexProxy );
-        MultiPopulatorFactory multiPopulatorFactory = forConfig( Config.defaults( multi_threaded_schema_index_population_enabled, false ) );
+        MultiPopulatorFactory multiPopulatorFactory = new MultiPopulatorFactory();
         JobScheduler scheduler = mock( JobScheduler.class );
         IndexSamplingController samplingController = mock( IndexSamplingController.class );
         IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
@@ -1477,7 +1475,6 @@ class IndexingServiceTest
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         Config config = Config.newBuilder()
-                .set( multi_threaded_schema_index_population_enabled, false )
                 .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
 
         DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider, fulltextProvider() ), config ) );

@@ -78,23 +78,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
     }
 
-    /**
-     * Creates a new multi-threaded populator with the specified thread pool.
-     * <p>
-     * <b>NOTE:</b> for testing only.
-     *
-     * @param storeView the view of the store as a visitable of nodes
-     * @param logProvider the log provider
-     * @param schemaState the schema state
-     * @param jobScheduler the job scheduler
-     * @param tokenNameLookup token lookup
-     */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
-    {
-        super( storeView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
-    }
-
     @Override
     public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {

@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -59,8 +60,6 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -94,7 +93,7 @@ public class BatchingMultipleIndexPopulatorTest
         setProperty( QUEUE_THRESHOLD_NAME, 5 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                mock( IndexStoreView.class ), NullLogProvider.getInstance(),
+                mock( IndexStoreView.class ), NullLogProvider.getInstance(), EntityType.NODE,
                 mock( SchemaState.class ), mock( IndexStatisticsStore.class ), new CallingThreadJobScheduler(), tokens );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
@@ -120,7 +119,7 @@ public class BatchingMultipleIndexPopulatorTest
         NeoStoreIndexStoreView storeView =
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ) );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                storeView, NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
@@ -156,7 +155,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = newStoreView( update1, update2, update3, update42 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
@@ -179,7 +178,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = newStoreView( update1, update2, update3 );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
@@ -207,7 +206,7 @@ public class BatchingMultipleIndexPopulatorTest
         try
         {
             BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                    NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                    NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                     jobScheduler, tokens );
 
             populator = addPopulator( batchingPopulator, index1 );
@@ -240,7 +239,7 @@ public class BatchingMultipleIndexPopulatorTest
         RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
 
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
@@ -277,7 +276,7 @@ public class BatchingMultipleIndexPopulatorTest
             }
         };
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
-                NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 jobScheduler, tokens );
         addPopulator( batchingPopulator, index1 );
 
@@ -335,18 +334,6 @@ public class BatchingMultipleIndexPopulatorTest
         return storeView;
     }
 
-    private static ExecutorService sameThreadExecutor() throws InterruptedException
-    {
-        ExecutorService executor = immediateExecutor();
-        when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
-        doAnswer( invocation ->
-        {
-            ((Runnable) invocation.getArgument( 0 )).run();
-            return null;
-        } ).when( executor ).execute( any() );
-        return executor;
-    }
-
     private static void setProperty( String name, int value )
     {
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, name, value );
@@ -355,17 +342,6 @@ public class BatchingMultipleIndexPopulatorTest
     private static void clearProperty( String name )
     {
         FeatureToggles.clear( BatchingMultipleIndexPopulator.class, name );
-    }
-
-    private static ExecutorService immediateExecutor()
-    {
-        ExecutorService result = mock( ExecutorService.class );
-        doAnswer( invocation ->
-        {
-            invocation.<Runnable>getArgument( 0 ).run();
-            return null;
-        } ).when( result ).execute( any( Runnable.class ) );
-        return result;
     }
 
     private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>

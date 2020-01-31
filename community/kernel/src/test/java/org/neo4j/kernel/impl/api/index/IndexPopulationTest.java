@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -65,9 +65,10 @@ class IndexPopulationTest
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
         InMemoryTokens tokens = new InMemoryTokens();
+
         MultipleIndexPopulator multipleIndexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                        mock( JobScheduler.class ), tokens );
+                new BatchingMultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
+                        JobSchedulerFactory.createInitialisedScheduler(), tokens );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );

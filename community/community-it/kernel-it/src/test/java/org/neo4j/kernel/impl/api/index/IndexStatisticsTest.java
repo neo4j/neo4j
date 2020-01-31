@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,8 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -88,7 +84,6 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
  * The area around when the index population is done is controlled using a {@link Barrier} so that we can assert sample data
  * with 100% accuracy against the updates we know that the test has done during the time the index was populating.
  */
-@RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {
     private static final double UNIQUE_NAMES = 10.0;
@@ -102,9 +97,6 @@ public class IndexStatisticsTest
     private static final String PERSON_LABEL = "Person";
     private static final String NAME_PROPERTY = "name";
 
-    @Parameter
-    public boolean multiThreadedPopulationEnabled;
-
     @Rule
     public final DbmsRule dbRule = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
@@ -115,17 +107,9 @@ public class IndexStatisticsTest
     private GraphDatabaseAPI db;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
-    @Parameters( name = "multiThreadedIndexPopulationEnabled = {0}" )
-    public static Object[] multiThreadedIndexPopulationEnabledValues()
-    {
-        return new Object[]{true, false};
-    }
-
     @Before
     public void before()
     {
-        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled );
-
         int batchSize = random.nextInt( 1, 5 );
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );

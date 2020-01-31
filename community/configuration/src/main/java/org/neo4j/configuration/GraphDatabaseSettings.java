@@ -663,10 +663,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.index_searcher_cache_size", INT, Integer.MAX_VALUE ).addConstraint( min( 1 ) ).build();
 
     // Lucene schema indexes
-    @Internal
-    public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
-            newBuilder( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOL, true ).build();
-
     public enum SchemaIndex
     {
         NATIVE_BTREE10( "native-btree", "1.0", false ),
