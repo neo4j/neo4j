@@ -115,7 +115,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "PRUNSRV arguments are quoted" {
-      $quotedStringRegex = ([regex]::new("^"".*""$"))
+      $quotedStringRegex = New-Object -Type System.Text.RegularExpressions.Regex -ArgumentList "^"".*""$"
       $serverObject = global:New-MockNeo4jInstall -RootDir "TestDrive:\Neo4j Install With Space"
 
       It "on service install" {
