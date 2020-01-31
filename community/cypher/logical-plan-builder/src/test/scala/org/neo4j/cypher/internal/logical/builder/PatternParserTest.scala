@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.util.InputPosition.NONE
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class PatternParserTest extends CypherFunSuite with TestName {
   val patternParser = new PatternParser

@@ -20,10 +20,22 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ast.UnresolvedCall
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.parser.{Expressions, ProcedureCalls}
-import org.neo4j.cypher.internal.util.{ASTNode, Rewriter, topDown}
-import org.parboiled.scala.{ParsingResult, ReportingParseRunner, Rule1}
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.parser.Expressions
+import org.neo4j.cypher.internal.parser.ProcedureCalls
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
+import org.parboiled.scala.ParsingResult
+import org.parboiled.scala.ReportingParseRunner
+import org.parboiled.scala.Rule1
 
 object Parser {
   val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
