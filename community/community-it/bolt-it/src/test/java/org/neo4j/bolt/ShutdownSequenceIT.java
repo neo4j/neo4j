@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -28,12 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -45,33 +40,29 @@ import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.SpiedAssertableLogProvider;
 import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.Stopwatch;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.String.valueOf;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
@@ -79,23 +70,23 @@ import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class ShutdownSequenceIT
 {
-    private static final String PREFIX = RandomStringUtils.randomAlphabetic( 1000 );
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds( 10 );
 
-    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
+    private final AssertableLogProvider internalLogProvider =
+            new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
-    private Semaphore procedureLatch;
+    private CountDownLatch txStarted;
+    private CountDownLatch boltWorkerThreadPoolShuttingDown;
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
@@ -107,10 +98,11 @@ public class ShutdownSequenceIT
     public void setup() throws Exception
     {
         address = server.lookupDefaultConnector();
-        procedureLatch = new Semaphore( 0 );
+        txStarted = new CountDownLatch( 1 );
+        boltWorkerThreadPoolShuttingDown = new CountDownLatch( 1 );
 
         var procedures = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver().resolveDependency( GlobalProcedures.class );
-        procedures.registerComponent( Semaphore.class, context -> procedureLatch, true );
+        procedures.registerComponent( Pair.class, context -> Pair.of( txStarted, boltWorkerThreadPoolShuttingDown ), true );
         procedures.registerProcedure( TestProcedures.class );
     }
 
@@ -126,23 +118,26 @@ public class ShutdownSequenceIT
     {
         var connection = connectAndAuthenticate();
 
-        // Ask for streaming to start
         connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.nodes()" ) );
 
-        // Wait for the procedure to get stuck
-        if ( !procedureLatch.tryAcquire( 1, 1, MINUTES ) )
-        {
-            fail( "Unable to acquire semaphore in a reasonable duration" );
-        }
+        // Wait for a transaction to start on the server side
+        assertTrue( txStarted.await( 1, MINUTES ) );
+
+        // Register a callback when the bolt worker thread pool is shut down.
+        var schedulerLog = internalLogProvider.getLog( ExecutorBoltScheduler.class );
+        doAnswer( invocation -> {
+            invocation.callRealMethod();
+            boltWorkerThreadPoolShuttingDown.countDown();
+            return null;
+        } ).when( schedulerLog ).debug( "Shutting down thread pool" );
 
         // Shutdown the server
         server.getManagementService().shutdown();
 
         // Expect the connection to have the following interactions
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-        Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals( stringValue( "0" ) ), "Equal record" );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure() ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
@@ -166,63 +161,33 @@ public class ShutdownSequenceIT
     @Test
     public void shutdownShouldWaitForNonTransactionAwareConnections() throws Exception
     {
-        var count = 5_000L;
-        var semaphore = new Semaphore( 1 );
         var connection = connectAndAuthenticate();
 
-        // This calls a procedure that generates a stream of strings with 10ms pauses between each item
-        // Ask for streaming to start
-        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.strings($limit, 10)", ValueUtils.asMapValue( MapUtil.map( "limit", count ) ) ) );
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.strings()" ) );
 
-        // Consume records in another thread
-        semaphore.acquire();
-        var streamFuture = otherThread.execute( w ->
-        {
-            var value = 0;
-            for ( var i = 0; i < count; i++ )
-            {
-                int conditionValue = value;
-                Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals(
-                        stringValue( valueOf( String.format( "%s-%d", PREFIX, conditionValue ) ) ) ), "Equal record" );
-                assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
-                value += 2;
+        // Wait for a transaction to start on the server side
+        assertTrue( txStarted.await( 1, MINUTES ) );
 
-                if ( i == 500 )
-                {
-                    semaphore.release();
-                }
-            }
-            assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-            return 0;
-        } );
-
-        // Wait for the streaming to progress
-        if ( !semaphore.tryAcquire( 1, 30, SECONDS ) )
-        {
-            fail( "Unable to acquire semaphore in a reasonable duration" );
-        }
+        // Register a callback when the bolt worker thread pool is shut down.
+        var schedulerLog = internalLogProvider.getLog( ExecutorBoltScheduler.class );
+        doAnswer( invocation -> {
+            invocation.callRealMethod();
+            boltWorkerThreadPoolShuttingDown.countDown();
+            return null;
+        } ).when( schedulerLog ).debug( "Shutting down thread pool" );
 
         // Initiate the shutdown
         server.getManagementService().shutdown();
 
-        // Expect the connection to be terminated but the thread pool shutdown to time out
+        // Expect the connection to have the following interactions
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+        Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals( stringValue( "0" ) ), "Equal record" );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
-                .forLevel( WARN ).containsMessageWithArguments(
-                "Waited %s for the thread pool to shutdown cleanly, but timed out waiting for existing work to finish cleanly",
-                THREAD_POOL_SHUTDOWN_WAIT_TIME );
-
-        // Also the streaming thread should have been failed
-        try
-        {
-            otherThread.get().awaitFuture( streamFuture );
-            fail( "streaming thread should have been failed" );
-        }
-        catch ( ExecutionException ex )
-        {
-            assertThat( getRootCause( ex ) ).isInstanceOf( IOException.class );
-        }
+                .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
     }
 
     private TransportConnection connectAndAuthenticate() throws Exception
@@ -264,71 +229,44 @@ public class ShutdownSequenceIT
         public GraphDatabaseService db;
 
         @Context
-        public Semaphore procedureLatch;
+        public Pair<CountDownLatch, CountDownLatch> pair;
+
+        @Context
+        public Transaction tx;
 
         @Procedure( name = "test.stream.strings", mode = READ )
-        public Stream<Output> streamStrings( @Name( value = "limit", defaultValue = "0" ) long limit,
-                @Name( value = "delay", defaultValue = "100" ) long delay )
+        public Stream<Output> streamStrings()
         {
-            final var value = new AtomicLong( 0 );
-            var stream = Stream.generate( () ->
+            pair.first().countDown();
+            try
             {
-                if ( delay > 0 )
-                {
-                    try
-                    {
-                        Thread.sleep( delay );
-                    }
-                    catch ( InterruptedException exc )
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-
-                return value.getAndAdd( 2 );
-            } );
-
-            if ( limit > 0 )
-            {
-                stream = stream.limit( limit );
+                assertTrue( pair.other().await( 1, MINUTES ) );
             }
-
-            return stream.map( i -> new Output( String.format( "%s-%d", PREFIX, i ) ) );
+            catch ( InterruptedException e )
+            {
+                fail( "Interrupted while waiting for bolt worker threads shut down." );
+            }
+            // I shall be able to stream this value back.
+            // But this procedure tx shall not be able to commit/rollback as dbms is already shutting down.
+            return Stream.of( new Output( valueOf( 0 ) ) );
         }
 
         @Procedure( name = "test.stream.nodes", mode = READ )
         public Stream<Output> streamNodes()
         {
-            final var value = new MutableInt( 0 );
-
-            return Stream.generate( () ->
+            pair.first().countDown();
+            try
             {
-                int i = value.getAndIncrement();
+                assertTrue( pair.other().await( 1, MINUTES ) );
+            }
+            catch ( InterruptedException e )
+            {
+                fail( "Interrupted while waiting for bolt worker threads shut down." );
+            }
 
-                if ( i == 1 )
-                {
-                    try ( var tx = db.beginTx() )
-                    {
-                        procedureLatch.release();
-                        Stopwatch stopwatch = Clocks.nanoClock().startStopWatch();
-                        while ( !stopwatch.hasTimedOut( 1, MINUTES ) )
-                        {
-                            try
-                            {
-                                tx.getNodeById( 0 );
-                            }
-                            catch ( NotFoundException ignore )
-                            {
-                                // We don't expect there to be any
-                            }
-                            parkNanos( MILLISECONDS.toNanos( 10 ) );
-                        }
-                        fail( "Transaction was never terminated" );
-                    }
-                }
-
-                return new Output( valueOf( i ) );
-            } );
+            // I shall fail to access node id
+            tx.getNodeById( 0 );
+            return Stream.of( new Output( valueOf( 0 ) ) );
         }
 
         public static class Output

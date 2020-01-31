@@ -69,17 +69,4 @@ public class BoltStateMachineV4 extends AbstractBoltStateMachine
 
         return new States( connected, failed );
     }
-
-    @Override
-    protected void after()
-    {
-        if ( connectionState.isTerminated() )
-        {
-            close();
-        }
-        else
-        {
-            super.after();
-        }
-    }
 }
