@@ -29,11 +29,11 @@ import scala.collection.mutable
 
 class InterpretedProfileInformation extends QueryProfile {
 
-  case class OperatorData(override val dbHits: Long,
-                          override val rows: Long,
-                          override val pageCacheHits: Long,
-                          override val pageCacheMisses: Long,
-                          override val maxAllocatedMemory: Long) extends OperatorProfile {
+  case class OperatorData(dbHits: Long,
+                          rows: Long,
+                          pageCacheHits: Long,
+                          pageCacheMisses: Long,
+                          maxAllocatedMemory: Long) extends OperatorProfile {
 
     override def time: Long = OperatorProfile.NO_DATA
 
