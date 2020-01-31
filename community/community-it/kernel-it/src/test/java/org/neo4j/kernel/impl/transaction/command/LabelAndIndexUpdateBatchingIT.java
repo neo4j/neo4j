@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -58,14 +58,13 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * the batch state, to be applied at the end of the batch. Hence the node would be forgotten when the
  * index was being built.
  */
-public class LabelAndIndexUpdateBatchingIT
+class LabelAndIndexUpdateBatchingIT
 {
     private static final String PROPERTY_KEY = "key";
     private static final Label LABEL = Label.label( "label" );
-    private DatabaseManagementService managementService;
 
     @Test
-    public void indexShouldIncludeNodesCreatedPreviouslyInBatch() throws Exception
+    void indexShouldIncludeNodesCreatedPreviouslyInBatch() throws Exception
     {
         // GIVEN a transaction stream leading up to this issue
         // perform the transactions from db-level and extract the transactions as commands
@@ -73,7 +72,7 @@ public class LabelAndIndexUpdateBatchingIT
 
         // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         List<TransactionRepresentation> transactions;
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         String nodeN = "our guy";
         String otherNode = "just to create the tokens";
@@ -122,10 +121,8 @@ public class LabelAndIndexUpdateBatchingIT
             // THEN node N should've ended up in the index too
             try ( Transaction tx = db.beginTx() )
             {
-                assertNotNull( "Verification node not found",
-                        singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, otherNode ) ) ); // just to verify
-                assertNotNull( "Node N not found",
-                        singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, nodeN ) ) );
+                Assertions.assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, otherNode ) ), "Verification node not found" ); // just to verify
+                Assertions.assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, nodeN ) ), "Node N not found" );
                 tx.commit();
             }
         }

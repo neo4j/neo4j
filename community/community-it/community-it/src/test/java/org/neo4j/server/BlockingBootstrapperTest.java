@@ -19,8 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Collections;
@@ -29,19 +28,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class BlockingBootstrapperTest
+@Neo4jLayoutExtension
+class BlockingBootstrapperTest
 {
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory homeDir;
 
     @Test
-    public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() throws Throwable
+    void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful()
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );
@@ -81,7 +83,7 @@ public class BlockingBootstrapperTest
     }
 
     @Test
-    public void shouldNotBlockIfTheWrappedStartIsUnsuccessful() throws Throwable
+    void shouldNotBlockIfTheWrappedStartIsUnsuccessful() throws Throwable
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );
