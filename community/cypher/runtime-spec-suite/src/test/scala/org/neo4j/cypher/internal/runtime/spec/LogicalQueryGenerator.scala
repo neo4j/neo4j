@@ -45,10 +45,10 @@ object LogicalQueryGenerator {
     val stats = TransactionBoundGraphStatistics(txContext, NullLog.getInstance())
 
     val labelMap = tokenRead.labelsGetAllTokens().asScala.map(l => l.name() -> l.id()).toMap
-    val relTypes = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(_.name())
+    val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 
     for {
-      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relTypes, stats, costLimit).logicalPlan
+      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, stats, costLimit).logicalPlan
     } yield WithState(LogicalQuery(logicalPlan,
       "<<queryText>>",
       readOnly = true,

@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2020 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -28,7 +47,6 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
@@ -36,11 +54,11 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
   private val pos = InputPosition.NONE
 
-  private val defaultCardinality = Cardinality(123)
+  private val defaultSourceCardinality = Cardinality(123)
 
-  private val defaultState = LogicalPlanGenerator.State().copy(
+  private val defaultState = LogicalPlanGenerator.State(Map.empty).copy(
     cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
-      override protected def defaultValue: Cardinality = Cardinality(123)
+      override protected def defaultValue: Cardinality = defaultSourceCardinality
     }
   )
 
@@ -50,7 +68,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = ProduceResult(Argument(), Seq.empty)
 
     val c = CardinalityCalculator.produceResultCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality)
+    c should equal(defaultSourceCardinality)
   }
 
   test("AllNodesScan") {
@@ -66,7 +84,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   test("AllNodesScan under Apply") {
     val plan = AllNodesScan("a", Set.empty)
     val multiplier = Cardinality(10)
-    val state = LogicalPlanGenerator.State().pushLeafCardinalityMultiplier(multiplier)
+    val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
     val stats = new TestGraphStatistics {
       override def nodesAllCardinality(): Cardinality = Cardinality(321)
     }
@@ -90,7 +108,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty)
     val multiplier = Cardinality(10)
     val labelCardinality = Cardinality(321)
-    val state = LogicalPlanGenerator.State().pushLeafCardinalityMultiplier(multiplier)
+    val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
     val stats = new TestGraphStatistics {
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelCardinality
     }
@@ -108,7 +126,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   test("Argument under Apply") {
     val plan = Argument()
     val multiplier = Cardinality(10)
-    val state = LogicalPlanGenerator.State().pushLeafCardinalityMultiplier(multiplier)
+    val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
 
     val c = CardinalityCalculator.argumentCardinality(plan, state, new TestGraphStatistics, Map.empty)
     c should equal(multiplier)
@@ -117,14 +135,34 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   test("Expand") {
     val rels = Seq("A", "B")
     val relTypes = rels.map(r => RelTypeName(r)(pos))
+    val relIds = rels.zipWithIndex.toMap
+
+    val allNodesCount = 100
+    val relCount = 42
+    val avgRelsPerNode = (rels.size * relCount) / allNodesCount.toDouble
+
     val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
-    val state = defaultState.copy(arguments = Set("from"))
+
+    val state = LogicalPlanGenerator.State(relIds).copy(
+      arguments = Set("from"),
+      cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
+        override protected def defaultValue: Cardinality = defaultSourceCardinality
+      }
+    )
+
     val stats = new TestGraphStatistics {
-      override def nodesAllCardinality(): Cardinality = Cardinality(100)
+      override def nodesAllCardinality(): Cardinality =
+        Cardinality(allNodesCount)
+      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+        Cardinality(relCount)
     }
 
-    val c = CardinalityCalculator.expandCardinality(plan, state, stats, Map.empty)
-    c should equal(Cardinality.EMPTY) // TODO fix expand
+    val expectedAmountApprox = avgRelsPerNode * defaultSourceCardinality.amount
+    val Cardinality(actualAmount) = CardinalityCalculator.expandCardinality(plan, state, stats, Map.empty)
+
+    val marginOfError = expectedAmountApprox * 0.01
+    actualAmount should equal(expectedAmountApprox +- marginOfError)
+    actualAmount should equal(expectedAmountApprox +- marginOfError)
   }
 
   test("Limit amount < node count") {
@@ -140,7 +178,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos), DoNotIncludeTies)
 
     val c = CardinalityCalculator.limitCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality)
+    c should equal(defaultSourceCardinality)
   }
 
   test("Skip amount < node count") {
@@ -148,7 +186,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Skip(Argument(), SignedDecimalIntegerLiteral(skipAmount.toString)(pos))
 
     val c = CardinalityCalculator.skipCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality.map(_ - skipAmount))
+    c should equal(defaultSourceCardinality.map(_ - skipAmount))
   }
 
   test("Skip amount > node count") {
@@ -163,7 +201,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Projection(Argument(), Map.empty)
 
     val c = CardinalityCalculator.projectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality)
+    c should equal(defaultSourceCardinality)
   }
 
   test("Aggregation without grouping") {
@@ -177,21 +215,21 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Aggregation(Argument(), Map("x" -> CountStar()(pos)), Map.empty)
 
     val c = CardinalityCalculator.aggregationCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(Cardinality.sqrt(defaultCardinality))
+    c should equal(Cardinality.sqrt(defaultSourceCardinality))
   }
 
   test("Apply") {
     val plan = Apply(Argument(), Argument())
 
     val c = CardinalityCalculator.applyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality)
+    c should equal(defaultSourceCardinality)
   }
 
   test("CartesianProduct") {
     val plan = CartesianProduct(Argument(), Argument())
 
     val c = CardinalityCalculator.cartesianProductCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultCardinality * defaultCardinality)
+    c should equal(defaultSourceCardinality * defaultSourceCardinality)
   }
 
   private class TestGraphStatistics extends GraphStatistics {

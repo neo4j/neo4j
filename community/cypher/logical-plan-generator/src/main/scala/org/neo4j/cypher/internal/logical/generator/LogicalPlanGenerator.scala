@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.scalacheck.Gen
@@ -75,9 +76,10 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
 
   object State {
-    def apply(): State =
+   def apply(relTypesWithIds: Map[String, Int]): State = {
+      val resolvedRelTypes = scala.collection.mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
       State(
-        SemanticTable(),
+        new SemanticTable(resolvedRelTypeNames = resolvedRelTypes),
         Set.empty,
         0,
         Set.empty,
@@ -85,6 +87,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
         Map.empty.withDefaultValue(Set.empty),
         new Cardinalities,
         new SequentialIdGen())
+    }
   }
 
   /**
@@ -133,8 +136,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
       const(WithState(name, copy(varCount = varCount + 1)))
     }
 
-    def newNode(name: String): Gen[State] =
-      const(copy(semanticTable = semanticTable.addNode(varFor(name))))
+    def newNode(name: String): State =
+      copy(semanticTable = semanticTable.addNode(varFor(name)))
 
     def newRelationship(name: String): Gen[State] =
       const(copy(semanticTable = semanticTable.addRelationship(varFor(name))))
@@ -167,20 +170,21 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
 /**
  * A generator of random logical plans, with the ambition to generate only valid plans.
  * @param labelsWithIds The labels that exist in a graph that the plans can be executed against.
- * @param relTypes The relationship types that exist in a graph that the plans can be executed against.
+ * @param relTypesWithIds The relationship types that exist in a graph that the plans can be executed against.
  * @param stats Statistics of a graphs that plans are executed against.
  * @param costLimit Maximum allowed cost of a generated plan.
  */
-class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String], stats: GraphStatistics, costLimit: Cost) extends AstConstructionTestSupport {
+class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int], stats: GraphStatistics, costLimit: Cost) extends AstConstructionTestSupport {
 
   private val labels = labelsWithIds.keys.toVector
+  private val relTypes = relTypesWithIds.keys.toVector
   private val costModel = CardinalityCostModel(null)
 
   /**
    * Main entry point to obtain logical plans and associated state.
    */
   def logicalPlan: Gen[WithState[LogicalPlan]] = for {
-    initialState <- delay(State())
+    initialState <- delay(State(relTypesWithIds))
     WithState(source, state) <- innerLogicalPlan(initialState)
   } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
 
@@ -203,7 +207,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
 
   def allNodesScan(state: State): Gen[WithState[AllNodesScan]] = for {
     WithState(node, state) <- newVariable(state)
-    state <- state.newNode(node)
+    state <- const(state.newNode(node))
   } yield {
     val plan = AllNodesScan(node, state.arguments)(state.idGen)
     annotate(plan, state)
@@ -212,7 +216,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
   def nodeByLabelScan(state: State): Gen[WithState[NodeByLabelScan]] = for {
     labelName <- label
     WithState(node, state) <- newVariable(state)
-    state <- state.newNode(node)
+    state <- const(state.newNode(node))
     state <- state.recordLabel(node, labelName.name)
   } yield {
     val plan = NodeByLabelScan(node, labelName, state.arguments)(state.idGen)
@@ -232,7 +236,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypes: Seq[String
     dir <- semanticDirection
     relTypes <- relTypeNames
     WithState(to, state) <- newVariable(state)
-    state <- state.newNode(to)
+    state <- const(state.newNode(to))
     WithState(rel, state) <- newVariable(state)
     state <- state.newRelationship(rel)
   } yield {
