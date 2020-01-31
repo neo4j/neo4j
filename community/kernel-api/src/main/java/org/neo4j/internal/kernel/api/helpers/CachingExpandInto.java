@@ -256,7 +256,11 @@ public class CachingExpandInto
         @Override
         public void setCloseListener( CloseListener closeListener )
         {
-            //nothing close, nothing to listen to
+            //nothing close, nothing to listen to, please ignore me
+            if ( closeListener != null )
+            {
+                closeListener.onClosed( this );
+            }
         }
 
         @Override
@@ -361,7 +365,6 @@ public class CachingExpandInto
         public void close()
         {
             closeInternal();
-            CloseListener closeListener = allRelationships.getCloseListener();
             if ( closeListener != null )
             {
                 closeListener.onClosed( this );
@@ -430,6 +433,7 @@ public class CachingExpandInto
 
             relationshipCache.add( fromNode, toNode, direction, connections );
             done();
+            close();
             return false;
         }
 

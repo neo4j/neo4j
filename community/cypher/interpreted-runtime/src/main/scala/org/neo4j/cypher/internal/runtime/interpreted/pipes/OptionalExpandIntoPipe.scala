@@ -45,10 +45,10 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
 
   predicate.foreach(_.registerOwningPipe(this))
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     val query = state.query
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
-    val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -62,30 +62,35 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 Iterator.single(row)
               case n: NodeValue =>
                 val traversalCursor = query.traversalCursor()
-                val relationships =
-                  relationshipIterator(expandInto.connectingRelationships(nodeCursor,
-                                                                          traversalCursor,
-                                                                          fromNode.id(),
-                                                                          types.types(query),
-                                                                          n.id()), query)
-                val filteredRows = ListBuffer.empty[ExecutionContext]
-                while (relationships.hasNext) {
-                  val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())
-                  if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)){
-                    filteredRows.append(candidateRow)
+                val nodeCursor = query.nodeCursor()
+                try {
+                  val selectionCursor = expandInto.connectingRelationships(nodeCursor,
+                                                                           traversalCursor,
+                                                                           fromNode.id(),
+                                                                           types.types(query),
+                                                                           n.id())
+                  query.resources.trace(selectionCursor)
+                  val relationships = relationshipIterator(selectionCursor, query)
+                  val filteredRows = ListBuffer.empty[ExecutionContext]
+                  while (relationships.hasNext) {
+                    val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())
+                    if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
+                      filteredRows.append(candidateRow)
+                    }
                   }
+                  if (filteredRows.isEmpty) {
+                    row.set(relName, Values.NO_VALUE)
+                    Iterator.single(row)
+                  }
+                  else filteredRows
+                } finally {
+                  nodeCursor.close()
                 }
 
-                if (filteredRows.isEmpty) {
-                  row.set(relName, Values.NO_VALUE)
-                  Iterator.single(row)
-                }
-                else filteredRows
+              case IsNoValue() =>
+                row.set(relName, Values.NO_VALUE)
+                Iterator(row)
             }
-
-          case IsNoValue() =>
-            row.set(relName, Values.NO_VALUE)
-            Iterator(row)
         }
     }
   }

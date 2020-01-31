@@ -66,7 +66,6 @@ case class ExpandIntoPipe(source: Pipe,
     val query = state.query
 
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
-    val nodeCursor = query.nodeCursor()
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -77,15 +76,23 @@ case class ExpandIntoPipe(source: Pipe,
               case IsNoValue() => Iterator.empty
               case n: NodeValue =>
                 val traversalCursor = query.traversalCursor()
-                val relationships = relationshipIterator(expandInto.connectingRelationships(nodeCursor,
-                                                                                            traversalCursor,
-                                                                                            fromNode.id(),
-                                                                                            lazyTypes.types(query),
-                                                                                            n.id()), query)
-                if (relationships.isEmpty) Iterator.empty
-                else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
-              case value => throw new ParameterWrongTypeException(
-                s"Expected to find a node at '$fromName' but found $value instead")
+                val nodeCursor = query.nodeCursor()
+                try {
+                  val selectionCursor = expandInto.connectingRelationships(nodeCursor,
+                                                                           traversalCursor,
+                                                                           fromNode.id(),
+                                                                           lazyTypes.types(query),
+                                                                           n.id())
+                  query.resources.trace(selectionCursor)
+                  val relationships = relationshipIterator(selectionCursor, query)
+                  if (relationships.isEmpty) Iterator.empty
+                  else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
+                } finally {
+                  nodeCursor.close()
+                }
+              case value =>
+                throw new ParameterWrongTypeException(
+                  s"Expected to find a node at '$fromName' but found $value instead")
             }
 
           case IsNoValue() => Iterator.empty
