@@ -17,40 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
-
-abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
+public interface ReadTracer
 {
-    protected KernelReadTracer tracer;
+    /**
+     * Called when reading a node.
+     *
+     * @param nodeReference the node reference that will be available.
+     */
+    void onNode( long nodeReference );
 
-    TraceableCursor()
-    {
-    }
+    /**
+     * Called on all-node scan.
+     */
+    void onAllNodesScan();
 
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        this.tracer = tracer;
-    }
+    /**
+     * Called when traversing a relationship.
+     *
+     * @param relationshipReference the relationship reference that will be available.
+     */
+    void onRelationship( long relationshipReference );
 
-    @Override
-    public void removeTracer()
-    {
-        this.tracer = null;
-    }
+    /**
+     * Called when reading a property.
+     *
+     * @param propertyKey the property key of the next property.
+     */
+    void onProperty( int propertyKey );
 
-    @Override
-    public void close()
-    {
-        closeInternal();
-        var listener = closeListener;
-        if ( listener != null )
-        {
-            listener.onClosed( this );
-        }
-    }
+    void dbHit();
 }
