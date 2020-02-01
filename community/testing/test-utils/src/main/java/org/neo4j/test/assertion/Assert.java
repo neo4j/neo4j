@@ -19,26 +19,28 @@
  */
 package org.neo4j.test.assertion;
 
+import org.assertj.core.api.Condition;
 import org.awaitility.core.ConditionFactory;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
+import org.neo4j.test.conditions.Conditions;
 
 import static java.time.Duration.ZERO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.neo4j.test.conditions.Conditions.condition;
 
 public final class Assert
 {
@@ -84,25 +86,39 @@ public final class Assert
         }
     }
 
-    public static <T> void assertEventually( Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
+    public static <T> void assertEventually( Callable<T> actual, Predicate<? super T> predicate, long timeout, TimeUnit timeUnit )
     {
-        assertEventually( EMPTY, actual, matcher, timeout, timeUnit );
+        assertEventually( EMPTY, actual, condition( predicate ), timeout, timeUnit );
     }
 
-    public static <T> void assertEventually( String message, Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
+    public static <T> void assertEventually( Callable<T> actual, Condition<? super T> condition, long timeout, TimeUnit timeUnit )
     {
-        awaitCondition( message, timeout, timeUnit ).until( actual, matcher );
+        assertEventually( EMPTY, actual, condition, timeout, timeUnit );
     }
 
-    public static <T> void assertEventually( Supplier<String> messageSupplier, Callable<T> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit )
+    public static <T> void assertEventually( String message, Callable<T> actual, Condition<? super T> condition, long timeout, TimeUnit timeUnit )
     {
-        assertEventually( ignore -> messageSupplier.get(), actual, matcher, timeout, timeUnit );
+        awaitCondition( message, timeout, timeUnit ).untilAsserted( () -> assertThat( actual.call() ).satisfies( condition ) );
     }
 
-    public static <T> void assertEventually( Function<T,String> messageGenerator, Callable<T> actual, Matcher<? super T> matcher, long timeout,
+    public static <T> void assertEventually( String message, Callable<T> actual, Predicate<? super T> predicate, long timeout, TimeUnit timeUnit )
+    {
+        awaitCondition( message, timeout, timeUnit ).untilAsserted( () -> assertThat( actual.call() ).satisfies( condition( predicate ) ) );
+    }
+
+    public static <T> void assertEventually( Supplier<String> messageSupplier, Callable<T> actual, Condition<? super T> condition, long timeout,
             TimeUnit timeUnit )
     {
-        awaitCondition( "await condition", timeout, timeUnit ).until( actual, new DescriptiveMatcher<>( matcher, messageGenerator ) );
+        assertEventually( ignore -> messageSupplier.get(), actual, condition, timeout, timeUnit );
+    }
+
+    public static <T> void assertEventually( Function<T,String> messageGenerator, Callable<T> actual, Condition<? super T> condition, long timeout,
+            TimeUnit timeUnit )
+    {
+        awaitCondition( "await condition", timeout, timeUnit ).untilAsserted( () -> {
+            var value = actual.call();
+            assertThat( value ).as( messageGenerator.apply( value ) ).satisfies( condition );
+        } );
     }
 
     private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
@@ -116,32 +132,5 @@ public final class Assert
         return new AssertionError( ((message == null || message.isEmpty()) ? "" : message + "\n") +
                                    "Expected: " + Strings.prettyPrint( expected ) +
                                    ", actual: " + Strings.prettyPrint( actual ) );
-    }
-
-    private static class DescriptiveMatcher<T> extends TypeSafeMatcher<T>
-    {
-
-        private final Matcher<? super T> matcher;
-        private final Function<T, String> messageGenerator;
-        private T lastItem;
-
-        DescriptiveMatcher( Matcher<? super T> matcher, Function<T,String> messageGenerator )
-        {
-            this.matcher = matcher;
-            this.messageGenerator = messageGenerator;
-        }
-
-        @Override
-        protected boolean matchesSafely( T item )
-        {
-            this.lastItem = item;
-            return matcher.matches( item );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( messageGenerator.apply( lastItem ) );
-        }
     }
 }

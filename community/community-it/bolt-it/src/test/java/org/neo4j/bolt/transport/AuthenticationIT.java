@@ -55,7 +55,6 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
@@ -67,6 +66,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.test.conditions.Conditions.TRUE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
@@ -140,7 +140,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( connection ).satisfies( eventuallyDisconnects() );
-        assertEventually( () -> "Matching log call not found in\n" + logProvider.serialize(), this::authFailureLoggedToUserLog, is( true ), 30, SECONDS );
+        assertEventually( () -> "Matching log call not found in\n" + logProvider.serialize(), this::authFailureLoggedToUserLog, TRUE, 30, SECONDS );
     }
 
     private boolean authFailureLoggedToUserLog()

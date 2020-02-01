@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -45,12 +46,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -58,7 +59,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -100,7 +100,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // Then
         assertEquals( NeoBootstrapper.OK, resultCode );
-        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
     }
 
     protected String[] getAdditionalArguments() throws IOException
@@ -202,7 +202,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     {
         File serverDir = testDirectory.directory( "server-dir" );
         NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.getAbsolutePath() ) );
-        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
         var databaseAPI = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
         var serverLayout = databaseAPI.databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
@@ -229,7 +229,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
             SelfSignedCertificateFactory.create( testDirectory.homeDir().getAbsoluteFile() );
         }
 
-        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, TRUE ) : "",
+        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, SettingValueParsers.TRUE ) : "",
                 "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
@@ -244,7 +244,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         int resultCode = NeoBootstrapper.start( bootstrapper, allConfigOptions );
 
         assertEquals( NeoBootstrapper.OK, resultCode );
-        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
         assertDbAccessibleAsEmbedded();
 
         verifyConnector( db(), HttpConnector.NAME, httpEnabled );
@@ -273,14 +273,14 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     {
         return stringMap(
                 HttpConnector.listen_address.name(), "localhost:0",
-                HttpConnector.enabled.name(), TRUE,
+                HttpConnector.enabled.name(), SettingValueParsers.TRUE,
 
                 HttpsConnector.listen_address.name(), "localhost:0",
                 HttpsConnector.enabled.name(), FALSE,
 
                 BoltConnector.listen_address.name(), "localhost:0",
                 BoltConnector.encryption_level.name(), "DISABLED",
-                BoltConnector.enabled.name(), TRUE
+                BoltConnector.enabled.name(), SettingValueParsers.TRUE
         );
     }
 

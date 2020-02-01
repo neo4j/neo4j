@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web.logging;
 
+import org.assertj.core.api.Condition;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,7 +110,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
             assertThat( response.statusCode(), is( OK_200 ) );
 
             // then
-            assertEventually( "request appears in log", httpLogContent( server ), containsString( query ), 5, SECONDS );
+            assertEventually( "request appears in log", httpLogContent( server ), value -> value.contains( query ), 5, SECONDS );
         }
         finally
         {
@@ -133,7 +134,8 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
             assertThat( response.statusCode(), is( NOT_FOUND_404 ) );
 
             // then
-            assertEventually( "request appears in log", httpLogContent( server ), containsPathWithoutQueryString( path ), 5, SECONDS );
+            assertEventually( "request appears in log", httpLogContent( server ),
+                    new Condition<>( value -> value.contains( path ) && !value.contains( "?" ), "Contains path without query string." ), 5, SECONDS );
         }
         finally
         {
@@ -181,10 +183,5 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
         var httpRequest = HttpRequest.newBuilder( uri ).GET().build();
         var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
         return httpClient.send( httpRequest, discarding() );
-    }
-
-    private static Matcher<String> containsPathWithoutQueryString( String path )
-    {
-        return both( containsString( path ) ).and( not( containsString( "?" ) ) );
     }
 }

@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Utility to create jar files containing classes from the current classpath.
  */
@@ -54,6 +56,7 @@ public class JarBuilder
     {
         try ( InputStream in = getClass().getClassLoader().getResourceAsStream( fileName ) )
         {
+            requireNonNull( in );
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             while ( in.available() > 0 )
             {
