@@ -262,7 +262,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.planningAttributes, "size(x)", "y")
       context.planningAttributes.providedOrders.set(plan.id,
         ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")),
-        ProvidedOrder.Asc(function("size", varFor("x"))))))
+          ProvidedOrder.Asc(function("size", varFor("x"))))))
 
       val aggregations = Map("size(x)" -> function("size", varFor("x")))
       val groupings = Map("y" -> varFor("y"))

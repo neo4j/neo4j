@@ -22,7 +22,16 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -297,7 +306,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     plan should equal(sort)
   }
 
-    test("should use ordered aggregation if there is one grouping column, ordered") {
+  test("should use ordered aggregation if there is one grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)

@@ -20,10 +20,20 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc}
-import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.logical.plans.{QualifiedName, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.RequiredOrderCandidate
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -386,5 +396,5 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)
       case Some(tail) => plannerQuery.interestingOrder :: interestingOrders(tail)
-  }
+    }
 }

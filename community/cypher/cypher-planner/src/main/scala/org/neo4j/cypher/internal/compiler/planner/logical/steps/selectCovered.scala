@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.unsolvedPreds
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {

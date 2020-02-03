@@ -19,13 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
@@ -129,11 +145,11 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
                                           types: Seq[RelTypeName], dir: SemanticDirection): Boolean = pattern match {
     // (a)-[:X]->(c)
     case PatternExpression(
-      RelationshipsPattern(
-        RelationshipChain(
-          NodePattern(Some(Variable(predicateFrom)), List(), None, _),
-          RelationshipPattern(None, predicateTypes, None, None, predicateDir, _, _),
-          NodePattern(Some(Variable(predicateTo)), List(), None, _))))
+    RelationshipsPattern(
+    RelationshipChain(
+    NodePattern(Some(Variable(predicateFrom)), List(), None, _),
+    RelationshipPattern(None, predicateTypes, None, None, predicateDir, _, _),
+    NodePattern(Some(Variable(predicateTo)), List(), None, _))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }

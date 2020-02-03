@@ -19,19 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.Cypher9Comparability
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.compiler.MultiDatabaseAdministrationCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
+import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
+import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
+import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
-import org.neo4j.cypher.internal.compiler.planner.logical.{OptionalMatchRemover, QueryPlanner}
-import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.compiler.{MultiDatabaseAdministrationCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
+import org.neo4j.cypher.internal.frontend.phases.AstRewriting
+import org.neo4j.cypher.internal.frontend.phases.BaseContains
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.If
+import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
+import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
+import org.neo4j.cypher.internal.frontend.phases.Parsing
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
+import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
+import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
+import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature._
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.frontend.phases.{Parsing, _}
-import org.neo4j.cypher.internal.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
-import org.neo4j.cypher.internal.rewriting.{Additions, Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.rewriting.Additions
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
 
 object CompilationPhases {
 
@@ -101,7 +128,7 @@ object CompilationPhases {
   // Alternative Phase 3
   def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     RewriteProcedureCalls andThen
-    MultiDatabaseAdministrationCommandPlanBuilder andThen
+      MultiDatabaseAdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         UnsupportedSystemCommand
       )

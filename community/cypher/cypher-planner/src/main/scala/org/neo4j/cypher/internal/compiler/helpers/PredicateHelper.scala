@@ -19,8 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.neo4j.cypher.internal.logical.plans.{CoerceToPredicate, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.BooleanLiteral
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.OperatorExpression
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.exceptions.InternalException
 
@@ -28,10 +45,10 @@ object PredicateHelper {
 
   private val BOOLEAN_FUNCTIONS: Set[functions.Function] = Set(functions.Exists, functions.ToBoolean)
   /**
-    * Takes predicates and coerce them to a boolean operator and AND together the result
-    * @param predicates The predicates to coerce
-    * @return coerced predicates anded together
-    */
+   * Takes predicates and coerce them to a boolean operator and AND together the result
+   * @param predicates The predicates to coerce
+   * @return coerced predicates anded together
+   */
   def coercePredicatesWithAnds(predicates: Seq[Expression]): Ands = {
     if (predicates.isEmpty) throw new InternalException("Selection need at least one predicate")
     Ands(predicates.map(coerceToPredicate).toSet)(predicates.map(coerceToPredicate).head.position)

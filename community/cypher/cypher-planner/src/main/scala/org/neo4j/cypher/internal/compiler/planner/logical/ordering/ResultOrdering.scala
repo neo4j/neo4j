@@ -20,9 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**
@@ -46,7 +50,6 @@ object ResultOrdering {
                                orderTypes: Seq[CypherType],
                                capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
 
-    import InterestingOrder._
 
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)

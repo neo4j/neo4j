@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
-import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Asc
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Desc
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
@@ -55,7 +57,7 @@ object aggregation {
         val shouldPlanLimit = AggregationHelper.checkMinOrMax(value, minFunc, maxFunc, false)
 
         if (shouldPlanLimit)
-          //.head works since min and max always have only one argument
+        //.head works since min and max always have only one argument
           Map(key -> value.arguments.head)
         else
           Map.empty
@@ -63,44 +65,44 @@ object aggregation {
         Map.empty
       }
 
-      if (projectionMapForLimit.nonEmpty) {
-        val projectedPlan = context.logicalPlanProducer.planRegularProjection(
+    if (projectionMapForLimit.nonEmpty) {
+      val projectedPlan = context.logicalPlanProducer.planRegularProjection(
+        rewrittenPlan,
+        projectionMapForLimit,
+        Map.empty,
+        context
+      )
+
+      context.logicalPlanProducer.planLimitForAggregation(
+        projectedPlan,
+        reportedGrouping = aggregation.groupingExpressions,
+        reportedAggregation = aggregation.aggregationExpressions,
+        interestingOrder = interestingOrder,
+        context = context
+      )
+    } else {
+      val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
+
+      val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions)
+
+      if (orderToLeverage.isEmpty) {
+        context.logicalPlanProducer.planAggregation(
           rewrittenPlan,
-          projectionMapForLimit,
-          Map.empty,
-          context
-        )
-
-        context.logicalPlanProducer.planLimitForAggregation(
-          projectedPlan,
-          reportedGrouping = aggregation.groupingExpressions,
-          reportedAggregation = aggregation.aggregationExpressions,
-          interestingOrder = interestingOrder,
-          context = context
-        )
+          groupingExpressions,
+          aggregations,
+          aggregation.groupingExpressions,
+          aggregation.aggregationExpressions,
+          context)
       } else {
-        val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
-
-        val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions)
-
-        if (orderToLeverage.isEmpty) {
-          context.logicalPlanProducer.planAggregation(
-            rewrittenPlan,
-            groupingExpressions,
-            aggregations,
-            aggregation.groupingExpressions,
-            aggregation.aggregationExpressions,
-            context)
-        } else {
-          context.logicalPlanProducer.planOrderedAggregation(
-            rewrittenPlan,
-            groupingExpressions,
-            aggregations,
-            orderToLeverage,
-            aggregation.groupingExpressions,
-            aggregation.aggregationExpressions,
-            context)
-        }
+        context.logicalPlanProducer.planOrderedAggregation(
+          rewrittenPlan,
+          groupingExpressions,
+          aggregations,
+          orderToLeverage,
+          aggregation.groupingExpressions,
+          aggregation.aggregationExpressions,
+          context)
       }
+    }
   }
 }

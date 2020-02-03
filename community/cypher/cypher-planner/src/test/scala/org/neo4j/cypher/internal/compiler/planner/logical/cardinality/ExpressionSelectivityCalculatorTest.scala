@@ -23,15 +23,32 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
-import org.neo4j.cypher.internal.ir.{Predicate, Selections}
-import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL_CARDINALITY, MIN_NODES_WITH_LABEL_CARDINALITY}
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.expressions.functions.{Distance, Exists}
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIST_CARDINALITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.functions.Distance
+import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -939,11 +956,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   }
 
   /**
-    * @param allNodesCardinality      total number of nodes
-    * @param labelCardinalities       for each label, the number of nodes that have that label
-    * @param indexCardinalities       for each index, the number of values in that index
-    * @param indexUniqueCardinalities for each index, the number of unique values in that index
-    */
+   * @param allNodesCardinality      total number of nodes
+   * @param labelCardinalities       for each label, the number of nodes that have that label
+   * @param indexCardinalities       for each index, the number of values in that index
+   * @param indexUniqueCardinalities for each index, the number of unique values in that index
+   */
   private def mockStats(allNodesCardinality: Double = 10000.0,
                         labelCardinalities: Map[LabelId, Double] = Map(indexPerson.label -> 1000.0),
                         indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0),

@@ -19,12 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin, Selection}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.expressions.{Ands, Expression}
-import org.neo4j.cypher.internal.util.attribution.{Attributes, SameId}
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.bottomUp
 
 /*
 A join on given variable is similar to a logical AND - any predicates evaluated on the LHS will in effect

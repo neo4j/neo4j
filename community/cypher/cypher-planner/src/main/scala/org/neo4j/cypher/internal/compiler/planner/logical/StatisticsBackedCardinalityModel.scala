@@ -19,16 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import PlannerDefaults._
-import org.neo4j.cypher.internal.compiler.helpers.MapSupport._
-import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{IndependenceCombiner, SelectivityCombiner}
-import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_CARDINALITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
-import org.neo4j.cypher.internal.util.{Cardinality, Multiplier}
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryHorizon
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 

@@ -20,11 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.{InterestingOrder, InterestingOrderCandidate, ProvidedOrder, RequiredOrderCandidate}
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC, NONE}
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.RequiredOrderCandidate
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.ASC
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

@@ -19,11 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.{Namespace, ProcedureName}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -47,12 +62,12 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     rewritten should equal(
       Query(None, SingleQuery(
         Seq(ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations,
-            Return(distinct = false,
-                   ReturnItems(includeExisting = false,
-                               Seq(
-                                 AliasedReturnItem(varFor("x"), varFor("x"))(pos),
-                                 AliasedReturnItem(varFor("y"), varFor("y"))(pos)))(pos),
-                   None, None, None)(pos)))(pos))(pos))
+          Return(distinct = false,
+            ReturnItems(includeExisting = false,
+              Seq(
+                AliasedReturnItem(varFor("x"), varFor("x"))(pos),
+                AliasedReturnItem(varFor("y"), varFor("y"))(pos)))(pos),
+            None, None, None)(pos)))(pos))(pos))
   }
 
   test("should resolve in-query procedure calls") {

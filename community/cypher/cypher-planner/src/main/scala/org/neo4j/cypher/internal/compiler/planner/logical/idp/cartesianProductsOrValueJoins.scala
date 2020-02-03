@@ -19,10 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeIndexSeek, NodeUniqueIndexSeek}
-import org.neo4j.cypher.internal.expressions.{Equals, Expression}
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent],
@@ -68,7 +73,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
      */
     val joins =
       produceHashJoins(plans, qg, context, kit, singleComponentPlanner) ++
-      produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
+        produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
 
     if (joins.nonEmpty) {
       pickTheBest(plans, kit, joins)
@@ -92,8 +97,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   }
 
   /**
-    * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
-    */
+   * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
+   */
   private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit) = {
     val allPlans = plans.toList.sortBy(c => context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities))
     val onePlanToRuleThemAll = allPlans.tail.foldLeft(allPlans.head) {

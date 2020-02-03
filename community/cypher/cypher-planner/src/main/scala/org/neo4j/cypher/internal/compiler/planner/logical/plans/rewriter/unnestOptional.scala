@@ -20,15 +20,25 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.util.attribution.{IdGen, SameId}
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.bottomUp
 
 case object unnestOptional extends Rewriter {
 
   override def apply(input: AnyRef) = if (isSafe(input)) instance.apply(input) else input
 
-  import org.neo4j.cypher.internal.util.Foldable._
 
   /*
    * It is not safe to unnest an optional expand with when we have
@@ -36,7 +46,7 @@ case object unnestOptional extends Rewriter {
    * writes
    */
   private def isSafe(input: AnyRef) = !input.treeExists {
-        case _:MergeCreateRelationship => true
+    case _:MergeCreateRelationship => true
   }
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
@@ -44,15 +54,15 @@ case object unnestOptional extends Rewriter {
     case apply:AntiConditionalApply => apply
 
     case apply@Apply(lhs,
-      Optional(
-      e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
-        optionalExpand(e, lhs)(None)(SameId(apply.id))
+    Optional(
+    e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
+      optionalExpand(e, lhs)(None)(SameId(apply.id))
 
     case apply@Apply(lhs,
-      Optional(
-      Selection(predicate,
-      e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
-        optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
+    Optional(
+    Selection(predicate,
+    e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
+      optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
   })
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): Option[Expression] => IdGen => OptionalExpand =

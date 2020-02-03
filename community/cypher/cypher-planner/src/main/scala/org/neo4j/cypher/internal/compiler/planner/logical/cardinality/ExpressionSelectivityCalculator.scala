@@ -19,13 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.planner.logical.plans._
-import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
-import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIST_CARDINALITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_NUMBER_OF_ID_LOOKUPS
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Selectivity
@@ -77,7 +112,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, selections)
 
-      // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
+    // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>
       calculateSelectivityForPointDistanceSeekable(seekable, selections)
 
@@ -88,7 +123,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Variable, rhs: Variable))
       if areRelationships(semanticTable, lhs, rhs) =>
-        DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+      DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
     // WHERE NOT [...]
     case Not(inner) =>
@@ -223,8 +258,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPointDistanceSeekable(seekable: PointDistanceSeekable,
-                                                        selections: Selections)
-                                                       (implicit semanticTable: SemanticTable): Selectivity = {
+                                                           selections: Selections)
+                                                          (implicit semanticTable: SemanticTable): Selectivity = {
     val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, selections, seekable.propertyKeyName)
     val indexDistanceSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
     combiner.orTogetherSelectivities(indexDistanceSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)

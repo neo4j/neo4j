@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.util.AssertionRunner.{Thunk, runUnderAssertion}
+import org.neo4j.cypher.internal.util.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.util.AssertionRunner.runUnderAssertion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AssertionsShouldBeEnabledTest extends CypherFunSuite {

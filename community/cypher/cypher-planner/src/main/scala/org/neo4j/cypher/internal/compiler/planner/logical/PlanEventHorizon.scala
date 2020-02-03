@@ -19,9 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.compiler.planner.logical.steps._
-import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.aggregation
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.distinct
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 

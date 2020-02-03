@@ -20,12 +20,25 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.expressions.{AndedPropertyInequalities, Expression, LogicalVariable}
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -132,8 +145,8 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
-        .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
-        .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
+      .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
+      .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
 
     val AsPropertySeekable(seekable) = in(prop("a", "id"), listOf(expr1, expr2))
 

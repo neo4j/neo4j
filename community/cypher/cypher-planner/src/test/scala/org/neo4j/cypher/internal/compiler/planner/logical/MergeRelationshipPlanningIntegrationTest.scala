@@ -20,10 +20,27 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.LockNodes
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should plan simple expand") {
@@ -91,14 +108,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
-                  Expand(
-                    Argument(Set("n")),
-                    "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
+                Expand(
+                  Argument(Set("n")),
+                  "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
                 Set("n")),
               Optional(
-                  Expand(
-                    LockNodes(Argument(Set("n")), Set("n")),
-                    "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
+                Expand(
+                  LockNodes(Argument(Set("n")), Set("n")),
+                  "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
                 Set("n")),
               Seq("b", "r")),
             MergeCreateRelationship(
@@ -123,16 +140,16 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
         AntiConditionalApply(
           AntiConditionalApply(
             Optional(
-                Expand(
-                  Argument(Set("n", "m")),
-                  "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
+              Expand(
+                Argument(Set("n", "m")),
+                "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
               Set("n", "m")),
             Optional(
-                Expand(
-                  LockNodes(
-                    Argument(Set("n", "m")),
-                    Set("n", "m")),
-                  "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
+              Expand(
+                LockNodes(
+                  Argument(Set("n", "m")),
+                  Set("n", "m")),
+                "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
               Set("n", "m")),
             Vector("r")),
           MergeCreateRelationship(
@@ -158,16 +175,16 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
-                  Expand(
-                    Argument(Set("a", "b")),
-                    "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
+                Expand(
+                  Argument(Set("a", "b")),
+                  "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
                 Set("a", "b")
               ),
               Optional(
-                  Expand(
-                    LockNodes(
-                      Argument(Set("a", "b")), Set("a", "b")),
-                    "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
+                Expand(
+                  LockNodes(
+                    Argument(Set("a", "b")), Set("a", "b")),
+                  "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
                 Set("a", "b")
               ),
               Vector("r")),
@@ -191,15 +208,15 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
-                  Expand(
-                    Argument(Set("a")),
-                    "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
+                Expand(
+                  Argument(Set("a")),
+                  "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
                 Set("a")
               ),
               Optional(
-                  Expand(
-                    LockNodes(Argument(Set("a")), Set("a")),
-                    "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
+                Expand(
+                  LockNodes(Argument(Set("a")), Set("a")),
+                  "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
                 Set("a")
               ),
               Seq("b", "r")),

@@ -19,16 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
+import org.neo4j.exceptions.HintException
+import org.neo4j.exceptions.IndexHintException
+import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.JoinHintException
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object verifyBestPlan {
   def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
@@ -58,7 +64,7 @@ object verifyBestPlan {
               s"""Expected:
                  |${out(expectedHints)}
                  |
-               |Instead, got:
+                 |Instead, got:
                  |${out(actualHints)}""".stripMargin
             else
               s"Could not solve these hints: ${out(missing)}"
@@ -67,7 +73,7 @@ object verifyBestPlan {
               s"""Failed to fulfil the hints of the query.
                  |$details
                  |
-               |Plan $plan""".stripMargin
+                 |Plan $plan""".stripMargin
 
             throw new HintException(message)
           }

@@ -19,103 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.test_helpers.RandomizedTestSupport
-
 trait CardinalityData {
   def forQuery(testUnit: CardinalityTestHelper#TestUnit): CardinalityTestHelper#TestUnit
 }
 
-trait ForumPostsCardinalityData {
-
-  self: RandomizedTestSupport =>
-
-  case object ForumPosts extends CardinalityData {
-
-    val PersonSel    =  50.00 / 1000.0
-    val PostSel      = 947.00 / 1000.0
-    val ForumSel     =   3.00 / 1000.0
-
-    val CelebritySel =    5.0 / 1000.0
-    val RootForumSel =   10.0 / 1000.0
-
-    assert(PersonSel + PostSel + ForumSel == 1.0d)
-
-    val Persons = Math.floor(N * PersonSel)
-
-      val Celebrities = Math.floor(Persons * CelebritySel)
-      val Fans = Persons - Celebrities
-
-      assert( Fans + Celebrities == Persons )
-
-    val Posts = Math.floor(N * PostSel)
-    val Forums = Math.floor(N * ForumSel)
-
-    val RootForums = Math.floor(Forums * RootForumSel)
-    val LeafForums = Forums - RootForums
-
-    val Extra = N - Persons - Posts - Forums
-
-    val PersonIdSel = 1.0d / Persons
-
-    val Persons_KNOWS_Persons = Persons * 50.0
-
-// TODO: Fix TestUnit to properly support this
-//
-//      val Fans_KNOWS_Fans = Math.floor( Persons_KNOWS_Persons / (Persons * Persons) * (Fans * Fans) )
-//      val Fans_KNOWS_Celebrities = Math.floor( Persons_KNOWS_Persons / (Persons * Persons) * (Fans * Celebrities) )
-//      val Celebrities_KNOWS_Fans = Math.floor( Persons_KNOWS_Persons / (Persons * Persons) * (Celebrities * Fans) )
-//      val Celebrities_KNOWS_Celebrities = Math.floor( Persons_KNOWS_Persons / (Persons * Persons) * (Celebrities * Celebrities) )
-//
-//      {
-//        val knows = Fans_KNOWS_Fans + Fans_KNOWS_Celebrities + Celebrities_KNOWS_Fans + Celebrities_KNOWS_Celebrities
-//        assert( knows <= Persons_KNOWS_Persons)
-//      }
-
-    val Posts_POSTED_IN_Forums = Posts * 1.0
-
-    val Forums_MEMBER_IN_Persons = Persons * 3.0
-
-    val Forums_MEMBER_IN_Forums = LeafForums * 1.5
-
-    // Derived
-
-    val STAR_KNOWS_STAR = Persons_KNOWS_Persons
-    val Persons_KNOWS_STAR = Persons_KNOWS_Persons
-    val STAR_KNOWS_Persons = Persons_KNOWS_Persons
-
-    val Posts_POSTED_IN_STAR = Posts_POSTED_IN_Forums
-    val STAR_POSTED_IN_Forums = Posts_POSTED_IN_Forums
-    val STAR_POSTED_IN_STAR = Posts_POSTED_IN_Forums
-
-    val Forums_MEMBER_IN_STAR = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
-    val STAR_MEMBER_IN_Persons = Forums_MEMBER_IN_Persons
-    val STAR_MEMBER_IN_Forums = Forums_MEMBER_IN_Forums
-    val STAR_MEMBER_IN_STAR = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
-
-    val R = STAR_KNOWS_STAR + STAR_POSTED_IN_STAR + STAR_MEMBER_IN_STAR
-
-    def forQuery(testUnit: CardinalityTestHelper#TestUnit) =
-      testUnit.
-        withGraphNodes(N).
-        addWithLabels(Celebrities, 'Person, 'Celebrity).
-        addWithLabels(Fans, 'Person, 'Fan).
-        withLabel('Post, Posts).
-        addWithLabels(RootForums, 'Forum, 'Root).
-        addWithLabels(LeafForums, 'Forum, 'Leaf).
-        withIndexSelectivity(('Person, 'id) -> PersonIdSel).
-        withIndexPropertyExistsSelectivity(('Person, 'id) -> 1.0).
-        withRelationshipCardinality(('Person -> 'KNOWS -> 'Person) -> Persons_KNOWS_Persons).
-        withRelationshipCardinality(('Post -> 'POSTED_IN -> 'Forum) -> Posts_POSTED_IN_Forums).
-        withRelationshipCardinality(('Forum -> 'MEMBER_IN -> 'Person) -> Forums_MEMBER_IN_Persons).
-        withRelationshipCardinality(('Forum -> 'MEMBER_IN -> 'Forum) -> Forums_MEMBER_IN_Forums)
-  }
-}
-
-trait ABCDCardinalityData {
+trait ABCDCardinalityData extends CardinalityData {
 
   self: RandomizedCardinalityModelTestSuite =>
 
-  case object ABCD extends CardinalityData {
     val Asel = .2          // How selective a :A predicate is
     val Bsel = .1          // How selective a :B predicate is
     val Csel = .01         // How selective a :C predicate is
@@ -252,5 +163,4 @@ trait ABCDCardinalityData {
         withRelationshipCardinality(('E -> 'T2 -> 'B) -> E_T2_B).
         withRelationshipCardinality(('E -> 'T2 -> 'C) -> E_T2_C).
         withRelationshipCardinality(('E -> 'T2 -> 'D) -> E_T2_D)
-  }
 }

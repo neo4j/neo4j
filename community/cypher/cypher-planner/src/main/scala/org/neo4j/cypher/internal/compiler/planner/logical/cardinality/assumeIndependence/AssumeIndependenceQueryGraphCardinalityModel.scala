@@ -19,13 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.{QueryGraph, Selections, SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.util.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Selectivity
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {
@@ -53,8 +59,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
       //the number of combinations we need to consider grows exponentially, so above a threshold we only consider all
       //combinations of the most expensive query graphs
       val optionalMatches =
-        if (queryGraph.optionalMatches.size <= MAX_OPTIONAL_MATCH) queryGraph.optionalMatches
-        else queryGraph.optionalMatches.sortBy(-cardinalityForQueryGraph(_, input)(semanticTable).amount).take(MAX_OPTIONAL_MATCH)
+      if (queryGraph.optionalMatches.size <= MAX_OPTIONAL_MATCH) queryGraph.optionalMatches
+      else queryGraph.optionalMatches.sortBy(-cardinalityForQueryGraph(_, input)(semanticTable).amount).take(MAX_OPTIONAL_MATCH)
 
       (0 to optionalMatches.length).flatMap(optionalMatches.combinations)
         .map(_.map(_.withoutArguments()))
@@ -78,7 +84,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
     val c = if (qg.argumentIds.nonEmpty) {
-        input.inboundCardinality
+      input.inboundCardinality
     } else {
       Cardinality(1.0)
     }

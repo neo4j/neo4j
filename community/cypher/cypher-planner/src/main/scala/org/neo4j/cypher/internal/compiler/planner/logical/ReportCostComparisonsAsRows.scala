@@ -19,32 +19,55 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.util.{Cardinality, Cost, InputPosition}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable
 
 /***
-  * This class can listen to cost comparisons and report them back as normal rows. This is done by creating a fake plan
-  * that looks something like this:
-  *
-  * UNWIND [{comparison: 0, planId: 1, planText: "plan", planCost: "costs", cost: 12, ...}] as col
-  * RETURN col["comparison] as comparison
-  *
-  * This is the plan that actually gets run, and not the one that the user provided.
-  *
-  * WARNING: This is a debug feature, and as such, not tested as rigorously as other features are.
-  *          Only run this on a system that is not live after taking proper backups!
-  *
-  */
+ * This class can listen to cost comparisons and report them back as normal rows. This is done by creating a fake plan
+ * that looks something like this:
+ *
+ * UNWIND [{comparison: 0, planId: 1, planText: "plan", planCost: "costs", cost: 12, ...}] as col
+ * RETURN col["comparison] as comparison
+ *
+ * This is the plan that actually gets run, and not the one that the user provided.
+ *
+ * WARNING: This is a debug feature, and as such, not tested as rigorously as other features are.
+ *          Only run this on a system that is not live after taking proper backups!
+ *
+ */
 class ReportCostComparisonsAsRows extends CostComparisonListener {
 
   private val rows = new mutable.ListBuffer[Row]()

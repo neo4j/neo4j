@@ -19,24 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
-import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph, StrictnessMode}
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.functions.Rand
-import org.neo4j.cypher.internal.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
-import org.neo4j.cypher.internal.util.{Cardinality, Cost, CypherException}
-
-import scala.language.implicitConversions
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.StrictnessMode
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.CypherException
 
 object Metrics {
 
-  import org.neo4j.cypher.internal.compiler.helpers.MapSupport._
 
   object QueryGraphSolverInput {
 
@@ -82,18 +91,18 @@ trait ExpressionEvaluator {
   }
 
   def isDeterministic(expr: Expression): Boolean = expr.inputs.forall {
-      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => false
-      //for UDFs we don't know but the result might be non-deterministic
-      case (_:ResolvedFunctionInvocation, _) => false
-      case _ => true
-    }
+    case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => false
+    //for UDFs we don't know but the result might be non-deterministic
+    case (_:ResolvedFunctionInvocation, _) => false
+    case _ => true
+  }
 
   def evaluateExpression(expr: Expression): Option[Any]
 }
 
 /**
-  * Wrapper around [[SimpleInternalExpressionEvaluator]] that catches exceptions and returns an Option.
-  */
+ * Wrapper around [[SimpleInternalExpressionEvaluator]] that catches exceptions and returns an Option.
+ */
 object simpleExpressionEvaluator extends ExpressionEvaluator {
   private val expressionEvaluator = new SimpleInternalExpressionEvaluator()
   override def evaluateExpression(expr: Expression): Option[Any] = try {

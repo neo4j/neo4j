@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -362,7 +362,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("nested correlated CALLs with aggregation") {
     val query =
-     """WITH 1 AS x
+      """WITH 1 AS x
         |CALL {
         | WITH x
         | CALL { WITH x RETURN max(x) AS xmax }

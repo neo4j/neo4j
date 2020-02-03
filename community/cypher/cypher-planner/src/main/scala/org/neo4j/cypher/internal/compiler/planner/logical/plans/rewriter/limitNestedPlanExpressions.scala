@@ -19,16 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.logical.plans.{DoNotIncludeTies, Limit, NestedPlanExpression}
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Head
-import org.neo4j.cypher.internal.expressions.{Add, ContainerIndex, FunctionInvocation, FunctionName, ListSlice, Namespace, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.bottomUp
 
 /**
-  * Places a Limit inside of NestenPlanExpressions, if the NestenPlanExpressions is inside an expression that does not need the whole list as a result.
-  * These expressions are `head`, `ContainerIndex`, and `ListSlice`.
-  */
+ * Places a Limit inside of NestenPlanExpressions, if the NestenPlanExpressions is inside an expression that does not need the whole list as a result.
+ * These expressions are `head`, `ContainerIndex`, and `ListSlice`.
+ */
 case class limitNestedPlanExpressions(logicalPlanIdGen: IdGen) extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 

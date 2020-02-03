@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.verify
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

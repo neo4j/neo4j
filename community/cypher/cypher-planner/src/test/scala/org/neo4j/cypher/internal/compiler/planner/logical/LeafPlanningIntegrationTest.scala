@@ -19,16 +19,63 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningTestSupport2, StubbedLogicalPlanningConfiguration}
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RangeBetween
+import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
+import org.neo4j.cypher.internal.logical.plans.RangeLessThan
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
@@ -84,9 +131,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       ._2 should equal(
-        Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
-          IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
-        ))
+      Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
+        IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
+      ))
   }
 
   test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix even with predicates reversed") {
@@ -109,7 +156,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'longer' AND NOT a.lastname STARTS WITH 'short' RETURN a")
       ._2 should equal(
       Selection(ands(not(startsWith(prop("a", "lastname"), literalString("short")))),
-                IndexSeek("a:Person(name STARTS WITH 'longer')")
+        IndexSeek("a:Person(name STARTS WITH 'longer')")
       ))
   }
 
@@ -119,7 +166,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a")._2 should equal(
       Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix"))),
-                IndexSeek("a:Person(name = 'prefix1')", GetValue)
+        IndexSeek("a:Person(name = 'prefix1')", GetValue)
       ))
   }
 
@@ -129,13 +176,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a")._2 should equal(
       Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix%"))),
-                NodeIndexSeek(
-                  "a",
-                  LabelToken("Person", LabelId(0)),
-                  Seq(indexedProperty("name", 0, GetValue)),
-                  ManyQueryExpression(listOfString("prefix1", "prefix2")),
-                  Set.empty,
-                  IndexOrderNone)
+        NodeIndexSeek(
+          "a",
+          LabelToken("Person", LabelId(0)),
+          Seq(indexedProperty("name", 0, GetValue)),
+          ManyQueryExpression(listOfString("prefix1", "prefix2")),
+          Set.empty,
+          IndexOrderNone)
       ))
   }
 
@@ -162,8 +209,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         RangeQueryExpression(
           InequalitySeekRangeWrapper(
             RangeBetween(
-               than,
-               than1
+              than,
+              than1
             )
           )(pos)
         ),
@@ -180,9 +227,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan should beLike {
       case ValueHashJoin(
-        NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-        NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-        Equals(_, _)
+      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
+      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
+      Equals(_, _)
       ) => ()
     }
   }
@@ -196,8 +243,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan should beLike {
       case Selection(_, Apply(
-        NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_),
-        NodeIndexSeek(_,_,_,SingleQueryExpression(_),_,_))) => ()
+      NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_),
+      NodeIndexSeek(_,_,_,SingleQueryExpression(_),_,_))) => ()
     }
   }
 

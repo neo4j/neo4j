@@ -19,25 +19,106 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.configuration.helpers.{DatabaseNameValidator, NormalizedDatabaseName}
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, PrivilegePlan, QualifiedName, ResolvedCall, SecurityAdministrationLogicalPlan}
-import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
-import org.neo4j.cypher.internal.ast.{IndexManagementAction, _}
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.configuration.helpers.DatabaseNameValidator
+import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.internal.ast.AccessDatabaseAction
+import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AllDatabaseAction
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllResource
+import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.ConstraintManagementAction
+import org.neo4j.cypher.internal.ast.CreateConstraintAction
+import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
+import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.CreateRoleAction
+import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DatabasePrivilege
+import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.DenyPrivilegeAction
+import org.neo4j.cypher.internal.ast.DropConstraintAction
+import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropIndexAction
+import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUser
+import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
+import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IndexManagementAction
+import org.neo4j.cypher.internal.ast.MatchPrivilege
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.ReadPrivilege
+import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
+import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
+import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.RevokeType
+import org.neo4j.cypher.internal.ast.SchemaManagementAction
+import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowDatabases
+import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
+import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowPrivileges
+import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUsers
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.StartDatabase
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
+import org.neo4j.cypher.internal.ast.StopDatabase
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.TokenManagementAction
+import org.neo4j.cypher.internal.ast.TraversePrivilege
+import org.neo4j.cypher.internal.ast.WritePrivilege
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.frontend.phases.Condition
+import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NameValidator
+import org.neo4j.cypher.internal.logical.plans.PrivilegePlan
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.SecurityAdministrationLogicalPlan
+import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.string.UTF8
 
 /**
-  * This planner takes on queries that run at the DBMS level for multi-database administration
-  */
+ * This planner takes on queries that run at the DBMS level for multi-database administration
+ */
 case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
@@ -107,8 +188,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       }
     }
     def planRevokes(source: Option[PrivilegePlan],
-                   revokeType: RevokeType,
-                   planRevoke: (Option[PrivilegePlan], String) => Some[PrivilegePlan]): Some[PrivilegePlan] = revokeType match {
+                    revokeType: RevokeType,
+                    planRevoke: (Option[PrivilegePlan], String) => Some[PrivilegePlan]): Some[PrivilegePlan] = revokeType match {
       case t: RevokeBothType =>
         val revokeGrant = planRevoke(source, RevokeGrantType()(t.position).relType)
         planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)

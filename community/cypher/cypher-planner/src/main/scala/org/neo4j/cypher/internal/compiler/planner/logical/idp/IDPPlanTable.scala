@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.Solvable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-import scala.collection.{Map, mutable}
+import scala.collection.Map
+import scala.collection.mutable
 
 class IDPPlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
   private val table = new mutable.HashMap[Set[Solvable], LogicalPlan]()

@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
-import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, QueryProjection, SinglePlannerQuery}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 import scala.collection.mutable
 
@@ -47,14 +49,14 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
         case None =>
           val partPlan = planPart(in, updatedContext)
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
-          
+
           val planWithInput = in.queryInput match {
             case Some(variables) =>
               val inputPlan = contextAfterUpdates.logicalPlanProducer.planInput(variables, contextAfterUpdates)
               contextAfterUpdates.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, contextAfterUpdates)
-            case None => planWithUpdates  
+            case None => planWithUpdates
           }
-          
+
           val projectedPlan = planEventHorizon(in, planWithInput, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
           (projectedPlan, projectedContext)

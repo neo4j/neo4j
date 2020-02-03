@@ -19,18 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.{Condition, Phase}
-import org.neo4j.cypher.internal.util.Rewritable._
-import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.phases.Condition
+import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
+import scala.collection.TraversableOnce
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.{TraversableOnce, mutable}
 
 case object OptionalMatchRemover extends PlannerQueryRewriter {
 
@@ -120,13 +148,13 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   private case class LabelsAndEquality(labels: Seq[LabelName], equality: Seq[(PropertyKeyName, Expression)])
 
   /**
-    * This method extracts predicates that need to be part of pattern expressions
-    *
-    * @param predicates All the original predicates of the QueryGraph
-    * @param kept       Set of all variables that should not be moved to pattern expressions
-    * @return Map of label and property equality comparisons to move to pattern expressions,
-    *         and the set of remaining predicates
-    */
+   * This method extracts predicates that need to be part of pattern expressions
+   *
+   * @param predicates All the original predicates of the QueryGraph
+   * @param kept       Set of all variables that should not be moved to pattern expressions
+   * @return Map of label and property equality comparisons to move to pattern expressions,
+   *         and the set of remaining predicates
+   */
   private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): (Map[String, LabelsAndEquality], Set[Expression]) = {
 
     val patternPredicates = mutable.Map.empty[String, LabelsAndEquality]

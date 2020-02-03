@@ -19,19 +19,57 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
-import org.neo4j.cypher.internal.compiler.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpressions
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.Seekable
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
+import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
+import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.symbols.{CTAny, CypherType}
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 
@@ -151,7 +189,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, interestingOrder, context, indexedPredicates.head.isExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
-                             .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
+      .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
 
     val predicatesForCardinalityEstimation = indexCompatiblePredicates.map(p => p.propertyPredicate) :+ labelPredicate
     entryConstructor(solvedPredicates, predicatesForCardinalityEstimation)
@@ -247,13 +285,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   /**
-    * Finds the Seq of IndexCompatiblePredicate that can be solved by the indexDescriptor.
-    * Either each property of the index solves some predicate, in which case case this returns Some(...).
-    * Or, if at least one property does not solve a predicate, this returns None.
-    *
-    * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
-    * contains two lists of the same size, which is indexDescriptor.properties.length
-    */
+   * Finds the Seq of IndexCompatiblePredicate that can be solved by the indexDescriptor.
+   * Either each property of the index solves some predicate, in which case case this returns Some(...).
+   * Or, if at least one property does not solve a predicate, this returns None.
+   *
+   * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
+   * contains two lists of the same size, which is indexDescriptor.properties.length
+   */
   private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrder: InterestingOrder)
                                 (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder)] = {
     val maybeMatchingPredicates = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexCompatiblePredicate])) {
@@ -300,12 +338,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   /**
-    * @param propertyType
-    *                     We need to ask the index whether it supports getting values for that type
-    * @param exactPredicate
-    *                     We might already know if we can get values or not, for exact predicates. If this is `true` we will set GetValue,
-    *                     otherwise we need to ask the index.
-    */
+   * @param propertyType
+   *                     We need to ask the index whether it supports getting values for that type
+   * @param exactPredicate
+   *                     We might already know if we can get values or not, for exact predicates. If this is `true` we will set GetValue,
+   *                     otherwise we need to ask the index.
+   */
   private case class IndexCompatiblePredicate(name: String,
                                               propertyKeyName: PropertyKeyName,
                                               propertyPredicate: Expression,
@@ -318,11 +356,11 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                              (implicit labelPredicateMap: Map[String, Set[HasLabels]]) {
 
     def convertToExists: IndexCompatiblePredicate = queryExpression match {
-        case _: ExistenceQueryExpression[Expression] => this
-        case _: CompositeQueryExpression[Expression] => throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
-        case _ =>
-          copy(queryExpression = ExistenceQueryExpression(), exactPredicate = false, solvesPredicate = false)
-      }
+      case _: ExistenceQueryExpression[Expression] => this
+      case _: CompositeQueryExpression[Expression] => throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
+      case _ =>
+        copy(queryExpression = ExistenceQueryExpression(), exactPredicate = false, solvesPredicate = false)
+    }
 
     def isExists: Boolean = queryExpression match {
       case _: ExistenceQueryExpression[Expression] => true

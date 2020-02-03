@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, PlanTransformer}
-import org.neo4j.cypher.internal.ir.{QueryProjection, SinglePlannerQuery}
-import org.neo4j.cypher.internal.expressions.{Add, Expression}
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object skipAndLimit extends PlanTransformer {

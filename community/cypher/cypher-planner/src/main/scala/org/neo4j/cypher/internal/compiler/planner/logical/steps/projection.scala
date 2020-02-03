@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryProjection}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.expressions._
 
 object projection {
 
@@ -55,8 +57,8 @@ object projection {
   }
 
   /**
-    * Computes the projections that are not yet marked as solved.
-    */
+   * Computes the projections that are not yet marked as solved.
+   */
   private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection

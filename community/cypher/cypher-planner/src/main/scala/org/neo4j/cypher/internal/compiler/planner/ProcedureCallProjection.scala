@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.ir.{EagerMode, LazyMode, QueryHorizon}
-import org.neo4j.cypher.internal.logical.plans.{ProcedureReadOnlyAccess, ResolvedCall}
+import org.neo4j.cypher.internal.ir.EagerMode
+import org.neo4j.cypher.internal.ir.LazyMode
+import org.neo4j.cypher.internal.ir.QueryHorizon
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result => result.variable.name }

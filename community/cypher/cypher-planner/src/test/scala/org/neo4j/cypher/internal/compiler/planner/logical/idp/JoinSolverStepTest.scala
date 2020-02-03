@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-import scala.language.implicitConversions
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -107,7 +110,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // those will become available symbols
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b"))) // those will become available nodes
-    val plan2 = fakeLogicalPlanFor(ctx.planningAttributes,"b", "c")
+      val plan2 = fakeLogicalPlanFor(ctx.planningAttributes,"b", "c")
       ctx.planningAttributes.solveds.set(plan2.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b")))
       // overlapping symbols plan1& plan2 => (b,c)
       // overlapping nodes   plan1&plan2  => (b)

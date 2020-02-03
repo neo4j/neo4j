@@ -23,7 +23,8 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
-import org.neo4j.cypher.internal.compiler.planner.logical.{ProjectingSelector, Selector}
+import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
+import org.neo4j.cypher.internal.compiler.planner.logical.Selector
 import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
@@ -102,7 +103,7 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
       val ((goal, _), _) = bestInBlock.getOrElse {
         throw new IllegalStateException(
           s"""Found no solution for block with size $blockSize,
-              |$blockCandidates were the selected candidates from the table $table""".stripMargin)
+             |$blockCandidates were the selected candidates from the table $table""".stripMargin)
       }
       goal
     }

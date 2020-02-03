@@ -19,19 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters._
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, PlannerQueryPart, SinglePlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.ProjectingUnionAll
+import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Start
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.{And, Or, Pattern, PatternPart}
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters.addToLogicalPlanInput
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.ir.PeriodicCommit
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
-  import org.neo4j.cypher.internal.util.Foldable._
 
   def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder = {
     val importedVariables: Set[String] = q.importWith.map((wth: With) =>
@@ -91,10 +110,10 @@ object StatementConverters {
   }
 
   /**
-    * Flatten consecutive CREATE clauses into one.
-    *
-    *   CREATE (a) CREATE (b) => CREATE (a),(b)
-    */
+   * Flatten consecutive CREATE clauses into one.
+   *
+   *   CREATE (a) CREATE (b) => CREATE (a),(b)
+   */
   def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
     val builder = ArrayBuffer.empty[Clause]
     var prevCreate: Option[(Seq[PatternPart], InputPosition)] = None

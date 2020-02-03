@@ -20,9 +20,14 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, CartesianProduct, Expand, Projection, Selection}
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.{AndedPropertyInequalities, InequalityExpression}
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -78,8 +83,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         Selection(Seq(greaterThan(cachedRelProp("r", "prop1"), literalInt(42))),
           Expand(
-          AllNodesScan("a", Set.empty),
-        "a", BOTH, Seq.empty, "b", "r")),
+            AllNodesScan("a", Set.empty),
+            "a", BOTH, Seq.empty, "b", "r")),
         Map("r.prop1" -> cachedRelProp("r", "prop1"))
       )
     )
@@ -104,8 +109,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     plan._2 should equal(
       Projection(
         Projection(
-        Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
-          AllNodesScan("n", Set.empty)),
+          Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+            AllNodesScan("n", Set.empty)),
           Map("x" -> varFor("n"))),
         Map("x.prop1" -> cachedNodeProp("n", "prop1"))
       )
@@ -133,8 +138,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
           CartesianProduct(
             Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
               AllNodesScan("n", Set.empty)),
-          Selection(Seq(greaterThan(cachedNodeProp("  m@12", "prop1"), literalInt(42))),
-            AllNodesScan("  m@12", Set.empty))),
+            Selection(Seq(greaterThan(cachedNodeProp("  m@12", "prop1"), literalInt(42))),
+              AllNodesScan("  m@12", Set.empty))),
           Map("  m@61" -> varFor("n"), "x" -> varFor("  m@12"))),
         Map("m.prop1" -> cachedNodeProp("n", "prop1"), "x.prop1" -> cachedNodeProp("  m@12", "prop1"))
       )

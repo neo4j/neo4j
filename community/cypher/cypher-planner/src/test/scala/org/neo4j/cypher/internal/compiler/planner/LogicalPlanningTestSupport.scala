@@ -19,33 +19,104 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.spy
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.phases.{CreatePlannerQuery, LogicalPlanState, PlannerContext, RewriteProcedureCalls}
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical._
-import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, StatsDivergenceCalculator, TestSignatureResolvingPlanContext}
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.planner.spi._
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.ast.semantics.{SemanticFeature, SemanticTable}
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
+import org.neo4j.cypher.internal.frontend.phases.AstRewriting
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.Do
+import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
+import org.neo4j.cypher.internal.frontend.phases.Parsing
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.ir.PatternLength
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.StrictnessMode
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.LazyLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.rewriting.rewriters._
-import org.neo4j.cypher.internal.rewriting.{Deprecations, RewriterStepSequencer}
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import scala.collection.mutable
 
@@ -141,15 +212,15 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
-                                      metrics: Metrics = mockedMetrics,
-                                      semanticTable: SemanticTable = newMockedSemanticTable,
-                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(
-                                        SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
-                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
-                                      cardinality: Cardinality = Cardinality(1),
-                                      strictness: Option[StrictnessMode] = None,
-                                      notificationLogger: InternalNotificationLogger = devNullLogger,
-                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
+                                                        metrics: Metrics = mockedMetrics,
+                                                        semanticTable: SemanticTable = newMockedSemanticTable,
+                                                        strategy: QueryGraphSolver = new IDPQueryGraphSolver(
+                                                          SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
+                                                          cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                                        cardinality: Cardinality = Cardinality(1),
+                                                        strictness: Option[StrictnessMode] = None,
+                                                        notificationLogger: InternalNotificationLogger = devNullLogger,
+                                                        useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
     val solveds = new StubSolveds
     val cardinalities = new StubCardinalities
     val providedOrders = new StubProvidedOrders
@@ -158,7 +229,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
-                           config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
+      config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen)
@@ -252,21 +323,21 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val pipeLine =
     Parsing andThen
-    PreparatoryRewriting(Deprecations.V1) andThen
-    SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability, SemanticFeature.CorrelatedSubQueries) andThen
-    AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
-    RewriteProcedureCalls andThen
-    Namespacer andThen
-    rewriteEqualityToInPredicate andThen
-    CNFNormalizer andThen
-    LateAstRewriting andThen
-    // This fakes pattern expression naming for testing purposes
-    // In the actual code path, this renaming happens as part of planning
-    //
-    // cf. QueryPlanningStrategy
-    //
-    Do(rewriteStuff _) andThen
-    CreatePlannerQuery
+      PreparatoryRewriting(Deprecations.V1) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability, SemanticFeature.CorrelatedSubQueries) andThen
+      AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
+      RewriteProcedureCalls andThen
+      Namespacer andThen
+      rewriteEqualityToInPredicate andThen
+      CNFNormalizer andThen
+      LateAstRewriting andThen
+      // This fakes pattern expression naming for testing purposes
+      // In the actual code path, this renaming happens as part of planning
+      //
+      // cf. QueryPlanningStrategy
+      //
+      Do(rewriteStuff _) andThen
+      CreatePlannerQuery
 
   private def rewriteStuff(input: BaseState, context: PlannerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)

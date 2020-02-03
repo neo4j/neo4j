@@ -22,13 +22,32 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.ir.{Predicate, ShortestPathPattern, _}
-import org.neo4j.cypher.internal.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.PathStep
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.exceptions.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
+import org.neo4j.exceptions.InternalException
 
 case object planShortestPaths {
 
@@ -40,7 +59,7 @@ case object planShortestPaths {
 
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
     def predicateAppliesToShortestPath(p: Predicate) =
-      // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
+    // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
       p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
         // And filter with predicates that explicitly depend on shortestPath variables
         (p.dependencies intersect variables).nonEmpty
@@ -64,7 +83,7 @@ case object planShortestPaths {
     }
     else {
       context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, withFallBack = false,
-                                                   disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
+        disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
     }
   }
 
@@ -92,7 +111,7 @@ case object planShortestPaths {
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentFrom(inner, context)
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
-                                     disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
+      disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
     val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context)
     val lhs = lpp.planApply(inner, lhsOption, context)
 

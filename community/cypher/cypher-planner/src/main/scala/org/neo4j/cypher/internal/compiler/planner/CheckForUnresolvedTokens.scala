@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.compiler.MissingLabelNotification
+import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
+import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.expressions.{LabelName, Property, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.{BaseContext, VisitorPhase}
+import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.util.InternalNotification
-
+import org.neo4j.values.storable.DurationFields
+import org.neo4j.values.storable.PointFields
 import org.neo4j.values.storable.TemporalValue.TemporalFields
-import org.neo4j.values.storable.{DurationFields, PointFields}
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaSetConverter
 
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 

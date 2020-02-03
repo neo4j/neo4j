@@ -19,13 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.attribution.{Attributes, Id}
-import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.util.{Cardinality, InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable
@@ -66,8 +91,8 @@ case object PushdownPropertyReads {
                 acc.variableOptima.get(v.name) match {
                   case Some(optimum: CardinalityOptimum) =>
                     if (optimum.cardinality < acc.incomingCardinality &&
-                        !acc.availableProperties.contains(p) &&
-                        !acc.availableWholeEntities.contains(v.name))
+                      !acc.availableProperties.contains(p) &&
+                      !acc.availableWholeEntities.contains(v.name))
                       Some((optimum, p))
                     else
                       None
@@ -185,12 +210,12 @@ case object PushdownPropertyReads {
                 lhsAcc.variableOptima ++ rhsAcc.variableOptima.map {
                   case (v, rhsOptimum) =>
                     lhsAcc.variableOptima.get(v) match {
-                  case Some(lhsOptimum) =>
-                    (v, Seq(lhsOptimum, rhsOptimum).minBy(_.cardinality))
-                  case None =>
-                    (v, rhsOptimum)
+                      case Some(lhsOptimum) =>
+                        (v, Seq(lhsOptimum, rhsOptimum).minBy(_.cardinality))
+                      case None =>
+                        (v, rhsOptimum)
+                    }
                 }
-              }
 
               Acc(mergedVariableOptima,
                   lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,

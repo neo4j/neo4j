@@ -19,11 +19,53 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.{functions, _}
-import org.neo4j.cypher.internal.util.{Last, NonEmptyList}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
+import org.neo4j.cypher.internal.logical.plans.InclusiveBound
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SeekRange
+import org.neo4j.cypher.internal.logical.plans.SeekableArgs
+import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.util.Last
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object WithSeekableArgs {
   def unapply(v: Any): Option[(Expression, SeekableArgs)] = v match {
@@ -168,9 +210,9 @@ sealed trait Sargable[+T <: Expression] {
 
 object Seekable {
   /**
-    * Find a common super-type for cases where we have multiple TypeSpecs, by combing all TypeSpecs as well as their contained type ranges.
-    * For example two range predicates over the same property, with different value types.
-    */
+   * Find a common super-type for cases where we have multiple TypeSpecs, by combing all TypeSpecs as well as their contained type ranges.
+   * For example two range predicates over the same property, with different value types.
+   */
   def combineMultipleTypeSpecs(specs: Seq[TypeSpec]): CypherType = {
     val singleSpec = specs.reduceLeftOption {
       (spec1, spec2) => spec1 leastUpperBounds spec2
@@ -179,8 +221,8 @@ object Seekable {
   }
 
   /**
-    * A single TypeSpec can include multiple ranges. Find the common super-type by combining all ranges.
-    */
+   * A single TypeSpec can include multiple ranges. Find the common super-type by combining all ranges.
+   */
   def cypherTypeForTypeSpec(spec: TypeSpec): CypherType = {
     spec.ranges.map(_.lower).reduceLeftOption {
       (typ1, typ2) => typ1.leastUpperBound(typ2)
@@ -192,9 +234,9 @@ sealed trait Seekable[T <: Expression] extends Sargable[T] {
   def dependencies: Set[LogicalVariable]
 
   /**
-    * Return the type of the property that this seekable refers to.
-    * E.g., for "n.prop = 5" this would return CTInt
-    */
+   * Return the type of the property that this seekable refers to.
+   * E.g., for "n.prop = 5" this would return CTInt
+   */
   def propertyValueType(semanticTable: SemanticTable): CypherType
 }
 

@@ -19,12 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality._
-import org.neo4j.cypher.internal.ir.{PatternRelationship, Selections, SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.{LabelName, RelTypeName, SemanticDirection}
-import org.neo4j.cypher.internal.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedAndKnown
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedButUnknown
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.TokenSpec
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Unspecified
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternSelectivityCalculator.MAX_VAR_LENGTH
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -36,7 +49,6 @@ object PatternSelectivityCalculator {
 
 case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Pattern2Selectivity {
 
-  import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternSelectivityCalculator._
 
   def apply(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])
            (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
@@ -139,7 +151,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
       case SpecifiedButUnknown() => Selectivity.ZERO
       case Unspecified => Selectivity.ONE
       case SpecifiedAndKnown(spec: LabelId) =>  // Specified labels have ids
-          stats.nodesWithLabelCardinality(Some(spec)) / totalNbrOfNodes getOrElse Selectivity.ZERO
+        stats.nodesWithLabelCardinality(Some(spec)) / totalNbrOfNodes getOrElse Selectivity.ZERO
     }
 
     combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity.ONE)

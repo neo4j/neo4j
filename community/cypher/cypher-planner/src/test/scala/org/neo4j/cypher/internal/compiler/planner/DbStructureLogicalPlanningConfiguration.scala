@@ -21,16 +21,21 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, MinimumGraphStatistics}
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.internal.helpers.collection
 import org.neo4j.internal.helpers.collection.Visitable
-import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureCollector
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
 
 case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration) {
@@ -67,7 +72,7 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
   }
 
   private def indexSet(indices: util.Iterator[collection.Pair[Array[String], Array[String]]]): Map[IndexDef, IndexType] =
-    //We use a zero index here as to not bleed multi-token descriptors into cypher.
+  //We use a zero index here as to not bleed multi-token descriptors into cypher.
     indices.asScala.map { pair => IndexDef(pair.first().head, pair.other().toSeq) -> new IndexType }.toMap
 
   private def resolveTokens[T](iterator: util.Iterator[collection.Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {

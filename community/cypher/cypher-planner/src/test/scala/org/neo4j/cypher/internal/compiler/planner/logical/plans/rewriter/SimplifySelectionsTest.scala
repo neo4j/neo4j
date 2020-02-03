@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.planner.{FakePlan, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.planner.FakePlan
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.logical.plans.DropResult
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.logical.plans.{DropResult, LogicalPlan, Selection}
-import org.neo4j.cypher.internal.expressions.DummyExpression
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Selection(false, source) to DropResult(source)") {

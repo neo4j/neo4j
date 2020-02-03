@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.util.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Selectivity
 
 object PlannerDefaults {
   val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)

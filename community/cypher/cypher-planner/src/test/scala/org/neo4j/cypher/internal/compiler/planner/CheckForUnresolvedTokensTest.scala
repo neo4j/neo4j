@@ -19,17 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, Neo4jCypherExceptionFactory}
-import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
-import org.neo4j.values.storable.TemporalValue.TemporalFields
-import org.neo4j.values.storable.{DurationFields, PointFields}
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.MissingLabelNotification
+import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
+import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.DurationFields
+import org.neo4j.values.storable.PointFields
+import org.neo4j.values.storable.TemporalValue.TemporalFields
+import scala.collection.JavaConverters.asScalaSetConverter
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 
@@ -145,7 +155,6 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val semanticTable = new SemanticTable
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
-    import scala.collection.JavaConverters._
     TemporalFields.allFields().asScala.foreach { property =>
       //when
       val ast = parse(s"MATCH (a) WHERE date(a.prop).$property = 42 RETURN a")

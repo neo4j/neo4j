@@ -21,12 +21,22 @@ package org.neo4j.cypher.internal.compiler
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.phases.CompilationPhases._
-import org.neo4j.cypher.internal.compiler.phases._
-import org.neo4j.cypher.internal.compiler.planner.logical._
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
+import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
-import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
-import org.neo4j.cypher.internal.frontend.phases.{CompilationPhases => _, _}
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InputPosition

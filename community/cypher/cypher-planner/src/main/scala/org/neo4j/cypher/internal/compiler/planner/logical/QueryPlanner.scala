@@ -19,14 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.phases._
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener, verifyBestPlan}
-import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.compiler.phases.CompilationContains
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.PeriodicCommit
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cost
 
 case object QueryPlanner
@@ -108,8 +120,8 @@ case object QueryPlanner
 }
 
 /**
-  * Combines multiple PlannerQuery plans together with Union
-  */
+ * Combines multiple PlannerQuery plans together with Union
+ */
 case object plannerQueryPartPlanner {
 
   /**

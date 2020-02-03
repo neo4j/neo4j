@@ -19,18 +19,43 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexSeek, LogicalPlan, NodeHashJoin, Projection, Selection, SingleSeekableArg}
-import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.InitialState
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
@@ -77,103 +102,103 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     }
   }
 
-    test("should not rewrite prop(n, prop) if index cannot get value") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
-      val plan = Selection(
-        Seq(equals(nProp1, literalInt(1))),
+  test("should not rewrite prop(n, prop) if index cannot get value") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val plan = Selection(
+      Seq(equals(nProp1, literalInt(1))),
+      indexScan("n", "L", "prop", DoNotGetValue)
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(plan)
+    newTable should be(initialTable)
+  }
+
+
+  test("should set DoNotGetValue if there is no usage of prop(n, prop)") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
+    val plan = Selection(
+      Seq(equals(nFoo1, literalInt(1))),
+      indexScan("n", "L", "prop", CanGetValue)
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should equal(
+      Selection(
+        Seq(equals(nFoo1, literalInt(1))),
         indexScan("n", "L", "prop", DoNotGetValue)
       )
-      val (newPlan, newTable) = replace(plan, initialTable)
-      newPlan should be(plan)
-      newTable should be(initialTable)
-    }
+    )
+    newTable should be(initialTable)
+  }
 
+  test("should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index scan") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val plan = Projection(
+      indexScan("n", "L", "prop", CanGetValue),
+      Map("x" -> nProp1)
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
 
-    test("should set DoNotGetValue if there is no usage of prop(n, prop)") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
-      val plan = Selection(
-        Seq(equals(nFoo1, literalInt(1))),
-        indexScan("n", "L", "prop", CanGetValue)
+    newPlan should equal(
+      Projection(
+        indexScan("n", "L", "prop", GetValue),
+        Map("x" -> cachedNProp1)
       )
-      val (newPlan, newTable) = replace(plan, initialTable)
-      newPlan should equal(
-        Selection(
-          Seq(equals(nFoo1, literalInt(1))),
-          indexScan("n", "L", "prop", DoNotGetValue)
-        )
-      )
-      newTable should be(initialTable)
-    }
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
 
-    test("should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index scan") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
-      val plan = Projection(
+  test("should rewrite [prop(n, prop)] to [CachedProperty(n.prop)] with usage in selection after index scan") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val plan = Selection(
+      Seq(equals(listOf(prop("n", "prop")), listOfInt(1))),
+      indexScan("n", "L", "prop", CanGetValue)
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
+
+    newPlan should equal(
+      Selection(
+        Seq(equals(listOf(cachedNProp1), listOfInt(1))),
+        indexScan("n", "L", "prop", GetValue)
+      )
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  test("should rewrite {foo: prop(n, prop)} to {foo: CachedProperty(n.prop)} with usage in selection after index scan") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val plan = Selection(
+      Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOfInt(("foo", 1)))),
+      indexScan("n", "L", "prop", CanGetValue)
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
+
+    newPlan should equal(
+      Selection(
+        Seq(equals(mapOf("foo" -> cachedNProp1), mapOfInt(("foo", 1)))),
+        indexScan("n", "L", "prop", GetValue)
+      )
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  test("should not explode on missing type info") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
+    val propWithoutSemanticType = propEquality("m", "prop", 2)
+
+    val plan = Selection(
+      Seq(propEquality("n", "prop", 1), propWithoutSemanticType),
+      NodeHashJoin(Set("n"),
         indexScan("n", "L", "prop", CanGetValue),
-          Map("x" -> nProp1)
+        indexScan("m", "L", "prop", CanGetValue)
       )
-      val (newPlan, newTable) = replace(plan, initialTable)
-
-      newPlan should equal(
-        Projection(
-          indexScan("n", "L", "prop", GetValue),
-          Map("x" -> cachedNProp1)
-        )
-      )
-      val initialType = initialTable.types(nProp1)
-      newTable.types(cachedNProp1) should be(initialType)
-    }
-
-    test("should rewrite [prop(n, prop)] to [CachedProperty(n.prop)] with usage in selection after index scan") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
-      val plan = Selection(
-        Seq(equals(listOf(prop("n", "prop")), listOfInt(1))),
-        indexScan("n", "L", "prop", CanGetValue)
-      )
-      val (newPlan, newTable) = replace(plan, initialTable)
-
-      newPlan should equal(
-        Selection(
-          Seq(equals(listOf(cachedNProp1), listOfInt(1))),
-          indexScan("n", "L", "prop", GetValue)
-        )
-      )
-      val initialType = initialTable.types(nProp1)
-      newTable.types(cachedNProp1) should be(initialType)
-    }
-
-    test("should rewrite {foo: prop(n, prop)} to {foo: CachedProperty(n.prop)} with usage in selection after index scan") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
-      val plan = Selection(
-        Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOfInt(("foo", 1)))),
-        indexScan("n", "L", "prop", CanGetValue)
-      )
-      val (newPlan, newTable) = replace(plan, initialTable)
-
-      newPlan should equal(
-        Selection(
-          Seq(equals(mapOf("foo" -> cachedNProp1), mapOfInt(("foo", 1)))),
-          indexScan("n", "L", "prop", GetValue)
-        )
-      )
-      val initialType = initialTable.types(nProp1)
-      newTable.types(cachedNProp1) should be(initialType)
-    }
-
-    test("should not explode on missing type info") {
-      val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
-      val propWithoutSemanticType = propEquality("m", "prop", 2)
-
-      val plan = Selection(
-        Seq(propEquality("n", "prop", 1), propWithoutSemanticType),
-        NodeHashJoin(Set("n"),
-          indexScan("n", "L", "prop", CanGetValue),
-          indexScan("m", "L", "prop", CanGetValue)
-        )
-      )
-      val (_, newTable) = replace(plan, initialTable)
-      val initialType = initialTable.types(nProp1)
-      newTable.types(cachedNProp1) should be(initialType)
-    }
+    )
+    val (_, newTable) = replace(plan, initialTable)
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
 
   test("should cache node property on multiple usages") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
 
 sealed trait Solvable {
   def solvables: Set[SolvableLeaf]

@@ -19,20 +19,40 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
-import org.neo4j.cypher.internal.compiler.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
+import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
@@ -46,13 +66,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-                            lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
+          lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-                            lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
+          lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
@@ -126,7 +146,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
          labelName <- labelPredicate.labels;
          labelId <- semanticTable.id(labelName);
          indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
-    )
+         )
       yield {
         produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, labelPredicate, labelName, labelId, indexDescriptor)
       }

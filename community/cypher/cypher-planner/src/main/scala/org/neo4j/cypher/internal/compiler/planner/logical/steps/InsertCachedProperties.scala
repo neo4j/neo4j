@@ -19,18 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
-import org.neo4j.cypher.internal.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.EntityType
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 /**
-  * A logical plan rewriter that also changes the semantic table (thus a Transformer).
-  *
-  * It traverses the plan and swaps property lookups for cached properties where possible.
-  */
+ * A logical plan rewriter that also changes the semantic table (thus a Transformer).
+ *
+ * It traverses the plan and swaps property lookups for cached properties where possible.
+ */
 case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
@@ -146,7 +161,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
             prop
         }
 
-        // Rewrite index plans to either GetValue or DoNotGetValue
+      // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: IndexLeafPlan =>
         indexPlan.withProperties(indexPlan.properties.map { indexedProp =>
           val prop = Property(Variable(indexPlan.idName)(InputPosition.NONE), PropertyKeyName(indexedProp.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)

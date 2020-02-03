@@ -19,12 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.util.attribution.{Attributes, SameId}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 import scala.annotation.tailrec
 
@@ -45,7 +64,7 @@ object Eagerness {
     if (unstableLeaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
     else
-      // Start recursion by checking the given plannerQuery against itself
+    // Start recursion by checking the given plannerQuery against itself
       headConflicts(plannerQuery, plannerQuery, unstableLeaves.tail)
   }
 
@@ -134,10 +153,10 @@ object Eagerness {
   }
 
   /**
-    * Determines whether there is a conflict between the two PlannerQuery objects.
-    * This function assumes that none of the argument PlannerQuery objects is
-    * the head of the PlannerQuery chain.
-    */
+   * Determines whether there is a conflict between the two PlannerQuery objects.
+   * This function assumes that none of the argument PlannerQuery objects is
+   * the head of the PlannerQuery chain.
+   */
   @tailrec
   def readWriteConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery): Boolean = {
     val conflict = readWriteConflict(head, tail)
@@ -217,8 +236,8 @@ object Eagerness {
     val conflict =
       if (tail.queryGraph.writeOnly) false
       else
-        // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
-        // write-only head could cause problems with reads in future horizons
+      // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
+      // write-only head could cause problems with reads in future horizons
         head.queryGraph writeOnlyHeadOverlaps tail.queryGraph
 
     if (conflict)

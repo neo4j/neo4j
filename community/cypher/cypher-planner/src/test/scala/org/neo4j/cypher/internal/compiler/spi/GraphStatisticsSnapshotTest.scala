@@ -19,11 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.spi
 
-import org.neo4j.cypher.internal.planner.spi._
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.planner.spi.CardinalityByLabelsAndRelationshipType
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexSelectivity
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodesAllCardinality
+import org.neo4j.cypher.internal.planner.spi.NodesWithLabelCardinality
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-import scala.language.reflectiveCalls
 
 class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
@@ -211,10 +220,10 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
                               idxSelectivity: Double = 1,
                               idxPropertyExistsSelectivity: Double = 1): TestGraphStatistics =
     new TestGraphStatistics(allNodes,
-                            labeledNodes,
-                            relCardinality,
-                            idxSelectivity,
-                            idxPropertyExistsSelectivity)
+      labeledNodes,
+      relCardinality,
+      idxSelectivity,
+      idxPropertyExistsSelectivity)
 
   class TestGraphStatistics(allNodes: Long,
                             labeledNodes: Long,

@@ -20,12 +20,42 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.ASC
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
@@ -90,14 +120,14 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
 
       plan._2 should equal(
-          PartialSort(
+        PartialSort(
+          Projection(
             Projection(
-              Projection(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-                Map("n.prop" -> prop("n", "prop"))),
-              Map("n.foo + 1" -> add(prop("n", "foo"), literalInt(1)))),
-            Seq(sortOrder("n.prop")), Seq(Ascending("n.foo + 1")))
+              Map("n.prop" -> prop("n", "prop"))),
+            Map("n.foo + 1" -> add(prop("n", "foo"), literalInt(1)))),
+          Seq(sortOrder("n.prop")), Seq(Ascending("n.foo + 1")))
       )
     }
 
@@ -417,7 +447,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           Apply(
-            SkipPlan(
+            Skip(
               IndexSeek(
                 "a:A(prop > 'foo')", indexOrder = plannedOrder),
               literalInt(0)),
@@ -833,10 +863,10 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         // When
         val query =
           s"""
-            |MATCH (n:Label)
-            |WHERE n.prop1 >= 42 AND n.prop2 <= 3 AND n.prop3 > ''
-            |RETURN $returnString
-            |ORDER BY $orderByString
+             |MATCH (n:Label)
+             |WHERE n.prop1 >= 42 AND n.prop2 <= 3 AND n.prop3 > ''
+             |RETURN $returnString
+             |ORDER BY $orderByString
           """.stripMargin
         val plan = new given {
           indexOn("Label", "prop1", "prop2", "prop3").providesOrder(orderCapability)
@@ -868,7 +898,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       plan._2 should equal(
         Optional(
-          LimitPlan(
+          Limit(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
@@ -887,7 +917,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       plan._2 should equal(
         Optional(
-          LimitPlan(
+          Limit(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
@@ -912,7 +942,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Sort(
           Optional(
-            LimitPlan(
+            Limit(
               Projection(
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
@@ -931,9 +961,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
 
       plan._2 should equal(
-        LimitPlan(
+        Limit(
           Optional(
-            LimitPlan(
+            Limit(
               Projection(
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
@@ -959,7 +989,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       plan._2 should equal(
         Optional(
-          LimitPlan(
+          Limit(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map("agg" -> cachedNodeProp("n", "prop"))

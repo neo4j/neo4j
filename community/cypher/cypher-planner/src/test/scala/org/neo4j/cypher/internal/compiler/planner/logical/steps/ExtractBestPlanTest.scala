@@ -19,19 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.planner._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
-import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, RegularSinglePlannerQuery, VarPatternLength}
-import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.{PropertyKeyName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
+import org.neo4j.exceptions.HintException
+import org.neo4j.exceptions.IndexHintException
+import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.JoinHintException
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

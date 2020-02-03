@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDCardinalityData
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.RandomizedCardinalityModelTestSuite
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.scalatest.prop.TableDrivenPropertyChecks.Table
+import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 
-  import ABCD._
-  import org.scalatest.prop.TableDrivenPropertyChecks._
 
   test("all queries") {
     val queries = Table.apply[String, Double](

@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.logical.plans.{Selection, DropResult}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.logical.plans.DropResult
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.bottomUp
 
 /**
-  * Removes impossible predicates from the plan. Note that this rewriter assumes
-  * we have already folded things like `true AND false`, `true OR true`, etcetera.
-  */
+ * Removes impossible predicates from the plan. Note that this rewriter assumes
+ * we have already folded things like `true AND false`, `true OR true`, etcetera.
+ */
 case object simplifySelections extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

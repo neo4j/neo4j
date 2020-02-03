@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 
 object leverageOrder {
 
   /**
-    * Given the order of a plan, and some grouping expressions, return the prefix
-    * of the provided order that is part of the grouping expressions.
-    */
+   * Given the order of a plan, and some grouping expressions, return the prefix
+   * of the provided order that is part of the grouping expressions.
+   */
   def apply(inputProvidedOrder: ProvidedOrder, groupingExpressions: Map[String, Expression]): Seq[Expression] = {
     val groupingValues = groupingExpressions.values.toSet
     inputProvidedOrder.columns.map(_.expression).takeWhile { exp =>

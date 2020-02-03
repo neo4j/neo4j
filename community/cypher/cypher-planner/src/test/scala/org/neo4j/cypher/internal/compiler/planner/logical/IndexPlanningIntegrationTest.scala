@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
+import scala.concurrent.Future
 
 class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -162,34 +172,34 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           uniqueIndexOn("Coleslaw", "name")
         } getLogicalPlanFor
           """
-          |MATCH (n:Coleslaw) USING INDEX n:Coleslaw(name)
-          |WHERE (n.age < 10 AND ( n.name IN $p0 OR
-          |        n.name IN $p1 OR
-          |        n.name IN $p2 OR
-          |        n.name IN $p3 OR
-          |        n.name IN $p4 OR
-          |        n.name IN $p5 OR
-          |        n.name IN $p6 OR
-          |        n.name IN $p7 OR
-          |        n.name IN $p8 OR
-          |        n.name IN $p9 OR
-          |        n.name IN $p10 OR
-          |        n.name IN $p11 OR
-          |        n.name IN $p12 OR
-          |        n.name IN $p13 OR
-          |        n.name IN $p14 OR
-          |        n.name IN $p15 OR
-          |        n.name IN $p16 OR
-          |        n.name IN $p17 OR
-          |        n.name IN $p18 OR
-          |        n.name IN $p19 OR
-          |        n.name IN $p20 OR
-          |        n.name IN $p21 OR
-          |        n.name IN $p22 OR
-          |        n.name IN $p23 OR
-          |        n.name IN $p24 OR
-          |        n.name IN $p25) AND n.legal)
-          |RETURN n.name as name
+            |MATCH (n:Coleslaw) USING INDEX n:Coleslaw(name)
+            |WHERE (n.age < 10 AND ( n.name IN $p0 OR
+            |        n.name IN $p1 OR
+            |        n.name IN $p2 OR
+            |        n.name IN $p3 OR
+            |        n.name IN $p4 OR
+            |        n.name IN $p5 OR
+            |        n.name IN $p6 OR
+            |        n.name IN $p7 OR
+            |        n.name IN $p8 OR
+            |        n.name IN $p9 OR
+            |        n.name IN $p10 OR
+            |        n.name IN $p11 OR
+            |        n.name IN $p12 OR
+            |        n.name IN $p13 OR
+            |        n.name IN $p14 OR
+            |        n.name IN $p15 OR
+            |        n.name IN $p16 OR
+            |        n.name IN $p17 OR
+            |        n.name IN $p18 OR
+            |        n.name IN $p19 OR
+            |        n.name IN $p20 OR
+            |        n.name IN $p21 OR
+            |        n.name IN $p22 OR
+            |        n.name IN $p23 OR
+            |        n.name IN $p24 OR
+            |        n.name IN $p25) AND n.legal)
+            |RETURN n.name as name
         """.stripMargin)(global)
 
     Await.result(futurePlan, 1.minutes)

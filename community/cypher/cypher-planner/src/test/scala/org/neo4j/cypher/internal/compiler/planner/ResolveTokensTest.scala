@@ -19,18 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ast.{Match, Query, SingleQuery, Where, _}
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{LabelId, PropertyKeyId, RelTypeId}
 
 class ResolveTokensTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.parser.ParserFixture._
 
   parseTest("match (n) where n.name = 'Resolved' return *") { query =>
     implicit val semanticTable = SemanticTable()
@@ -180,6 +197,6 @@ class ResolveTokensTest extends CypherFunSuite {
 
   def parseTest(queryText: String)(f: Query => Unit) = test(queryText) { parser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None)) match {
     case query: Query => f(query)
-    }
+  }
   }
 }

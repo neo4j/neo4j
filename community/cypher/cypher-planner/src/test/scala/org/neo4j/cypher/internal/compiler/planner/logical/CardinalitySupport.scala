@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.util.Cardinality
-import org.scalactic.{Equality, Tolerance, TripleEquals}
+import org.scalactic.Equality
+import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
+import org.scalactic.TripleEquals.convertToEqualizer
 
 object CardinalitySupport {
 
-  import Tolerance._
-  import TripleEquals._
 
   implicit object Eq extends Equality[Cardinality] {
     def areEqual(a: Cardinality, b: Any): Boolean = b match {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import java.lang.{Iterable => JavaIterable}
-import java.util.{Map => JavaMap}
 
-import scala.collection.JavaConverters._
-import scala.collection.{Map, Seq}
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.Map
+import scala.collection.Seq
 
 object IsList extends ListSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
@@ -87,11 +87,11 @@ trait ListSupport {
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
     case x: Array[_]        => x
     case x: Map[_, _]       => Iterable(x)
-    case x: JavaMap[_, _]   => Iterable(x.asScala)
+    case x: java.util.Map[_, _]   => Iterable(x.asScala)
     case x: Traversable[_]  => x.toIterable
     case x: Iterator[_]     => x.toIterable
-    case x: JavaIterable[_] => x.asScala.map {
-      case y: JavaMap[_, _] => y.asScala
+    case x: java.lang.Iterable[_] => x.asScala.map {
+      case y: java.util.Map[_, _] => y.asScala
       case y                => y
     }
   }

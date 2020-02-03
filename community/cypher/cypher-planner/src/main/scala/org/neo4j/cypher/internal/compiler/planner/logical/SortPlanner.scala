@@ -20,10 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
-import org.neo4j.cypher.internal.ir.InterestingOrder.{FullSatisfaction, NoSatisfaction, Satisfaction}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
-import org.neo4j.cypher.internal.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.NoSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class SortColumnsWithProjections(columnOrder: ColumnOrder, providedOrderColumn: ProvidedOrder.Column,
                                       projections: Map[String, Expression], unaliasedProjections: Option[(String, Expression)])

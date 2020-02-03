@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Asc
+import org.neo4j.cypher.internal.ir.ProvidedOrder.Desc
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -19,15 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.helpers.MapSupport._
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
-import org.neo4j.cypher.internal.ir.{QueryGraph, StrictnessMode}
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SemanticTableHelper.RichSemanticTable
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.StrictnessMode
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -41,8 +49,6 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
   // because it only verifies that you get back what you put in, which means we will just be testing the test framework.
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
-
-  import SemanticTableHelper._
 
   def combiner: SelectivityCombiner = IndependenceCombiner
 
@@ -247,9 +253,8 @@ trait CardinalityCustomMatchers {
       MatchResult(
         expected.size == other.size && expected.foldLeft(true) {
           case (acc, (key, value)) =>
-            import Cardinality._
-            import org.scalactic.Tolerance._
-            import org.scalactic.TripleEquals._
+            import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
+            import org.scalactic.TripleEquals.convertToEqualizer
             acc && other.contains(key) && other(key) === value +- tolerance
         },
         s"""$other did not equal "$expected" wrt a tolerance of $tolerance""",

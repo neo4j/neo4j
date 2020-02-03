@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
-import org.neo4j.cypher.internal.logical.plans.{Aggregation, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -63,7 +66,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = aggregation(startPlan, projectionPlan, InterestingOrder.empty, context)
     result should equal(
       Aggregation(
-       startPlan, groupingMap, aggregationMap)
+        startPlan, groupingMap, aggregationMap)
     )
   }
 

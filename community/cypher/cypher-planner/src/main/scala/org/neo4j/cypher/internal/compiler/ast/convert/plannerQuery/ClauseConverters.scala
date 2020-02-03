@@ -19,15 +19,102 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
-import org.neo4j.cypher.internal.ir.{NoHeaders, _}
-import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.Delete
+import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.InputDataStream
+import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.OnCreate
+import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveLabelItem
+import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItem
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ReturnItemsDef
+import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetItem
+import org.neo4j.cypher.internal.ast.SetLabelItem
+import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SortItem
+import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.exceptions.{InternalException, SyntaxException}
+import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsAggregate
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.containsAggregate
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.DeleteExpression
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.HasHeaders
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.MergeNodePattern
+import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
+import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryHorizon
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.RequiredOrderCandidate
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.SyntaxException
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -107,8 +194,6 @@ object ClauseConverters {
   }
 
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
-    import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-    import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
 
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {
@@ -137,8 +222,6 @@ object ClauseConverters {
   }
 
   private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
-
-    import InterestingOrder._
 
     sortItems.map {
       // RETURN a AS b ORDER BY b.prop
@@ -533,7 +616,7 @@ object ClauseConverters {
 
     val innerBuilder = new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
       .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toIndexedSeq:_*)
-                        .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
+        .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
     val innerPlannerQuery =

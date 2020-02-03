@@ -19,12 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.compiler.{DeprecatedFieldNotification, DeprecatedProcedureNotification, ProcedureWarningNotification}
-import org.neo4j.cypher.internal.logical.plans.{FieldSignature, ProcedureSignature, ResolvedCall}
-import org.neo4j.cypher.internal.ast.{ProcedureResultItem, Statement, UnresolvedCall}
+import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
+import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
+import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
-import org.neo4j.cypher.internal.frontend.phases.{BaseContext, BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InternalException
 
 object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
@@ -66,7 +74,7 @@ object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
 
   private def usedDeprecatedFields(procedure: String, used: Seq[ProcedureResultItem], available: Seq[FieldSignature]) =
     used.filter(r => available.exists(o => o.name == r.outputName && o.deprecated)).
-       map(r => DeprecatedFieldNotification(r.position, procedure, r.outputName))
+      map(r => DeprecatedFieldNotification(r.position, procedure, r.outputName))
 
   override def phase = DEPRECATION_WARNINGS
 

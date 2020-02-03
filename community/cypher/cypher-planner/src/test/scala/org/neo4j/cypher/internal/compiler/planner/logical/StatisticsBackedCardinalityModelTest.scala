@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner._
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelTestHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
@@ -77,11 +77,11 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     val aggregation = Math.sqrt(firstQG)
 
     givenPattern("MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c MATCH (a)-[:REL]->()").
-    withGraphNodes(allNodes).
-    withLabel('Person -> personCount).
-    withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-    withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * relCount / personCount)
+      withGraphNodes(allNodes).
+      withLabel('Person -> personCount).
+      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
+      withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * relCount / personCount)
   }
 
   test("aggregations should never increase cardinality") {

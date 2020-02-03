@@ -23,16 +23,25 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Projection, RollUpApply}
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.Extractors.{MapKeys, SetExtractor}
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -54,8 +63,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     resultPlan should beLike {
       case _ =>()
       case RollUpApply(`source`,
-              Projection(`otherSide`, MapKeys("  FRESHID0")),
-           "x", "  FRESHID0", SetExtractor("a")) => ()
+      Projection(`otherSide`, MapKeys("  FRESHID0")),
+      "x", "  FRESHID0", SetExtractor("a")) => ()
     }
     expressions should equal(Map("x" -> varFor("x")))
   }
@@ -85,11 +94,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     resultPlan should beLike {
       case RollUpApply(
-                       RollUpApply(`source`,
-                                   Projection(`b1`, MapKeys("  FRESHID0")),
-                                   "x", "  FRESHID0", SetExtractor("a")),
-                       Projection(`b2`, MapKeys("  FRESHID3")),
-                       "y", "  FRESHID3", SetExtractor("a")) => ()
+      RollUpApply(`source`,
+      Projection(`b1`, MapKeys("  FRESHID0")),
+      "x", "  FRESHID0", SetExtractor("a")),
+      Projection(`b2`, MapKeys("  FRESHID3")),
+      "y", "  FRESHID3", SetExtractor("a")) => ()
     }
     expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }
@@ -111,11 +120,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     resultPlan should beLike {
       case RollUpApply(
-                       RollUpApply(`source`,
-                                   Projection(`b1`, MapKeys("  FRESHID0")),
-                                   "  FRESHID1", "  FRESHID0", SetExtractor("a")),
-                       Projection(`b2`, MapKeys("  FRESHID3")),
-                       "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
+      RollUpApply(`source`,
+      Projection(`b1`, MapKeys("  FRESHID0")),
+      "  FRESHID1", "  FRESHID0", SetExtractor("a")),
+      Projection(`b2`, MapKeys("  FRESHID3")),
+      "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
     }
 
     expressions should equal(Map("x" -> equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
@@ -138,11 +147,11 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     resultPlan should beLike {
       case RollUpApply(
-                       RollUpApply(`source`,
-                                   Projection(`b1`, MapKeys("  FRESHID0")),
-                                   "  FRESHID1", "  FRESHID0", SetExtractor("a")),
-                       Projection(`b2`, MapKeys("  FRESHID3")),
-                       "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
+      RollUpApply(`source`,
+      Projection(`b1`, MapKeys("  FRESHID0")),
+      "  FRESHID1", "  FRESHID0", SetExtractor("a")),
+      Projection(`b2`, MapKeys("  FRESHID3")),
+      "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
     }
 
     expression should equal(equals(varFor("  FRESHID1"), varFor("  FRESHID4")))

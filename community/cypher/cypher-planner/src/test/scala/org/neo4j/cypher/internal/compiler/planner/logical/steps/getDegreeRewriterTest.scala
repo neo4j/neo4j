@@ -19,18 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Rewrite exists( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() ) > 0") {
     val incoming = Exists.asInvocation(
       PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
-                                                               RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
-                                                               NodePattern(None, Seq.empty, None)(pos))(pos))(pos)))(pos)
+        RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(None, Seq.empty, None)(pos))(pos))(pos)))(pos)
     val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -39,8 +46,8 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   test("Rewrite exists( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() ) > 0") {
     val incoming = Exists.asInvocation(
       PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, Seq.empty, None)(pos),
-                                                               RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
-                                                               NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos)))(pos)
+        RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos)))(pos)
     val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)

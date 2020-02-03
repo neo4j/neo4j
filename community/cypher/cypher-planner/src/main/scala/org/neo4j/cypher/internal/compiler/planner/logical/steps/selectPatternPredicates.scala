@@ -19,14 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NodePatternExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.util.{FreshIdNameGenerator, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -65,19 +79,19 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     val emptyTuple = (Map.empty[PatternElement, Variable], QueryGraph.empty)
     val(namedMap, qg) = e.patternElements.foldLeft(emptyTuple) { (acc, patternElement) =>
       patternElement match {
-      case elem: RelationshipChain =>
-        val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
-        val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-        val qg = extractQG(lhs, namedExpr, context)
+        case elem: RelationshipChain =>
+          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
+          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+          val qg = extractQG(lhs, namedExpr, context)
 
-        (acc._1 ++ namedMap, acc._2 ++ qg)
+          (acc._1 ++ namedMap, acc._2 ++ qg)
 
-      case elem: NodePattern =>
-        val patternExpr = NodePatternExpression(List(elem))(elem.position)
-        val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-        val qg = extractQG(lhs, namedExpr, context)
+        case elem: NodePattern =>
+          val patternExpr = NodePatternExpression(List(elem))(elem.position)
+          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+          val qg = extractQG(lhs, namedExpr, context)
 
-        (acc._1 ++ namedMap, acc._2 ++ qg)
+          (acc._1 ++ namedMap, acc._2 ++ qg)
       }
     }
 
@@ -91,15 +105,11 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   }
 
   private def extractQG(source: LogicalPlan, namedExpr: NodePatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-
     val qgArguments = getQueryGraphArguments(source, namedExpr)
     asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
   }
 
   private def extractQG(source: LogicalPlan, namedExpr: PatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
-
     val qgArguments = getQueryGraphArguments(source, namedExpr)
     asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
   }

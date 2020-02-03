@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.test_helpers
 
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.reflect.ClassTag
 

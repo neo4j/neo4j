@@ -19,23 +19,163 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
-import org.neo4j.cypher.internal.compiler.planner._
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.DeleteExpression
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.ConditionalApply
+import org.neo4j.cypher.internal.logical.plans.CrossApply
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpansionMode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSemiApply
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.LockNodes
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SeekableArgs
+import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Ties
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.ast.Union.UnionMapping
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.attribution.{Attributes, IdGen}
-import org.neo4j.exceptions.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
+import org.neo4j.exceptions.InternalException
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -50,8 +190,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private val providedOrders = planningAttributes.providedOrders
 
   /**
-    * This object is simply to group methods that are used by the pattern expression solver, and thus do not need to update `solveds`
-    */
+   * This object is simply to group methods that are used by the pattern expression solver, and thus do not need to update `solveds`
+   */
   object ForPatternExpressionSolver {
 
     def planArgument(argumentIds: Set[String],
@@ -239,16 +379,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
 
       /**
-        * There are multiple considerations about this strange method.
-        * a) If we solve PatternExpressions before `extractPredicates` in `expandStepSolver`, then the `replaceVariable` rewriter
-        *    does not properly recurse into NestedPlanExpressions. It is thus easier to first rewrite the predicates and then
-        *    let the PatternExpressionSolver solve any PatternExpressions in them.
-        * b) `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The PatternExpressionSolver needs
-        *    to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
-        *    or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward
-        *    either, the easiest solution is this one: we wrap each predicate in a FilterScope, give it the the PatternExpressionSolver,
-        *    and then extract it from the FilterScope again.
-        */
+       * There are multiple considerations about this strange method.
+       * a) If we solve PatternExpressions before `extractPredicates` in `expandStepSolver`, then the `replaceVariable` rewriter
+       *    does not properly recurse into NestedPlanExpressions. It is thus easier to first rewrite the predicates and then
+       *    let the PatternExpressionSolver solve any PatternExpressions in them.
+       * b) `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The PatternExpressionSolver needs
+       *    to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
+       *    or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward
+       *    either, the easiest solution is this one: we wrap each predicate in a FilterScope, give it the the PatternExpressionSolver,
+       *    and then extract it from the FilterScope again.
+       */
       def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
         val filterScope = FilterScope(variablePredicate.variable, Some(variablePredicate.predicate))(variablePredicate.predicate.position)
         val rewrittenFilterScope = solver.solve(filterScope).asInstanceOf[FilterScope]
@@ -259,17 +399,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       val rewrittenNodePredicate = nodePredicate.map(solveVariablePredicate)
       val rewrittenSource = solver.rewrittenPlan()
       annotate(VarExpand(
-              source = rewrittenSource,
-              from = from,
-              dir = dir,
-              projectedDir = projectedDir,
-              types = pattern.types,
-              to = to,
-              relName = pattern.name,
-              length = l,
-              mode = mode,
-              nodePredicate = rewrittenNodePredicate,
-              relationshipPredicate = rewrittenRelationshipPredicate), solved, providedOrders.get(source.id), context)
+        source = rewrittenSource,
+        from = from,
+        dir = dir,
+        projectedDir = projectedDir,
+        types = pattern.types,
+        to = to,
+        relName = pattern.name,
+        length = l,
+        mode = mode,
+        nodePredicate = rewrittenNodePredicate,
+        relationshipPredicate = rewrittenRelationshipPredicate), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
@@ -597,19 +737,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence the projection list,
-    *                    thus this logic is put into [[projection]] instead.
-    */
+   * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence the projection list,
+   *                    thus this logic is put into [[projection]] instead.
+   */
   def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     planRegularProjectionHelper(inner, expressions, context, solved)
   }
 
   /**
-    * @param grouping    must be solved by the PatternExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
-    *                    thus this logic is put into [[aggregation]] instead.
-    * @param aggregation must be solved by the PatternExpressionSolver.
-    */
+   * @param grouping    must be solved by the PatternExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
+   *                    thus this logic is put into [[aggregation]] instead.
+   * @param aggregation must be solved by the PatternExpressionSolver.
+   */
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
@@ -626,12 +766,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planOrderedAggregation(left: LogicalPlan,
-                      grouping: Map[String, Expression],
-                      aggregation: Map[String, Expression],
-                      orderToLeverage: Seq[Expression],
-                      reportedGrouping: Map[String, Expression],
-                      reportedAggregation: Map[String, Expression],
-                      context: LogicalPlanningContext): LogicalPlan = {
+                             grouping: Map[String, Expression],
+                             aggregation: Map[String, Expression],
+                             orderToLeverage: Seq[Expression],
+                             reportedGrouping: Map[String, Expression],
+                             reportedAggregation: Map[String, Expression],
+                             context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
@@ -642,8 +782,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * The only purpose of this method is to set the solved correctly for something that is already sorted.
-    */
+   * The only purpose of this method is to set the solved correctly for something that is already sorted.
+   */
   def updateSolvedForSortedItems(inner: LogicalPlan,
                                  interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
@@ -666,14 +806,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planSkip(inner: LogicalPlan, count: Expression, context: LogicalPlanningContext): LogicalPlan = {
     // `count` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(count))))
-    annotate(SkipPlan(inner, count), solved, providedOrders.get(inner.id), context)
+    annotate(Skip(inner, count), solved, providedOrders.get(inner.id), context)
   }
 
   def planLoadCSV(inner: LogicalPlan, variableName: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(LoadCSVProjection(variableName, url, format, fieldTerminator)))
     val (rewrittenUrl, rewrittenInner) = PatternExpressionSolver.ForSingle.solve(inner, url, interestingOrder, context)
-    annotate(LoadCSVPlan(rewrittenInner, rewrittenUrl, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping,
-                         context.csvBufferSize), solved, providedOrders.get(rewrittenInner.id), context)
+    annotate(LoadCSV(rewrittenInner, rewrittenUrl, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping,
+      context.csvBufferSize), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planInput(symbols: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
@@ -706,7 +846,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planLimit(inner: LogicalPlan, effectiveCount: Expression, reportedCount: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
     // `effectiveCount` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
-    annotate(LimitPlan(inner, effectiveCount, ties), solved, providedOrders.get(inner.id), context)
+    annotate(Limit(inner, effectiveCount, ties), solved, providedOrders.get(inner.id), context)
   }
 
   def planLimitForAggregation(inner: LogicalPlan,
@@ -719,7 +859,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
-    val limitPlan = LimitPlan(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties)
+    val limitPlan = Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties)
     val annotatedPlan = annotate(limitPlan, solved, providedOrder, context)
     val plan = Optional(annotatedPlan)
     annotate(plan, solved, providedOrder, context)
@@ -814,10 +954,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    *
-    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
-    *                    thus this logic is put into [[distinct]] instead.
-    */
+   *
+   * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
+   *                    thus this logic is put into [[distinct]] instead.
+   */
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
@@ -826,10 +966,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    *
-    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
-    *                    thus this logic is put into [[distinct]] instead.
-    */
+   *
+   * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
+   *                    thus this logic is put into [[distinct]] instead.
+   */
   def planOrderedDistinct(left: LogicalPlan,
                           expressions: Map[String, Expression],
                           orderToLeverage: Seq[Expression],
@@ -942,7 +1082,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     if (delete.forced) {
       annotate(DetachDeleteExpression(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
     } else {
-      annotate(DeleteExpressionPlan(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+      annotate(plans.DeleteExpression(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
     }
   }
 
@@ -1024,11 +1164,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.
-    * Set the other attributes with the provided arguments (solved and providedOrder).
-    *
-    * @return the same plan
-    */
+   * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.
+   * Set the other attributes with the provided arguments (solved and providedOrder).
+   *
+   * @return the same plan
+   */
   private def annotate(plan: LogicalPlan, solved: PlannerQueryPart, providedOrder: ProvidedOrder, context: LogicalPlanningContext): LogicalPlan = {
     assertNoBadExpressionsExists(plan)
     val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
@@ -1039,8 +1179,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
-    */
+   * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
+   */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
     checkOnlyWhenAssertionsAreEnabled(!new FoldableAny(root).treeExists {
       case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
@@ -1070,10 +1210,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * The provided order is used to describe the current ordering of the LogicalPlan within a complete plan tree. For
-    * index leaf operators this can be planned as an IndexOrder for the index to provide. In that case it only works
-    * if all columns are sorted in the same direction, so we need to narrow the scope for these index operations.
-    */
+   * The provided order is used to describe the current ordering of the LogicalPlan within a complete plan tree. For
+   * index leaf operators this can be planned as an IndexOrder for the index to provide. In that case it only works
+   * if all columns are sorted in the same direction, so we need to narrow the scope for these index operations.
+   */
   private def toIndexOrder(providedOrder: ProvidedOrder): IndexOrder = providedOrder match {
     case ProvidedOrder.empty => IndexOrderNone
     case ProvidedOrder(columns) if columns.forall(c => c.isAscending) => IndexOrderAscending
@@ -1082,17 +1222,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-    * Rename sort columns if they are renamed in a projection.
-    */
+   * Rename sort columns if they are renamed in a projection.
+   */
   private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
     columns.map {
       case columnOrder@ProvidedOrder.Column(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
-          projectExpressions.collectFirst {
-            case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _)) =>
-              ProvidedOrder.Column(Variable(newName)(v.position), columnOrder.isAscending)
-            case (newName, Variable(`varName`)) =>
-              ProvidedOrder.Column(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
-          }.getOrElse(columnOrder)
+        projectExpressions.collectFirst {
+          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _)) =>
+            ProvidedOrder.Column(Variable(newName)(v.position), columnOrder.isAscending)
+          case (newName, Variable(`varName`)) =>
+            ProvidedOrder.Column(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
+        }.getOrElse(columnOrder)
       case columnOrder@ProvidedOrder.Column(expression) =>
         projectExpressions.collectFirst {
           case (newName, `expression`) => ProvidedOrder.Column(Variable(newName)(expression.position), columnOrder.isAscending)

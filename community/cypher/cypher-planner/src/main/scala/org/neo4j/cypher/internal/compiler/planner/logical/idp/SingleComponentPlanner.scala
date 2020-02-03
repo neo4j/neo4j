@@ -19,27 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-
-import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport._
-import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport._
-import org.neo4j.cypher.internal.compiler.planner.logical._
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
-import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.ast.RelationshipHint
+import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport.RichIterator
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 
 /**
-  * This class contains the main IDP loop in the cost planner.
-  * This planner is based on the paper
-  *
-  * "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
-  *
-  * written by Donald Kossmann and Konrad Stocker
-  */
+ * This class contains the main IDP loop in the cost planner.
+ * This planner is based on the paper
+ *
+ * "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
+ *
+ * written by Donald Kossmann and Konrad Stocker
+ */
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
@@ -136,7 +142,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         result
       }
-  }.flatten
+    }.flatten
 }
 
 trait SingleComponentPlannerTrait {
