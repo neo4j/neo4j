@@ -27,7 +27,6 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Apache Commons Text
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -36,9 +35,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 Dependencies with multiple licenses
 -----------------------------------

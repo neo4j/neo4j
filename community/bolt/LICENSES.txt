@@ -19,7 +19,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   Java Concurrency Tools Core Library
-  Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers

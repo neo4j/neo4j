@@ -27,8 +27,6 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Apache Commons Text
-  Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers

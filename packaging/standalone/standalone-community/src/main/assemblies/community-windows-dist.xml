@@ -95,7 +95,6 @@
         <include>org.apache.lucene:lucene-core</include>
         <include>org.apache.lucene:lucene-analyzers-common</include>
         <include>org.apache.lucene:lucene-queryparser</include>
-        <include>org.apache.lucene:lucene-codecs</include>
         <include>org.scala-lang:*</include>
         <include>org.parboiled:*</include>
         <include>org.apache.commons:commons-lang3</include>

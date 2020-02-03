@@ -45,7 +45,6 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   jPowerShell
   jProcesses
-  Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers

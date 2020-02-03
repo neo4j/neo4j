@@ -29,7 +29,6 @@ Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
   Apache Commons Compress
-  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
   Apache Shiro :: Cache
@@ -45,11 +44,9 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   jPowerShell
   jProcesses
-  Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers
-  Netty/All-in-One
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
@@ -68,10 +65,6 @@ BSD License
 
 BSD License 2-clause
   zstd-jni
-
-Bouncy Castle License
-  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
-  Bouncy Castle Provider
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

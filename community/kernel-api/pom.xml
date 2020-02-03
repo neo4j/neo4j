@@ -88,13 +88,6 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-values</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-            <type>test-jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-random-values</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

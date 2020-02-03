@@ -84,11 +84,6 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-procedure-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-storage-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -119,11 +114,6 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-csv</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-logging</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -150,11 +140,6 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-fulltext-index</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ssl</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
