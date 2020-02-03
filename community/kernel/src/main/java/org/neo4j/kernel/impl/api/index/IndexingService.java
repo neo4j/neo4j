@@ -118,7 +118,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final boolean readOnly;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
-    private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider internalLogProvider;
     private final Monitor monitor;
     private final SchemaState schemaState;
@@ -207,7 +206,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
             SchemaState schemaState,
-            MultiPopulatorFactory multiPopulatorFactory,
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
             Monitor monitor,
@@ -224,7 +222,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.tokenNameLookup = tokenNameLookup;
         this.jobScheduler = scheduler;
         this.schemaState = schemaState;
-        this.multiPopulatorFactory = multiPopulatorFactory;
         this.internalLogProvider = internalLogProvider;
         this.monitor = monitor;
         this.populationJobController = new IndexPopulationJobController( scheduler );
@@ -805,8 +802,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
-        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create(
-                storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
+        MultipleIndexPopulator multiPopulator =
+                new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
     }
 

@@ -54,7 +54,6 @@ public final class IndexingServiceFactory
                                           boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        MultiPopulatorFactory multiPopulatorFactory = new MultiPopulatorFactory();
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
                 new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler, tokenNameLookup, internalLogProvider, pageCacheTracer );
@@ -64,6 +63,6 @@ public final class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, readOnly );
+                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, readOnly );
     }
 }

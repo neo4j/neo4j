@@ -1346,13 +1346,12 @@ class IndexingServiceTest
         when( indexProxyCreator.createRecoveringIndexProxy( any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createFailedIndexProxy( any(), any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createPopulatingIndexProxy( any(), anyBoolean(), any(), any() ) ).thenReturn( indexProxy );
-        MultiPopulatorFactory multiPopulatorFactory = new MultiPopulatorFactory();
         JobScheduler scheduler = mock( JobScheduler.class );
         IndexSamplingController samplingController = mock( IndexSamplingController.class );
         IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
-                        nameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
+                        nameLookup, scheduler, null, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
                         PageCacheTracer.NULL, false );
         // and where index population starts
         indexingService.init();
@@ -1635,7 +1634,7 @@ class IndexingServiceTest
         return new IndexingService( mock( IndexProxyCreator.class ), mock( IndexProviderMap.class ),
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), nameLookup,
-                mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
+                mock( JobScheduler.class ), mock( SchemaState.class ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, false );
     }
 
