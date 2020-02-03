@@ -120,16 +120,14 @@ public class MultipleIndexPopulationStressIT
     public void shouldPopulateMultipleIndexPopulatorsUnderStressMultiThreaded() throws Exception
     {
         int concurrentUpdatesQueueFlushThreshold = random.nextInt( 100, 5000 );
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME,
-                concurrentUpdatesQueueFlushThreshold );
+        FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, concurrentUpdatesQueueFlushThreshold );
         try
         {
             readConfigAndRunTest();
         }
         finally
         {
-            FeatureToggles.clear( BatchingMultipleIndexPopulator.class,
-                    BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
+            FeatureToggles.clear( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
         }
     }
 

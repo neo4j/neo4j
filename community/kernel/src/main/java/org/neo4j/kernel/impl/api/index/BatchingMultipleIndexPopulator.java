@@ -60,7 +60,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     private static final String EOL = System.lineSeparator();
 
-    private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
+    private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, 30 );
     private final AtomicLong activeTasks = new AtomicLong();
 
     /**

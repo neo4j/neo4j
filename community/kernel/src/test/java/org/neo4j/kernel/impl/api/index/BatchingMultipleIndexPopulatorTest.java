@@ -336,12 +336,12 @@ public class BatchingMultipleIndexPopulatorTest
 
     private static void setProperty( String name, int value )
     {
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, name, value );
+        FeatureToggles.set( MultipleIndexPopulator.class, name, value );
     }
 
     private static void clearProperty( String name )
     {
-        FeatureToggles.clear( BatchingMultipleIndexPopulator.class, name );
+        FeatureToggles.clear( MultipleIndexPopulator.class, name );
     }
 
     private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>

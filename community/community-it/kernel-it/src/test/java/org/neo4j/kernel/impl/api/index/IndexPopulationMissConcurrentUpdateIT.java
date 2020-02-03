@@ -96,18 +96,14 @@ public class IndexPopulationMissConcurrentUpdateIT
     {
         // let our populator have fine-grained insight into updates coming in
         FeatureToggles.set( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 1 );
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 1 );
         FeatureToggles.set( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 1 );
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 1 );
     }
 
     @After
     public void resetFeatureToggle()
     {
         FeatureToggles.clear( MultipleIndexPopulator.class, BATCH_SIZE_NAME );
-        FeatureToggles.clear( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME );
         FeatureToggles.clear( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME );
-        FeatureToggles.clear( BatchingMultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME );
     }
 
     /**
