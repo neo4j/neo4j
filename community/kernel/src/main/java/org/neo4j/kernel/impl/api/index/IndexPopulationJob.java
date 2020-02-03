@@ -34,7 +34,6 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.concurrent.Runnables;
 
-import static java.lang.Thread.currentThread;
 import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseBlockSize;
 
 /**
@@ -94,7 +93,6 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        String oldThreadName = currentThread().getName();
         try
         {
             if ( !multiPopulator.hasPopulators() )
@@ -106,7 +104,6 @@ public class IndexPopulationJob implements Runnable
                 throw new IllegalStateException( "Population already started." );
             }
 
-            currentThread().setName( "Index populator" );
             try
             {
                 multiPopulator.create();
@@ -135,8 +132,7 @@ public class IndexPopulationJob implements Runnable
                     multiPopulator::close,
                     () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
                     bufferFactory::close,
-                    doneSignal::countDown,
-                    () -> currentThread().setName( oldThreadName ) );
+                    doneSignal::countDown );
         }
     }
 
