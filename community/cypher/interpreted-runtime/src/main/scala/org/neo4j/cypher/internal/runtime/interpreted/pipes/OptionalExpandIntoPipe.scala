@@ -86,11 +86,11 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 } finally {
                   nodeCursor.close()
                 }
-
-              case IsNoValue() =>
-                row.set(relName, Values.NO_VALUE)
-                Iterator(row)
             }
+
+          case IsNoValue() =>
+            row.set(relName, Values.NO_VALUE)
+            Iterator(row)
         }
     }
   }

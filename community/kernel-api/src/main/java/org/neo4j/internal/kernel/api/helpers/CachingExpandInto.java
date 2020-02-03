@@ -256,7 +256,8 @@ public class CachingExpandInto
         @Override
         public void setCloseListener( CloseListener closeListener )
         {
-            //nothing close, nothing to listen to, please ignore me
+            //nothing close, just hand ourselves back to the closeListener so that
+            //any tracking of this resource can be removed.
             if ( closeListener != null )
             {
                 closeListener.onClosed( this );
