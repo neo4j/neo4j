@@ -76,7 +76,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 /**
  * There are two ways data is fed to this multi-populator:
  * <ul>
- * <li>A {@link StoreScan} is created through {@link #indexAllEntities()}. The store scan is started by
+ * <li>A {@link StoreScan} is created through {@link #createStoreScan()}. The store scan is started by
  * {@link StoreScan#run()}, which is a blocking call and will scan the entire store and generate
  * updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
@@ -91,7 +91,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Instantiation.</li>
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
- * <li>Call to {@link #indexAllEntities()} and {@link StoreScan#run()}(blocking call).</li>
+ * <li>Call to {@link #createStoreScan()} and {@link StoreScan#run()}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterStoreScan(boolean)} after successful population, or {@link #cancel(Throwable)} if not</li>
  * </ol>
@@ -123,7 +123,7 @@ public class MultipleIndexPopulator
     // to have fast #size() method since it might be drained in batches
     private final Queue<IndexEntryUpdate<?>> concurrentUpdateQueue = new LinkedBlockingQueue<>();
 
-    // Populators are added into this list. The same thread adding populators will later call #indexAllEntities.
+    // Populators are added into this list. The same thread adding populators will later call #createStoreScan.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
     private final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
@@ -193,7 +193,7 @@ public class MultipleIndexPopulator
         } );
     }
 
-    StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
+    StoreScan<IndexPopulationFailedKernelException> createStoreScan()
     {
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();

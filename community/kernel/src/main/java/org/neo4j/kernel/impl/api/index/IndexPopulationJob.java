@@ -142,7 +142,7 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllEntities() throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.indexAllEntities();
+        storeScan = multiPopulator.createStoreScan();
         storeScan.run();
     }
 

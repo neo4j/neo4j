@@ -130,7 +130,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
-        batchingPopulator.indexAllEntities();
+        batchingPopulator.createStoreScan();
         IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index42.schema(), "bar" );
         IndexEntryUpdate<?> update3 = add( 3, index1.schema(), "baz" );
@@ -161,7 +161,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexPopulator populator42 = addPopulator( batchingPopulator, index42 );
 
-        batchingPopulator.indexAllEntities().run();
+        batchingPopulator.createStoreScan().run();
 
         verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ) );
         verify( populator42 ).add( forUpdates( index42, update42 ) );
@@ -183,7 +183,7 @@ public class BatchingMultipleIndexPopulatorTest
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
 
-        batchingPopulator.indexAllEntities().run();
+        batchingPopulator.createStoreScan().run();
 
         verify( populator ).add( forUpdates( index1, update1, update2 ) );
         verify( populator ).add( forUpdates( index1, update3 ) );
@@ -213,7 +213,7 @@ public class BatchingMultipleIndexPopulatorTest
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
-            batchingPopulator.indexAllEntities().run();
+            batchingPopulator.createStoreScan().run();
         }
         finally
         {
@@ -245,7 +245,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ) );
 
-        batchingPopulator.indexAllEntities().run();
+        batchingPopulator.createStoreScan().run();
 
         verify( populator ).add( forUpdates( index1, update1, update2 ) );
         verify( populator ).add( forUpdates( index1, update3, update4 ) );
@@ -281,7 +281,7 @@ public class BatchingMultipleIndexPopulatorTest
         addPopulator( batchingPopulator, index1 );
 
         // when
-        batchingPopulator.indexAllEntities().run();
+        batchingPopulator.createStoreScan().run();
 
         // then
         assertThat( scheduleCount.get() ).isGreaterThanOrEqualTo( 5 );

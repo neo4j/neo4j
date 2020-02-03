@@ -84,7 +84,7 @@ class MultipleIndexPopulatorUpdatesTest
         addPopulator( indexPopulator, populator, 1, IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ) );
 
         indexPopulator.create();
-        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllEntities();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.createStoreScan();
         storeScan.run();
 
         Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );

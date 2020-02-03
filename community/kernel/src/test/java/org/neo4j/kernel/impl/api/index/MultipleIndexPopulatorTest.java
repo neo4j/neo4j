@@ -200,7 +200,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel );
 
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -222,7 +222,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel );
 
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -241,7 +241,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create();
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
 
         verify( indexStoreView )
             .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
@@ -370,7 +370,7 @@ class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sample() ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
         multipleIndexPopulator.flipAfterStoreScan( false );
 
         verify( indexPopulator1 ).close( false );
@@ -478,7 +478,7 @@ class MultipleIndexPopulatorTest
         when( indexPopulator.sample() ).thenReturn( new IndexSample() );
 
         // when
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
         multipleIndexPopulator.flipAfterStoreScan( true );
 
         // then
@@ -504,7 +504,7 @@ class MultipleIndexPopulatorTest
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
         when( indexPopulator.sample() ).thenReturn( sample );
 
-        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.createStoreScan();
         multipleIndexPopulator.flipAfterStoreScan( false );
 
         verify( indexPopulator ).close( true );
