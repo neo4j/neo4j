@@ -60,20 +60,26 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.scalacheck.Gen
 
+import scala.collection.mutable
+
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
 
   object State {
-   def apply(relTypesWithIds: Map[String, Int]): State = {
-      val resolvedRelTypes = scala.collection.mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+   def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
+      val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
+      val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
       State(
-        new SemanticTable(resolvedRelTypeNames = resolvedRelTypes),
+        new SemanticTable(
+          resolvedLabelNames = resolvedLabelTypes,
+          resolvedRelTypeNames = resolvedRelTypes),
         Set.empty,
         0,
         Set.empty,
@@ -178,7 +184,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
    * Main entry point to obtain logical plans and associated state.
    */
   def logicalPlan: Gen[WithState[LogicalPlan]] = for {
-    initialState <- Gen.delay(State(relTypesWithIds))
+    initialState <- Gen.delay(State(labelsWithIds, relTypesWithIds))
     WithState(source, state) <- innerLogicalPlan(initialState)
   } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
 

@@ -56,7 +56,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
   private val defaultSourceCardinality = Cardinality(123)
 
-  private val defaultState = LogicalPlanGenerator.State(Map.empty).copy(
+  private val defaultState = LogicalPlanGenerator.State(Map.empty, Map.empty).copy(
     cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
       override protected def defaultValue: Cardinality = defaultSourceCardinality
     }
@@ -132,7 +132,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     c should equal(multiplier)
   }
 
-  test("Expand") {
+  test("Expand (from)-[:A:B]->(to)") {
     val rels = Seq("A", "B")
     val relTypes = rels.map(r => RelTypeName(r)(pos))
     val relIds = rels.zipWithIndex.toMap
@@ -143,7 +143,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
 
-    val state = LogicalPlanGenerator.State(relIds).copy(
+    val state = LogicalPlanGenerator.State(Map.empty, relIds).copy(
       arguments = Set("from"),
       cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
         override protected def defaultValue: Cardinality = defaultSourceCardinality
@@ -162,6 +162,43 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     val marginOfError = expectedAmountApprox * 0.01
     actualAmount should equal(expectedAmountApprox +- marginOfError)
+  }
+
+  test("Expand (from:Label)-[:A:B]->(to)") {
+    val rels = Seq("A", "B")
+    val relTypes = rels.map(r => RelTypeName(r)(pos))
+    val relIds = rels.zipWithIndex.toMap
+
+    val labelIds = Map("Label" -> 1)
+
+    val allNodesCount = 100
+    val labeledNodesCount = allNodesCount / 2
+    val relCount = 42
+    val avgRelsPerLabeledNode = (rels.size * relCount) / labeledNodesCount.toDouble
+
+    val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
+
+    val state = LogicalPlanGenerator.State(labelIds, relIds).copy(
+      arguments = Set("from"),
+      cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
+        override protected def defaultValue: Cardinality = defaultSourceCardinality
+      },
+      labelInfo = Map("from" -> Set(LabelName("Label")(pos)))
+    )
+
+    val stats = new TestGraphStatistics {
+      override def nodesAllCardinality(): Cardinality =
+        Cardinality(allNodesCount)
+      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+        Cardinality(allNodesCount / 2)
+      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+        Cardinality(relCount)
+    }
+
+    val expectedAmountApprox = avgRelsPerLabeledNode * defaultSourceCardinality.amount
+    val Cardinality(actualAmount) = CardinalityCalculator.expandCardinality(plan, state, stats, Map.empty)
+
+    val marginOfError = expectedAmountApprox * 0.01
     actualAmount should equal(expectedAmountApprox +- marginOfError)
   }
 
