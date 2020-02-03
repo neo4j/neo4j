@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import java.util
 
+import org.neo4j.cypher.internal.runtime.NoMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
@@ -58,7 +59,9 @@ class InterpretedProfileInformation extends QueryProfile {
   val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0,0))
   val dbHitsMap: mutable.Map[Id, ProfilingPipeQueryContext] = mutable.Map.empty
   val rowMap: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
-  private var memoryTracker: QueryMemoryTracker = _
+
+  // Intended to be overridden by `setMemoryTracker`
+  private var memoryTracker: QueryMemoryTracker = NoMemoryTracker
 
   def setMemoryTracker(memoryTracker: QueryMemoryTracker): Unit = this.memoryTracker = memoryTracker
 
