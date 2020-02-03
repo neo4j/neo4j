@@ -26,6 +26,7 @@
     <properties>
         <moduleName>org.neo4j.cypher.internal.macros</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
+        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <licenses>

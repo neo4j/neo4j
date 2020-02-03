@@ -46,7 +46,7 @@ object AssertMacros {
   def checkOnlyWhenAssertionsAreEnabled(condition: Boolean, msg: String): Unit = macro checkOnlyWhenAssertionsAreEnabledWithMsgImpl
 
   def checkOnlyWhenAssertionsAreEnabledImpl(c: blackbox.Context)(condition: c.Expr[Boolean]): c.universe.Tree = {
-    import c.universe._
+    import c.universe.Quasiquote
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
     q"""
@@ -57,7 +57,7 @@ object AssertMacros {
   }
 
   def checkOnlyWhenAssertionsAreEnabledWithMsgImpl(c: blackbox.Context)(condition: c.Expr[Boolean], msg: c.Expr[String]): c.universe.Tree = {
-    import c.universe._
+    import c.universe.Quasiquote
     //this is just a precaution to make clear that we are using this constant here
     assert(ASSERTIONS_ENABLED || !ASSERTIONS_ENABLED)
     q"""

@@ -2,5 +2,4 @@
  <name>Scalastyle configuration</name>
  <check level="error" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true"/>
  <check level="error" class="org.scalastyle.scalariform.CurliesImportChecker" enabled="true"/>
- <check level="error" class="org.scalastyle.scalariform.ImportGroupingChecker" enabled="true"/>
 </scalastyle>
