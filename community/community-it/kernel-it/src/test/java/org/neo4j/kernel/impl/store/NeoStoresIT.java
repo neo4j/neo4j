@@ -184,7 +184,6 @@ class NeoStoresIT
         {
             var node = transaction.createNode();
             node.setProperty( "a", "b" );
-            node.getId();
             transaction.commit();
         }
 
