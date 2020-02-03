@@ -86,7 +86,7 @@ class MultipleIndexPopulatorTest
         schemaState = mock( SchemaState.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
-        multipleIndexPopulator = new BatchingMultipleIndexPopulator(
+        multipleIndexPopulator = new MultipleIndexPopulator(
                 indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler, tokens );
     }
 

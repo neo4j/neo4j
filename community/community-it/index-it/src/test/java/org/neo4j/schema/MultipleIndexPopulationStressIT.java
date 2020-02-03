@@ -59,7 +59,6 @@ import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -91,8 +90,7 @@ import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 
 /**
- * Idea is to test a {@link MultipleIndexPopulator} and {@link BatchingMultipleIndexPopulator} with a bunch of indexes,
- * some which can fail randomly.
+ * Idea is to test a {@link MultipleIndexPopulator} with a bunch of indexes, some of which can fail randomly.
  * Also updates are randomly streaming in during population. In the end all the indexes should have been populated
  * with correct data.
  */

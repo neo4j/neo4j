@@ -67,7 +67,7 @@ class IndexPopulationTest
         InMemoryTokens tokens = new InMemoryTokens();
 
         MultipleIndexPopulator multipleIndexPopulator =
-                new BatchingMultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
                         JobSchedulerFactory.createInitialisedScheduler(), tokens );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =

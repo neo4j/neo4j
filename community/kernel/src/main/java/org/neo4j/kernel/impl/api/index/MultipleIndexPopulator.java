@@ -28,14 +28,21 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -53,6 +60,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -61,64 +69,87 @@ import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
- * {@link IndexPopulator} that allow population of multiple indexes during one iteration.
- * Performs operations by calling corresponding operations of particular index populators.
- *
  * There are two ways data is fed to this multi-populator:
  * <ul>
- * <li>{@link #indexAllEntities()}, which is a blocking call and will scan the entire store and
- * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
+ * <li>A {@link StoreScan} is created through {@link #indexAllEntities()}. The store scan is started by
+ * {@link StoreScan#run()}, which is a blocking call and will scan the entire store and generate
+ * updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
  * <li>{@link #queueConcurrentUpdate(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
- * {@link #indexAllEntities()} and incorporated into that data stream. Calls to this method may come from any number
+ * the store scan and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
- *
+ * <p>
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
- * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
+ * <li>Call to {@link #indexAllEntities()} and {@link StoreScan#run()}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterStoreScan(boolean)} after successful population, or {@link #cancel(Throwable)} if not</li>
  * </ol>
+ * <p>
+ * The incoming updates from the {@link StoreScan} are batched in sizes of {@link #BATCH_SIZE_SCAN} and then
+ * flushed separately by different threads using {@link JobScheduler}.
+ * <p>
+ * It is possible for concurrent updates from transactions to arrive while index population is in progress. Such
+ * updates are inserted in the {@link #queueConcurrentUpdate(IndexEntryUpdate) queue}. When store scan notices that
+ * queue size has reached {@link #QUEUE_THRESHOLD} then it drains all batched updates and waits for all job scheduler
+ * tasks to complete and flushes updates from the queue using {@link MultipleIndexUpdater}. If queue size never reaches
+ * {@link #QUEUE_THRESHOLD} than all queued concurrent updates are flushed after the store scan in
+ * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean)}.
+ * <p>
  */
 public class MultipleIndexPopulator
 {
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
     public static final String BATCH_SIZE_NAME = "batch_size";
+    static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
+    private static final String EOL = System.lineSeparator();
 
-    final int QUEUE_THRESHOLD = FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 20_000 );
-    final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
-    final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
+    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 20_000 );
+    private final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    private final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
+    private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, 30 );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
-    final Queue<IndexEntryUpdate<?>> concurrentUpdateQueue = new LinkedBlockingQueue<>();
+    private final Queue<IndexEntryUpdate<?>> concurrentUpdateQueue = new LinkedBlockingQueue<>();
 
     // Populators are added into this list. The same thread adding populators will later call #indexAllEntities.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
-    final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
+    private final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
 
+    private final AtomicLong activeTasks = new AtomicLong();
     private final IndexStoreView storeView;
     private final NodePropertyAccessor propertyAccessor;
     private final LogProvider logProvider;
-    protected final Log log;
+    private final Log log;
     private final EntityType type;
     private final SchemaState schemaState;
     private final IndexStatisticsStore indexStatisticsStore;
     private final PhaseTracker phaseTracker;
-    protected final JobScheduler jobScheduler;
+    private final JobScheduler jobScheduler;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
     private final TokenNameLookup tokenNameLookup;
 
+    /**
+     * Creates a new multi-threaded populator for the given store view.
+     * @param storeView the view of the store as a visitable of nodes
+     * @param logProvider the log provider
+     * @param type entity type to populate
+     * @param schemaState the schema state
+     * @param jobScheduler the job scheduler
+     * @param tokenNameLookup token lookup
+     */
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
@@ -177,15 +208,7 @@ public class MultipleIndexPopulator
             storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
         }
         storeScan.setPhaseTracker( phaseTracker );
-        return new DelegatingStoreScan<>( storeScan )
-        {
-            @Override
-            public void run() throws IndexPopulationFailedKernelException
-            {
-                super.run();
-                flushAll();
-            }
-        };
+        return new BatchingStoreScan<>( storeScan );
     }
 
     /**
@@ -378,27 +401,46 @@ public class MultipleIndexPopulator
         return applyConcurrentUpdateQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
     }
 
-    void flushAll()
+    private void flushAll()
     {
         populations.forEach( this::flush );
+        awaitCompletion();
     }
 
-    protected final void flush( IndexPopulation population )
+    private void flush( IndexPopulation population )
     {
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
-        doFlush( population );
-    }
+        activeTasks.incrementAndGet();
+        List<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
 
-    void doFlush( IndexPopulation population )
-    {
-        try
+        jobScheduler.schedule( Group.INDEX_POPULATION_WORK, () ->
         {
-            population.populator.add( population.takeCurrentBatchFromScan() );
-        }
-        catch ( Throwable failure )
-        {
-            cancel( population, failure );
-        }
+            try
+            {
+                String batchDescription = "EMPTY";
+                if ( PRINT_DEBUG )
+                {
+                    if ( !batch.isEmpty() )
+                    {
+                        batchDescription = format( "[%d, %d - %d]", batch.size(), batch.get( 0 ).getEntityId(), batch.get( batch.size() - 1 ).getEntityId() );
+                    }
+                    log.info( "Applying scan batch %s", batchDescription );
+                }
+                population.populator.add( batch );
+                if ( PRINT_DEBUG )
+                {
+                    log.info( "Applied scan batch %s", batchDescription );
+                }
+            }
+            catch ( Throwable failure )
+            {
+                cancel( population, failure );
+            }
+            finally
+            {
+                activeTasks.decrementAndGet();
+            }
+        } );
     }
 
     /**
@@ -455,6 +497,61 @@ public class MultipleIndexPopulator
                 cancel( population, failure );
             }
         }
+    }
+
+    /**
+     * Awaits {@link #AWAIT_TIMEOUT_MINUTES} minutes for all previously submitted batch-flush tasks to complete.
+     * Restores the interrupted status and exits normally when interrupted during waiting.
+     *
+     * @throws IllegalStateException if tasks did not complete in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
+     */
+    private void awaitCompletion()
+    {
+        try
+        {
+            log.debug( "Waiting " + AWAIT_TIMEOUT_MINUTES + " minutes for all submitted and active " +
+                    "flush tasks to complete." + EOL + this );
+
+            BooleanSupplier allSubmittedTasksCompleted = () -> activeTasks.get() == 0;
+            Predicates.await( allSubmittedTasksCompleted, AWAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES );
+        }
+        catch ( TimeoutException e )
+        {
+            handleTimeout();
+        }
+    }
+
+    private void handleTimeout()
+    {
+        throw new IllegalStateException( "Index population tasks were not able to complete in " +
+                AWAIT_TIMEOUT_MINUTES + " minutes." + EOL + this + EOL + allStackTraces() );
+    }
+
+    /**
+     * Finds all threads and corresponding stack traces which can potentially cause the
+     * {@link ExecutorService executor} to not terminate in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
+     *
+     * @return thread dump as string.
+     */
+    private static String allStackTraces()
+    {
+        return Thread.getAllStackTraces()
+                .entrySet()
+                .stream()
+                .map( entry -> Exceptions.stringify( entry.getKey(), entry.getValue() ) )
+                .collect( joining() );
+    }
+
+    @Override
+    public String toString()
+    {
+        String updatesString = populations
+                .stream()
+                .map( population -> population.batchedUpdatesFromScan.size() + " updates" )
+                .collect( joining( ", ", "[", "]" ) );
+
+        return "MultipleIndexPopulator{activeTasks=" + activeTasks + ", " +
+                "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater
@@ -769,6 +866,29 @@ public class MultipleIndexPopulator
         public void setPhaseTracker( PhaseTracker phaseTracker )
         {
             delegate.setPhaseTracker( phaseTracker );
+        }
+    }
+
+    /**
+     * A delegating {@link StoreScan} implementation that flushes all pending updates and terminates the executor after
+     * the delegate store scan completes.
+     *
+     * @param <E> type of the exception this store scan might get.
+     */
+    private class BatchingStoreScan<E extends Exception> extends DelegatingStoreScan<E>
+    {
+        BatchingStoreScan( StoreScan<E> delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public void run() throws E
+        {
+            super.run();
+            log.info( "Completed node store scan. " +
+                      "Flushing all pending updates." + EOL + MultipleIndexPopulator.this );
+            flushAll();
         }
     }
 }

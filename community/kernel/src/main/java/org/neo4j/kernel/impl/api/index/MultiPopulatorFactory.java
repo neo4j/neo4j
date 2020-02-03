@@ -27,13 +27,13 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
- * Factory that is able to create {@link BatchingMultipleIndexPopulator}.
+ * Factory that is able to create {@link MultipleIndexPopulator}.
  */
 public class MultiPopulatorFactory
 {
     public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
     {
-        return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
+        return new MultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
     }
 }

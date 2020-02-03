@@ -174,7 +174,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 3, populator.adds.size() );
+        assertEquals( 2, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -199,7 +199,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 3, populator.adds.size() );
+        assertEquals( 2, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -245,7 +245,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Arrays.asList( update1, update2 ), populator.includedSamples );
-        assertEquals( 3, populator.adds.size() );
+        assertEquals( 2, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -279,7 +279,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Arrays.asList( update1, update2 ), populator.includedSamples );
-        assertEquals( 3, populator.adds.size() );
+        assertEquals( 2, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -783,7 +783,7 @@ class IndexPopulationJobTest
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new BatchingMultipleIndexPopulator(
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator(
                 storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
@@ -851,7 +851,7 @@ class IndexPopulationJobTest
         return db.getDependencyResolver().resolveDependency( IndexStoreView.class );
     }
 
-    private static class TrackingMultipleIndexPopulator extends BatchingMultipleIndexPopulator
+    private static class TrackingMultipleIndexPopulator extends MultipleIndexPopulator
     {
         private volatile boolean closed;
 

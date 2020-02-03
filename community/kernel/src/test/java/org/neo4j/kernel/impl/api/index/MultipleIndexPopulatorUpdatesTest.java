@@ -72,7 +72,7 @@ class MultipleIndexPopulatorUpdatesTest
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, () -> reader );
         InMemoryTokens tokens = new InMemoryTokens();
-        MultipleIndexPopulator indexPopulator = new BatchingMultipleIndexPopulator(
+        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
                 storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
                 JobSchedulerFactory.createInitialisedScheduler(), tokens );
 

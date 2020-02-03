@@ -314,7 +314,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( JobScheduler.class ) );
         order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor );

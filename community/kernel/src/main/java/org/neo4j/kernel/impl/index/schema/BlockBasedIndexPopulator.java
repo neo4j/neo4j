@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
-import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.scheduler.Group;
@@ -156,9 +155,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      *
      * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
      *
-     * where typically {@link BatchingMultipleIndexPopulator} controls the number of population workers. The setting
-     * `unsupported.dbms.multi_threaded_schema_index_population_enabled` controls whether or not the multi-threaded {@link BatchingMultipleIndexPopulator}
-     * is used, otherwise a single-threaded populator is used instead.
+     * where {@link org.neo4j.configuration.GraphDatabaseSettings#index_population_workers} controls the number of population workers.
      */
     public static int parseBlockSize()
     {
