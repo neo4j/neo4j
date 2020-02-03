@@ -61,16 +61,10 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.scalacheck.Gen
-import org.scalacheck.Gen.choose
-import org.scalacheck.Gen.chooseNum
-import org.scalacheck.Gen.const
-import org.scalacheck.Gen.delay
-import org.scalacheck.Gen.lzy
-import org.scalacheck.Gen.oneOf
-import org.scalacheck.Gen.sized
 
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
@@ -96,6 +90,10 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
    * @param arguments arguments, which are valid at this point of generation.
    * @param varCount the amount of generated distinct variables
    * @param parameters the generated parameter names
+   * @param leafCardinalityMultipliers a stack of cardinalities from LHS of enclosing `Apply`s
+   * @param labelInfo generated node variables with labels
+   * @param cardinalities cardinalities of generated plans
+   * @param idGen id generator for plans
    */
   case class State(semanticTable: SemanticTable,
                    arguments: Set[String],
@@ -104,65 +102,38 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
                    leafCardinalityMultipliers: List[Cardinality],
                    labelInfo: LabelInfo,
                    cardinalities: Cardinalities,
-                   idGen: SequentialIdGen) {
+                   idGen: IdGen) {
 
-    /**
-     * These mutator methods on state do not simply return a new State, but rather a Gen of a State.
-     * The reason is that like that we can mix LogicalPlan Gens with State mutators in the same for comprehension.
-     *
-     * A simplified example looks like this:
-     * {{{
-     *   for {
-     *       WithState(source, state) <- innerLogicalPlan(state)
-     *       from <- oneOf(source.availableSymbols.toSeq)
-     *       dir <- semanticDirection
-     *       relTypes <- relTypeNames
-     *       WithState(to, state) <- state.newVariable
-     *       state <- state.newNode(to)
-     *       WithState(rel, state) <- state.newVariable
-     *       state <- state.newRelationship(rel)
-     *     } yield {
-     *       WithState(Expand(source, from, dir, relTypes, to, rel)(state.idGen), state)
-     *     }
-     * }}}
-     *
-     * Like this we shadow `state` with a new variable called `state` each time we obtain a new state.
-     * This makes it quite easy to modify these comprehensions without having to change a lot of references that would now have to point to the new state
-     * and are easy to miss.
-     */
-
-    def newVariable: Gen[WithState[String]] = {
-      val name = s"var$varCount"
-      const(WithState(name, copy(varCount = varCount + 1)))
-    }
+    def incVarCount(): State =
+      copy(varCount = varCount + 1)
 
     def newNode(name: String): State =
       copy(semanticTable = semanticTable.addNode(varFor(name)))
 
-    def newRelationship(name: String): Gen[State] =
-      const(copy(semanticTable = semanticTable.addRelationship(varFor(name))))
+    def newRelationship(name: String): State =
+      copy(semanticTable = semanticTable.addRelationship(varFor(name)))
 
-    def declareTypeAny(name: String): Gen[State] =
-      const(copy(semanticTable = semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None)))))
+    def declareTypeAny(name: String): State =
+      copy(semanticTable = semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None))))
 
-    def addArguments(args: Set[String]): Gen[State] =
-      const(copy(arguments = arguments ++ args))
+    def addArguments(args: Set[String]): State =
+      copy(arguments = arguments ++ args)
 
-    def removeArguments(args: Set[String]): Gen[State] =
-      const(copy(arguments = arguments -- args))
+    def removeArguments(args: Set[String]): State =
+      copy(arguments = arguments -- args)
 
-    def addParameters(ps: Set[String]): Gen[State] =
-      const(copy(parameters = parameters ++ ps))
+    def addParameters(ps: Set[String]): State =
+      copy(parameters = parameters ++ ps)
 
     def pushLeafCardinalityMultiplier(c: Cardinality): State =
       copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers)
 
-    def popLeafCardinalityMultiplier(): Gen[State] =
-      const(copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail))
+    def popLeafCardinalityMultiplier(): State =
+      copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail)
 
-    def recordLabel(variable: String, label: String): Gen[State] = {
+    def recordLabel(variable: String, label: String): State = {
       val newLabels = labelInfo(label) + LabelName(label)(pos)
-      const(copy(labelInfo = labelInfo.updated(variable, newLabels)))
+      copy(labelInfo = labelInfo.updated(variable, newLabels))
     }
   }
 }
@@ -181,24 +152,47 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   private val costModel = CardinalityCostModel(null)
 
   /**
+   * A convenience conversion that allows us to mix LogicalPlan Gens with State mutators in the same for comprehension.
+   * A simplified example looks like this:
+   * {{{
+   *   for {
+   *       WithState(source, state) <- innerLogicalPlan(state)
+   *       from <- oneOf(source.availableSymbols.toSeq)
+   *       dir <- semanticDirection
+   *       relTypes <- relTypeNames
+   *       WithState(to, state) <- newVariable(state)
+   *       state <- state.newNode(to)
+   *       WithState(rel, state) <- newVariable(state)
+   *       state <- state.newRelationship(rel)
+   *     } yield {
+   *       WithState(Expand(source, from, dir, relTypes, to, rel)(state.idGen), state)
+   *     }
+   * }}}
+   * Like this we shadow `state` with a new variable called `state` each time we obtain a new state.
+   * This makes it quite easy to modify these comprehensions without having to change a lot of references that would now have to point to the new state
+   * and are easy to miss.
+   */
+  implicit private def stateToGen(s: State): Gen[State] = Gen.const(s)
+
+  /**
    * Main entry point to obtain logical plans and associated state.
    */
   def logicalPlan: Gen[WithState[LogicalPlan]] = for {
-    initialState <- delay(State(relTypesWithIds))
+    initialState <- Gen.delay(State(relTypesWithIds))
     WithState(source, state) <- innerLogicalPlan(initialState)
   } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
 
-  def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = oneOf(
+  def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     argument(state),
     allNodesScan(state),
     nodeByLabelScan(state),
-    lzy(expand(state)),
-    lzy(skip(state)),
-    lzy(limit(state)),
-    lzy(projection(state)),
-    lzy(aggregation(state)),
-    lzy(cartesianProduct(state)),
-    lzy(apply(state))
+    Gen.lzy(expand(state)),
+    Gen.lzy(skip(state)),
+    Gen.lzy(limit(state)),
+    Gen.lzy(projection(state)),
+    Gen.lzy(aggregation(state)),
+    Gen.lzy(cartesianProduct(state)),
+    Gen.lzy(apply(state))
   ).suchThat {
     case WithState(plan, state) => costModel.apply(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
   }
@@ -207,7 +201,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def allNodesScan(state: State): Gen[WithState[AllNodesScan]] = for {
     WithState(node, state) <- newVariable(state)
-    state <- const(state.newNode(node))
+    state <- state.newNode(node)
   } yield {
     val plan = AllNodesScan(node, state.arguments)(state.idGen)
     annotate(plan, state)
@@ -216,7 +210,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   def nodeByLabelScan(state: State): Gen[WithState[NodeByLabelScan]] = for {
     labelName <- label
     WithState(node, state) <- newVariable(state)
-    state <- const(state.newNode(node))
+    state <- state.newNode(node)
     state <- state.recordLabel(node, labelName.name)
   } yield {
     val plan = NodeByLabelScan(node, labelName, state.arguments)(state.idGen)
@@ -225,18 +219,18 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def argument(state: State): Gen[WithState[Argument]] = {
     val plan = Argument(state.arguments)(state.idGen)
-    const(annotate(plan, state))
+    Gen.const(annotate(plan, state))
   }
 
   // One child plans
 
   def expand(state: State): Gen[WithState[Expand]] = for {
     WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, state) => plan.availableSymbols.exists(v => state.semanticTable.isNode(v)) }
-    from <- oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.isNode(varFor(name)))
+    from <- Gen.oneOf(source.availableSymbols.toSeq).suchThat(name => state.semanticTable.isNode(varFor(name)))
     dir <- semanticDirection
     relTypes <- relTypeNames
     WithState(to, state) <- newVariable(state)
-    state <- const(state.newNode(to))
+    state <- state.newNode(to)
     WithState(rel, state) <- newVariable(state)
     state <- state.newRelationship(rel)
   } yield {
@@ -246,7 +240,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def skip(state: State): Gen[WithState[Skip]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    count <- chooseNum(0, Long.MaxValue, 1)
+    count <- Gen.chooseNum(0, Long.MaxValue, 1)
   } yield {
     val plan = Skip(source, literalInt(count))(state.idGen)
     annotate(plan, state)
@@ -254,8 +248,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def limit(state: State): Gen[WithState[Limit]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
-    count <- chooseNum(0, Long.MaxValue, 1)
-    ties <- if (source.isInstanceOf[Sort] && count == 1) oneOf(DoNotIncludeTies, IncludeTies) else const(DoNotIncludeTies)
+    count <- Gen.chooseNum(0, Long.MaxValue, 1)
+    ties <- if (source.isInstanceOf[Sort] && count == 1) Gen.oneOf(DoNotIncludeTies, IncludeTies) else Gen.const(DoNotIncludeTies)
   } yield {
     val plan = Limit(source, literalInt(count), ties)(state.idGen)
     annotate(plan, state)
@@ -270,8 +264,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   private def projectionList(state: State, availableSymbols: Seq[String], expressionGen: SemanticAwareAstGenerator => Gen[Expression], minSize: Int = 0): Gen[WithState[Map[String, Expression]]] =
-    sized(s => choose(minSize, s max minSize)).flatMap { n =>
-      (0 until n).foldLeft(const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
+    Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
+      (0 until n).foldLeft(Gen.const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
         for {
           WithState(map, state) <- prevGen
           WithState(name, state) <- newVariable(state)
@@ -297,7 +291,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   def apply(state: State): Gen[WithState[Apply]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
     state <- state.addArguments(left.availableSymbols)
-    state <- const(state.pushLeafCardinalityMultiplier(state.cardinalities.get(left.id)))
+    state <- state.pushLeafCardinalityMultiplier(state.cardinalities.get(left.id))
     WithState(right, state) <- innerLogicalPlan(state)
     state <- state.removeArguments(left.availableSymbols)
     state <- state.popLeafCardinalityMultiplier()
@@ -321,14 +315,14 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     WithState(plan, state)
   }
 
-  private def semanticDirection: Gen[SemanticDirection] = oneOf(
+  private def semanticDirection: Gen[SemanticDirection] = Gen.oneOf(
     SemanticDirection.INCOMING,
     SemanticDirection.OUTGOING,
     SemanticDirection.BOTH
   )
 
   private def label: Gen[LabelName] = for {
-    name <- oneOf(labels)
+    name <- Gen.oneOf(labels)
   } yield LabelName(name)(pos)
 
   private def relTypeNames: Gen[Seq[RelTypeName]] = for {
@@ -336,45 +330,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     name <- names
   } yield RelTypeName(name)(pos)
 
-  // State
-
-  def newVariable(state: State): Gen[WithState[String]] =
-    state.newVariable
-
-//  {
-//    val name = s"var${state.varCount}"
-//    const(WithState(name, state.newVariable()))
-//  }
-
-//  def newNode(name: String): Gen[State] =
-//    const(copy(semanticTable = semanticTable.addNode(varFor(name))))
-//
-//  def newRelationship(name: String): Gen[State] =
-//    const(copy(semanticTable = semanticTable.addRelationship(varFor(name))))
-//
-//  def declareTypeAny(name: String): Gen[State] =
-//    const(copy(semanticTable = semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None)))))
-//
-//  def addArguments(args: Set[String]): Gen[State] =
-//    const(copy(arguments = arguments ++ args))
-//
-//  def removeArguments(args: Set[String]): Gen[State] =
-//    const(copy(arguments = arguments -- args))
-//
-//  def addParameters(ps: Set[String]): Gen[State] =
-//    const(copy(parameters = parameters ++ ps))
-//
-//  def pushLeafCardinalityMultiplier(c: Cardinality): Gen[State] =
-//    const(copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers))
-//
-//  def popLeafCardinalityMultiplier(): Gen[State] =
-//    const(copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail))
-//
-//  def recordLabel(variable: String, label: String): Gen[State] = {
-//    val newLabels = labelInfo(label) + LabelName(label)(pos)
-//    const(copy(labelInfo = labelInfo.updated(variable, newLabels)))
-//  }
-//}
+  def newVariable(state: State): Gen[WithState[String]] = {
+    val name = s"var${state.varCount}"
+    Gen.const(WithState(name, state.incVarCount()))
+  }
 
   /**
    * This generates random expressions and then uses SematicChecking to see if they are valid. This works,
