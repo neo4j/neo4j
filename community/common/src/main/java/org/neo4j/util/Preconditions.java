@@ -261,4 +261,14 @@ public final class Preconditions
                     lowInclusive, highExclusive, value ) );
         }
     }
+
+    public static void requireNoLongAddOverflow( long a, long b, String message )
+    {
+        long result = a + b;
+        // Same Hackers Delight algorithm as is used in Math.addExact.
+        if ( ( ( a ^ result ) & ( b ^ result ) ) < 0 )
+        {
+            throw new IllegalArgumentException( String.format( message, a, b ) );
+        }
+    }
 }

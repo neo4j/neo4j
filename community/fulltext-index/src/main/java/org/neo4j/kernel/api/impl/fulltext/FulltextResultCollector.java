@@ -32,15 +32,45 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 class FulltextResultCollector implements Collector
 {
+    private static final int NO_LIMIT = -1;
+    private final long limit;
     private final EntityScorePriorityQueue pq;
 
-    FulltextResultCollector()
+    FulltextResultCollector( IndexQueryConstraints constraints )
     {
-        pq = new EntityScorePriorityQueue();
+        if ( constraints.limit().isPresent() )
+        {
+            long limit = constraints.limit().getAsLong();
+            if ( constraints.skip().isPresent() )
+            {
+                limit += constraints.skip().getAsLong();
+            }
+
+            if ( limit < Integer.MAX_VALUE )
+            {
+                this.limit = limit;
+                // Use a min-queue to continuously drop the entry with the lowest score.
+                pq = new EntityScorePriorityQueue( false );
+            }
+            else
+            {
+                // The limit is enormous, and we will never reach it from just querying a single index partition.
+                // An index partition can "only" hold 2 billion documents.
+                // Just let the FulltextIndexProgressor apply the skip and limit.
+                this.limit = NO_LIMIT;
+                pq = new EntityScorePriorityQueue();
+            }
+        }
+        else
+        {
+            limit = NO_LIMIT;
+            pq = new EntityScorePriorityQueue();
+        }
     }
 
     public ValuesIterator iterator()
@@ -49,13 +79,19 @@ class FulltextResultCollector implements Collector
         {
             return ValuesIterator.EMPTY;
         }
-        return new EntityResultsIterator( pq );
+        if ( limit == NO_LIMIT )
+        {
+            // The 'pq' will pop entries in their correctly sorted order.
+            return new EntityResultsQueueIterator( pq );
+        }
+        // Otherwise, we need to reverse the result collected in the 'pq'.
+        return new EntityResultsArrayIterator( pq );
     }
 
     @Override
     public LeafCollector getLeafCollector( LeafReaderContext context ) throws IOException
     {
-        return new ScoredEntityLeafCollector( context, pq );
+        return new ScoredEntityLeafCollector( context, pq, limit );
     }
 
     @Override
@@ -67,14 +103,16 @@ class FulltextResultCollector implements Collector
     private static class ScoredEntityLeafCollector implements LeafCollector
     {
         private final EntityScorePriorityQueue pq;
+        private final long limit;
         private final NumericDocValues values;
         private Scorable scorer;
 
-        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq ) throws IOException
+        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq, long limit ) throws IOException
         {
+            this.pq = pq;
+            this.limit = limit;
             LeafReader reader = context.reader();
             values = reader.getNumericDocValues( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
-            this.pq = pq;
         }
 
         @Override
@@ -91,7 +129,16 @@ class FulltextResultCollector implements Collector
             {
                 float score = scorer.score();
                 long entityId = values.longValue();
-                pq.insert( entityId, score );
+                if ( limit == NO_LIMIT || pq.size() < limit )
+                {
+                    pq.insert( entityId, score );
+                }
+                else if ( pq.peekTopScore() < score )
+                {
+                    pq.removeTop();
+                    pq.insert( entityId, score );
+                }
+                // Otherwise, don't bother inserting this entry.
             }
             else
             {
@@ -147,9 +194,19 @@ class FulltextResultCollector implements Collector
             liftTowardsRoot( size );
         }
 
+        public float peekTopScore()
+        {
+            return scores[ROOT];
+        }
+
         public void removeTop( LongFloatProcedure receiver )
         {
             receiver.value( entities[ROOT], scores[ROOT] );
+            removeTop();
+        }
+
+        public void removeTop()
+        {
             swap( ROOT, size );
             size -= 1;
             pushTowardsBottom();
@@ -208,13 +265,13 @@ class FulltextResultCollector implements Collector
         }
     }
 
-    static class EntityResultsIterator implements ValuesIterator, LongFloatProcedure
+    static class EntityResultsQueueIterator implements ValuesIterator, LongFloatProcedure
     {
         private final EntityScorePriorityQueue pq;
         private long currentEntity;
         private float currentScore;
 
-        EntityResultsIterator( EntityScorePriorityQueue pq )
+        EntityResultsQueueIterator( EntityScorePriorityQueue pq )
         {
             this.pq = pq;
         }
@@ -258,10 +315,72 @@ class FulltextResultCollector implements Collector
         }
 
         @Override
-        public void value( long entity, float score )
+        public void value( long entityId, float score )
         {
-            currentEntity = entity;
+            currentEntity = entityId;
             currentScore = score;
+        }
+    }
+
+    static class EntityResultsArrayIterator implements ValuesIterator, LongFloatProcedure
+    {
+        private final long[] entityIds;
+        private final float[] scores;
+        private int index;
+
+        EntityResultsArrayIterator( EntityScorePriorityQueue pq )
+        {
+            int size = pq.size();
+            this.entityIds = new long[size];
+            this.scores = new float[size];
+            this.index = size - 1;
+            while ( !pq.isEmpty() )
+            {
+                pq.removeTop( this ); // Populate the arrays in the correct order, basically using Heap Sort.
+            }
+        }
+
+        @Override
+        public int remaining()
+        {
+            return 0; // Not used.
+        }
+
+        @Override
+        public long next()
+        {
+            if ( hasNext() )
+            {
+                index++;
+                return current();
+            }
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return index < entityIds.length - 1;
+        }
+
+        @Override
+        public long current()
+        {
+            return entityIds[index];
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return scores[index];
+        }
+
+        @Override
+        public void value( long entityId, float score )
+        {
+            this.entityIds[index] = entityId;
+            this.scores[index] = score;
+            index--;
         }
     }
 }

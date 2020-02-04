@@ -31,10 +31,13 @@ import java.util.PriorityQueue;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsIterator;
+import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsArrayIterator;
+import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsQueueIterator;
 import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityScorePriorityQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FulltextResultCollectorTest
 {
@@ -231,7 +234,7 @@ class FulltextResultCollectorTest
     }
 
     @Nested
-    class EntityResultsIteratorTest
+    class EntityResultsQueueIteratorTest
     {
         @RepeatedTest( 200 )
         void randomizedPriorityQueueTest()
@@ -250,7 +253,7 @@ class FulltextResultCollectorTest
                     expectedQueue.add( new EntityScore( i, score ) );
                     actualQueue.insert( i, score );
                 }
-                EntityResultsIterator iterator = new EntityResultsIterator( actualQueue );
+                EntityResultsQueueIterator iterator = new EntityResultsQueueIterator( actualQueue );
 
                 EntityScore entityScore = new EntityScore( 0, 0.0f );
                 int i = 0;
@@ -266,6 +269,34 @@ class FulltextResultCollectorTest
             {
                 throw new RuntimeException( "Failed using seed = " + seed, e );
             }
+        }
+    }
+
+    @Nested
+    class EntityResultsArrayIteratorTest
+    {
+        @Test
+        void mustReturnEntriesFromMinQueueInDescendingOrder()
+        {
+            EntityScorePriorityQueue pq = new EntityScorePriorityQueue( false );
+            pq.insert( 1, 2.0f );
+            pq.insert( 2, 3.0f );
+            pq.insert( 3, 1.0f );
+
+            EntityResultsArrayIterator iterator = new EntityResultsArrayIterator( pq );
+            assertTrue( iterator.hasNext() );
+            assertThat( iterator.next() ).isEqualTo( 2 );
+            assertThat( iterator.current() ).isEqualTo( 2 );
+            assertThat( iterator.currentScore() ).isEqualTo( 3.0f );
+            assertTrue( iterator.hasNext() );
+            assertThat( iterator.next() ).isEqualTo( 1 );
+            assertThat( iterator.current() ).isEqualTo( 1 );
+            assertThat( iterator.currentScore() ).isEqualTo( 2.0f );
+            assertTrue( iterator.hasNext() );
+            assertThat( iterator.next() ).isEqualTo( 3 );
+            assertThat( iterator.current() ).isEqualTo( 3 );
+            assertThat( iterator.currentScore() ).isEqualTo( 1.0f );
+            assertFalse( iterator.hasNext() );
         }
     }
 }

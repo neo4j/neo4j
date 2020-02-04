@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -108,51 +107,5 @@ class ScoreEntityIteratorTest
         ValuesIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
 
         assertFalse( concat.hasNext() );
-    }
-
-    private class StubValuesIterator implements ValuesIterator
-    {
-        private ArrayList<Long> entityIds = new ArrayList<>();
-        private ArrayList<Float> scores = new ArrayList<>();
-        private int nextIndex;
-
-        public StubValuesIterator add( long entityId, float score )
-        {
-            entityIds.add( entityId );
-            scores.add( score );
-            return this;
-        }
-
-        @Override
-        public int remaining()
-        {
-            return entityIds.size() - nextIndex;
-        }
-
-        @Override
-        public float currentScore()
-        {
-            return scores.get( nextIndex - 1 );
-        }
-
-        @Override
-        public long next()
-        {
-            long entityId = entityIds.get( nextIndex );
-            nextIndex++;
-            return entityId;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return remaining() > 0;
-        }
-
-        @Override
-        public long current()
-        {
-            return entityIds.get( nextIndex - 1 );
-        }
     }
 }

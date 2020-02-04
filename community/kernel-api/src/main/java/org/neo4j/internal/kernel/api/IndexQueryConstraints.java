@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.OptionalLong;
+
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.util.Preconditions;
 
@@ -67,12 +69,20 @@ public class IndexQueryConstraints
     public IndexQueryConstraints skip( long skip )
     {
         Preconditions.checkState( skip >= 0, "Skip argument cannot be negative: %s.", skip );
+        if ( hasLimit )
+        {
+            Preconditions.requireNoLongAddOverflow( skip, limit, "SKIP (%s) and LIMIT (%s) combined are too large; would overflow 64-bit signed integer." );
+        }
         return new IndexQueryConstraints( order, needsValues, true, hasLimit, skip, limit );
     }
 
     public IndexQueryConstraints limit( long limit )
     {
         Preconditions.checkState( limit >= 0, "Limit argument cannot be negative: %s.", limit );
+        if ( hasSkip )
+        {
+            Preconditions.requireNoLongAddOverflow( skip, limit, "SKIP (%s) and LIMIT (%s) are too large; would overflow 64-bit signed integer." );
+        }
         return new IndexQueryConstraints( order, needsValues, hasSkip, true, skip, limit );
     }
 
@@ -89,5 +99,15 @@ public class IndexQueryConstraints
     public IndexOrder order()
     {
         return order;
+    }
+
+    public OptionalLong skip()
+    {
+        return hasSkip ? OptionalLong.of( skip ) : OptionalLong.empty();
+    }
+
+    public OptionalLong limit()
+    {
+        return hasLimit ? OptionalLong.of( limit ) : OptionalLong.empty();
     }
 }

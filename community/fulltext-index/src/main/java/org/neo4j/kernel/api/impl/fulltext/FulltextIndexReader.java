@@ -91,22 +91,22 @@ public class FulltextIndexReader implements IndexReader
         return multiFieldQueryParser.parse( query );
     }
 
-    private ValuesIterator indexQuery( Query query )
+    private ValuesIterator indexQuery( Query query, IndexQueryConstraints constraints )
     {
         List<ValuesIterator> results = new ArrayList<>();
         for ( SearcherReference searcher : searchers )
         {
-            ValuesIterator iterator = searchLucene( searcher, query );
+            ValuesIterator iterator = searchLucene( searcher, query, constraints );
             results.add( iterator );
         }
         return ScoreEntityIterator.mergeIterators( results );
     }
 
-    static ValuesIterator searchLucene( SearcherReference searcher, Query query )
+    static ValuesIterator searchLucene( SearcherReference searcher, Query query, IndexQueryConstraints constraints )
     {
         try
         {
-            FulltextResultCollector collector = new FulltextResultCollector();
+            FulltextResultCollector collector = new FulltextResultCollector( constraints );
             searcher.getIndexSearcher().search( query, collector );
             return collector.iterator();
         }
@@ -189,14 +189,14 @@ public class FulltextIndexReader implements IndexReader
             }
         }
         BooleanQuery query = queryBuilder.build();
-        ValuesIterator itr = indexQuery( query );
+        ValuesIterator itr = indexQuery( query, constraints );
         ReadableTransactionState state = context.getTransactionStateOrNull();
         if ( state != null && !isEventuallyConsistent( index ) )
         {
             transactionState.maybeUpdate( context, cursorTracer );
-            itr = transactionState.filter( itr, query );
+            itr = transactionState.filter( itr, query, constraints );
         }
-        IndexProgressor progressor = new FulltextIndexProgressor( itr, client );
+        IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );
     }
 
@@ -313,41 +313,6 @@ public class FulltextIndexReader implements IndexReader
         if ( !reason.equals( "" ) )
         {
             throw new IllegalStateException( "This fulltext index does not have support for Cypher semantics because " + reason + "." );
-        }
-    }
-
-    private static class FulltextIndexProgressor implements IndexProgressor
-    {
-        private final ValuesIterator itr;
-        private final EntityValueClient client;
-
-        private FulltextIndexProgressor( ValuesIterator itr, EntityValueClient client )
-        {
-            this.itr = itr;
-            this.client = client;
-        }
-
-        @Override
-        public boolean next()
-        {
-            if ( !itr.hasNext() )
-            {
-                return false;
-            }
-            boolean accepted;
-            do
-            {
-                long entityId = itr.next();
-                float score = itr.currentScore();
-                accepted = client.acceptEntity( entityId, score, (Value[]) null );
-            }
-            while ( !accepted && itr.hasNext() );
-            return accepted;
-        }
-
-        @Override
-        public void close()
-        {
         }
     }
 }

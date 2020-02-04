@@ -46,6 +46,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
@@ -204,9 +205,13 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score." )
+    @Description( "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. " +
+            "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned." )
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
-    public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
+    public Stream<NodeOutput> queryFulltextForNodes(
+            @Name( "indexName" ) String name,
+            @Name( "queryString" ) String query,
+            @Name( value = "options", defaultValue = "{}" ) Map<String, Object> options ) throws Exception
     {
         if ( callContext.isSystemDatabase() )
         {
@@ -223,7 +228,8 @@ public class FulltextProcedures
         }
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
-        tx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
+        IndexQueryConstraints constraints = queryConstraints( options );
+        tx.dataRead().nodeIndexSeek( indexSession, cursor, constraints, IndexQuery.fulltextSearch( query ) );
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>()
         {
@@ -249,8 +255,24 @@ public class FulltextProcedures
         return stream.onClose( cursor::close );
     }
 
+    protected IndexQueryConstraints queryConstraints( Map<String,Object> options )
+    {
+        IndexQueryConstraints constraints = unconstrained();
+        Object skip;
+        if ( ( skip = options.get( "skip" ) ) != null && skip instanceof Number )
+        {
+            constraints = constraints.skip( ((Number) skip).longValue() );
+        }
+        Object limit;
+        if ( ( limit = options.get( "limit" ) ) != null && limit instanceof Number )
+        {
+            constraints = constraints.limit( ((Number) limit).longValue() );
+        }
+        return constraints;
+    }
+
     @SystemProcedure
-    @Description( "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score." )
+    @Description( "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
     public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
@@ -328,7 +350,7 @@ public class FulltextProcedures
             String key = entry.getKey();
             if ( key.startsWith( FULLTEXT_PREFIX ) )
             {
-                key = key.substring( FULLTEXT_PREFIX.length(), key.length() );
+                key = key.substring( FULLTEXT_PREFIX.length() );
             }
             String value = entry.getValue();
             String duplicate = cleanMap.put( key, value );

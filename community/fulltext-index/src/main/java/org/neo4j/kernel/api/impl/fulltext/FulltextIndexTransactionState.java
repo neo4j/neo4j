@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -97,7 +98,7 @@ class FulltextIndexTransactionState implements Closeable
         Read read = context.getRead();
         CursorFactory cursors = context.cursors();
         ReadableTransactionState state = context.getTransactionStateOrNull();
-        modifiedEntityIdsInThisTransaction.clear(); // Clear this so we don't filter out entities who have had their changes reversed since last time.
+        modifiedEntityIdsInThisTransaction.clear(); // Clear this, so we don't filter out entities who have had their changes reversed since last time.
         writer.resetWriterState();
 
         try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor( cursorTracer ) : null;
@@ -118,10 +119,10 @@ class FulltextIndexTransactionState implements Closeable
         IOUtils.closeAll( toCloseLater );
     }
 
-    public ValuesIterator filter( ValuesIterator iterator, BooleanQuery query )
+    public ValuesIterator filter( ValuesIterator iterator, BooleanQuery query, IndexQueryConstraints constraints )
     {
         iterator = ScoreEntityIterator.filter( iterator, entityId -> !modifiedEntityIdsInThisTransaction.contains( entityId ) );
-        iterator = mergeIterators( asList( iterator, FulltextIndexReader.searchLucene( currentSearcher, query ) ) );
+        iterator = mergeIterators( asList( iterator, FulltextIndexReader.searchLucene( currentSearcher, query, constraints ) ) );
         return iterator;
     }
 }

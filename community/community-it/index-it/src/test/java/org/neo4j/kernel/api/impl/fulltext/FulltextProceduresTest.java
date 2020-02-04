@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -207,6 +206,7 @@ public class FulltextProceduresTest
             assertEquals( "FULLTEXT", row.get( "type" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
+            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
@@ -264,6 +264,7 @@ public class FulltextProceduresTest
             assertEquals( "FULLTEXT", row.get( "type" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
+            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
@@ -2199,10 +2200,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<IndexDefinition> iterator = tx.schema().getIndexes().iterator();
-            while ( iterator.hasNext() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                IndexDefinition index = iterator.next();
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
@@ -2230,10 +2229,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<IndexDefinition> iterator = tx.schema().getIndexes().iterator();
-            while ( iterator.hasNext() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                IndexDefinition index = iterator.next();
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
@@ -2915,7 +2912,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) ) ).close();
+            createSimpleNodesIndex( tx );
             createSimpleRelationshipIndex( tx );
             tx.commit();
         }
@@ -2941,6 +2938,48 @@ public class FulltextProceduresTest
             tx.commit();
         }
     }
+
+    @Test
+    public void queryNodesMustApplySkip()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex( tx );
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode( LABEL ).setProperty( PROP, "zebra zebra" );
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, "zebra" );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
+                assertFalse( iterator.hasNext() );
+            }
+            tx.commit();
+        }
+    }
+    // todo query nodes must apply limit
+    // todo query nodes must apply skip and limit
+    // todo query nodes with skip and limit must ignore nodes deleted in transaction
+    // todo query nodes with skip and limit must include nodes added in transaction
+    // todo query relationships must apply skip
+    // todo query relationships must apply limit
+    // todo query relationships must apply skip and limit
+    // todo query relationships with skip and limit must ignore relationships deleted in transaction
+    // todo query relationships with skip and limit must include relationships added in transaction
 
     private void assertNoIndexSeeks( Result result )
     {
@@ -2976,7 +3015,7 @@ public class FulltextProceduresTest
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )
             {
-                Map entry = result.next();
+                Map<String, Object> entry = result.next();
                 Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
                 Double nextScore = (Double) entry.get( SCORE );
                 assertThat( nextScore ).isLessThanOrEqualTo( score );
@@ -3009,7 +3048,7 @@ public class FulltextProceduresTest
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )
             {
-                Map entry = result.next();
+                Map<String, Object> entry = result.next();
                 long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
                 Double nextScore = (Double) entry.get( SCORE );
                 assertThat( nextScore ).isLessThanOrEqualTo( score );
