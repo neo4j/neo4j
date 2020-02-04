@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
+import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion

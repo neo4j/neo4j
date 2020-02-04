@@ -75,14 +75,17 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore

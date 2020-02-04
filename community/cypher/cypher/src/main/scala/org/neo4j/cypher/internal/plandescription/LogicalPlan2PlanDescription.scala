@@ -21,12 +21,8 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.plandescription.Arguments._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -34,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.functions.Point
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -96,6 +91,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNonSystemDatabase
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNumberOfDatabases
+import org.neo4j.cypher.internal.logical.plans.ErasedTwoChildrenPlan
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -124,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
