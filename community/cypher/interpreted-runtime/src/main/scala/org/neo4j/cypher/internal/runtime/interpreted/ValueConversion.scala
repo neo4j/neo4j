@@ -19,18 +19,51 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.time._
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.OffsetTime
+import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTGeometry
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
+import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTTime
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.ListType
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.spatial.Geometry
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.DateTimeValue
+import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.LocalDateTimeValue
+import org.neo4j.values.storable.LocalTimeValue
+import org.neo4j.values.storable.TimeValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.byteArray
-import org.neo4j.values.storable._
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.fromArray
-import org.neo4j.values.virtual.{MapValue, MapValueBuilder, VirtualValues}
 
 object ValueConversion {
   def getValueConverter(cType: CypherType): Any => AnyValue = {
@@ -100,17 +133,17 @@ object ValueConversion {
     case c: java.util.Collection[_] => ValueUtils.asListValue(c)
     case a: Array[_] =>
       a.getClass.getComponentType.getName match {
-      case "byte" => byteArray(a.asInstanceOf[Array[Byte]]) // byte[] is supported in procedures and BOLT
-      case "short" => fromArray(Values.shortArray(a.asInstanceOf[Array[Short]]))
-      case "char" => fromArray(Values.charArray(a.asInstanceOf[Array[Char]]))
-      case "int" => fromArray(Values.intArray(a.asInstanceOf[Array[Int]]))
-      case "long" => fromArray(Values.longArray(a.asInstanceOf[Array[Long]]))
-      case "float" => fromArray(Values.floatArray(a.asInstanceOf[Array[Float]]))
-      case "double" => fromArray(Values.doubleArray(a.asInstanceOf[Array[Double]]))
-      case "boolean" => fromArray(Values.booleanArray(a.asInstanceOf[Array[Boolean]]))
-      case "java.lang.String" => fromArray(Values.stringArray(a.asInstanceOf[Array[String]]:_*))
-      case _ => VirtualValues.list(a.map(asValue):_*)
-    }
+        case "byte" => byteArray(a.asInstanceOf[Array[Byte]]) // byte[] is supported in procedures and BOLT
+        case "short" => fromArray(Values.shortArray(a.asInstanceOf[Array[Short]]))
+        case "char" => fromArray(Values.charArray(a.asInstanceOf[Array[Char]]))
+        case "int" => fromArray(Values.intArray(a.asInstanceOf[Array[Int]]))
+        case "long" => fromArray(Values.longArray(a.asInstanceOf[Array[Long]]))
+        case "float" => fromArray(Values.floatArray(a.asInstanceOf[Array[Float]]))
+        case "double" => fromArray(Values.doubleArray(a.asInstanceOf[Array[Double]]))
+        case "boolean" => fromArray(Values.booleanArray(a.asInstanceOf[Array[Boolean]]))
+        case "java.lang.String" => fromArray(Values.stringArray(a.asInstanceOf[Array[String]]:_*))
+        case _ => VirtualValues.list(a.map(asValue):_*)
+      }
 
 
   }

@@ -19,18 +19,43 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.Counter
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{Counter, CypherRow, QueryContext}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTGeometry
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.PointValue
-import org.neo4j.values.storable.Values._
-import org.neo4j.values.virtual.VirtualValues._
+import org.neo4j.values.storable.Values.EMPTY_STRING
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.neo4j.values.virtual.VirtualValues.list
+import org.neo4j.values.virtual.VirtualValues.nodeValue
+import org.neo4j.values.virtual.VirtualValues.relationshipValue
 
 import scala.language.postfixOps
 

@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.And
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Or
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SplittingPredicateTest extends CypherFunSuite {

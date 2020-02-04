@@ -19,24 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, InterpretedExecutionContextOrdering, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.Ascending
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
+
 
 class PartialSortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("partial sort is lazy") {
     val list = List(
-      MutableMap("x" -> 3, "y" -> 1),
-      MutableMap("x" -> 3, "y" -> 2),
-      MutableMap("x" -> 5, "y" -> 9),
-      MutableMap("x" -> 5, "y" -> 9),
-      MutableMap("x" -> 5, "y" -> 0),
-      MutableMap("x" -> 5, "y" -> 7),
-      MutableMap("x" -> 6, "y" -> 1),
-      MutableMap("x" -> 6, "y" -> 1)
+      mutable.Map("x" -> 3, "y" -> 1),
+      mutable.Map("x" -> 3, "y" -> 2),
+      mutable.Map("x" -> 5, "y" -> 9),
+      mutable.Map("x" -> 5, "y" -> 9),
+      mutable.Map("x" -> 5, "y" -> 0),
+      mutable.Map("x" -> 5, "y" -> 7),
+      mutable.Map("x" -> 6, "y" -> 1),
+      mutable.Map("x" -> 6, "y" -> 1)
     )
     val source = new FakePipe(list)
 

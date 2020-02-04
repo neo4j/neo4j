@@ -21,7 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
-import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.Write
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -31,10 +35,10 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
-  * TODO: Currently threadSafeCursors is entirely unused (always null), so we should consider removing it
-  *
-  * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
-  */
+ * TODO: Currently threadSafeCursors is entirely unused (always null), so we should consider removing it
+ *
+ * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
+ */
 case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends QueryTransactionalContext {
 
   def kernelTransaction: KernelTransaction = tc.kernelTransaction()

@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values
-import org.neo4j.values.{AnyValue, AnyValues}
 
 trait MinMax extends AggregationFunction {
   def value: Expression

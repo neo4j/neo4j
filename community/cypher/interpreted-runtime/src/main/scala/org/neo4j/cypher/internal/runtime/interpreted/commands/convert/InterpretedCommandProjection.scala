@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class InterpretedCommandProjection(expressions: Map[String, Expression]) extends CommandProjection {
 

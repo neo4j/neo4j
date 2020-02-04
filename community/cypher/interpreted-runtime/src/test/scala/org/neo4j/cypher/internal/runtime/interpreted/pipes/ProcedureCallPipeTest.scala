@@ -25,29 +25,44 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.EagerReadWriteCallMode
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toIntValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toStringValue
+import org.neo4j.cypher.internal.runtime.LazyReadOnlyCallMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{IntValue, LongValue, NumberValue, Values}
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
+import org.scalatest.mockito.MockitoSugar
 
 class ProcedureCallPipeTest
   extends CypherFunSuite
-    with PipeTestSupport
-    with ImplicitDummyPos
-    with MockitoSugar {
+  with PipeTestSupport
+  with ImplicitDummyPos
+  with MockitoSugar {
 
   val ID = 42
   val procedureName = QualifiedName(List.empty, "foo")
   val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
-                                     None, ProcedureReadOnlyAccess(Array.empty), id = ID)
+    None, ProcedureReadOnlyAccess(Array.empty), id = ID)
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
@@ -122,7 +137,7 @@ class ProcedureCallPipeTest
       Array[AnyValue](Values.stringValue(s"take $i/$count"))
     }
 
-  }.toIterator
+    }.toIterator
 
   private def fakeQueryContext(id: Int,
                                result: Seq[AnyValue] => Iterator[Array[AnyValue]],

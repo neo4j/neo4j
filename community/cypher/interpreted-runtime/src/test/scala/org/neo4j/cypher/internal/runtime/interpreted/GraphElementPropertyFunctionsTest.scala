@@ -23,7 +23,12 @@ import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.ArrayValue
-import org.neo4j.values.storable.Values._
+import org.neo4j.values.storable.Values.byteArray
+import org.neo4j.values.storable.Values.doubleArray
+import org.neo4j.values.storable.Values.floatArray
+import org.neo4j.values.storable.Values.intArray
+import org.neo4j.values.storable.Values.longArray
+import org.neo4j.values.storable.Values.shortArray
 
 class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
 
@@ -79,7 +84,7 @@ class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElement
   }
 
   implicit class CheckValeNeoSafe(expected: ArrayValue) {
-    import scala.collection.JavaConverters._
+    import scala.collection.JavaConverters.seqAsJavaListConverter
     def ==>(vals: Any*): Unit =
       makeValueNeoSafe(ValueUtils.asListValue(vals.asJava)) should equal(expected)
   }

@@ -19,12 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Variable}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Not, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.intValue
 
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 

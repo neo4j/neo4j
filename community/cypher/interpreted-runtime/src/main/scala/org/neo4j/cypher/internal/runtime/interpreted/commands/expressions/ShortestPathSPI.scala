@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.graphdb.{Entity, Node, Path}
+import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
 
 abstract class BaseExpander() extends Expander {
   override def addRelationshipFilter(newFilter: KernelPredicate[Entity]): Expander =

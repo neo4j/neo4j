@@ -22,12 +22,20 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols.{NumberType, _}
+import org.neo4j.cypher.internal.util.symbols.NumberType
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values._
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.IntegralValue
+import org.neo4j.values.storable.NumberValues
+import org.neo4j.values.storable.FloatingPointValue
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.NumberValue
 
 abstract class MathFunction(arg: Expression) extends Expression {
 

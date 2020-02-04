@@ -24,7 +24,7 @@ import java.util.Comparator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class PartialSortPipe(source: Pipe,
                            prefixComparator: Comparator[CypherRow],

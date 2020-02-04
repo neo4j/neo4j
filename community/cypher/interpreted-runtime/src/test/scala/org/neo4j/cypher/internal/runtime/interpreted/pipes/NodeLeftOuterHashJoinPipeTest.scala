@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
 
 class NodeLeftOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipeTestSupport {
 
@@ -35,8 +37,8 @@ class NodeLeftOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipe
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(
-                             row("b" -> fromNodeEntity(node1)),
-                             row("b" -> fromNodeEntity(node2)))
+      row("b" -> fromNodeEntity(node1)),
+      row("b" -> fromNodeEntity(node2)))
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node2), "a" -> intValue(2)),

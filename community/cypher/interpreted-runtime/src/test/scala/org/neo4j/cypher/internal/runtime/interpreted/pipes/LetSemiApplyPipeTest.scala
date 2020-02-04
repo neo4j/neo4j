@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.intValue
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -56,7 +58,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result =
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-      createResults(QueryStateHelper.empty).toList
+        createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
@@ -116,7 +118,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result =
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-      createResults(QueryStateHelper.empty).toList
+        createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),

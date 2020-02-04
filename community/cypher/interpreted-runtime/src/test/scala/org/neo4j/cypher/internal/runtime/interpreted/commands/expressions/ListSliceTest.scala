@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
+import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
+import org.neo4j.values.virtual.VirtualValues.list
 
 class ListSliceTest extends CypherFunSuite {
 

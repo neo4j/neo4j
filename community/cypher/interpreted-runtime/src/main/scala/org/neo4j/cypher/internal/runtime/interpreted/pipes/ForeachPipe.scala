@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)

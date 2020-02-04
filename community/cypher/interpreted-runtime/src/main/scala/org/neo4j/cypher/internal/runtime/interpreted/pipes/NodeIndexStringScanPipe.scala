@@ -19,14 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
-import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
-import org.neo4j.values.storable.TextValue
-import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.values.storable.TextValue
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,

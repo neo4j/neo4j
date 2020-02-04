@@ -19,10 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
+import org.neo4j.cypher.internal.logical.plans.InclusiveBound
+import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering
+import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
+import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 
 class SeekRangeTest extends CypherFunSuite {
 

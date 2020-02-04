@@ -22,7 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import java.lang.Iterable
 import java.util
 
-import org.neo4j.graphdb._
+import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 
 trait FakeEntityTestSupport {
 

@@ -23,7 +23,8 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResource
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 
 import scala.collection.mutable.ArrayBuffer
 

@@ -19,22 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{SingleNode, values => commandvalues}
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.{expressions => ast}
+import org.neo4j.cypher.internal
 import org.neo4j.exceptions.SyntaxException
 
 object PatternConverters {
 
-  implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
+  implicit class ShortestPathsConverter(val part: internal.expressions.ShortestPaths) extends AnyVal {
     def asLegacyPatterns(id: Id, maybePathName: Option[String], converter: ExpressionConverters): Seq[commands.ShortestPath] = {
       val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
       val (leftName, rel, rightName) = part.element match {
-        case ast.RelationshipChain(leftNode: ast.NodePattern, relationshipPattern, rightNode) =>
+        case internal.expressions.RelationshipChain(leftNode: internal.expressions.NodePattern, relationshipPattern, rightNode) =>
           (leftNode.asLegacyNode(id, converter), relationshipPattern, rightNode.asLegacyNode(id, converter))
         case _                                                                        =>
           throw new IllegalStateException("This should be caught during semantic checking")
@@ -42,7 +41,7 @@ object PatternConverters {
       val reltypes = rel.types.map(_.name)
       val relIteratorName = rel.variable.map(_.name)
       val (allowZeroLength, maxDepth) = rel.length match {
-        case Some(Some(ast.Range(lower, max))) => (lower.exists(_.value == 0L),  max.map(_.value.toInt))
+        case Some(Some(internal.expressions.Range(lower, max))) => (lower.exists(_.value == 0L),  max.map(_.value.toInt))
         case None                              => (false, Some(1))//non-varlength case
         case _                                 => (false, None)
       }
@@ -50,24 +49,24 @@ object PatternConverters {
     }
   }
 
-  implicit class NodePatternConverter(val node: ast.NodePattern) extends AnyVal {
+  implicit class NodePatternConverter(val node: internal.expressions.NodePattern) extends AnyVal {
 
 
     def asLegacyNode(id: Id, converter: ExpressionConverters): SingleNode = {
-      val labelTokens: Seq[KeyToken] = labels.map(x => commandvalues.UnresolvedLabel(x.name))
-      val properties: Map[String, CommandExpression] = node.legacyProperties(id, converter)
+      val labelTokens: Seq[KeyToken] = labels.map(x => commands.values.UnresolvedLabel(x.name))
+      val properties: Map[String, commands.expressions.Expression] = node.legacyProperties(id, converter)
       commands.SingleNode(node.legacyName, labelTokens, properties = properties)
     }
 
     def legacyName: String = node.variable.fold(UnNamedNameGenerator.name(node.position))(_.name)
 
-    private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
+    private def labels = node.labels.map(t => commands.values.KeyToken.Unresolved(t.name, commands.values.TokenType.Label))
 
-    def legacyProperties(id:Id, converter: ExpressionConverters): Map[String, CommandExpression] = node.properties match {
-      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, converter.toCommandExpression(id, p._2))).toMap
-      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> converter.toCommandExpression(id, p))
+    def legacyProperties(id:Id, converter: ExpressionConverters): Map[String, commands.expressions.Expression] = node.properties match {
+      case Some(m: internal.expressions.MapExpression) => m.items.map(p => (p._1.name, converter.toCommandExpression(id, p._2))).toMap
+      case Some(p: internal.expressions.Parameter)     => Map[String, commands.expressions.Expression]("*" -> converter.toCommandExpression(id, p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
-      case None                       => Map[String, CommandExpression]()
+      case None                       => Map[String, commands.expressions.Expression]()
     }
   }
 }

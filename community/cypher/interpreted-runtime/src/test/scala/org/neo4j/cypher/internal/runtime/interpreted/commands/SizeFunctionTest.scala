@@ -20,13 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toStringValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toPathValue
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{SizeFunction, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.longValue
 
 class SizeFunctionTest extends CypherFunSuite {

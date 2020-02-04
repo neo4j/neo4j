@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,

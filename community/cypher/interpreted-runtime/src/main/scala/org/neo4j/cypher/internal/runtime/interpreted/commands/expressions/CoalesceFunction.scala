@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -33,9 +33,9 @@ case class CoalesceFunction(override val arguments: Expression*) extends Express
       view.
       map(expression => expression(ctx, state)).
       find(value => !(value eq Values.NO_VALUE)) match {
-        case None    => Values.NO_VALUE
-        case Some(x) => x
-      }
+      case None    => Values.NO_VALUE
+      case Some(x) => x
+    }
 
   def innerExpectedType: Option[CypherType] = None
 

@@ -20,10 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship, RelationshipType}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.impl.util.ValueUtils.fromPath
 import org.neo4j.values.storable.Values.NO_VALUE
 

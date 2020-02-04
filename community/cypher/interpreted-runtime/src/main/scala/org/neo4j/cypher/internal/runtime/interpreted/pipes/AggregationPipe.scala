@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * This abstracts all the logic of aggregating, potentially per group.
-  */
+ * This abstracts all the logic of aggregating, potentially per group.
+ */
 abstract class AggregationPipe(source: Pipe,
                                tableFactory: AggregationTableFactory)
   extends PipeWithSource(source) {
@@ -39,9 +40,9 @@ abstract class AggregationPipe(source: Pipe,
 object AggregationPipe {
 
   /**
-    * An AggregationTable is initialized by calling `clear`, followed by `processRow` for each row.
-    * The result iterator is finally obtained by calling `result`.
-    */
+   * An AggregationTable is initialized by calling `clear`, followed by `processRow` for each row.
+   * The result iterator is finally obtained by calling `result`.
+   */
   trait AggregationTable {
     def clear(): Unit
 
@@ -51,8 +52,8 @@ object AggregationPipe {
   }
 
   /**
-    * A Factory to obtain [[AggregationTable]]s at runtime.
-    */
+   * A Factory to obtain [[AggregationTable]]s at runtime.
+   */
   trait AggregationTableFactory {
     def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable
 
@@ -62,9 +63,9 @@ object AggregationPipe {
   case class AggregatingCol(key: String, expression: AggregationExpression)
 
   /**
-    * Precompute a function that computes the grouping key of a row.
-    * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
-    */
+   * Precompute a function that computes the grouping key of a row.
+   * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
+   */
   def computeGroupingFunction(groupingColumns: Array[GroupingCol]): (CypherRow, QueryState) => AnyValue = {
     groupingColumns.length match {
       case 0 =>
@@ -91,9 +92,9 @@ object AggregationPipe {
   }
 
   /**
-    * Precompute a function that adds the grouping key columns to a result row.
-    * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
-    */
+   * Precompute a function that adds the grouping key columns to a result row.
+   * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
+   */
   def computeAddKeysToResultRowFunction(groupingColumns: Array[GroupingCol]): (CypherRow, AnyValue) => Unit =
     groupingColumns.length match {
       case 0 =>

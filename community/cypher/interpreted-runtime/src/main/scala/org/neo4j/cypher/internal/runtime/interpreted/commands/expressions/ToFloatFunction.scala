@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.values._
+import org.neo4j.values.AnyValue
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def arguments: Seq[Expression] = Seq(a)

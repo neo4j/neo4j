@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsList}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 sealed trait SeekArgs {
   def expressions(ctx: CypherRow, state: QueryState): ListValue

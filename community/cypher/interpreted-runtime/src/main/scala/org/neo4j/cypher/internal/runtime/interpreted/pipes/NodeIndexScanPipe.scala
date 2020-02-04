@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
-import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.Iterator

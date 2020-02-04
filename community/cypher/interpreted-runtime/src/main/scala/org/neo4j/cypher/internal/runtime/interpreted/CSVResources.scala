@@ -19,17 +19,31 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.io._
-import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
+import java.io.IOException
+import java.io.InputStream
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
+import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-import java.util.zip.{GZIPInputStream, InflaterInputStream}
+import java.util.zip.GZIPInputStream
+import java.util.zip.InflaterInputStream
 
-import org.neo4j.csv.reader._
+import org.neo4j.csv.reader.BufferOverflowException
+import org.neo4j.csv.reader.CharReadable
+import org.neo4j.csv.reader.CharSeekers
+import org.neo4j.csv.reader.Configuration
+import org.neo4j.csv.reader.Extractors
+import org.neo4j.csv.reader.Mark
+import org.neo4j.csv.reader.Readables
 import org.neo4j.cypher.internal.runtime.ResourceManager
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
-import org.neo4j.exceptions.{CypherExecutionException, LoadExternalResourceException}
-import org.neo4j.internal.kernel.api.{AutoCloseablePlus, DefaultCloseListenable}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
+import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.exceptions.LoadExternalResourceException
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer

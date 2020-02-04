@@ -21,14 +21,21 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.ir.{CSVFormat, HasHeaders, NoHeaders}
-import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, CypherRow, QueryContext}
+import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.HasHeaders
+import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.ArrayBackedMap
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.LoadExternalResourceException
-import org.neo4j.values._
-import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.VirtualValues
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,

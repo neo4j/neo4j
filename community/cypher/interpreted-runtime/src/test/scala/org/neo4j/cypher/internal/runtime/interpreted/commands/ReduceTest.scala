@@ -20,9 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LengthFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ReduceFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue

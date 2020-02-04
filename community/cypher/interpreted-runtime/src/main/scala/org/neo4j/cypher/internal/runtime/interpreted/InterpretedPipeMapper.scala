@@ -19,26 +19,221 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.ConditionalApply
+import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CrossApply
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.DropResult
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSemiApply
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.LockNodes
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverters, InterpretedCommandProjection}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{GroupingAggTable, NonGroupingAggTable, OrderedGroupingAggTable, OrderedNonGroupingAggTable}
-import org.neo4j.cypher.internal.runtime.{CypherRow, ProcedureCallMode, QueryIndexRegistrator}
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.GroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.NonGroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedGroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedNonGroupingAggTable
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ProcedureCallMode
+import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllOrderedDistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AntiSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConditionalApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CrossApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DropResultPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateRelationshipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeCountFromCountStorePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexContainsScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexEndsWithScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedDistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1WithTiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallRowProcessing
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpointsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipCountFromCountStorePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RemoveLabelsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RollUpApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SelectOrSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipPropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipPropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthPredicate
 import org.neo4j.cypher.internal.util.Eagerly
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -50,9 +245,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                  indexRegistrator: QueryIndexRegistrator)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {
 
-  private def getBuildExpression(id: Id): ASTExpression => Expression =
-    ((e: ASTExpression) => expressionConverters.toCommandExpression(id, e)) andThen
-    (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)))
+  private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
+    ((e: internal.expressions.Expression) => expressionConverters.toCommandExpression(id, e)) andThen
+      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)))
 
   def onLeaf(plan: LogicalPlan): Pipe = {
     val id = plan.id
@@ -69,7 +264,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
-                                            RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply))(id = id)
+          RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(ident, label, _) =>
         indexRegistrator.registerLabelScan()
@@ -87,23 +282,23 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
-                          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
-                          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeIndexScan(ident, label, properties, _, indexOrder) =>
         NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(label, properties), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
         NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
-                                  buildExpression(valueExpr), indexOrder)(id = id)
+          buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder) =>
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
-                                  buildExpression(valueExpr), indexOrder)(id = id)
+          buildExpression(valueExpr), indexOrder)(id = id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>
@@ -182,7 +377,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         }
 
         VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-                            RelationshipTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
+          RelationshipTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
 
       case Optional(inner, protectedSymbols) =>
         OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
@@ -205,7 +400,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
         PartialSortPipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder)), InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder)))(id = id)
 
-      case SkipPlan(_, count) =>
+      case Skip(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)
 
       case Top(_, sortItems, _) if sortItems.isEmpty => source
@@ -215,7 +410,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Top(_, sortItems, limit) =>
         TopNPipe(source, buildExpression(limit),
-                 InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+          InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
       case PartialTop(_, _, stillToSortSuffix, _) if stillToSortSuffix.isEmpty => source
 
@@ -227,10 +422,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         PartialTopNPipe(source, buildExpression(limit), InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
           InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
 
-      case LimitPlan(_, count, DoNotIncludeTies) =>
+      case Limit(_, count, DoNotIncludeTies) =>
         LimitPipe(source, buildExpression(count))(id = id)
 
-      case LimitPlan(_, count, IncludeTies) =>
+      case Limit(_, count, IncludeTies) =>
         (source, count) match {
           case (SortPipe(inner, comparator), SignedDecimalIntegerLiteral("1")) =>
             Top1WithTiesPipe(inner, comparator)(id = id)
@@ -309,7 +504,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(id, shortestPathPattern.name, expressionConverters).head
         val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
 
-        def noDependency(expression: ASTExpression) =
+        def noDependency(expression: internal.expressions.Expression) =
           (expression.dependencies.map(_.name) intersect pathVariables).isEmpty
 
         val (perStepPredicates, fullPathPredicates) = predicates.partition {
@@ -322,7 +517,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(id, p))
 
         val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates,
-                                                       commandFullPathPredicates, withFallBack, disallowSameNode)
+          commandFullPathPredicates, withFallBack, disallowSameNode)
         ShortestPathPipe(source, commandExpression)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
@@ -336,7 +531,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val rowProcessing = ProcedureCallRowProcessing(signature)
         ProcedureCallPipe(source, signature, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
 
-      case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) =>
+      case LoadCSV(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) =>
         LoadCSVPipe(source, format, buildExpression(url), variableName, fieldTerminator, legacyCsvQuoteEscaping, bufferSize)(id = id)
 
       case ProduceResult(_, columns) =>
@@ -367,12 +562,12 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, name, propertyKey, expression) =>
-        val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
+        val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
           buildExpression(expression), needsExclusiveLock))(id = id)
 
       case SetNodePropertiesFromMap(_, name, expression, removeOtherProps) =>
-        val needsExclusiveLock = ASTExpression.mapExpressionHasPropertyReadDependency(name, expression)
+        val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
         SetPipe(source,
           SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
@@ -381,12 +576,12 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           SetPropertyFromMapOperation(buildExpression(entityExpr), buildExpression(expression), removeOtherProps))(id = id)
 
       case SetRelationshipProperty(_, name, propertyKey, expression) =>
-        val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
+        val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source,
           SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression), needsExclusiveLock))(id = id)
 
       case SetRelationshipPropertiesFromMap(_, name, expression, removeOtherProps) =>
-        val needsExclusiveLock = ASTExpression.mapExpressionHasPropertyReadDependency(name, expression)
+        val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(name, expression)
         SetPipe(source,
           SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
@@ -435,16 +630,16 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
     //Creates commands out of the predicates
     def asCommand(maybeVariablePredicate: Option[VariablePredicate]): ((CypherRow, QueryState, AnyValue) => Boolean, Option[Predicate]) =
-     maybeVariablePredicate match {
-       case None => ((_: CypherRow, _: QueryState, _: AnyValue) => true, None)
-       case Some(VariablePredicate(variable, astPredicate)) =>
-         val command = buildPredicate(id, astPredicate)
-         val ev = ExpressionVariable.cast(variable)
-         ((context: CypherRow, state: QueryState, entity: AnyValue) => {
-           state.expressionVariables(ev.offset) = entity
-           command.isTrue(context, state)
-         }, Some(command))
-     }
+      maybeVariablePredicate match {
+        case None => ((_: CypherRow, _: QueryState, _: AnyValue) => true, None)
+        case Some(VariablePredicate(variable, astPredicate)) =>
+          val command = buildPredicate(id, astPredicate)
+          val ev = ExpressionVariable.cast(variable)
+          ((context: CypherRow, state: QueryState, entity: AnyValue) => {
+            state.expressionVariables(ev.offset) = entity
+            command.isTrue(context, state)
+          }, Some(command))
+      }
 
     val (nodeCommand, maybeNodeCommandPred) = asCommand(nodePredicate)
     val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
@@ -518,7 +713,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId, seenId, targetId, rhs)(id = id)
 
-      case ValueHashJoin(_, _, ASTEquals(lhsExpression, rhsExpression)) =>
+      case ValueHashJoin(_, _, internal.expressions.Equals(lhsExpression, rhsExpression)) =>
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
 
       case ForeachApply(_, _, variable, expression) =>
@@ -532,7 +727,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
-  private def buildPredicate(id: Id, expr: ASTExpression): Predicate =
+  private def buildPredicate(id: Id, expr: internal.expressions.Expression): Predicate =
     expressionConverters.toCommandPredicate(id, expr)
       .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]

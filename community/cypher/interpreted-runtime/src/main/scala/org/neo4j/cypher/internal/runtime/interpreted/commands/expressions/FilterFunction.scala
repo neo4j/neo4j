@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,8 +34,7 @@ case class FilterFunction(collection: Expression,
                           innerVariableOffset: Int,
                           predicate: Predicate)
   extends NullInNullOutExpression(collection)
-  with ListSupport
-  with Closure {
+  with ListSupport {
 
   override def compute(value: AnyValue, row: ReadableRow, state: QueryState): ListValue = {
     val list = makeTraversable(value)
@@ -52,9 +52,9 @@ case class FilterFunction(collection: Expression,
 
   def rewrite(f: Expression => Expression): Expression =
     f(FilterFunction(collection.rewrite(f),
-                     innerVariableName,
-                     innerVariableOffset,
-                     predicate.rewriteAsPredicate(f)))
+      innerVariableName,
+      innerVariableOffset,
+      predicate.rewriteAsPredicate(f)))
 
   override def children: Seq[Expression] = Seq(collection, predicate)
 

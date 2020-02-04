@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{LabelId, NameId}
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.values.storable.Values.longValue
 
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {

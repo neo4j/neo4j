@@ -19,18 +19,20 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.expressions.ASTCachedProperty
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 abstract class AbstractCachedProperty extends Expression {
 

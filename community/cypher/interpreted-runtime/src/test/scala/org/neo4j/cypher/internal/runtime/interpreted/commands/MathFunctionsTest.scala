@@ -20,13 +20,38 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbsFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AcosFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AsinFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Atan2Function
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AtanFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CeilFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CosFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CotFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DegreesFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.EFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.FloorFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Log10Function
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LogFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PiFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Pow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RadiansFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RoundFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SignFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SinFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SqrtFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TanFunction
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.LongValue
-import org.neo4j.values.storable.Values.{doubleValue, longValue}
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.longValue
+
 class MathFunctionsTest extends CypherFunSuite {
 
   test("absTests") {

@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext, RelationshipOperations}
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 

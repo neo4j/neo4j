@@ -19,15 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics, _}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.values.storable.Values
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.schema.{IndexPrototype, SchemaDescriptor}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.values.storable.Values
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 

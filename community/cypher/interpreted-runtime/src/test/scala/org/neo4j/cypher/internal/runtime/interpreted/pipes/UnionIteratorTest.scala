@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 
 class UnionIteratorTest extends CypherFunSuite {
   val state = QueryStateHelper.empty

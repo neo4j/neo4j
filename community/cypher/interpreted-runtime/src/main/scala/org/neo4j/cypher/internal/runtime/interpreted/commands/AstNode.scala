@@ -24,7 +24,6 @@ import org.neo4j.exceptions.CypherTypeException
 
 import scala.reflect.ClassTag
 
-
 trait AstNode[T] {
   def children: Seq[AstNode[_]]
 

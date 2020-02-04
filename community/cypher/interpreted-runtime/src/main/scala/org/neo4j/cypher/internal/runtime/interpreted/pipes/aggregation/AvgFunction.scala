@@ -26,18 +26,20 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 /**
  * AVG computation is calculated using cumulative moving average approach:
  * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
-  *
-  * TODO consider combining it with https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+ *
+ * TODO consider combining it with https://en.wikipedia.org/wiki/Kahan_summation_algorithm
  */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
-    with NumericOrDurationAggregationExpression {
+  with NumericOrDurationAggregationExpression {
 
   def name = "AVG"
 

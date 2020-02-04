@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.values._
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
 case class ContainerIndex(expression: Expression, index: Expression) extends Expression with ListSupport {
@@ -38,11 +38,11 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
       val idx = index(ctx, state)
       if (idx eq NO_VALUE) NO_VALUE
       else CypherFunctions.containerIndex(value,
-                                          idx,
-                                          state.query,
-                                          state.cursors.nodeCursor,
-                                          state.cursors.relationshipScanCursor,
-                                          state.cursors.propertyCursor)
+        idx,
+        state.query,
+        state.cursors.nodeCursor,
+        state.cursors.relationshipScanCursor,
+        state.cursors.propertyCursor)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))

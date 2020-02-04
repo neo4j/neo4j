@@ -21,16 +21,22 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toIntValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeEntity}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.kernel.impl.util.ValueUtils.asListOfEdges
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
@@ -330,7 +336,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // when
     val result =
       ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, RelationshipTypes.empty, directed = false, simpleLength = false)().
-      createResults(queryState).toList
+        createResults(queryState).toList
 
     // then
     result should beEquivalentTo(List(
@@ -356,7 +362,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // when
     val result =
       ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, RelationshipTypes.empty, directed = false, simpleLength = false)().
-      createResults(queryState).toList
+        createResults(queryState).toList
 
     // then
     result should be(empty)

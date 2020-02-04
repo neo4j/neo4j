@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Subtract}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Subtract
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values.longValue
@@ -34,7 +35,7 @@ class SubtractTest extends CypherFunSuite {
 
   test("numbers") {
     val expr = Subtract(Literal(2), Literal(1))
-   expr(m, s) should equal(longValue(1))
+    expr(m, s) should equal(longValue(1))
   }
 
   test("strings") {

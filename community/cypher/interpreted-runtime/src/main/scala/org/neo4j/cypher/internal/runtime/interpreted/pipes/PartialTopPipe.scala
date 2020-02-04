@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.NumberValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,

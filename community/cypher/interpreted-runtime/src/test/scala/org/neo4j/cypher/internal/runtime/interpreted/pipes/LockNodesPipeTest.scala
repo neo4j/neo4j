@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, MapCypherRow, QueryContext}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.MapCypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
@@ -30,7 +34,6 @@ import scala.collection.mutable
 
 class LockNodesPipeTest extends CypherFunSuite {
 
-  import org.mockito.Mockito._
 
   test("should handle NoValue input") {
     // given

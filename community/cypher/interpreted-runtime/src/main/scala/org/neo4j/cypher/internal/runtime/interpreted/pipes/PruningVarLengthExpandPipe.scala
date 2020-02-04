@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue, VirtualNodeValue}
+import org.neo4j.values.virtual.NodeReference
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 
 case class PruningVarLengthExpandPipe(source: Pipe,

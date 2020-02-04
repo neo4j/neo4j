@@ -20,19 +20,18 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.IsFalseValue
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.IsTrueValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.IsFalseValue
-import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.IsTrueValue
 import org.neo4j.cypher.operations.CypherBoolean
-import org.neo4j.values.storable._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
-
+import org.neo4j.values.storable.Value
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 

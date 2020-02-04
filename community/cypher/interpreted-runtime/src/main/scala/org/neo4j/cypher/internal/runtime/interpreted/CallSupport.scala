@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.procs.{ProcedureCallContext, UserAggregator}
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 

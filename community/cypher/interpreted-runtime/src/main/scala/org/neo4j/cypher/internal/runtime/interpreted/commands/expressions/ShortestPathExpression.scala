@@ -20,19 +20,35 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, _}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
+import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, Expander, KernelPredicate}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AllInList
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.NoneInList
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.PropertyExists
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.exceptions.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
-import org.neo4j.graphdb.{Entity, NotFoundException, Path, Relationship}
+import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
+import org.neo4j.exceptions.SyntaxException
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.NodeReference
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                   perStepPredicates: Seq[Predicate] = Seq.empty,
@@ -66,7 +82,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     if (shortestPathPattern.single) {
       val result = state.query
         .singleShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
-                            shortestPathPredicate, nodePredicates)
+          shortestPathPredicate, nodePredicates)
       if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
         Values.NO_VALUE
       else result.map(ValueUtils.fromPath).getOrElse(Values.NO_VALUE)
@@ -74,7 +90,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     else {
       val result = state.query
         .allShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
-                         shortestPathPredicate, nodePredicates)
+          shortestPathPredicate, nodePredicates)
         .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(ValueUtils.fromPath).toArray
       VirtualValues.list(result:_*)
     }
@@ -215,18 +231,18 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
           predicate match {
             case NoneInList(relFunction, _, variableOffset, innerPredicate) if isRelationshipsFunction(relFunction) =>
               val expander = addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate,
-                                                              variableOffset, state)
+                variableOffset, state)
               (expander, currentNodePredicates)
             case AllInList(relFunction, _, variableOffset, innerPredicate)  if isRelationshipsFunction(relFunction) =>
               val expander = addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate,
-                                                              variableOffset, state)
+                variableOffset, state)
               (expander, currentNodePredicates)
             case NoneInList(nodeFunction, _, variableOffset, innerPredicate) if isNodesFunction(nodeFunction) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = false, innerPredicate, variableOffset,
-                                       currentNodePredicates, state)
+                currentNodePredicates, state)
             case AllInList(nodeFunction, _, variableOffset, innerPredicate) if isNodesFunction(nodeFunction) =>
               addAllOrNoneNodeExpander(ctx, currentExpander, all = true, innerPredicate, variableOffset,
-                                       currentNodePredicates, state)
+                currentNodePredicates, state)
             case _ => (currentExpander, currentNodePredicates)
           }
       }

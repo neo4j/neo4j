@@ -20,13 +20,23 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.storable._
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues.list
-import org.neo4j.values.virtual._
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 object ValueComparisonHelper {
 
@@ -36,10 +46,10 @@ object ValueComparisonHelper {
         val res = result(i)
         val row = left(i)
         res.size == row.numberOfColumns &&
-        res.keySet.forall(row.containsName) &&
-         res.forall {
-           case (k,v) => check(row.getByName(k), v)
-         }
+          res.keySet.forall(row.containsName) &&
+          res.forall {
+            case (k,v) => check(row.getByName(k), v)
+          }
       }),
       rawFailureMessage = s"$left != $result",
       rawNegatedFailureMessage = s"$left == $result")

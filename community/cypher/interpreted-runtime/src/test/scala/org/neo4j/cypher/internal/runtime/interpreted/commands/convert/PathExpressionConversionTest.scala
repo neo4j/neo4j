@@ -19,12 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleRelationshipWithKnownTargetProjector
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
@@ -53,7 +64,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       ProjectedPath(
         Set("r", "b"),
         singleNodeProjector("b",
-              singleRelationshipWithKnownTargetProjector("r", "a", nilProjector)
+          singleRelationshipWithKnownTargetProjector("r", "a", nilProjector)
         )
       )
     )
@@ -66,7 +77,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       ProjectedPath(
         Set("r", "a"),
         singleNodeProjector("a",
-                singleRelationshipWithKnownTargetProjector("r", "b", nilProjector)
+          singleRelationshipWithKnownTargetProjector("r", "b", nilProjector)
         )
       )
     )
@@ -101,10 +112,10 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r1*1..2]->(b)<-[r2]-c") {
     val expr = PathExpression(
       NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
-      NilPathStep
-    ))))_
+        MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
+          SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
+            NilPathStep
+          ))))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -121,10 +132,10 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r1]->(b)<-[r2*1..2]-c") {
     val expr = PathExpression(
       NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
-      NilPathStep
-    ))))_
+        MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
+          SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
+            NilPathStep
+          ))))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(

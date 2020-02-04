@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, MapCypherRow}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.values.AnyValue
 
 object ExecutionContextHelper {

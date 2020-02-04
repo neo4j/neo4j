@@ -19,14 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics, _}
-import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
-import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 

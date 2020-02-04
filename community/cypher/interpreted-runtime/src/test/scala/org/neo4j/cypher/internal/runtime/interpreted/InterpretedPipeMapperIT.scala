@@ -19,19 +19,55 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.mockito.Mockito.{atLeastOnce, verify, when}
-import org.neo4j.cypher.internal.ir.{PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.{PlanContext, TokenContext}
-import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.mockito.Mockito.atLeastOnce
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ManySeekArgs
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SingleSeekArg
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -61,7 +97,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       Argument(), Map("42" -> literalInt(42)))
     val pipe = build(logicalPlan)
 
-    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> legacy.Literal(42))))
+    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> commands.expressions.Literal(42))))
   }
 
   test("simple pattern query") {
@@ -83,7 +119,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(legacy.Literal(42)))())
+    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(commands.expressions.Literal(42)))())
   }
 
   test("simple node by id seek query with multiple values") {
@@ -101,7 +137,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(legacy.Literal(42)), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(commands.expressions.Literal(42)), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {
@@ -172,7 +208,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       Set("b"),
       ExpandAllPipe(AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)(),
       ExpandAllPipe(AllNodesScanPipe("c")(), "c", "r2", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)()
-      )())
+    )())
   }
 
   test("Aggregation with no aggregating columns => DistinctPipe with resolved expressions") {
@@ -191,7 +227,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     pipe should equal(
       DistinctPipe(
         AllNodesScanPipe("n")(),
-        Array(DistinctPipe.GroupingCol("n.prop", legacy.Property(legacy.Variable("n"),
+        Array(DistinctPipe.GroupingCol("n.prop", commands.expressions.Property(commands.expressions.Variable("n"),
           Resolved("prop", token, TokenType.PropertyKey)))))())
   }
 }

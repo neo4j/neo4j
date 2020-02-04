@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
@@ -28,7 +29,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 abstract class PercentileFunction(val value: Expression, val percentile: Expression, operatorId: Id) extends AggregationFunction
-  with NumericExpressionOnly {
+                                                                                     with NumericExpressionOnly {
 
   protected var temp = Vector[AnyValue]()
   protected var count: Int = 0
@@ -65,7 +66,7 @@ class PercentileContFunction(value: Expression, percentile: Expression, operator
       val ceil = math.ceil(floatIdx).toInt
       if (ceil == floor || floor == count - 1) temp(floor)
       else Values.doubleValue(NumericHelper.asDouble(temp(floor)).doubleValue() * (ceil - floatIdx) +
-                                      NumericHelper.asDouble(temp(ceil)).doubleValue() * (floatIdx - floor))
+        NumericHelper.asDouble(temp(ceil)).doubleValue() * (floatIdx - floor))
     } else {
       Values.NO_VALUE
     }

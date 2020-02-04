@@ -20,14 +20,19 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExecutionContextFactory, Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
-  * This table can be used when we have no grouping columns, or there is a provided order for all grouping columns.
-  * @param aggregations all aggregation columns
-  */
+ * This table can be used when we have no grouping columns, or there is a provided order for all grouping columns.
+ *
+ * @param aggregations all aggregation columns
+ */
 class NonGroupingAggTable(aggregations: Array[AggregatingCol],
                           state: QueryState,
                           executionContextFactory: ExecutionContextFactory,

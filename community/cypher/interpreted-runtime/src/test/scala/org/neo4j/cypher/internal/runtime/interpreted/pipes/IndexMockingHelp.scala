@@ -21,17 +21,29 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.runtime.NodeValueHit
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
-import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
-import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.KernelReadTracer
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{NodeValue, VirtualNodeValue, VirtualValues}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 

@@ -20,23 +20,29 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, DistinctPipe, ExecutionContextFactory, OrderedAggregationTableFactory, OrderedChunkReceiver, Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationTableFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedChunkReceiver
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 /**
-  * Specialization of [[GroupingAggTable]] where we have grouping columns with provided order and grouping columns without provided order.
-  *
-  * This table will only use the unordered grouping columns as a key in hash map. The ordered grouping columns are used to determine
-  * when to use a new HashMap and discard the old one.
-  *
-  * @param orderedGroupingFunction a precomputed function to calculate the grouping key part of the ordered grouping columns
-  * @param orderedGroupingColumns all grouping columns that have a provided order
-  * @param unorderedGroupingFunction a precomputed function to calculate the grouping key part of the unordered grouping columns
-  * @param unorderedGroupingColumns all grouping columns that do not have a provided order
-  * @param aggregations all aggregation columns
-  */
+ * Specialization of [[GroupingAggTable]] where we have grouping columns with provided order and grouping columns without provided order.
+ *
+ * This table will only use the unordered grouping columns as a key in hash map. The ordered grouping columns are used to determine
+ * when to use a new HashMap and discard the old one.
+ *
+ * @param orderedGroupingFunction a precomputed function to calculate the grouping key part of the ordered grouping columns
+ * @param orderedGroupingColumns all grouping columns that have a provided order
+ * @param unorderedGroupingFunction a precomputed function to calculate the grouping key part of the unordered grouping columns
+ * @param unorderedGroupingColumns all grouping columns that do not have a provided order
+ * @param aggregations all aggregation columns
+ */
 class OrderedGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                               orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                               unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,

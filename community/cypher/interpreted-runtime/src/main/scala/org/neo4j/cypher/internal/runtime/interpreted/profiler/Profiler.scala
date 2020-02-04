@@ -21,13 +21,28 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.common.Edition
-import org.neo4j.cypher.internal.profiling.{KernelStatisticProvider, OperatorProfileEvent}
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
+import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.cypher.internal.profiling.OperatorProfileEvent
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.DelegatingOperations
+import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
-import org.neo4j.internal.kernel.api.{QueryContext => _, _}
+import org.neo4j.internal.kernel.api.CloseListener
+import org.neo4j.internal.kernel.api.Cursor
+import org.neo4j.internal.kernel.api.KernelReadTracer
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value

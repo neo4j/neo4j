@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[CypherRow] {
   override def compare(a: CypherRow, b: CypherRow): Int = {

@@ -23,8 +23,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue, stringValue}
-import org.neo4j.values.virtual.VirtualValues.{list, map}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.list
+import org.neo4j.values.virtual.VirtualValues.map
 
 import scala.collection.mutable
 

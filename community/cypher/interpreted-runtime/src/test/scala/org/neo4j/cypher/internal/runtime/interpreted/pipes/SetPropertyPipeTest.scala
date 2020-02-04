@@ -19,22 +19,32 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.ArgumentMatchers.{any, anyInt, anyLong, anyBoolean}
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyBoolean
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.{ExpressionCursors, NodeOperations, QueryContext, RelationshipOperations}
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{DummyPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.{expressions => ast}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -45,7 +55,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val property2 = "prop2"
   private val propertyKey1 = PropertyKeyName(property1)(pos)
   private val propertyKey2 = PropertyKeyName(property2)(pos)
-  private val literalInt1 = ast.SignedDecimalIntegerLiteral("1")(pos)
+  private val literalInt1 = internal.expressions.SignedDecimalIntegerLiteral("1")(pos)
 
   private implicit val table = new SemanticTable()
   table.resolvedPropertyKeyNames.put(property1, PropertyKeyId(1))
@@ -63,7 +73,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   when(emptyExpression.children).thenReturn(Seq.empty)
 
   private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-  private def convertExpression(astExpression: ast.Expression): Expression = {
+  private def convertExpression(astExpression: internal.expressions.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: TokenContext): Expression = expr match {
       case keyToken: KeyToken => keyToken.resolve(ctx)
       case _ => expr
@@ -75,8 +85,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match (n) set n.prop = n.prop + 1
   test("should grab an exclusive lock if the rhs reads from the same node property") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10)))
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey1)
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey1)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource, SetNodePropertyOperation(entity1, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
 
@@ -94,8 +104,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match ()-[r]-() set r.prop = r.prop + 1
   test("should grab an exclusive lock if the rhs reads from the same relationship property") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey1)
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey1)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetRelationshipPropertyOperation(entity1, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
@@ -114,8 +124,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match (n) set n.prop2 = n.prop + 1
   test("should not grab an exclusive lock if the rhs reads from another node property") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10)))
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey2)
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), literalInt1)(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey2)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetNodePropertyOperation(entity1, LazyPropertyKey(propertyKey2), rhs, needsExclusiveLock))()
@@ -135,8 +145,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock if the rhs reads from another relationship property") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node])))
 
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey2)
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity1, astRhs, propertyKey2)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetRelationshipPropertyOperation(entity1, LazyPropertyKey(propertyKey2), rhs, needsExclusiveLock))()
@@ -155,8 +165,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match (n), (n2) set n2.prop = n.prop + 1
   test("should not grab an exclusive lock if the rhs reads from the same node property on another node") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10), entity2 -> newMockedNode(20)))
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity2, astRhs, propertyKey1)
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity2, astRhs, propertyKey1)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetNodePropertyOperation(entity2, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
@@ -177,9 +187,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match ()-[r]-(), ()-[r2]-() set r2.prop = r.prop + 1
   test("should not grab an exclusive lock if the rhs reads from the same relationship property on another relationship") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node]),
-                                                  entity2 -> newMockedRelationship(20, mock[Node], mock[Node])))
-    val astRhs: ast.Expression = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val needsExclusiveLock = ast.Expression.hasPropertyReadDependency(entity2, astRhs, propertyKey1)
+      entity2 -> newMockedRelationship(20, mock[Node], mock[Node])))
+    val astRhs: internal.expressions.Expression = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(entity2, astRhs, propertyKey1)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetRelationshipPropertyOperation(entity2, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
@@ -201,9 +211,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should grab an exclusive lock when setting node props from a map with dependencies") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10)))
 
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation(entity1, rhs, removeOtherProps = false, needsExclusiveLock))()
 
@@ -223,9 +233,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match ()-[r]-() set r = { prop: r.prop + 1 }
   test("should grab an exclusive lock when setting rel props from a map with dependencies") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
 
     val pipe = SetPipe(mockedSource,
@@ -248,9 +258,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting node props from a map with same prop but other node") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10), entity2 -> newMockedNode(20)))
 
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity2)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity2)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetNodePropertyFromMapOperation(entity1, rhs, removeOtherProps = false, needsExclusiveLock))()
@@ -275,10 +285,10 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   // match ()-[r]-(), ()-[r2]-() set r = { prop: r2.prop + 1 }
   test("should not grab an exclusive lock when setting rel props from a map with same prop but other rel") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node]),
-                                                  entity2 -> newMockedRelationship(20, mock[Node], mock[Node])))
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity2)(pos), propertyKey1)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+      entity2 -> newMockedRelationship(20, mock[Node], mock[Node])))
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity2)(pos), propertyKey1)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetRelationshipPropertyFromMapOperation(entity1, rhs, removeOtherProps = true, needsExclusiveLock))()
@@ -302,9 +312,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting node props from a map with same node but other prop") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedNode(10)))
 
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey2)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey2)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
 
     val pipe = SetPipe(mockedSource,
@@ -328,9 +338,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting rel props from a map with same rel but other prop") {
     val mockedSource = newMockedPipe(entity1, row(entity1 -> newMockedRelationship(10, mock[Node], mock[Node])))
 
-    val innerAst = ast.Add(ast.Property(ast.Variable(entity1)(pos), propertyKey2)(pos), ast.SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val astRhs = ast.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
-    val needsExclusiveLock = ast.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
+    val innerAst = internal.expressions.Add(internal.expressions.Property(internal.expressions.Variable(entity1)(pos), propertyKey2)(pos), internal.expressions.SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val astRhs = internal.expressions.MapExpression(Seq(propertyKey1 -> innerAst))(pos)
+    val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(entity1, astRhs)
     val rhs = convertExpression(astRhs)
     val pipe = SetPipe(mockedSource,
       SetRelationshipPropertyFromMapOperation(entity1, rhs, removeOtherProps = true, needsExclusiveLock))()

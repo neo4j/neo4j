@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.junit.Assert._
-import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, Descending, InterpretedExecutionContextOrdering, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
+import org.junit.Assert.assertEquals
+import org.neo4j.cypher.internal.runtime.interpreted.Ascending
+import org.neo4j.cypher.internal.runtime.interpreted.Descending
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
 import org.scalatest.mock.MockitoSugar
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
 
 class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
@@ -39,7 +42,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
   }
 
   test("simple sorting is supported") {
-    val list: Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
+    val list: Seq[mutable.Map[String, Any]] = List(mutable.Map("x" -> "B"), mutable.Map("x" -> "A"))
     val source = new FakePipe(list)
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
@@ -48,9 +51,9 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("sort by two columns") {
     val source = new FakePipe(List(
-          MutableMap[String, Any]("x" -> "B", "y" -> 20),
-          MutableMap[String, Any]("x" -> "A", "y" -> 100),
-          MutableMap[String, Any]("x" -> "B", "y" -> 10)))
+      mutable.Map[String, Any]("x" -> "B", "y" -> 20),
+      mutable.Map[String, Any]("x" -> "A", "y" -> 100),
+      mutable.Map[String, Any]("x" -> "B", "y" -> 10)))
 
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Ascending("y"))))()
 
@@ -62,9 +65,9 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("sort by two columns with one descending") {
     val source = new FakePipe(List(
-          MutableMap[String, Any]("x" -> "B", "y" -> 20),
-          MutableMap[String, Any]("x" -> "A", "y" -> 100),
-          MutableMap[String, Any]("x" -> "B", "y" -> 10)))
+      mutable.Map[String, Any]("x" -> "B", "y" -> 20),
+      mutable.Map[String, Any]("x" -> "A", "y" -> 100),
+      mutable.Map[String, Any]("x" -> "B", "y" -> 10)))
 
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Descending("y"))))()
 
@@ -75,10 +78,10 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
   }
 
   test("should handle null values") {
-    val list: Seq[MutableMap[String, Any]] = List(
-      MutableMap("y" -> 1),
-      MutableMap("y" -> null),
-      MutableMap("y" -> 2))
+    val list: Seq[mutable.Map[String, Any]] = List(
+      mutable.Map("y" -> 1),
+      mutable.Map("y" -> null),
+      mutable.Map("y" -> 2))
     val source = new FakePipe(list)
 
     val sortPipe = SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))))()

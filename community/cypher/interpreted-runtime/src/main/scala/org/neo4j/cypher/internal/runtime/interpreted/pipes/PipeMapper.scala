@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, LogicalPlans}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 
 /**
   * Maps single logical plan operators to their respective pipes. Does not recurse.

@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable.ListBuffer
-import scala.collection.{AbstractIterator, Iterator}
+import scala.collection.AbstractIterator
+import scala.collection.Iterator
 
 case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
                                (val id: Id = Id.INVALID_ID)

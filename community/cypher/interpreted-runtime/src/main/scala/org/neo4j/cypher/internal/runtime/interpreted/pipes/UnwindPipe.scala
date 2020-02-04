@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = Id.INVALID_ID)

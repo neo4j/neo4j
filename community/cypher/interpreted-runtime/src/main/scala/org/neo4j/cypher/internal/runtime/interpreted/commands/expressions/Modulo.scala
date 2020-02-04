@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.operations.CypherMath
-import org.neo4j.values._
+import org.neo4j.values.AnyValue
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   override def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.modulo(a, b)

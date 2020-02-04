@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{doubleValue, intValue, stringValue}
-import org.neo4j.values.storable.{DoubleValue, IntValue, Values}
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
 
 class MaxFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new MaxFunction(inner)

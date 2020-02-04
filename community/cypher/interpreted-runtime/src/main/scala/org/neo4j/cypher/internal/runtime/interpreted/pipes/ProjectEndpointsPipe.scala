@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport, QueryContext}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ListSupport
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipReference
+import org.neo4j.values.virtual.RelationshipValue
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,

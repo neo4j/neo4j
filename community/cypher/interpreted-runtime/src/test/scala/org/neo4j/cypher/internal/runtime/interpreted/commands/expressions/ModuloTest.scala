@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toDoubleValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toLongValue
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{doubleValue, longValue}
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.longValue
 
 class ModuloTest extends CypherFunSuite {
 

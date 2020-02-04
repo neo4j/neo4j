@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, InterpretedExecutionContextOrdering, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.Ascending
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

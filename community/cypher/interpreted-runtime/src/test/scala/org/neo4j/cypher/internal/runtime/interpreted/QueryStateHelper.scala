@@ -19,19 +19,30 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.NoMemoryTracker
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.mock
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{CypherRow, ExpressionCursors, NoMemoryTracker, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
+import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
@@ -54,7 +65,7 @@ object QueryStateHelper extends MockitoSugar {
                 initialContext: Option[CypherRow] = None
                ):QueryState =
     new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoMemoryTracker,
-                   decorator, initialContext = initialContext)
+      decorator, initialContext = initialContext)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,
@@ -66,10 +77,10 @@ object QueryStateHelper extends MockitoSugar {
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     emptyWith(db = db,
-              query = queryContext,
-              params = params,
-              expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer()),
-              subscriber = subscriber)
+      query = queryContext,
+      params = params,
+      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer()),
+      subscriber = subscriber)
   }
 
   def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Array[AnyValue] = Array.empty,

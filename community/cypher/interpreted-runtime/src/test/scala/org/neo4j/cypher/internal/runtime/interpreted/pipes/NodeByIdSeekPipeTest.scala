@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.runtime.{NodeOperations, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity

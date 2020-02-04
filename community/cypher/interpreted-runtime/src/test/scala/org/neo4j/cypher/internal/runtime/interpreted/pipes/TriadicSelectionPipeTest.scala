@@ -28,7 +28,8 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.NodeValue
 
-import scala.collection.{Map, mutable}
+import scala.collection.Map
+import scala.collection.mutable
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
   test("triadic from input with no cycles") {

@@ -22,13 +22,44 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTGeometry
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
+import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTTime
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values._
-import org.neo4j.values.storable._
-import org.neo4j.values.virtual._
-
-import scala.collection.JavaConverters._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.DateTimeValue
+import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.LocalDateTimeValue
+import org.neo4j.values.storable.LocalTimeValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.TimeValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualValues
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object coerce {
 

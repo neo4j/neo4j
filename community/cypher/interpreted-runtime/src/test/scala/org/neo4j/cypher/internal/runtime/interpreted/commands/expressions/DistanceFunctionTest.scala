@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.values.storable.CRSCalculator.GeographicCalculator.EARTH_RADIUS_METERS
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
-import org.scalactic.{Equality, TolerantNumerics}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.values.storable.CoordinateReferenceSystem
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.Values
+import org.scalactic.Equality
+import org.scalactic.TolerantNumerics
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.language.implicitConversions
 
 class DistanceFunctionTest extends CypherFunSuite {

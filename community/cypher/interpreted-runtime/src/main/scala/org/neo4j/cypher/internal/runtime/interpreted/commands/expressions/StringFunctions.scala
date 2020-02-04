@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.storable._
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 

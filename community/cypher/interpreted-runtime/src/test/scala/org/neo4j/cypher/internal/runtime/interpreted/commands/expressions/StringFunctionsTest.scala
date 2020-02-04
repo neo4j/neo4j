@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{EMPTY_STRING, stringArray, stringValue}
+import org.neo4j.values.storable.Values.EMPTY_STRING
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.storable.Values.stringValue
 
 class StringFunctionsTest extends CypherFunSuite {
 

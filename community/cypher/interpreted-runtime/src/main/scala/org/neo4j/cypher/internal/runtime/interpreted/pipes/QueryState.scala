@@ -19,9 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.MapCypherRow
+import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -62,23 +71,23 @@ class QueryState(val query: QueryContext,
 
   def withDecorator(decorator: PipeDecorator) =
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
-                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: CypherRow) =
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
-                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   /**
-    * When running on the RHS of an Apply, this method will fill an execution context with argument data
-    *
-    * @param ctx ExecutionContext to fill with data
-    */
+   * When running on the RHS of an Apply, this method will fill an execution context with argument data
+   *
+   * @param ctx ExecutionContext to fill with data
+   */
   def copyArgumentStateTo(ctx: CypherRow, nLongs: Int, nRefs: Int): Unit = initialContext
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
-                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {
     _exFactory = exFactory
@@ -158,7 +167,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       val x = newExecutionContext()
       row.copyTo(x)
       x.set(key1, value1, key2, value2)
-      x
+  x
     }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high

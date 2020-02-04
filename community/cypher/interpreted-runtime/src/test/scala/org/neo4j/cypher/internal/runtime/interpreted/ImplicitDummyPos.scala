@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
-import scala.language.implicitConversions
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 
 trait ImplicitDummyPos {
     protected val pos = DummyPosition(0)

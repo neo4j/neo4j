@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.SumFunction
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   override def createAggregationFunction(operatorId: Id): AggregationFunction = new SumFunction(anInner)

@@ -20,20 +20,26 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, DistinctPipe, ExecutionContextFactory, OrderedAggregationTableFactory, OrderedChunkReceiver, Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationTableFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedChunkReceiver
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 /**
-  * Specialization of [[NonGroupingAggTable]] where we have only grouping columns with provided order.
-  *
-  * The ordered columns are used to determine chunks for which to aggregate. No Hash Map is needed.
-  *
-  * @param orderedGroupingFunction a precomputed function to calculate the grouping key
-  * @param orderedGroupingColumns all grouping columns
-  * @param aggregations all aggregation columns
-  */
+ * Specialization of [[NonGroupingAggTable]] where we have only grouping columns with provided order.
+ *
+ * The ordered columns are used to determine chunks for which to aggregate. No Hash Map is needed.
+ *
+ * @param orderedGroupingFunction a precomputed function to calculate the grouping key
+ * @param orderedGroupingColumns all grouping columns
+ * @param aggregations all aggregation columns
+ */
 class OrderedNonGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                                  orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                                  aggregations: Array[AggregationPipe.AggregatingCol],

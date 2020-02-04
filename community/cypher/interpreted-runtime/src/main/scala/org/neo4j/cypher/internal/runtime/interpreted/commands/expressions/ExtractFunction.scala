@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class ExtractFunction(collection: Expression,
                            innerVariableName: String,
                            innerVariableOffset: Int,
                            expression: Expression)
   extends NullInNullOutExpression(collection)
-  with ListSupport
-  with Closure {
+  with ListSupport {
   override def compute(value: AnyValue, row: ReadableRow, state: QueryState): ListValue = {
     val list = makeTraversable(value)
     val extracted = new Array[AnyValue](list.size())

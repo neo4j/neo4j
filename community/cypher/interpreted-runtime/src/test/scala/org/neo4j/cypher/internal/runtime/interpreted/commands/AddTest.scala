@@ -23,11 +23,16 @@ import java.nio.charset.StandardCharsets
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterFromSlot}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.values.storable.Values.{longValue, stringValue, utf8Value}
-import org.neo4j.values.storable.{UTF8StringValue, Values}
+import org.neo4j.values.storable.UTF8StringValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.storable.Values.utf8Value
 
 class AddTest extends CypherFunSuite {
 

@@ -28,7 +28,7 @@ import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
-    with NumericOrDurationAggregationExpression {
+  with NumericOrDurationAggregationExpression {
 
   def name = "SUM"
 

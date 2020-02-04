@@ -19,17 +19,41 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsList, IsNoValue, makeValueNeoSafe}
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
-import org.neo4j.exceptions.{CypherTypeException, InternalException}
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeBetween
+import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
+import org.neo4j.cypher.internal.logical.plans.RangeLessThan
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PrefixSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsList
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
+import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.InternalException
+import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.TextValue
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
   * Mixin trait with functionality for executing logical index queries.

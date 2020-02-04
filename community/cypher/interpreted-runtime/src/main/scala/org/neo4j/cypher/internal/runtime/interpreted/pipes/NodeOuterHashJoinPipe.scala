@@ -25,7 +25,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
-import scala.collection.mutable.{ListBuffer, MutableList}
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.MutableList
 
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,

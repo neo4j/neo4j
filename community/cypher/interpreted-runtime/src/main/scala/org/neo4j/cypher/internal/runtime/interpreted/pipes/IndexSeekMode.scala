@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.logical.plans.{CompositeQueryExpression, QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.virtual.NodeValue
 

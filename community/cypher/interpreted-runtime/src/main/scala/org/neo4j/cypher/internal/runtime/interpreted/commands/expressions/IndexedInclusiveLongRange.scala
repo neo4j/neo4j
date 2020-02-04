@@ -24,11 +24,12 @@ import org.neo4j.internal.helpers.ArrayUtil
 import scala.collection.immutable
 
 /**
-  * An inclusive long range that is also indexable as long as the total length of the range is less than `Int.MaxValue`
-  * @param start beginning of range (inclusive)
-  * @param end end of range (inclusive)
-  * @param step step between elements of range
-  */
+ * An inclusive long range that is also indexable as long as the total length of the range is less than `Int.MaxValue`
+ *
+ * @param start beginning of range (inclusive)
+ * @param end end of range (inclusive)
+ * @param step step between elements of range
+ */
 case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends immutable.IndexedSeq[Long] {
 
   private val check: (Long, Long) => Boolean = if (step.signum > 0) _ <= _ else _ >= _

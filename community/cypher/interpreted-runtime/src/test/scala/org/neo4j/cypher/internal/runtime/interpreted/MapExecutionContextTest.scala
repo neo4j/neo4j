@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.expressions.{NODE_TYPE, CachedProperty, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.BooleanValue

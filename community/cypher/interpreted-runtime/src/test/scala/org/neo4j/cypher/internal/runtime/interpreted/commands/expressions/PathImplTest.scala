@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb._
-
-import scala.collection.JavaConverters._
+import org.neo4j.graphdb.RelationshipType
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
 

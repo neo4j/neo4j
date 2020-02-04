@@ -20,11 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExpressionVariable, Literal}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{FALSE, NO_VALUE, TRUE}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.TRUE
 
 class ListLiteralTest extends CypherFunSuite {
 

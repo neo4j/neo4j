@@ -21,15 +21,27 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.profiling.{KernelStatisticProvider, NoKernelStatisticProvider}
+import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.cypher.internal.profiling.NoKernelStatisticProvider
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{NestedPipeExpression, ProjectedPath}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NestedPipeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
+import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE
 
@@ -205,50 +217,50 @@ class ProfilerTest extends CypherFunSuite {
   }
 
   test("should not count rows multiple times when the same pipe is used multiple times") {
-      val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
+    val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
 
-      val pipe1 = ArgumentPipe()(idGen.id())
-      val ctx1: QueryContext = prepareQueryContext()
-      val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
+    val pipe1 = ArgumentPipe()(idGen.id())
+    val ctx1: QueryContext = prepareQueryContext()
+    val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
-      val profiled_1 = profiler.decorate(pipe1, state1)
-      val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
+    val profiled_1 = profiler.decorate(pipe1, state1)
+    val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
 
-      val profiled1 = profiler.decorate(pipe1, iter1)
-      profiled1.toList // consume it
-      profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
+    val profiled1 = profiler.decorate(pipe1, iter1)
+    profiled1.toList // consume it
+    profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
-      val pipe2 = ArgumentPipe()(idGen.id())
-      val ctx2: QueryContext = prepareQueryContext()
-      val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
-      val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
+    val pipe2 = ArgumentPipe()(idGen.id())
+    val ctx2: QueryContext = prepareQueryContext()
+    val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
+    val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
 
-      val profiled_2 = profiler.decorate(pipe2, state2)
-      val profiled2 = profiler.decorate(pipe2, iter2)
-      profiled2.toList // consume it
-      profiled2.asInstanceOf[ProfilingIterator].count should equal(2)
-    }
+    val profiled_2 = profiler.decorate(pipe2, state2)
+    val profiled2 = profiler.decorate(pipe2, iter2)
+    profiled2.toList // consume it
+    profiled2.asInstanceOf[ProfilingIterator].count should equal(2)
+  }
 
   test("should not count dbhits multiple times when the same pipe is used multiple times") {
-      val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
+    val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
 
-      val pipe1 = ArgumentPipe()(idGen.id())
-      val ctx1: QueryContext = prepareQueryContext()
-      val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
+    val pipe1 = ArgumentPipe()(idGen.id())
+    val ctx1: QueryContext = prepareQueryContext()
+    val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
-      val profiled1 = profiler.decorate(pipe1, state1)
-      profiled1.query.createNode(Array.empty)
-      profiled1.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
+    val profiled1 = profiler.decorate(pipe1, state1)
+    profiled1.query.createNode(Array.empty)
+    profiled1.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
 
-      val pipe2 = ArgumentPipe()(idGen.id())
-      val ctx2: QueryContext = prepareQueryContext()
-      val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
+    val pipe2 = ArgumentPipe()(idGen.id())
+    val ctx2: QueryContext = prepareQueryContext()
+    val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
 
 
-      val profiled2 = profiler.decorate(pipe2, state2)
-      profiled2.query.createNode(Array.empty)
-      profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
-    }
+    val profiled2 = profiler.decorate(pipe2, state2)
+    profiled2.query.createNode(Array.empty)
+    profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
+  }
 
   private def prepareQueryContext(statisticProvider: KernelStatisticProvider = NoKernelStatisticProvider) = {
     val queryContext = mock[QueryContext]
@@ -280,7 +292,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
                             statisticProvider: ConfiguredKernelStatisticProvider = null,
                             hits: Long = 0,
                             misses: Long = 0)(val id: Id)
-    extends PipeWithSource(source) {
+  extends PipeWithSource(source) {
 
   protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     input.size

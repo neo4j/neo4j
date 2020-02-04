@@ -20,16 +20,27 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.runtime.CastSupport
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.exceptions.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, RelationshipScanCursor}
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
+import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual._
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.collection.Map
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait SetOperation {
@@ -230,8 +241,8 @@ abstract class AbstractSetPropertyFromMapOperation(expression: Expression) exten
 }
 
 abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
-                                                       expression: Expression,
-                                                       removeOtherProps: Boolean) extends AbstractSetPropertyFromMapOperation(expression) {
+                                                               expression: Expression,
+                                                               removeOtherProps: Boolean) extends AbstractSetPropertyFromMapOperation(expression) {
   override def set(executionContext: CypherRow, state: QueryState) = {
     val item = executionContext.getByName(itemName)
     if (!(item eq Values.NO_VALUE)) {
@@ -292,8 +303,8 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
 }
 
 case class SetPropertyFromMapOperation(entityExpr: Expression,
-                                               expression: Expression,
-                                               removeOtherProps: Boolean)
+                                       expression: Expression,
+                                       removeOtherProps: Boolean)
   extends AbstractSetPropertyFromMapOperation(expression) {
 
   override def name = "SetPropertyFromMap"

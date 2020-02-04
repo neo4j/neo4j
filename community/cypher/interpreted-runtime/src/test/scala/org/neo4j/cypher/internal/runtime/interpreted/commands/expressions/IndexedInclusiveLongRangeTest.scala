@@ -68,7 +68,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
          a = random.nextInt(Int.MaxValue);
          b = random.nextInt(Int.MaxValue);
          c = random.nextInt(Int.MaxValue)
-    ) {
+         ) {
       val input = Array(a,b,c).sorted
       val step = input(0)
       val start = input(1)

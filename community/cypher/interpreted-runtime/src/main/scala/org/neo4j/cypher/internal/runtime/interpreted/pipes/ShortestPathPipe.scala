@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Shorte
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{ListValue, PathValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes

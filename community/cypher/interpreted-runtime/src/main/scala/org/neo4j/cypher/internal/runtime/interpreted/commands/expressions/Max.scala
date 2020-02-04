@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.MaxFunction
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   override def createAggregationFunction(operatorId: Id): AggregationFunction = new MaxFunction(anInner)

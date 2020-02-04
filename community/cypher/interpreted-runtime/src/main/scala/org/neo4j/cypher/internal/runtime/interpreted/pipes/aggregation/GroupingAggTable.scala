@@ -20,19 +20,24 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, ExecutionContextFactory, Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 /**
-  * This table must be used when we have grouping columns, and there is no provided order for at least one grouping column.
-  *
-  * @param groupingColumns  all grouping columns
-  * @param groupingFunction a precomputed function to calculate the grouping key of a row
-  * @param aggregations     all aggregation columns
-  */
+ * This table must be used when we have grouping columns, and there is no provided order for at least one grouping column.
+ *
+ * @param groupingColumns  all grouping columns
+ * @param groupingFunction a precomputed function to calculate the grouping key of a row
+ * @param aggregations     all aggregation columns
+ */
 class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        groupingFunction: (CypherRow, QueryState) => AnyValue,
                        aggregations: Array[AggregatingCol],

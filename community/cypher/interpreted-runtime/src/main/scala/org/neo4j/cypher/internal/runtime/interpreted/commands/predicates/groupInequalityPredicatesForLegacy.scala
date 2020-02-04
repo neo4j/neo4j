@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Property
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Property, Variable}
 
 // This transforms
 //
@@ -39,8 +40,8 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
 
     // categorize predicates according to whether they contain an inequality or not
     val partitions: Either[(NonEmptyList[ComparablePredicate], Option[NonEmptyList[Predicate]]), (Option[NonEmptyList[ComparablePredicate]], NonEmptyList[Predicate])] = inputPredicates.partition {
-        case comparable: ComparablePredicate => Left(comparable)
-        case predicate => Right(predicate)
+      case comparable: ComparablePredicate => Left(comparable)
+      case predicate => Right(predicate)
     }
 
     // detect if we need to transform the input

@@ -21,21 +21,32 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util.regex.Pattern
 
+import org.neo4j.cypher.internal.runtime.CastSupport
+import org.neo4j.cypher.internal.runtime.IsList
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, AbstractCachedRelationshipProperty, Expression, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeProperty
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedRelationshipProperty
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CastSupport, CypherRow, IsList, IsNoValue}
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants
-import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 abstract class Predicate extends Expression {
   override def apply(ctx: ReadableRow, state: QueryState): Value =
@@ -197,18 +208,18 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
             case propId =>
               state.query.nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
                 case None => // no change in TX state
-                 cp.getCachedProperty(ctx) match {
-                   case null =>
-                     // the cached node property has been invalidated
-                     val property = state.query.nodeOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
-                     // Re-cache the value
-                     cp.setCachedProperty(ctx, property)
-                     Some(!(property eq Values.NO_VALUE))
-                   case IsNoValue() =>
-                     Some(false)
-                   case _ =>
-                     Some(true)
-                 }
+                  cp.getCachedProperty(ctx) match {
+                    case null =>
+                      // the cached node property has been invalidated
+                      val property = state.query.nodeOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
+                      // Re-cache the value
+                      cp.setCachedProperty(ctx, property)
+                      Some(!(property eq Values.NO_VALUE))
+                    case IsNoValue() =>
+                      Some(false)
+                    case _ =>
+                      Some(true)
+                  }
                 case changedInTXState =>
                   changedInTXState
               }

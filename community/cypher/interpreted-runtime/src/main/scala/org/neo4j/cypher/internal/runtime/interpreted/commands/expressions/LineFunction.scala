@@ -24,7 +24,8 @@ import java.net.URLDecoder
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, ResourceLinenumber}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 

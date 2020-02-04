@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, ResourceLinenumber}
-import org.neo4j.exceptions.{Neo4jException, LoadCsvStatusWrapCypherException}
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ResourceLinenumber
+import org.neo4j.exceptions.LoadCsvStatusWrapCypherException
+import org.neo4j.exceptions.Neo4jException
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph

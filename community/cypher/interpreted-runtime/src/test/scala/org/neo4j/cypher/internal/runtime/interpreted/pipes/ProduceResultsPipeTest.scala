@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito._
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
+import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue, stringValue}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

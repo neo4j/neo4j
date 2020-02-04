@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.exceptions.InternalException
 
 object OwningPipeAsserter {

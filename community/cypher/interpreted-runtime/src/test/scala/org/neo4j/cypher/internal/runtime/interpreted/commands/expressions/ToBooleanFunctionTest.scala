@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
-import org.neo4j.values.storable.Values._
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.FALSE
 
 class ToBooleanFunctionTest extends CypherFunSuite {
 

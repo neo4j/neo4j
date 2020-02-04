@@ -21,18 +21,22 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.util
 
-import org.mockito.Mockito
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.{CypherRow, NodeOperations, QueryContext, RelationshipOperations}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
-  import Mockito._
 
   val query = mock[QueryContext]
   val nodeOps = mock[NodeOperations]

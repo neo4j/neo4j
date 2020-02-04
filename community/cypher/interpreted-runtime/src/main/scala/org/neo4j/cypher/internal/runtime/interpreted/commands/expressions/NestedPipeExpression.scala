@@ -23,14 +23,15 @@ import java.util
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * Expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
-  * the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
-  */
+ * Expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
+ * the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
+ */
 case class NestedPipeExpression(pipe: Pipe,
                                 inner: Expression,
                                 availableExpressionVariables: Seq[ExpressionVariable]) extends Expression {

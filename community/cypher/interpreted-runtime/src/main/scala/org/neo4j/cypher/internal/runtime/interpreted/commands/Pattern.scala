@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CTNode
 
-import scala.collection.{Map, Seq}
+import scala.collection.Map
+import scala.collection.Seq
 
 trait Pattern extends AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]

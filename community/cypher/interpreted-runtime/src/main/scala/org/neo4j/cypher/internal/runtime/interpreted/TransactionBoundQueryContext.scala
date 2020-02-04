@@ -24,50 +24,102 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexOrderAscending, IndexOrderDescending, IndexOrderNone}
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.{CursorIterator, IndexSearchMonitor, RelationshipCursorIterator}
+import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.cypher.internal.runtime.NodeValueHit
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.OnlyDirectionExpander
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TypeAndDirectionExpander
 import org.neo4j.cypher.operations.CursorUtils
-import org.neo4j.exceptions.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.exceptions.EntityNotFoundException
+import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphalgo.BasicEvaluationContext
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
-import org.neo4j.graphdb._
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PathExpanderBuilder
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.security.URLAccessValidationError
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.graphdb.traversal.Evaluators
+import org.neo4j.graphdb.traversal.TraversalDescription
+import org.neo4j.graphdb.traversal.Uniqueness
 import org.neo4j.internal
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
-import org.neo4j.internal.kernel.api.helpers._
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.InternalIndexState
+import org.neo4j.internal.kernel.api.KernelReadTracer
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.helpers.Nodes
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
-import org.neo4j.internal.kernel.api.{QueryContext => _, _}
-import org.neo4j.internal.schema.{ConstraintType, IndexDescriptor, IndexPrototype, SchemaDescriptor, IndexOrder => KernelIndexOrder}
+import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema._
-import org.neo4j.kernel.api.{ResourceTracker => _, _}
+import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
-import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
+import org.neo4j.kernel.impl.util.DefaultValueMapper
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
+import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
 import org.neo4j.storageengine.api.RelationshipVisitor
-import org.neo4j.values.storable.{FloatingPointValue, TextValue, Value, Values}
-import org.neo4j.values.virtual._
-import org.neo4j.values.{AnyValue, ValueMapper}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.ValueMapper
+import org.neo4j.values.storable.FloatingPointValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Iterator
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
                                           val resources: ResourceManager = new ResourceManager,
                                           trackResourcesInTransaction: Boolean = true)
-                                        (implicit indexSearchMonitor: IndexSearchMonitor)
+                                         (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
 
   override val nodeOps: NodeOperations = new NodeOperations
@@ -177,9 +229,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           override protected def fetchNext(): RelationshipValue =
             if (selectionCursor.next())
               fromRelationshipEntity(entityAccessor.newRelationshipEntity(selectionCursor.relationshipReference(),
-                                                                          selectionCursor.sourceNodeReference(),
-                                                                          selectionCursor.`type`(),
-                                                                          selectionCursor.targetNodeReference()))
+                selectionCursor.sourceNodeReference(),
+                selectionCursor.`type`(),
+                selectionCursor.targetNodeReference()))
             else null
         }
       }
@@ -285,7 +337,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                      indexOrder: IndexOrder,
                                                      value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder,
-         IndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
+      IndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
@@ -546,7 +598,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   class RelationshipOperations extends BaseOperations[RelationshipValue, RelationshipScanCursor] with
-    org.neo4j.cypher.internal.runtime.RelationshipOperations {
+                               org.neo4j.cypher.internal.runtime.RelationshipOperations {
 
     override def delete(id: Long) {
       writes().relationshipDelete(id)
@@ -627,9 +679,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         override protected def fetchNext(): RelationshipValue = {
           if (relCursor.next())
             fromRelationshipEntity(entityAccessor.newRelationshipEntity(relCursor.relationshipReference(),
-                                                                        relCursor.sourceNodeReference(),
-                                                                        relCursor.`type`(),
-                                                                        relCursor.targetNodeReference()))
+              relCursor.sourceNodeReference(),
+              relCursor.`type`(),
+              relCursor.targetNodeReference()))
           else null
         }
 
@@ -875,7 +927,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     new ShortestPath(new BasicEvaluationContext(transactionalContext.tc.transaction(), getDatabaseService), depth,
-                     expanderWithAllPredicates.build(), shortestPathPredicate) {
+      expanderWithAllPredicates.build(), shortestPathPredicate) {
       override protected def filterNextLevelNodes(nextNode: Node): Node =
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode
@@ -919,9 +971,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   private def asKernelIndexOrder(indexOrder: IndexOrder): internal.schema.IndexOrder = indexOrder match {
-    case IndexOrderAscending => KernelIndexOrder.ASCENDING
-    case IndexOrderDescending => KernelIndexOrder.DESCENDING
-    case IndexOrderNone => KernelIndexOrder.NONE
+    case IndexOrderAscending => internal.schema.IndexOrder.ASCENDING
+    case IndexOrderDescending => internal.schema.IndexOrder.DESCENDING
+    case IndexOrderNone => internal.schema.IndexOrder.NONE
   }
 
   abstract class PrimitiveCursorIterator extends PrimitiveLongResourceIterator {
