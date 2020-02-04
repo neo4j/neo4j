@@ -19,8 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -40,7 +38,7 @@ import java.util.Collections;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -51,30 +49,17 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
+@DbmsExtension
 class DiagnosticsReportCommandIT
 {
     @Inject
     private TestDirectory testDirectory;
-
+    @Inject
     private DatabaseManagementService managementService;
-
-    @BeforeEach
-    void setUp()
-    {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
-        managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        managementService.shutdown();
-    }
 
     @Test
     void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException

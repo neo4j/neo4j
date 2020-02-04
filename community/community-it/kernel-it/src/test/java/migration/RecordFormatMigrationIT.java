@@ -26,7 +26,6 @@ import java.io.File;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -146,7 +146,7 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
 
-        managementService = new DatabaseManagementServiceBuilder( databaseDirectory ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory ).build();
         database = getDefaultDatabase( managementService );
         try
         {
@@ -204,12 +204,12 @@ class RecordFormatMigrationIT
 
     private DatabaseManagementService startManagementService( String name )
     {
-        return new DatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format, name ).build();
+        return new TestDatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format, name ).build();
     }
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
-        return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
+        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
                 .setConfig( allow_upgrade, true ).build();
     }
 }

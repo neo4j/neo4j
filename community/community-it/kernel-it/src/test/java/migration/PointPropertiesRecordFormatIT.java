@@ -24,13 +24,13 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,7 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -59,7 +58,7 @@ class PointPropertiesRecordFormatIT
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
 
-        DatabaseManagementService managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -69,7 +68,7 @@ class PointPropertiesRecordFormatIT
         }
         managementService.shutdown();
 
-        managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        managementService = startDatabaseService( storeDir );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
         try ( Transaction transaction = restartedDatabase.beginTx() )
         {
@@ -86,7 +85,7 @@ class PointPropertiesRecordFormatIT
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
 
-        DatabaseManagementService managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -96,7 +95,7 @@ class PointPropertiesRecordFormatIT
         }
         managementService.shutdown();
 
-        managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        managementService = startDatabaseService( storeDir );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
         try ( Transaction tx = restartedDatabase.beginTx() )
         {
@@ -110,10 +109,9 @@ class PointPropertiesRecordFormatIT
         managementService.shutdown();
     }
 
-    private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
+    private static DatabaseManagementService startDatabaseService( File storeDir )
     {
-        return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, true ).build();
+        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, Standard.LATEST_NAME ).build();
     }
 
     private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )

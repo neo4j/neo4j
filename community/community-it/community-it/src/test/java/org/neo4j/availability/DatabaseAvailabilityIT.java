@@ -19,13 +19,10 @@
  */
 package org.neo4j.availability;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -39,43 +36,29 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
+@DbmsExtension
 class DatabaseAvailabilityIT
 {
     private NamedDatabaseId defaultNamedDatabaseId;
 
     @Inject
-    private TestDirectory testDirectory;
     private GraphDatabaseAPI database;
-    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
-        database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        var databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-        defaultNamedDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        if ( managementService != null )
-        {
-            managementService.shutdown();
-        }
+        defaultNamedDatabaseId = database.databaseId();
     }
 
     @Test

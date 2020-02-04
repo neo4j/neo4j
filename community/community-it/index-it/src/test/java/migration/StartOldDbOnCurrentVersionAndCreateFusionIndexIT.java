@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -125,7 +126,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     void create3_5Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
-        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
 
         createIndexDataAndShutdown( builder, "lucene-1.0", Provider.LUCENE_10.label );
         createIndexDataAndShutdown( builder, "lucene+native-1.0", Provider.FUSION_10.label );
@@ -331,7 +332,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
-        return new DatabaseManagementServiceBuilder( storeDir )
+        return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
