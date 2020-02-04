@@ -275,27 +275,27 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
-    val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
+    val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
     EqualInOrder(anyValues)
   }
 
   def inAnyOrder(rows: Iterable[Array[_]]): RowsMatcher = {
-    val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
+    val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
     EqualInAnyOrder(anyValues)
   }
 
   def singleColumn(values: Iterable[Any]): RowsMatcher = {
-    val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
+    val anyValues = values.map(x => Array(ValueUtils.asAnyValue(x))).toIndexedSeq
     EqualInAnyOrder(anyValues)
   }
 
   def singleColumnInOrder(values: Iterable[Any]): RowsMatcher = {
-    val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
+    val anyValues = values.map(x => Array(ValueUtils.asAnyValue(x))).toIndexedSeq
     EqualInOrder(anyValues)
   }
 
   def singleRow(values: Any*): RowsMatcher = {
-    val anyValues = Array(values.toArray.map(ValueUtils.of))
+    val anyValues = Array(values.toArray.map(ValueUtils.asAnyValue))
     EqualInAnyOrder(anyValues)
   }
 
