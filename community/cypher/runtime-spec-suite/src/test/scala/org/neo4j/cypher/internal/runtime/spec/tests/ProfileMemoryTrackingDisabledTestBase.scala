@@ -48,9 +48,9 @@ abstract class ProfileMemoryTrackingDisabledTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).maxAllocatedMemory() should be(OperatorProfile.NO_DATA) // produce results
+    queryProfile.operatorProfile(0).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be(0L)) // produce results
     queryProfile.operatorProfile(1).maxAllocatedMemory() should be > 0L  // distinct
-    queryProfile.operatorProfile(2).maxAllocatedMemory() should be(OperatorProfile.NO_DATA) // all node scan
+    queryProfile.operatorProfile(2).maxAllocatedMemory() should (be(OperatorProfile.NO_DATA) or be(0L)) // all node scan
     queryProfile.maxAllocatedMemory()should be > 0L
   }
 }
