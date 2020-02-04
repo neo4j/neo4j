@@ -80,6 +80,7 @@ import org.neo4j.logging.Level;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -143,7 +144,7 @@ public class FulltextProceduresTest
     @Before
     public void before()
     {
-        builder = new DatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, Level.DEBUG );
     }
 

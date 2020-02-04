@@ -22,96 +22,95 @@ package migration;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.time.LocalDate;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.PointValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.Values.pointValue;
 
 @TestDirectoryExtension
-class TemporalPropertiesRecordFormatIT
+class PointPropertiesRecordFormatIT
 {
     @Inject
     private TestDirectory testDirectory;
 
     @Test
-    void createDatePropertyOnLatestDatabase()
+    void createPointPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.homeDir();
-        Label label = Label.label( "DateNode" );
+        Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
-        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+        PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
 
-        DatabaseManagementService managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = transaction.createNode( label );
-            node.setProperty( propertyKey, date );
+            Node node = transaction.createNode( pointNode );
+            node.setProperty( propertyKey, pointValue );
             transaction.commit();
         }
         managementService.shutdown();
 
-        managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        managementService = startDatabaseService( storeDir );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
         try ( Transaction transaction = restartedDatabase.beginTx() )
         {
-            assertNotNull( transaction.findNode( label, propertyKey, date ) );
+            assertNotNull( transaction.findNode( pointNode, propertyKey, pointValue ) );
         }
         managementService.shutdown();
     }
 
     @Test
-    void createDateArrayOnLatestDatabase()
+    void createPointArrayPropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.homeDir();
-        Label label = Label.label( "DateNode" );
+        Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
-        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+        PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
 
-        DatabaseManagementService managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = transaction.createNode( label );
-            node.setProperty( propertyKey, new LocalDate[]{date, date} );
+            Node node = transaction.createNode( pointNode );
+            node.setProperty( propertyKey, new PointValue[]{pointValue, pointValue} );
             transaction.commit();
         }
         managementService.shutdown();
 
-        managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
+        managementService = startDatabaseService( storeDir );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction transaction = restartedDatabase.beginTx() )
+        try ( Transaction tx = restartedDatabase.beginTx() )
         {
-            try ( ResourceIterator<Node> nodes = transaction.findNodes( label ) )
+            try ( ResourceIterator<Node> nodes = tx.findNodes( pointNode ) )
             {
                 Node node = nodes.next();
-                LocalDate[] points = (LocalDate[]) node.getProperty( propertyKey );
+                PointValue[] points = (PointValue[]) node.getProperty( propertyKey );
                 assertThat( points ).hasSize( 2 );
             }
         }
         managementService.shutdown();
     }
 
-    private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
+    private static DatabaseManagementService startDatabaseService( File storeDir )
     {
-        return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, true ).build();
+        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, Standard.LATEST_NAME ).build();
     }
 
     private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )

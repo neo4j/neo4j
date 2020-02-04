@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
@@ -56,7 +58,7 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( testDirectory.homeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -78,7 +80,7 @@ class DatabaseManagementServiceBuilderIT
         File storeDir = testDirectory.homeDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( homeDir )
+        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( homeDir )
                 .setConfig( databases_root_path, databasesDir.toPath() )
                 .build();
         try
@@ -100,7 +102,7 @@ class DatabaseManagementServiceBuilderIT
     {
         Neo4jLayout layout = neo4jLayout;
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( layout.homeDirectory() ).build();
+        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( layout.homeDirectory() ).build();
         try
         {
             assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory() ) );
@@ -110,5 +112,11 @@ class DatabaseManagementServiceBuilderIT
         {
             managementService.shutdown();
         }
+    }
+
+    private static DatabaseManagementServiceBuilder getDbmsBuilderWithLimitedTxLogSize( File homeDirectory )
+    {
+        return new DatabaseManagementServiceBuilder( homeDirectory )
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) );
     }
 }

@@ -27,10 +27,10 @@ import java.io.IOException;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -99,7 +99,7 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setExternalDependencies( noOpSystemGraphInitializer() )
                 .build();
     }

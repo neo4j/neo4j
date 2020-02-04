@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,6 +53,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -199,7 +199,7 @@ class ReuseStorageSpaceIT
 
     private static Sizes withDb( File storeDir, ThrowingConsumer<GraphDatabaseService,Exception> transaction )
     {
-        DatabaseManagementService dbms = new DatabaseManagementServiceBuilder( storeDir )
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( storeDir )
                 // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
                 .setConfig( GraphDatabaseSettings.force_small_id_cache, true )
                 .build();

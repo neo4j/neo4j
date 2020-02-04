@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
@@ -56,7 +58,9 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) )
+                .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
         defaultNamedDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();

@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,7 +68,7 @@ class MissingStoreFilesRecoveryIT
     @BeforeEach
     void setUp() throws IOException
     {
-        serviceBuilder = new DatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        serviceBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase( managementService );
         createSomeData( databaseApi );

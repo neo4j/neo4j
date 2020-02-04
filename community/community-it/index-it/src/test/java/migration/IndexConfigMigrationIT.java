@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -188,7 +189,7 @@ class IndexConfigMigrationIT
     void create3_5Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
-        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
         setSpatialConfig( builder );
 
         DatabaseManagementService dbms = builder.build();
@@ -215,7 +216,7 @@ class IndexConfigMigrationIT
         File databaseDir = databaseLayout.databaseDirectory();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
-        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try
