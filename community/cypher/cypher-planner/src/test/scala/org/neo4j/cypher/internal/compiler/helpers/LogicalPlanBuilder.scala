@@ -54,6 +54,10 @@ class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, Logical
     semanticTable = semanticTable.addRelationship(relationship)
   }
 
+  override def newVariable(variable: Variable): Unit = {
+    semanticTable = semanticTable.addVariable(variable)
+  }
+
   def getSemanticTable: SemanticTable = semanticTable
 
   def withCardinality(x: Int): LogicalPlanBuilder = {

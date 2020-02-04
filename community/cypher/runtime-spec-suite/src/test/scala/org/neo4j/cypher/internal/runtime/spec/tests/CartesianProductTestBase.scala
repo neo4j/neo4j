@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -591,5 +592,38 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       } yield Array(x, y)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
+  }
+
+  test("preserves order with multiple index seeks") {
+    // given
+    val nValues = 14 // gives 819 results in the range 0-12
+    val inputRows = inputValues((0 until nValues).map { i =>
+      Array[Any](i.toLong, i.toLong)
+    }.toArray: _*)
+
+    index("Label", "prop")
+    given {
+      nodePropertyGraph(nValues, {
+        case i: Int => Map("prop" -> (nValues + 3 - i) % nValues) // Reverse and offset when creating the values so we do not accidentally get them in order
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("nn", "mm")
+      .projection("n.prop as nn", "m.prop as mm")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.nodeIndexOperator("m:Label(prop < ???)", paramExpr = Some(varFor("j")), getValue = DoNotGetValue)
+      .|.nodeIndexOperator("n:Label(prop < ???)", paramExpr = Some(varFor("i")), getValue = GetValue)
+      .input(variables = Seq("i", "j"))
+      .build()
+
+    // then
+    val expected = for {i <- 0 until nValues
+                        j <- 0 until i
+                        k <- 0 until i} yield Array(j, k)
+    val runtimeResult = execute(logicalQuery, runtime, inputRows)
+    runtimeResult should beColumns("nn", "mm").withRows(inOrder(expected))
   }
 }

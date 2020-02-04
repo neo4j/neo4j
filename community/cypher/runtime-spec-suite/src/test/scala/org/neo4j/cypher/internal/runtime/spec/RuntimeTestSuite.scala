@@ -29,23 +29,17 @@ import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
-import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Label
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.Relationship
-import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -67,7 +61,6 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object RuntimeTestSuite {
@@ -197,6 +190,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                  runtime: CypherRuntime[CONTEXT],
                                  input: InputValues
                                 ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
+
+  override def executeAndExplain(logicalQuery: LogicalQuery,
+                                 runtime: CypherRuntime[CONTEXT],
+                                 input: InputValues
+                                ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
   // PROCEDURES
 

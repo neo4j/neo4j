@@ -35,7 +35,7 @@ object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
   class Cardinalities extends Attribute[LogicalPlan, Cardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder] {
-    def hasProvidedOrder(id: Id): Boolean = if (isDefinedAt(id)) get(id).isEmpty else false
+    def hasProvidedOrder(id: Id): Boolean = if (isDefinedAt(id)) !get(id).isEmpty else false
   }
 }
 

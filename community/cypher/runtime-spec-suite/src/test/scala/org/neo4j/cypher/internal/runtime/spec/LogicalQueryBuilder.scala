@@ -43,6 +43,10 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
     override val defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
 
+  private val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
+    override val defaultValue: Cardinality = Cardinality.SINGLE
+  }
+
   override def newNode(node: Variable): Unit = {
     semanticTable = semanticTable.addNode(node)
   }
@@ -51,15 +55,22 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
     semanticTable = semanticTable.addRelationship(relationship)
   }
 
+  override def newVariable(variable: Variable): Unit = {
+    semanticTable = semanticTable.addVariable(variable)
+  }
+
   def withProvidedOrder(order: ProvidedOrder): this.type = {
     providedOrders.set(idOfLastPlan, order)
     this
   }
 
+  def withCardinalityEstimation(cardinality: Cardinality): this.type = {
+    cardinalities.set(idOfLastPlan, cardinality)
+    this
+  }
+
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
-    val cardinalities = new Cardinalities
-    logicalPlan.flatten.foreach(plan => cardinalities.set(plan.id, Cardinality(1)))
     LogicalQuery(logicalPlan,
                  "<<queryText>>",
                  readOnly,

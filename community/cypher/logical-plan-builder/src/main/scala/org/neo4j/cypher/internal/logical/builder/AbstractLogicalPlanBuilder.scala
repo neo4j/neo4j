@@ -655,6 +655,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
     nodes.foreach(node => newNode(varFor(node)))
     relationships.foreach(rel => newRelationship(varFor(rel)))
+    variables.foreach(v => newVariable(varFor(v)))
     appendAtCurrentIndent(LeafOperator(Input(nodes, relationships, variables, nullable)(_)))
   }
 
@@ -690,6 +691,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     * Called everytime a new relationship is introduced by some logical operator.
     */
   protected def newRelationship(relationship: Variable): Unit
+
+  /**
+    * Called everytime a new variable is introduced by some logical operator.
+    */
+  protected def newVariable(variable: Variable): Unit
 
   /**
     * Returns the finalized output of the builder.

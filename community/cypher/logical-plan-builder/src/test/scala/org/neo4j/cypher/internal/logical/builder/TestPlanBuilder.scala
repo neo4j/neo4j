@@ -33,6 +33,7 @@ import scala.collection.mutable.ArrayBuffer
 class TestPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, TestPlanBuilder](new TestResolver) {
   override def newNode(node: Variable): Unit = {}
   override def newRelationship(relationship: Variable): Unit = {}
+  override def newVariable(variable: Variable): Unit = {}
   override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
 }
 

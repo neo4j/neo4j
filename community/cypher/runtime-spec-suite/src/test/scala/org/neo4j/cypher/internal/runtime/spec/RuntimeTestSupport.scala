@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -30,6 +31,9 @@ import org.neo4j.cypher.internal.ResourceManagerFactory
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
@@ -44,6 +48,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -161,6 +166,26 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val subscriber = new RecordingQuerySubscriber
     val (result, context) = runLogical(logicalQuery, runtime, input.stream(), (context, result) => (result, context), subscriber, profile = false)
     (RecordingRuntimeResult(result, subscriber), context)
+  }
+
+  override def executeAndExplain(logicalQuery: LogicalQuery,
+                                 runtime: CypherRuntime[CONTEXT],
+                                 input: InputValues): (RecordingRuntimeResult, InternalPlanDescription) = {
+    val subscriber = new RecordingQuerySubscriber
+    val executionPlan = buildPlan(logicalQuery, runtime)
+    val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, parameters = Map.empty)
+    val executionPlanDescription = {
+      val planDescriptionBuilder =
+        new PlanDescriptionBuilder(logicalQuery.logicalPlan,
+                                   IDPPlannerName,
+                                   CypherVersion.default,
+                                   logicalQuery.readOnly,
+                                   logicalQuery.cardinalities,
+                                   logicalQuery.providedOrders,
+                                   executionPlan)
+      planDescriptionBuilder.explain()
+    }
+    (RecordingRuntimeResult(result, subscriber), executionPlanDescription)
   }
 
   // PRIVATE EXECUTE HELPER METHODS

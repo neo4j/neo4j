@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
@@ -100,6 +101,12 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
                         input: InputValues
                        ): (RecordingRuntimeResult, CONTEXT)
 
+  /**
+   * Execute a Logical query with some input. Return the result and the execution plan description
+   */
+  def executeAndExplain(logicalQuery: LogicalQuery,
+                        runtime: CypherRuntime[CONTEXT],
+                        input: InputValues): (RecordingRuntimeResult, InternalPlanDescription)
   /**
    * Profile a Logical query with some input.
    */
