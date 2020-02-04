@@ -917,4 +917,24 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
     testAndAssertExpandOrder(config)
   }
+
+  test("should not plan index scan if predicate variable is an argument") {
+    val plan =
+      new given {
+        indexOn("Label", "prop")
+      } getLogicalPlanFor
+        """
+          |MATCH (a: Label {prop: $param})
+          |MATCH (b)
+          |WHERE (a:Label {prop: $param})-[]-(b)
+          |RETURN a
+          |""".stripMargin
+
+    plan._2 should beLike {
+      case SemiApply(
+             CartesianProduct(_: NodeIndexSeek, _: AllNodesScan),
+             Expand(
+               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
+    }
+  }
 }

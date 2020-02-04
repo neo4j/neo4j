@@ -82,24 +82,27 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: LogicalProperty,
                       predicate: Expression, planProducer: PlanProducer, context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val semanticTable = context.semanticTable
-    val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
-    val idName = variableName
+    if (qg.argumentIds.contains(variableName)) Set.empty
+    else {
+      val semanticTable = context.semanticTable
+      val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+      val idName = variableName
 
-    for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
-         labelName <- labelPredicate.labels;
-         indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName, context);
-         labelId <- semanticTable.id(labelName))
-      yield {
-        val hint = qg.hints.collectFirst {
-          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
-            if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
+      for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
+           labelName <- labelPredicate.labels;
+           indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName, context);
+           labelId <- semanticTable.id(labelName))
+        yield {
+          val hint = qg.hints.collectFirst {
+            case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
+              if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
+          }
+          val keyToken = PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head)
+          val labelToken = LabelToken(labelName, labelId)
+          val predicates = Seq(predicate, labelPredicate)
+          planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)
         }
-        val keyToken = PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head)
-        val labelToken = LabelToken(labelName, labelId)
-        val predicates = Seq(predicate, labelPredicate)
-        planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)
-      }
+    }
   }
 
   private def findIndexesFor(label: String, property: String, context: LogicalPlanningContext) =

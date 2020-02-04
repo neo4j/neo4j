@@ -38,6 +38,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
+  val endsWithPredicate: Expression = EndsWith(property, StringLiteral("") _) _
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
   val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
   val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12") _) _
@@ -313,6 +314,51 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans.map(p => solveds.get(p.id).queryGraph) should beLike {
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Seq(hint) => ()
       }
+    }
+  }
+
+  test("does not plan index scans for arguments for: n.prop = <value>") {
+    new given {
+      qg = queryGraph(eqPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does not plan index contains scan for arguments") {
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does not plan index ends with scan for arguments") {
+    new given {
+      qg = queryGraph(endsWithPredicate, hasLabels)
+        .copy(argumentIds = Set(idName))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg, ctx, solveds, cardinalities)
+
+      // then
+      resultPlans shouldBe empty
     }
   }
 
