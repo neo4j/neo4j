@@ -484,6 +484,16 @@ public class BuiltInProcedures
         return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, indexProviderDescriptor, config );
     }
 
+    @SystemProcedure
+    @Procedure( name = "db.ping", mode = READ )
+    @Description( "This procedure can be used by client side tooling to test whether they are correctly connected to a database. " +
+                  "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this " +
+                  "procedure." )
+    public Stream<BooleanResult> ping()
+    {
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
+    }
+
     private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();

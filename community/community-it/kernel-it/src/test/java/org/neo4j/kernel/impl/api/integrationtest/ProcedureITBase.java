@@ -170,7 +170,14 @@ public interface ProcedureITBase
                 proc( "dbms.database.state",
                         "(databaseName :: STRING?) :: (role :: STRING?, address :: STRING?, status :: STRING?, error :: STRING?)",
                         "The actual status of the database with the provided name on this neo4j instance.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", true ) );
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", true ) ,
+                proc( "db.ping",
+                        "() :: (success :: BOOLEAN?)",
+                      "This procedure can be used by client side tooling to test whether they are correctly connected to a database. " +
+                      "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call " +
+                      "this procedure.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ", true )
+        );
     }
 
     default List<Object[]> getExpectedEnterpriseProcs()

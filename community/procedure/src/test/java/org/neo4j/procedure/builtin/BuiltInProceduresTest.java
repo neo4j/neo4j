@@ -372,6 +372,14 @@ class BuiltInProceduresTest
 
     }
 
+    @Test
+    void shouldPing() throws ProcedureException, IndexNotFoundKernelException
+    {
+        assertThat( call( "db.ping" ) ).containsExactly(
+                record( Boolean.TRUE ));
+
+    }
+
     private static Object[] record( Object... fields )
     {
         return fields;
