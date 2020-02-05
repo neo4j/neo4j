@@ -627,7 +627,7 @@ public final class SettingValueParsers
         @Override
         public void validate( String value )
         {
-            DatabaseNameValidator.assertValidDatabaseName( new NormalizedDatabaseName( value ) );
+            DatabaseNameValidator.validateExternalDatabaseName( new NormalizedDatabaseName( value ) );
         }
 
         @Override

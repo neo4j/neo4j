@@ -33,7 +33,18 @@ public class DatabaseNameValidator
             "It should be starting with an alphabetic character but not with the name 'system'.";
     private static final Pattern DATABASE_NAME_PATTERN = Pattern.compile( "^[a-z0-9-.]+$" );
 
-    public static void assertValidDatabaseName( NormalizedDatabaseName normalizedName )
+    public static void validateExternalDatabaseName( NormalizedDatabaseName normalizedName )
+    {
+        validateInternalDatabaseName( normalizedName );
+
+        var name = normalizedName.name();
+        if ( name.startsWith( "system" ) )
+        {
+            throw new IllegalArgumentException( "Database name '" + name + "' is invalid, due to the prefix 'system'." );
+        }
+    }
+
+    public static void validateInternalDatabaseName( NormalizedDatabaseName normalizedName )
     {
         Objects.requireNonNull( normalizedName, "The provided database name is empty." );
 
@@ -59,11 +70,6 @@ public class DatabaseNameValidator
         {
             throw new IllegalArgumentException(
                     "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );
-        }
-
-        if ( name.startsWith( "system" ) )
-        {
-            throw new IllegalArgumentException( "Database name '" + name + "' is invalid, due to the prefix 'system'." );
         }
     }
 }

@@ -38,7 +38,7 @@ class DatabaseNameValidatorTest
         Exception e = assertThrows( IllegalArgumentException.class, () -> assertValid( "" ) );
         assertEquals( "The provided database name is empty.", e.getMessage() );
 
-        Exception e2 = assertThrows( NullPointerException.class, () -> DatabaseNameValidator.assertValidDatabaseName( null ) );
+        Exception e2 = assertThrows( NullPointerException.class, () -> DatabaseNameValidator.validateExternalDatabaseName( null ) );
         assertEquals( "The provided database name is empty.", e2.getMessage() );
     }
 
@@ -87,6 +87,6 @@ class DatabaseNameValidatorTest
 
     private void assertValid( String name )
     {
-        DatabaseNameValidator.assertValidDatabaseName( new NormalizedDatabaseName( name ) );
+        DatabaseNameValidator.validateExternalDatabaseName( new NormalizedDatabaseName( name ) );
     }
 }

@@ -22,9 +22,11 @@ package org.neo4j.cli;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.ByteUnit;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
 public interface Converters
 {
@@ -41,6 +43,24 @@ public interface Converters
             catch ( Exception e )
             {
                 throw new TypeConversionException( format( "cannot convert '%s' to byte units (%s)", value, e ) );
+            }
+        }
+    }
+
+    class DatabaseNameConverter implements ITypeConverter<NormalizedDatabaseName>
+    {
+        @Override
+        public NormalizedDatabaseName convert( String name )
+        {
+            try
+            {
+                var databaseName = new NormalizedDatabaseName( name );
+                validateInternalDatabaseName( databaseName );
+                return databaseName;
+            }
+            catch ( Exception e )
+            {
+                throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, e ) );
             }
         }
     }

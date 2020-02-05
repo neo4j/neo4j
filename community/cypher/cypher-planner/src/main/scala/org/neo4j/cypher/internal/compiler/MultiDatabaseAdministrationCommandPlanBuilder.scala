@@ -449,7 +449,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case CreateDatabase(dbName, ifExistsDo) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         try {
-          DatabaseNameValidator.assertValidDatabaseName(normalizedName)
+          DatabaseNameValidator.validateExternalDatabaseName(normalizedName)
         } catch {
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }

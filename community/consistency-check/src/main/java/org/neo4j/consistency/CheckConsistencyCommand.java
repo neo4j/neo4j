@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
@@ -37,6 +38,7 @@ import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -73,8 +75,8 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     private static class TargetOption
     {
-        @Option( names = "--database", description = "Name of the database to check." )
-        private String database;
+        @Option( names = "--database", description = "Name of the database to check.", converter = DatabaseNameConverter.class )
+        private NormalizedDatabaseName database;
 
         @Option( names = "--backup", paramLabel = "<path>", description = "Path to backup to check consistency of. Cannot be used together with --database." )
         private Path backup;
@@ -119,7 +121,7 @@ public class CheckConsistencyCommand extends AbstractCommand
 
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
                     .map( Path::toFile ).map( DatabaseLayout::ofFlat )
-                    .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database ) );
+                    .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database.name() ) );
 
             checkDatabaseExistence( databaseLayout );
             try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )

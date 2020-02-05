@@ -51,6 +51,8 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
+import javax.xml.bind.annotation.XmlType;
+
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
@@ -99,8 +101,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
@@ -794,6 +799,50 @@ class ImportCommandTest
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
+        try ( Transaction tx = db.beginTx() )
+        {
+            int nodeCount = 0;
+            for ( Node node : tx.getAllNodes() )
+            {
+                assertTrue( node.hasProperty( "name" ) );
+                nodeCount++;
+                assertFalse( node.hasRelationship() );
+            }
+            assertEquals( NODE_COUNT, nodeCount );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void failOnInvalidDatabaseName() throws Exception
+    {
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        File dbConfig = prepareDefaultConfigFile();
+
+        var e = assertThrows( Exception.class,
+                () -> runImport(
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--database", "__incorrect_db__") );
+        assertThat( e ).hasMessageContaining( "Invalid database name '__incorrect_db__'." );
+    }
+
+    @Test
+    void importIntoLowerCasedDatabaseName() throws Exception
+    {
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        File dbConfig = prepareDefaultConfigFile();
+
+        var mixedCaseDatabaseName = "TestDataBase";
+        runImport( "--additional-config", dbConfig.getAbsolutePath(),
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                    "--database", mixedCaseDatabaseName );
+
+        var db = getDatabaseApi( mixedCaseDatabaseName.toLowerCase() );
+        assertEquals( mixedCaseDatabaseName.toLowerCase(), db.databaseName() );
+
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
@@ -2520,11 +2569,17 @@ class ImportCommandTest
 
     private GraphDatabaseAPI getDatabaseApi()
     {
+        return getDatabaseApi( DEFAULT_DATABASE_NAME );
+    }
+
+    private GraphDatabaseAPI getDatabaseApi( String defaultDatabaseName )
+    {
         if ( managementService == null )
         {
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                    .setConfig( GraphDatabaseSettings.default_database, defaultDatabaseName ).build();
         }
-        return (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database( defaultDatabaseName );
     }
 
     private void runImport( String... arguments )

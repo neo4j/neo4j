@@ -72,15 +72,15 @@ class DatabaseLayoutTest
     void databaseLayoutUseCanonicalRepresentation()
     {
         File dbDir = testDirectory.directory( "notCanonical" );
-        Path notCanonicalPath = dbDir.toPath().resolve( "../anotherDatabase" ) ;
+        Path notCanonicalPath = dbDir.toPath().resolve( "../anotherdatabase" ) ;
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( notCanonicalPath.toFile() );
-        assertEquals( testDirectory.directory( "anotherDatabase" ), databaseLayout.databaseDirectory() );
+        assertEquals( testDirectory.directory( "anotherdatabase" ), databaseLayout.databaseDirectory() );
     }
 
     @Test
     void databaseLayoutForName()
     {
-        String databaseName = "testDatabase";
+        String databaseName = "testdatabase";
         Neo4jLayout storeLayout = neo4jLayout;
         DatabaseLayout testDatabase = storeLayout.databaseLayout( databaseName );
         assertEquals( new File( storeLayout.databasesDirectory(), databaseName ), testDatabase.databaseDirectory() );
@@ -98,7 +98,7 @@ class DatabaseLayoutTest
     void databaseLayoutProvideCorrectDatabaseName()
     {
         assertEquals( "neo4j", databaseLayout.getDatabaseName() );
-        assertEquals( "testDb", neo4jLayout.databaseLayout( "testDb" ).getDatabaseName() );
+        assertEquals( "testdb", neo4jLayout.databaseLayout( "testdb" ).getDatabaseName() );
     }
 
     @Test
