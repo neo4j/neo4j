@@ -1158,12 +1158,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .addConstraint( min( Duration.ofSeconds( 1 ) ) )
             .build();
 
-    @Description( "Defines the level of parallelism employed by the reconciler. By default the parallelism is the number of available processors or 8 " +
-            "(whichever is smaller). You may increase the maximum from 8 upto 32, though parallelism will still be limited by available processors." )
+    @Description( "Defines the level of parallelism employed by the reconciler. By default the parallelism equals the number of available processors or 8 " +
+            "(whichever is smaller). If configured as 0, the parallelism of the reconciler will be unbounded." )
     @Internal
     public static final Setting<Integer> reconciler_maximum_parallelism =
             newBuilder( "dbms.reconciler.max_parallelism", INT, Math.min( Runtime.getRuntime().availableProcessors(), 8 ) )
-            .addConstraint( range( 1, 32 ) )
+            .addConstraint( min( 0 ) )
             .build();
 
     @Description( "Forces smaller ID cache, in order to preserve memory." )
