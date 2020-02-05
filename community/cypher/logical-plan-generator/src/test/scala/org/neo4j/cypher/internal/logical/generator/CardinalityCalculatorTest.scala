@@ -96,11 +96,15 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   test("NodeByLabelScan") {
     val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty)
     val labelCardinality = Cardinality(321)
+    val labelIds = Map("Label" -> 1)
     val stats = new TestGraphStatistics {
-      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelCardinality
+      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
+        labelId.get.id should be(labelIds("Label"))
+        labelCardinality
+      }
     }
 
-    val c = CardinalityCalculator.nodeByLabelScanCardinality(plan, defaultState, stats, Map.empty.withDefaultValue(1))
+    val c = CardinalityCalculator.nodeByLabelScanCardinality(plan, defaultState, stats, labelIds)
     c should equal(labelCardinality)
   }
 
@@ -109,11 +113,15 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val multiplier = Cardinality(10)
     val labelCardinality = Cardinality(321)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
+    val labelIds = Map("Label" -> 1)
     val stats = new TestGraphStatistics {
-      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelCardinality
+      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality ={
+        labelId.get.id should be(labelIds("Label"))
+        labelCardinality
+      }
     }
 
-    val c = CardinalityCalculator.nodeByLabelScanCardinality(plan, state, stats, Map.empty.withDefaultValue(1))
+    val c = CardinalityCalculator.nodeByLabelScanCardinality(plan, state, stats, labelIds)
     c should equal(labelCardinality * multiplier)
   }
 
