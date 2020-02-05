@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.{CreateIndexNewSyntax, CreateNodeKeyConstraint, CreateNodePropertyExistenceConstraint, CreateRelationshipPropertyExistenceConstraint, CreateUniquePropertyConstraint, DbmsPrivilege, DefaultDatabaseScope, DenyPrivilege, DropConstraintOnName, DropIndexOnName, GrantPrivilege, RevokePrivilege, Statement, UserManagementAction}
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.util._
 
 object Additions {
@@ -53,6 +54,9 @@ object Additions {
       // DROP CONSTRAINT name
       case d: DropConstraintOnName =>
         throw cypherExceptionFactory.syntaxException("Dropping constraint by name is not supported in this Cypher version.", d.position)
+
+      case e: ExistsSubClause =>
+        throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
 
       // Administration commands against system database are checked in CompilerFactory to cover all of them at once
     }

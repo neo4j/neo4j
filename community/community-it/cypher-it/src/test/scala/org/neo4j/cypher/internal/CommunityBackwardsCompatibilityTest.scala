@@ -78,6 +78,15 @@ class CommunityBackwardsCompatibilityTest extends ExecutionEngineFunSuite {
     graph.getMaybeIndex("Label", Seq("prop")).isEmpty should be(true)
   }
 
+  test("existential subquery should not work with CYPHER 3.5") {
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("CYPHER 3.5 MATCH (n) WHERE EXISTS { (n)-->() } RETURN n")
+    }
+    // THEN
+    exception.getMessage should include("Existential subquery is not supported in this Cypher version.")
+  }
+
   // Additions in 4.1
 
   test("user management administration commands should fail correctly with CYPHER 3.5 and 4.0") {
