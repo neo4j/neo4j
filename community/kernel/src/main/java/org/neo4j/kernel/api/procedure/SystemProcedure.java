@@ -24,6 +24,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotate a procedure with this to signal that it is allowed to run this procedure against the system database.
+ */
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface SystemProcedure

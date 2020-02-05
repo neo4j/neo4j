@@ -369,6 +369,12 @@ class BuiltInProceduresTest
 
     }
 
+    @Test
+    void shouldPing() throws ProcedureException, IndexNotFoundKernelException
+    {
+        assertThat( call( "db.ping" ), contains( record( Boolean.TRUE ) ) );
+    }
+
     private static Matcher<Object[]> record( Object... fields )
     {
         return equalTo( fields );
