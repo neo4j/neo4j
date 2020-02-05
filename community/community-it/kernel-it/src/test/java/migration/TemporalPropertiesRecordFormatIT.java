@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -40,7 +39,6 @@ import org.neo4j.values.storable.DateValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 @TestDirectoryExtension
 class TemporalPropertiesRecordFormatIT
@@ -109,7 +107,7 @@ class TemporalPropertiesRecordFormatIT
 
     private static DatabaseManagementService startDatabaseService( File storeDir )
     {
-        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, Standard.LATEST_NAME ).build();
+        return new TestDatabaseManagementServiceBuilder( storeDir ).build();
     }
 
     private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )
