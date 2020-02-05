@@ -2953,25 +2953,53 @@ public class FulltextProceduresTest
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode( LABEL ).setProperty( PROP, "zebra zebra" );
+            tx.createNode( LABEL ).setProperty( PROP, "zebra zebra" ); // Two zebras! This will be the top result, which we will skip.
             Node node = tx.createNode( LABEL );
             node.setProperty( PROP, "zebra" );
             nodeId = node.getId();
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
         {
-            try ( var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
-            {
-                assertTrue( iterator.hasNext() );
-                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
-                assertFalse( iterator.hasNext() );
-            }
+            assertTrue( iterator.hasNext() );
+            assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
+            assertFalse( iterator.hasNext() );
             tx.commit();
         }
     }
-    // todo query nodes must apply limit
+
+    @Test
+    public void queryNodesMustApplyLimit()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex( tx );
+            tx.commit();
+        }
+        awaitIndexesOnline();
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, "zebra zebra" );
+            nodeId = node.getId();
+            tx.createNode( LABEL ).setProperty( PROP, "zebra" );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx();
+              var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {limit:1})" ).columnAs( "node" ) )
+        {
+            assertTrue( iterator.hasNext() );
+            assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
+            assertFalse( iterator.hasNext() );
+            tx.commit();
+        }
+    }
     // todo query nodes must apply skip and limit
     // todo query nodes with skip and limit must ignore nodes deleted in transaction
     // todo query nodes with skip and limit must include nodes added in transaction
