@@ -19,11 +19,8 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 
 /**
  * Read only variant of specialised primitive longs collection that with given a sequence of add
@@ -70,18 +67,6 @@ public interface LongDiffSets
         {
             return 0;
         }
-
-        @Override
-        public LongIterator augment( LongIterator elements )
-        {
-            return elements;
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements )
-        {
-            return elements;
-        }
     };
 
     /**
@@ -121,21 +106,4 @@ public interface LongDiffSets
      * @return difference between number of added and removed elements
      */
     int delta();
-
-    /**
-     * Augment current diff sets with elements. Provided element will be augmented if diffset
-     * does not remove and add that specific element.
-     * @param elements elements to augment with
-     * @return iterator that will iterate over augmented elements as well as over diff set
-     */
-    LongIterator augment( LongIterator elements );
-
-    /**
-     * Augment current diff sets with elements. Provided element will be augmented if diffset
-     * does not remove and add that specific element.
-     *
-     * @param elements elements to augment with
-     * @return iterator that will iterate over augmented elements as well as over diff set
-     */
-    PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements );
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -38,7 +36,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
@@ -113,50 +110,20 @@ class MutableLongDiffSetsImplTest
     }
 
     @Test
-    void addAllElements()
-    {
-        MutableLongDiffSetsImpl diffSet = createDiffSet();
-
-        diffSet.addAll( newSetWith( 7L, 8L ) );
-        diffSet.addAll( newSetWith( 9L, 10L ) );
-
-        assertEquals( asSet( 7L, 8L, 9L, 10L ), toSet( diffSet.getAdded() ) );
-    }
-
-    @Test
-    void removeAllElements()
-    {
-        MutableLongDiffSetsImpl diffSet = createDiffSet();
-
-        diffSet.removeAll( newSetWith( 7L, 8L ) );
-        diffSet.removeAll( newSetWith( 9L, 10L ) );
-
-        assertEquals( asSet( 7L, 8L, 9L, 10L ), toSet( diffSet.getRemoved() ) );
-    }
-
-    @Test
     void addedAndRemovedElementsDelta()
     {
         MutableLongDiffSetsImpl diffSet = createDiffSet();
         assertEquals( 0, diffSet.delta() );
 
-        diffSet.addAll( newSetWith( 7L, 8L ) );
-        diffSet.addAll( newSetWith( 9L, 10L ) );
+        diffSet.add( 7L );
+        diffSet.add( 8L );
+        diffSet.add( 9L );
+        diffSet.add( 10L );
         assertEquals( 4, diffSet.delta() );
 
-        diffSet.removeAll( newSetWith( 8L, 9L ) );
+        diffSet.remove( 8L );
+        diffSet.remove( 9L );
         assertEquals( 2, diffSet.delta() );
-    }
-
-    @Test
-    void augmentDiffSetWithExternalElements()
-    {
-        MutableLongDiffSets diffSet = createDiffSet();
-        diffSet.addAll( newSetWith( 9L, 10L, 11L ) );
-        diffSet.removeAll( newSetWith( 1L, 2L ) );
-
-        LongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
-        assertEquals( asSet( 5L, 6L, 9L, 10L, 11L ), toSet( augmentedIterator ) );
     }
 
     @Test

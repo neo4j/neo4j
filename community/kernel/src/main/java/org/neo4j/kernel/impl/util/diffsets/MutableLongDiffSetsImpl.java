@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.api.LongIterable;
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Primitive long version of collection that with given a sequence of add and removal operations, tracks
@@ -52,6 +50,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         return new MutableLongDiffSetsImpl( collectionsFactory, memoryTracker );
     }
 
+    @VisibleForTesting
     public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         this.added = added;
@@ -78,20 +77,6 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     }
 
     @Override
-    public void removeAll( LongIterable elements )
-    {
-        checkRemovedElements();
-        elements.each( this::removeElement );
-    }
-
-    @Override
-    public void addAll( LongIterable elements )
-    {
-        checkAddedElements();
-        elements.each( this::addElement );
-    }
-
-    @Override
     public void add( long element )
     {
         checkAddedElements();
@@ -103,18 +88,6 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     {
         checkRemovedElements();
         return removeElement( element );
-    }
-
-    @Override
-    public LongIterator augment( LongIterator source )
-    {
-        return DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
-    {
-        return DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
     }
 
     @Override

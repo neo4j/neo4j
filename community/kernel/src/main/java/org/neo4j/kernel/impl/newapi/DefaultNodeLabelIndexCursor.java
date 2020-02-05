@@ -56,7 +56,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.getAdded().freeze().longIterator();
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
         if ( tracer != null )
