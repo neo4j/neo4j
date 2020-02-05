@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class AbstractBoltProtocolTest
 {
@@ -64,7 +64,7 @@ class AbstractBoltProtocolTest
     void shouldInstallChannelHandlersInCorrectOrder() throws Throwable
     {
         // Given
-        BoltChannel boltChannel = newBoltChannel( channel );
+        BoltChannel boltChannel = newTestBoltChannel( channel );
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         when( connectionFactory.newConnection( eq( boltChannel ), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
@@ -80,11 +80,6 @@ class AbstractBoltProtocolTest
         assertThat( handlers.next().getValue() ).isInstanceOf( HouseKeeper.class );
 
         assertFalse( handlers.hasNext() );
-    }
-
-    private static BoltChannel newBoltChannel( Channel rawChannel )
-    {
-        return new BoltChannel( "bolt-1", "bolt", rawChannel );
     }
 
     private static class TestAbstractBoltProtocol extends AbstractBoltProtocol

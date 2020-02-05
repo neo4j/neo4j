@@ -88,6 +88,12 @@ public final class BoltConnector implements SettingsDeclaration
     public static final Setting<Integer> unsupported_thread_pool_queue_size =
             newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
 
+    @Description( "A connection will be dropped if a user fails to authenticate within the specified timeout." )
+    @Internal
+    public static final Setting<Duration> unsupported_bolt_unauth_connection_timeout =
+            newBuilder( "dbms.connector.bolt.unsupported_unauth_connection_timeout", DURATION, ofSeconds( 30 ) )
+                    .build();
+
     public enum EncryptionLevel
     {
         REQUIRED,

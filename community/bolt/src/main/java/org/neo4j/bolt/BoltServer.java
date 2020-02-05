@@ -23,6 +23,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
+import java.time.Duration;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
@@ -191,8 +192,9 @@ public class BoltServer extends LifecycleAdapter
         }
 
         SocketAddress listenAddress = config.get( BoltConnector.listen_address );
+        Duration channelTimeout = config.get( BoltConnector.unsupported_bolt_unauth_connection_timeout );
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                throttleGroup, boltProtocolFactory, connectionTracker );
+                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout );
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory )

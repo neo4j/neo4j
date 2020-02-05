@@ -62,6 +62,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -85,7 +86,7 @@ class DefaultBoltConnectionTest
     @BeforeEach
     void setup()
     {
-        boltChannel = new BoltChannel( "bolt-1", "bolt", channel );
+        boltChannel = newTestBoltChannel( channel );
         stateMachine = mock( BoltStateMachine.class );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );

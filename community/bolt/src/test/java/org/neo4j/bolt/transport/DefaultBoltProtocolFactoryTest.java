@@ -31,7 +31,6 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -45,6 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class DefaultBoltProtocolFactoryTest
 {
@@ -52,7 +52,7 @@ class DefaultBoltProtocolFactoryTest
     void shouldCreateNothingForUnknownProtocolVersion()
     {
         int protocolVersion = 42;
-        BoltChannel channel = BoltTestUtil.newTestBoltChannel();
+        BoltChannel channel = newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
                         NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
@@ -68,7 +68,7 @@ class DefaultBoltProtocolFactoryTest
     void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel );
+        BoltChannel boltChannel = newTestBoltChannel( channel );
 
         BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );

@@ -20,9 +20,11 @@
 package org.neo4j.bolt.testing;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,7 +37,12 @@ public class BoltTestUtil
 
     public static BoltChannel newTestBoltChannel( String id )
     {
-        return new BoltChannel( id, "bolt", new EmbeddedChannel() );
+        return new BoltChannel( id, "bolt", new EmbeddedChannel(), ChannelProtector.NULL );
+    }
+
+    public static BoltChannel newTestBoltChannel( Channel ch )
+    {
+        return new BoltChannel( "bolt-1", "bolt", ch, ChannelProtector.NULL );
     }
 
     public static void assertByteBufEquals( ByteBuf expected, ByteBuf actual )

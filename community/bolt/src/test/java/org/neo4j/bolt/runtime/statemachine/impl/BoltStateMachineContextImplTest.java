@@ -39,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class BoltStateMachineContextImplTest
 {
@@ -137,7 +138,7 @@ class BoltStateMachineContextImplTest
 
     private static BoltStateMachineContextImpl newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
-        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
+        BoltChannel boltChannel = newTestBoltChannel( mock( Channel.class ) );
         return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

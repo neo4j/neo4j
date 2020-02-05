@@ -27,9 +27,9 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -74,11 +74,11 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     public void install()
     {
         ChannelPipeline pipeline = channel.rawChannel().pipeline();
-
-        pipeline.addLast( new ChunkDecoder() );
-        pipeline.addLast( new MessageAccumulator() );
-        pipeline.addLast( new MessageDecoder( neo4jPack, messageReader, logging ) );
-        pipeline.addLast( new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
+        pipeline.addLast(
+                new ChunkDecoder(),
+                new MessageAccumulator(),
+                new MessageDecoder( neo4jPack, messageReader, logging ),
+                new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }
 
     protected abstract Neo4jPack createPack();

@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
 
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
@@ -36,18 +37,21 @@ public class BoltChannel implements TrackedNetworkConnection
     private final long connectTime;
     private final String connector;
     private final Channel rawChannel;
+    private final ChannelProtector protector;
 
     private volatile String username;
     private volatile String userAgent;
     private volatile ClientConnectionInfo info;
 
-    public BoltChannel( String id, String connector, Channel rawChannel )
+    public BoltChannel( String id, String connector, Channel rawChannel, ChannelProtector protector )
     {
         this.id = id;
         this.connectTime = System.currentTimeMillis();
         this.connector = connector;
         this.rawChannel = rawChannel;
         this.info = createConnectionInfo();
+        this.protector = protector;
+        this.protector.enable();
     }
 
     public Channel rawChannel()
@@ -108,6 +112,7 @@ public class BoltChannel implements TrackedNetworkConnection
         this.username = username;
         this.userAgent = userAgent;
         this.info = createConnectionInfo();
+        this.protector.disable();
     }
 
     @Override

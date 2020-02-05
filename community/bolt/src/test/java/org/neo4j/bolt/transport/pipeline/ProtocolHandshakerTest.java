@@ -34,6 +34,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -46,12 +47,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltTestUtil.assertByteBufEquals;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 class ProtocolHandshakerTest
 {
-    private final BoltChannel boltChannel = newBoltChannel();
+    private final BoltChannel boltChannel = newTestBoltChannel();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @AfterEach
@@ -268,11 +270,6 @@ class ProtocolHandshakerTest
         verify( protocol, never() ).install();
         assertThat( logProvider ).forClass( ProtocolHandshaker.class ).forLevel( WARN ).containsMessages(
                 "Unsupported connection type: 'HTTP'. Bolt protocol only operates over a TCP connection or WebSocket." );
-    }
-
-    private static BoltChannel newBoltChannel()
-    {
-        return new BoltChannel( "bolt-1", "bolt", new EmbeddedChannel() );
     }
 
     private static BoltProtocol newBoltProtocol( long version )
