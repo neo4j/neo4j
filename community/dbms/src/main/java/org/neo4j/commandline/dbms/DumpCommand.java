@@ -31,10 +31,12 @@ import java.util.Objects;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -61,8 +63,9 @@ import static picocli.CommandLine.Option;
 )
 public class DumpCommand extends AbstractCommand
 {
-    @Option( names = "--database", description = "Name of the database to dump.", defaultValue = DEFAULT_DATABASE_NAME )
-    private String database;
+    @Option( names = "--database", description = "Name of the database to dump.", defaultValue = DEFAULT_DATABASE_NAME,
+            converter = DatabaseNameConverter.class )
+    private NormalizedDatabaseName database;
     @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder) of database dump." )
     private Path to;
 
@@ -77,10 +80,11 @@ public class DumpCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        Path archive = calculateArchive( database, to.toAbsolutePath() );
+        var databaseName = database.name();
+        Path archive = calculateArchive( databaseName, to.toAbsolutePath() );
 
         Config config = buildConfig();
-        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database );
+        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( databaseName );
 
         try
         {
@@ -88,17 +92,17 @@ public class DumpCommand extends AbstractCommand
         }
         catch ( IllegalArgumentException e )
         {
-            throw new CommandFailedException( "Database does not exist: " + database, e );
+            throw new CommandFailedException( "Database does not exist: " + databaseName, e );
         }
 
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             checkDbState( databaseLayout, config );
-            dump( database, databaseLayout, archive );
+            dump( databaseName, databaseLayout, archive );
         }
         catch ( FileLockException e )
         {
-            throw new CommandFailedException( "The database is in use. Stop database '" + database + "' and try again.", e );
+            throw new CommandFailedException( "The database is in use. Stop database '" + databaseName + "' and try again.", e );
         }
         catch ( IOException e )
         {

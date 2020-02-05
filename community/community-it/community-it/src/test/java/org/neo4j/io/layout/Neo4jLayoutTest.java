@@ -97,12 +97,12 @@ class Neo4jLayoutTest
         File homeDir = testDirectory.homeDir();
         Neo4jLayout layout = Neo4jLayout.of( homeDir );
 
-        testDirectory.directory( "a", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
-        testDirectory.directory( "b", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
-        testDirectory.createFile( "c", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        testDirectory.directory( "abc", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        testDirectory.directory( "bcd", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        testDirectory.createFile( "cde", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
 
         Collection<DatabaseLayout> layouts = layout.databaseLayouts();
         assertEquals( 2, layouts.size() );
-        assertEquals( asSet( "a", "b" ), layouts.stream().map( DatabaseLayout::getDatabaseName ).collect( toSet() ) );
+        assertEquals( asSet( "abc", "bcd" ), layouts.stream().map( DatabaseLayout::getDatabaseName ).collect( toSet() ) );
     }
 }

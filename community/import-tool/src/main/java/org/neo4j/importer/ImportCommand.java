@@ -38,10 +38,12 @@ import java.util.function.Function;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
+import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -81,8 +83,9 @@ public class ImportCommand extends AbstractCommand
     private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
     private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
-    @Option( names = "--database", description = "Name of the database to import." )
-    private String database = DEFAULT_DATABASE_NAME;
+    @Option( names = "--database", description = "Name of the database to import.", defaultValue = DEFAULT_DATABASE_NAME,
+            converter = DatabaseNameConverter.class )
+    private NormalizedDatabaseName database;
 
     @Option( names = "--additional-config", paramLabel = "<path>", description = "Configuration file to supply additional configuration in." )
     private Path additionalConfig;
@@ -209,7 +212,7 @@ public class ImportCommand extends AbstractCommand
         try
         {
             final var databaseConfig = loadNeo4jConfig();
-            final var databaseLayout = Neo4jLayout.of( databaseConfig ).databaseLayout( database );
+            final var databaseLayout = Neo4jLayout.of( databaseConfig ).databaseLayout( database.name() );
             final var csvConfig = csvConfiguration();
             final var importConfig = importConfiguration();
 

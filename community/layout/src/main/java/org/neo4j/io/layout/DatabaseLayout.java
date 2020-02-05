@@ -30,7 +30,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.fs.FileUtils;
+
+import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -70,9 +73,12 @@ public class DatabaseLayout
 
     protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
     {
+        var database = new NormalizedDatabaseName( databaseName );
+        validateInternalDatabaseName( database );
+        var normalizedName = database.name();
         this.neo4jLayout = neo4jLayout;
-        this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), databaseName ) );
-        this.databaseName = databaseName;
+        this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), normalizedName ) );
+        this.databaseName = normalizedName;
     }
 
     public File getTransactionLogsDirectory()

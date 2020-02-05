@@ -29,10 +29,12 @@ import java.nio.file.Paths;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static picocli.CommandLine.Command;
@@ -59,8 +62,9 @@ public class LoadCommand extends AbstractCommand
 {
     @Option( names = "--from", required = true, paramLabel = "<path>", description = "Path to archive created with the dump command." )
     private Path from;
-    @Option( names = "--database", description = "Name of the database to load.", defaultValue = GraphDatabaseSettings.DEFAULT_DATABASE_NAME )
-    private String database;
+    @Option( names = "--database", description = "Name of the database to load.", defaultValue = DEFAULT_DATABASE_NAME,
+            converter = Converters.DatabaseNameConverter.class )
+    private NormalizedDatabaseName database;
     @Option( names = "--force", arity = "0", description = "If an existing database should be replaced." )
     private boolean force;
 
@@ -77,7 +81,7 @@ public class LoadCommand extends AbstractCommand
     {
         Config config = buildConfig();
 
-        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database );
+        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
         databaseLayout.databaseDirectory().mkdirs();
         try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
@@ -86,7 +90,7 @@ public class LoadCommand extends AbstractCommand
         }
         catch ( FileLockException e )
         {
-            throw new CommandFailedException( "The database is in use. Stop database '" + database + "' and try again.", e );
+            throw new CommandFailedException( "The database is in use. Stop database '" + database.name() + "' and try again.", e );
         }
         catch ( IOException e )
         {
