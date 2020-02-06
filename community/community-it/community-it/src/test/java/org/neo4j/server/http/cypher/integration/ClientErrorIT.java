@@ -32,10 +32,9 @@ import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -115,8 +114,8 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
     {
         // Given
         HTTP.Response first = POST( txUri(), quotedJson( "{'statements': [{'statement': 'CREATE (n {prop : 1})'}]}" ) );
-        assertThat( first.status(), is( 201 ) );
-        assertThat( first, containsNoErrors() );
+        assertThat( first.status() ).isEqualTo( 201 );
+        assertThat( first ).satisfies( containsNoErrors() );
         long txId = extractTxId( first );
 
         // When
@@ -126,11 +125,11 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
         // Then
 
         // malformed POST contains expected error
-        assertThat( malformed.status(), is( 200 ) );
-        assertThat( malformed, hasErrors( errorStatus ) );
+        assertThat( malformed.status() ).isEqualTo( 200 );
+        assertThat( malformed ).satisfies( hasErrors( errorStatus ) );
 
         // transaction was rolled back on the previous step and we can't commit it
         HTTP.Response commit = POST( first.stringFromContent( "commit" ) );
-        assertThat( commit.status(), is( 404 ) );
+        assertThat( commit.status() ).isEqualTo( 404 );
     }
 }

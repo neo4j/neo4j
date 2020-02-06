@@ -44,13 +44,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -86,16 +80,16 @@ class ServerUserLogTest
             int returnCode = neoBootstrapper.start( dir, connectorsConfig() );
 
             // then no exceptions are thrown and
-            assertThat( getStdOut(), not( empty() ) );
+            assertThat( getStdOut() ).isNotEmpty();
             assertFalse( Files.exists( getUserLogFileLocation( dir ) ) );
 
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( neoBootstrapper.isRunning() );
-            assertThat( neoBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
+            assertThat( neoBootstrapper.getLog() ).isNotSameAs( logBeforeStart );
 
-            assertThat( getStdOut(), not( empty() ) );
-            assertThat( getStdOut(), hasItem(containsString( "Started." ) ) );
+            assertThat( getStdOut() ).isNotEmpty();
+            assertThat( getStdOut() ).anyMatch( s -> s.contains( "Started." ) );
         }
         finally
         {
@@ -122,7 +116,7 @@ class ServerUserLogTest
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( neoBootstrapper.isRunning() );
-            assertThat( neoBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
+            assertThat( neoBootstrapper.getLog() ).isNotSameAs( logBeforeStart );
 
         }
         finally
@@ -130,10 +124,10 @@ class ServerUserLogTest
             // stop the server so that resources are released and test teardown isn't flaky
             neoBootstrapper.stop();
         }
-        assertThat( getStdOut(), empty() );
+        assertThat( getStdOut() ).isEmpty();
         assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-        assertThat( readUserLogFile( dir ), not( empty() ) );
-        assertThat( readUserLogFile( dir ), hasItem(containsString( "Started." ) ) );
+        assertThat( readUserLogFile( dir ) ).isNotEmpty();
+        assertThat( readUserLogFile( dir ) ).anyMatch( s -> s.contains( "Started." ) );
     }
 
     @Test
@@ -157,7 +151,7 @@ class ServerUserLogTest
 
             // then
             assertEquals( OK, returnCode );
-            assertThat( neoBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
+            assertThat( neoBootstrapper.getLog() ).isNotSameAs( logBeforeStart );
             assertTrue( neoBootstrapper.isRunning() );
 
             // when we forcibly log some more stuff
@@ -175,11 +169,11 @@ class ServerUserLogTest
         }
 
         // then no exceptions are thrown and
-        assertThat( getStdOut(), empty() );
+        assertThat( getStdOut() ).isEmpty();
         assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-        assertThat( readUserLogFile( dir ), not( empty() ) );
+        assertThat( readUserLogFile( dir ) ).isNotEmpty();
         List<String> userLogFiles = allUserLogFiles( dir );
-        assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
+        assertThat( userLogFiles ).contains( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" );
         assertEquals( maxArchives + 1, userLogFiles.size() );
     }
 

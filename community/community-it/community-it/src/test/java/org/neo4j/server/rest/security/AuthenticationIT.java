@@ -35,10 +35,9 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 public class AuthenticationIT extends CommunityWebContainerTestBase
 {
@@ -63,8 +62,8 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( Status.Security.Unauthorized.code().serialize() ) );
-        assertThat( firstError.get( "message" ).asText(), equalTo( "No authentication header supplied." ) );
+        assertThat( firstError.get( "code" ).asText() ).isEqualTo( Status.Security.Unauthorized.code().serialize() );
+        assertThat( firstError.get( "message" ).asText() ).isEqualTo( "No authentication header supplied." );
     }
 
     @Test
@@ -81,11 +80,11 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         // Then
         HTTP.Response response = HTTP.withBasicAuth( "neo4j", "secret" ).POST( txCommitURL( "system" ), query( "SHOW USERS" ) );
 
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         final JsonNode jsonNode = getResultRow( response );
-        assertThat( jsonNode.get(0).asText(), equalTo( "neo4j" ) );
-        assertThat( jsonNode.get(1).asBoolean(), equalTo( false ) );
+        assertThat( jsonNode.get( 0 ).asText() ).isEqualTo( "neo4j" );
+        assertThat( jsonNode.get( 1 ).asBoolean() ).isEqualTo( false );
     }
 
     @Test
@@ -107,8 +106,8 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( Status.Security.Unauthorized.code().serialize() ) );
-        assertThat( firstError.get( "message" ).asText(), equalTo( "Invalid username or password." ) );
+        assertThat( firstError.get( "code" ).asText() ).isEqualTo( Status.Security.Unauthorized.code().serialize() );
+        assertThat( firstError.get( "message" ).asText() ).isEqualTo( "Invalid username or password." );
     }
 
     @Test
@@ -138,15 +137,15 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         HTTP.Response response =
                 HTTP.withBasicAuth( "neo4j", "neo4j" ).POST( txCommitURL( "system" ), query( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secret'" ) );
         // Then
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( "Should have no errors", response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.get( "errors" ).size() ).as( "Should have no errors" ).isEqualTo( 0 );
 
         // When
         HTTP.Response responseAfterPasswordChange = HTTP.withBasicAuth( "neo4j", "secret" ).POST( txCommitURL( "system" ), query( "SHOW USERS" ) );
 
         // Then
-        assertThat( responseAfterPasswordChange.status(), equalTo( 200 ) );
-        assertThat( "Should have no errors", response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( responseAfterPasswordChange.status() ).isEqualTo( 200 );
+        assertThat( response.get( "errors" ).size() ).as( "Should have no errors" ).isEqualTo( 0 );
     }
 
     @Test
@@ -159,9 +158,9 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).GET( databaseURL() );
 
         // Then
-        assertThat( response.status(), equalTo( 400 ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( Status.Request.InvalidFormat.code().serialize() ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid authentication header." ) );
+        assertThat( response.status() ).isEqualTo( 400 );
+        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( Status.Request.InvalidFormat.code().serialize() );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Invalid authentication header." );
     }
 
     @Test
@@ -215,11 +214,10 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
 
         // Then
         assertNotNull( response );
-        assertThat( response.status(), equalTo( 429 ) );
+        assertThat( response.status() ).isEqualTo( 429 );
         JsonNode firstError = response.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( Status.Security.AuthenticationRateLimit.code().serialize() ) );
-        assertThat( firstError.get( "message" ).asText(),
-                equalTo( "Too many failed authentication requests. Please wait 5 seconds and try again." ) );
+        assertThat( firstError.get( "code" ).asText() ).isEqualTo( Status.Security.AuthenticationRateLimit.code().serialize() );
+        assertThat( firstError.get( "message" ).asText() ).isEqualTo( "Too many failed authentication requests. Please wait 5 seconds and try again." );
     }
 
     @Test
@@ -241,30 +239,30 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     {
         // When no header
         HTTP.Response response = HTTP.request( method, testWebContainer.getBaseUri().resolve( path ).toString(), payload );
-        assertThat( response.status(), equalTo( 401 ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( Status.Security.Unauthorized.code().serialize() ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "No authentication header supplied." ) );
-        assertThat( response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo( "Basic realm=\"Neo4j\"" ) );
+        assertThat( response.status() ).isEqualTo( 401 );
+        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( Status.Security.Unauthorized.code().serialize() );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "No authentication header supplied." );
+        assertThat( response.header( HttpHeaders.WWW_AUTHENTICATE ) ).isEqualTo( "Basic realm=\"Neo4j\"" );
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" )
                 .request( method, testWebContainer.getBaseUri().resolve( path ).toString(), payload );
-        assertThat( response.status(), equalTo( 400 ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( Status.Request.InvalidFormat.code().serialize() ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid authentication header." ) );
+        assertThat( response.status() ).isEqualTo( 400 );
+        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( Status.Request.InvalidFormat.code().serialize() );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Invalid authentication header." );
 
         // When invalid credential
         response = HTTP.withBasicAuth( "neo4j", "incorrect" )
                 .request( method, testWebContainer.getBaseUri().resolve( path ).toString(), payload );
-        assertThat( response.status(), equalTo( 401 ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( Status.Security.Unauthorized.code().serialize() ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid username or password." ) );
-        assertThat( response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo( "Basic realm=\"Neo4j\"" ) );
+        assertThat( response.status() ).isEqualTo( 401 );
+        assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( Status.Security.Unauthorized.code().serialize() );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Invalid username or password." );
+        assertThat( response.header( HttpHeaders.WWW_AUTHENTICATE ) ).isEqualTo( "Basic realm=\"Neo4j\"" );
 
         // When authorized
         response = HTTP.withBasicAuth( "neo4j", "secret" )
                 .request( method, testWebContainer.getBaseUri().resolve( path ).toString(), payload );
-        assertThat( response.status(), equalTo( expectedAuthorizedStatus ) );
+        assertThat( response.status() ).isEqualTo( expectedAuthorizedStatus );
     }
 
     protected void startServerWithConfiguredUser() throws IOException

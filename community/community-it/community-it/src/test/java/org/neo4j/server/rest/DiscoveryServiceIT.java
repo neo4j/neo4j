@@ -37,9 +37,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -65,7 +63,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
     {
         var response = requestDiscovery();
-        assertThat( response.headers().firstValue( CONTENT_TYPE ).orElseThrow(), containsString( APPLICATION_JSON ) );
+        assertThat( response.headers().firstValue( CONTENT_TYPE ).orElseThrow() ).contains( APPLICATION_JSON );
     }
 
     @Test
@@ -96,7 +94,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
 
         var serverEditionKey = "neo4j_edition";
         assertTrue( responseBodyMap.containsKey( serverEditionKey ) );
-        assertThat( responseBodyMap.get( serverEditionKey ), equalTo( "community" ) );
+        assertThat( responseBodyMap.get( serverEditionKey ) ).isEqualTo( "community" );
     }
 
     @Test

@@ -26,8 +26,7 @@ import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 public class TemporalTypeIT extends AbstractRestFunctionalTestBase
@@ -109,17 +108,17 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         JsonNode data = getSingleData( response );
 
         JsonNode row = getSingle( data, "row" );
-        assertThat( row.get( "creationTime" ).asText(), equalTo( "1984-10-21T12:34" ) );
-        assertThat( row.get( "name" ).asText(), equalTo( "zhen" ) );
+        assertThat( row.get( "creationTime" ).asText() ).isEqualTo( "1984-10-21T12:34" );
+        assertThat( row.get( "name" ).asText() ).isEqualTo( "zhen" );
 
         JsonNode meta = getSingle( data, "meta" );
-        assertThat( meta.get( "type" ).asText(), equalTo( "node" ) );
+        assertThat( meta.get( "type" ).asText() ).isEqualTo( "node" );
     }
 
     private void assertTemporalEquals( JsonNode data, String value, String type )
     {
         JsonNode row = getSingle( data, "row" );
-        assertThat( row.asText(), equalTo( value ) );
+        assertThat( row.asText() ).isEqualTo( value );
 
         JsonNode meta = getSingle( data, "meta" );
         assertEquals( type, meta.get( "type" ).asText() );

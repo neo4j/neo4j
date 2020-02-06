@@ -32,8 +32,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.conditions.Conditions.FALSE;
 import static org.neo4j.test.conditions.Conditions.TRUE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -75,13 +74,13 @@ class BlockingBootstrapperTest
         } ).start();
 
         assertEventually( "Wrapped was not started", running::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( "Bootstrapper exited early", exited.get(), is( false ) );
+        assertThat( exited.get() ).as( "Bootstrapper exited early" ).isEqualTo( false );
 
         bootstrapper.stop();
 
         assertEventually( "Wrapped was not stopped", running::get, FALSE, 10, TimeUnit.SECONDS );
         assertEventually( "Bootstrapper did not exit", exited::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( "Bootstrapper did not propagate exit status", status.get(), is( 0 ) );
+        assertThat( status.get() ).as( "Bootstrapper did not propagate exit status" ).isEqualTo( 0 );
     }
 
     @Test
@@ -112,6 +111,6 @@ class BlockingBootstrapperTest
         } ).start();
 
         assertEventually( "Blocked unexpectedly", exited::get, TRUE, 10, TimeUnit.SECONDS );
-        assertThat( "Bootstrapper did not propagate exit status", status.get(), is( 1 ) );
+        assertThat( status.get() ).as( "Bootstrapper did not propagate exit status" ).isEqualTo( 1 );
     }
 }

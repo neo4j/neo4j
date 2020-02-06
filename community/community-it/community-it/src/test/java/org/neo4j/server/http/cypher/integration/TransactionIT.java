@@ -55,19 +55,13 @@ import org.neo4j.test.server.HTTP.Response;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.WebContainerTestUtils.withCSVFile;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.isValidRFCTimestamp;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
@@ -96,24 +90,24 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         Response begin = POST( txUri );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, matches( format( "http://localhost:\\d+/%s/\\d+/commit", txUri ) ) );
-        assertThat( begin.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
+        assertThat( commitResource ).matches( format( "http://localhost:\\d+/%s/\\d+/commit", txUri ) );
+        assertThat( begin.get( "transaction" ).get( "expires" ).asText() ).satisfies( validRFCTimestamp() );
 
         // execute
         Response execute =
                 POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
-        assertThat( execute.status(), equalTo( 200 ) );
-        assertThat( execute.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
+        assertThat( execute.status() ).isEqualTo( 200 );
+        assertThat( execute.get( "transaction" ).get( "expires" ).asText() ).satisfies( validRFCTimestamp() );
 
         // commit
         Response commit = POST( commitResource );
 
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
     }
 
     @Test
@@ -124,7 +118,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         Response begin = POST( txUri );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         // execute
@@ -133,8 +127,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // rollback
         Response commit = DELETE( begin.location() );
 
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
     @Test
@@ -145,18 +139,18 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         Response begin = POST( txUri );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
+        assertThat( commitResource ).isEqualTo( begin.location() + "/commit" );
 
         // execute and commit
         Response commit = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
-        assertThat( commit, containsNoErrors() );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertThat( commit ).satisfies( containsNoErrors() );
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
     }
 
     @Test
@@ -173,8 +167,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // commit
         Response commit = POST( commitResource );
 
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
     }
 
     @Test
@@ -194,13 +188,13 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // commit fails because tx was rolled back on the previous step
         Response commit = POST( commitResource );
 
-        assertThat( begin.status(), equalTo( 201 ) );
-        assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
+        assertThat( begin ).satisfies( hasErrors( Status.Request.InvalidFormat ) );
 
-        assertThat( commit.status(), equalTo( 404 ) );
-        assertThat( commit, hasErrors( Status.Transaction.TransactionNotFound ) );
+        assertThat( commit.status() ).isEqualTo( 404 );
+        assertThat( commit ).satisfies( hasErrors( Status.Transaction.TransactionNotFound ) );
 
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
     @Test
@@ -219,8 +213,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // execute
         Response execute2 = POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
-        assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
+        assertThat( execute2.status() ).isEqualTo( 404 );
+        assertThat( execute2 ).satisfies( hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -232,9 +226,9 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( transactionCommitUri(),
                 quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
-        assertThat( begin.status(), equalTo( 200 ) );
-        assertThat( begin, containsNoErrors() );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertThat( begin.status() ).isEqualTo( 200 );
+        assertThat( begin ).satisfies( containsNoErrors() );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
     }
 
     @Test
@@ -247,9 +241,9 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin and execute and commit
         Response begin = POST( transactionCommitUri(), quotedJson( json ) );
 
-        assertThat( begin.status(), equalTo( 200 ) );
-        assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertThat( begin.status() ).isEqualTo( 200 );
+        assertThat( begin ).satisfies( hasErrors( Status.Request.InvalidFormat ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
     @Test
@@ -281,10 +275,10 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
 
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-            assertThat( "Last response is: " + response, response, containsNoErrors() );
-            assertThat( response.status(), equalTo( 200 ) );
-            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
-            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
+            assertThat( response ).as( "Last response is: " + response ).satisfies( containsNoErrors() );
+            assertThat( response.status() ).isEqualTo( 200 );
+            assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + nodes );
+            assertThat( txIdAfter ).isEqualTo( txIdBefore + ((nodes / batch) + 1) );
         } );
     }
 
@@ -317,16 +311,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
             );
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response.status() ).isEqualTo( 200 );
 
-            assertThat( response, containsNoErrors() );
+            assertThat( response ).satisfies( containsNoErrors() );
 
             JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
-            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
+            assertThat( columns.toString() ).isEqualTo( "[\"n\"]" );
+            assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + nodes );
             long expectedTxCount = (nodes / batchSize) + 1;
 
-            assertThat( txIdAfter - txIdBefore, equalTo( expectedTxCount ) );
+            assertThat( txIdAfter - txIdBefore ).isEqualTo( expectedTxCount );
         } );
     }
 
@@ -343,8 +337,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                                 "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
             );
 
-            assertThat( response.status(), equalTo( 200 ) );
-            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
+            assertThat( response.status() ).isEqualTo( 200 );
+            assertThat( response ).satisfies( hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -357,8 +351,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH n RETURN m' } ] }" )
         );
 
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response, hasErrors( Status.Statement.SyntaxError ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response ).satisfies( hasErrors( Status.Statement.SyntaxError ) );
     }
 
     @Test
@@ -374,7 +368,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                                 "CREATE ()' } ] }" )
             );
 
-            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
+            assertThat( response ).satisfies( hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -394,8 +388,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
 
         // commit
         Response commit = POST( commitResource );
-        assertThat( commit, containsNoErrors() );
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
+        assertThat( commit ).satisfies( containsNoErrors() );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 2 );
     }
 
     @Test
@@ -417,7 +411,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // commit
         POST( commitResource );
 
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 2 );
     }
 
     @Test
@@ -454,7 +448,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         assertEquals( 200, response2.status() );
 
         // THEN
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
     }
 
     @Test
@@ -463,18 +457,18 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         Response begin = POST( txUri );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
         String commitResource = begin.stringFromContent( "commit" );
 
         // terminate
         Response interrupt = DELETE( begin.location() );
-        assertThat( interrupt.status(), equalTo( 200 ) );
+        assertThat( interrupt.status() ).isEqualTo( 200 );
 
         // commit
         Response commit = POST( commitResource );
 
-        assertThat( commit.status(), equalTo( 404 ) );
+        assertThat( commit.status() ).isEqualTo( 404 );
     }
 
     @Test
@@ -483,18 +477,18 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         Response begin = POST( txUri );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         // terminate
         Response interrupt = DELETE( begin.location() );
-        assertThat( interrupt.status(), equalTo( 200 ) );
+        assertThat( interrupt.status() ).isEqualTo( 200 );
 
         // execute
         Response execute =
                 POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
-        assertThat( execute.status(), equalTo( 404 ) );
+        assertThat( execute.status() ).isEqualTo( 404 );
     }
 
     @Test( timeout = 30_000 )
@@ -502,7 +496,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     {
         // begin
         final Response begin = POST( txUri );
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         Label sharedLockLabel = Label.label( "sharedLock" );
@@ -524,7 +518,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
             HTTP.Builder requestBuilder = HTTP.withBaseUri( container().getBaseUri() );
             Response response = requestBuilder.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
-            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response.status() ).isEqualTo( 200 );
             return response;
         } );
 
@@ -534,7 +528,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
             waitForStatementExecution( statement );
 
             Response response = DELETE( executeResource );
-            assertThat( response.toString(), response.status(), equalTo( 200 ) );
+            assertThat( response.status() ).as( response.toString() ).isEqualTo( 200 );
             nodeReleaseLatch.countDown();
             return response;
         } );
@@ -542,12 +536,12 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         interruptFuture.get();
         lockerFuture.get();
         Response execute = executeFuture.get();
-        assertThat( execute, hasErrors( Status.Statement.Statement.ExecutionFailed ) );
+        assertThat( execute ).satisfies( hasErrors( Status.Statement.Statement.ExecutionFailed ) );
 
         Response execute2 =
                 POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
-        assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
+        assertThat( execute2.status() ).isEqualTo( 404 );
+        assertThat( execute2 ).satisfies( hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -556,8 +550,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response response = POST( transactionCommitUri(),
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN $n' } ] }" ) );
 
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response, hasErrors( Status.Statement.ParameterMissing ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response ).satisfies( hasErrors( Status.Statement.ParameterMissing ) );
     }
 
     @Test
@@ -565,7 +559,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     {
         // begin
         var begin = POST( txUri );
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin, txUri );
 
         // run
@@ -573,14 +567,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         var response = POST( format( "%s/%s", txUri, txId ),
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN 1' } ] }" ) );
         System.out.println( response );
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response.get( "commit" ).toString(), containsString( txUri ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.get( "commit" ).toString() ).contains( txUri );
 
         // commit
         var commit = POST( format( "%s/%s/commit", txUri, txId ) );
         System.out.println( commit );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( commit.get( "commit" ).toString(), containsString( txUri ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( commit.get( "commit" ).toString() ).contains( txUri );
     }
 
     @Test( timeout = 30_000 )
@@ -653,7 +647,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 "'graph'] } ] }" ) );
 
         // then
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
         JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
         assertTrue( "data is a list", data.isArray() );
         assertEquals( "one entry", initialData + 1, data.size() );
@@ -685,14 +679,14 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 "{ 'statements': [ { 'statement': 'MATCH (n:Foo) RETURN COLLECT(n)' } ] }" ) );
 
         // then
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         JsonNode data = response.get( "results" ).get( 0 );
-        assertThat( data.get( "columns" ).get( 0 ).asText(), equalTo( "COLLECT(n)" ) );
-        assertThat( data.get( "data" ).get( 0 ).get( "row" ).size(), equalTo( 1 ) );
-        assertThat( data.get( "data" ).get( 0 ).get( "row" ).get( 0 ).get( 0 ).size(), equalTo( 0 ) );
+        assertThat( data.get( "columns" ).get( 0 ).asText() ).isEqualTo( "COLLECT(n)" );
+        assertThat( data.get( "data" ).get( 0 ).get( "row" ).size() ).isEqualTo( 1 );
+        assertThat( data.get( "data" ).get( 0 ).get( "row" ).get( 0 ).get( 0 ).size() ).isEqualTo( 0 );
 
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -702,17 +696,17 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 "{ 'statements': [ { 'statement': 'RETURN {one:{two:[true, {three: 42}]}}' } ] }" ) );
 
         // then
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         JsonNode data = response.get( "results" ).get( 0 );
         JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
-        assertThat( row.size(), equalTo( 1 ) );
+        assertThat( row.size() ).isEqualTo( 1 );
         JsonNode firstCell = row.get( 0 );
-        assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).size() ).isEqualTo( 2 );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean() ).isEqualTo( true );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt() ).isEqualTo( 42 );
 
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -722,17 +716,17 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN {one:{two:[true, {three: 42}]}}', 'resultDataContents':['rest'] } ] }" ) );
 
         // then
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         JsonNode data = response.get( "results" ).get( 0 );
         JsonNode rest = data.get( "data" ).get( 0 ).get( "rest" );
-        assertThat( rest.size(), equalTo( 1 ) );
+        assertThat( rest.size() ).isEqualTo( 1 );
         JsonNode firstCell = rest.get( 0 );
-        assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
-        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).size() ).isEqualTo( 2 );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean() ).isEqualTo( true );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt() ).isEqualTo( 42 );
 
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -744,16 +738,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                         "'WITH $map AS map RETURN map[0]', 'parameters':{'map':[{'index':0,'name':'a'},{'index':1,'name':'b'}]} } ] }") );
 
         // then
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         JsonNode data = response.get( "results" ).get( 0 );
         JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
-        assertThat( row.size(), equalTo( 1 ) );
+        assertThat( row.size() ).isEqualTo( 1 );
 
-        assertThat( row.get(0).get("index").asInt(), equalTo( 0 ) );
-        assertThat( row.get(0).get("name").asText(), equalTo( "a" ) );
+        assertThat( row.get( 0 ).get( "index" ).asInt() ).isEqualTo( 0 );
+        assertThat( row.get( 0 ).get( "name" ).asText() ).isEqualTo( "a" );
 
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
     }
 
     @Test
@@ -829,7 +823,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( transactionCommitUri(),
                 quotedJson( "{ 'statements': [ { 'statement': " +
                         "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
-        assertThat( begin, hasErrors( Status.Request.Schema.IndexNotFound ) );
+        assertThat( begin ).satisfies( hasErrors( Status.Request.Schema.IndexNotFound ) );
     }
 
     @Test
@@ -843,21 +837,21 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // execute valid statement
         Response valid =
                 POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETURN 42' } ] }" ) );
-        assertThat( valid.status(), equalTo( 200 ) );
-        assertThat( valid.get( "transaction"), notNullValue() );
+        assertThat( valid.status() ).isEqualTo( 200 );
+        assertThat( valid.get( "transaction" ) ).isNotNull();
 
         // execute invalid statement
         Response invalid =
                 POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETRUN 42' } ] }" ) );
-        assertThat( invalid.status(), equalTo( 200 ) );
+        assertThat( invalid.status() ).isEqualTo( 200 );
         //transaction has been closed and rolled back
-        assertThat( invalid.get( "transaction"), nullValue() );
+        assertThat( invalid.get( "transaction" ) ).isNull();
 
         // commit
         Response commit = POST( commitResource );
 
         //no transaction open anymore, we have failed
-        assertThat( commit.status(), equalTo( 404 ) );
+        assertThat( commit.status() ).isEqualTo( 404 );
     }
 
     @Test
@@ -867,16 +861,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response response = POST( transactionCommitUri(),
                 singleStatement( "MATCH (group:Group {name: \\\"AAA\\\"}) RETURN *" ) );
 
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
 
         // when we hit the ast cache
         response = POST( transactionCommitUri(),
                 singleStatement( "MATCH (group:Group {name: \\\"BBB\\\"}) RETURN *" ) );
 
         // then no errors (in particular no NPE)
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
     }
 
     private String transactionCommitUri()

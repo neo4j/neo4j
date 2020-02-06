@@ -29,8 +29,7 @@ import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 
 import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class NeoWebServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTestBase
 {
@@ -43,12 +42,12 @@ public class NeoWebServerDefaultPortAndHostnameIT extends AbstractRestFunctional
         var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
         var response = httpClient.send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 200 ) );
+        assertThat( response.statusCode() ).isEqualTo( 200 );
     }
 
     @Test
     public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig()
     {
-        assertThat( container().getBaseUri().getHost(), is( "localhost" ) );
+        assertThat( container().getBaseUri().getHost() ).isEqualTo( "localhost" );
     }
 }

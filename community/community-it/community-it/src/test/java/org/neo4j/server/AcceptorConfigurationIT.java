@@ -25,8 +25,7 @@ import org.junit.Test;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 
@@ -48,6 +47,6 @@ public class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 
-        assertThat( GET( testWebContainer.getBaseUri().toString()).status(), is( 200 ) );
+        assertThat( GET( testWebContainer.getBaseUri().toString() ).status() ).isEqualTo( 200 );
     }
 }

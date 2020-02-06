@@ -31,8 +31,7 @@ import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.lang.String.format;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -57,7 +56,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             }
             catch ( Exception e )
             {
-                assertThat( e.getMessage(), containsString( "Error starting Neo4j database server" ) );
+                assertThat( e.getMessage() ).contains( "Error starting Neo4j database server" );
             }
             finally
             {
@@ -94,7 +93,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             }
             catch ( Exception e )
             {
-                assertThat( e.getMessage(), containsString( "Error starting Neo4j database server" ) );
+                assertThat( e.getMessage() ).contains( "Error starting Neo4j database server" );
             }
             finally
             {

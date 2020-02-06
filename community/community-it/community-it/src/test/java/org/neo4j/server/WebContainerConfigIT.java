@@ -44,12 +44,9 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.WILDCARD;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -76,7 +73,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 401 ) );
+        assertThat( response.statusCode() ).isEqualTo( 401 );
     }
 
     @Test
@@ -91,7 +88,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 200 ) );
+        assertThat( response.statusCode() ).isEqualTo( 200 );
     }
 
     @Test
@@ -105,7 +102,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 403 ) );
+        assertThat( response.statusCode() ).isEqualTo( 403 );
     }
 
     @Test
@@ -124,7 +121,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var request = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 200 ) );
+        assertThat( response.statusCode() ).isEqualTo( 200 );
     }
 
     @Test
@@ -149,7 +146,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var discoveryRequest = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
         assertEquals( 200, txResponse.statusCode() );
-        assertThat( discoveryResponse.body(), containsString( dbUri ) );
+        assertThat( discoveryResponse.body() ).contains( dbUri );
     }
 
     @Test
@@ -176,7 +173,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var discoveryRequest = HttpRequest.newBuilder( testWebContainer.getBaseUri() ).GET().build();
         var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
         assertEquals( 200, txResponse.statusCode() );
-        assertThat( discoveryResponse.body(), not( containsString( dbUri ) ) );
+        assertThat( discoveryResponse.body() ).doesNotContain( dbUri );
     }
 
     @Test
@@ -192,7 +189,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
 
         assertEquals( 200, response.statusCode() );
         assertEquals( "application/vnd.sun.wadl+xml", response.headers().allValues( "Content-Type" ).iterator().next() );
-        assertThat( response.body(), containsString( "<application xmlns=\"http://wadl.dev.java.net/2009/02\">" ) );
+        assertThat( response.body() ).contains( "<application xmlns=\"http://wadl.dev.java.net/2009/02\">" );
     }
 
     @Test

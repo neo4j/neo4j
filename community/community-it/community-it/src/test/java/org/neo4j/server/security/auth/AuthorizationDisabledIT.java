@@ -27,9 +27,7 @@ import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
@@ -51,14 +49,14 @@ public class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
         // Then I should have write access
         HTTP.Response response = HTTP.POST( testWebContainer.getBaseUri().resolve( txCommitEndpoint() ).toString(),
                 rawPayload( "{\"statements\": [{\"statement\": \"CREATE ({name:'My Node'})\"}]}" ) );
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
 
         // Then I should have read access
         response = HTTP.POST( testWebContainer.getBaseUri().resolve( txCommitEndpoint() ).toString(),
                 rawPayload( "{\"statements\": [{\"statement\": \"MATCH (n {name:'My Node'}) RETURN n\"}]}" ) );
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
         String responseBody = response.rawContent();
-        assertThat( responseBody, containsString( "My Node" ) );
+        assertThat( responseBody ).contains( "My Node" );
     }
 
     @After

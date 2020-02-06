@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -29,12 +28,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -45,8 +42,8 @@ public class NeoWebServerIT extends AbstractRestFunctionalTestBase
     {
         HTTP.Response response = POST( txCommitUri( "foo" ), quotedJson( "{ 'statements': [ { 'statement': 'RETURN 1' } ] }" ) );
 
-        MatcherAssert.assertThat( response.status(), is( 404 ) );
-        MatcherAssert.assertThat( response, hasErrors( Status.Database.DatabaseNotFound ) );
+        assertThat( response.status() ).isEqualTo( 404 );
+        assertThat( response ).satisfies( hasErrors( Status.Database.DatabaseNotFound ) );
     }
 
     @Test
@@ -54,8 +51,8 @@ public class NeoWebServerIT extends AbstractRestFunctionalTestBase
     {
         HTTP.Response response = POST( txCommitUri( "system" ), quotedJson( "{ 'statements': [ { 'statement': 'SHOW DEFAULT DATABASE' } ] }" ) );
 
-        MatcherAssert.assertThat( response.status(), is( 200 ) );
-        MatcherAssert.assertThat( response, containsNoErrors() );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response ).satisfies( containsNoErrors() );
     }
 
     @Test
@@ -66,6 +63,6 @@ public class NeoWebServerIT extends AbstractRestFunctionalTestBase
                 .contains( "browser" ) );
 
         HTTP.Response res = HTTP.withHeaders( HttpHeaders.ACCEPT, MediaType.TEXT_HTML ).GET( container().getBaseUri().toString() );
-        assertThat( res.header( "Location" ), containsString( "browser") );
+        assertThat( res.header( "Location" ) ).contains( "browser" );
     }
 }

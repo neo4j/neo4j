@@ -31,8 +31,7 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -63,7 +62,7 @@ public class TransactionTimeoutIT extends ExclusiveWebContainerTestBase
         // Then
         @SuppressWarnings( "unchecked" )
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( errors.get( 0 ).get( "code" ), equalTo( TransactionNotFound.code().serialize() ) );
+        assertThat( errors.get( 0 ).get( "code" ) ).isEqualTo( TransactionNotFound.code().serialize() );
     }
 
     private String txURI()

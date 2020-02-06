@@ -20,7 +20,6 @@
 package org.neo4j.server.web.logging;
 
 import org.assertj.core.api.Condition;
-import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,13 +47,9 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.OK_200;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -83,10 +78,10 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 
             // when
             var response = queryBaseUri( query, functionalTestHelper );
-            assertThat( response.statusCode(), is( OK_200 ) );
+            assertThat( response.statusCode() ).isEqualTo( OK_200 );
 
             // then
-            assertThat( Files.exists( httpLogFile( server ) ), is( false ) );
+            assertThat( Files.exists( httpLogFile( server ) ) ).isEqualTo( false );
         }
         finally
         {
@@ -107,7 +102,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 
             // when
             var response = queryBaseUri( query, functionalTestHelper );
-            assertThat( response.statusCode(), is( OK_200 ) );
+            assertThat( response.statusCode() ).isEqualTo( OK_200 );
 
             // then
             assertEventually( "request appears in log", httpLogContent( server ), value -> value.contains( query ), 5, SECONDS );
@@ -131,7 +126,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 
             // when
             var response = queryUri( functionalTestHelper.baseUri().resolve( path ) );
-            assertThat( response.statusCode(), is( NOT_FOUND_404 ) );
+            assertThat( response.statusCode() ).isEqualTo( NOT_FOUND_404 );
 
             // then
             assertEventually( "request appears in log", httpLogContent( server ),

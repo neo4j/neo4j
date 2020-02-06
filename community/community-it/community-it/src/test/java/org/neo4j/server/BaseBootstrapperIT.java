@@ -51,9 +51,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
@@ -129,7 +128,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
+        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ) ).isEqualTo( "ourcustomvalue" );
     }
 
     @Test
@@ -152,7 +151,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
+        assertThat( dependencyResolver.resolveDependency( Config.class ).get( forced_kernel_id ) ).isEqualTo( "mycustomvalue" );
     }
 
     @Test

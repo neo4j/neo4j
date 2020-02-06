@@ -30,8 +30,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.helpers.WebContainerHelper.cleanTheDatabase;
 import static org.neo4j.server.helpers.WebContainerHelper.createReadOnlyContainer;
@@ -74,7 +73,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
         String message = error.get( "message" ).asText();
 
         assertEquals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase", code );
-        assertThat( message, containsString( "This is a read only Neo4j instance" ) );
+        assertThat( message ).contains( "This is a read only Neo4j instance" );
     }
 
     @Test
@@ -91,7 +90,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
         String message = error.get( "message" ).asText();
 
         assertEquals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase", code );
-        assertThat( message, containsString( "This is a read only Neo4j instance" ) );
+        assertThat( message ).contains( "This is a read only Neo4j instance" );
     }
 
 }

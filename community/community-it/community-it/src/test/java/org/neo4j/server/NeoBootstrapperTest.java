@@ -35,9 +35,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
@@ -72,6 +70,6 @@ class NeoBootstrapperTest
         neoBootstrapper.start( dir, MapUtil.stringMap() );
 
         // then no exceptions are thrown and
-        assertThat( suppress.getOutputVoice().lines(), not( empty() ) );
+        assertThat( suppress.getOutputVoice().lines() ).isNotEmpty();
     }
 }

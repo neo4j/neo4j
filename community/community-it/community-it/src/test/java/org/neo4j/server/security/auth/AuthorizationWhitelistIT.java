@@ -26,8 +26,7 @@ import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -47,7 +46,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
 
         // Then I should be able to access the browser
         HTTP.Response response = HTTP.GET( testWebContainer.getBaseUri().resolve( "browser/index.html" ).toString() );
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
     }
 
     @Test
@@ -59,7 +58,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
 
         // Then I should not be able to access the console service
         HTTP.Response response = HTTP.GET( testWebContainer.getBaseUri().resolve( "db/manage/server/console" ).toString() );
-        assertThat( response.status(), equalTo( 401 ) );
+        assertThat( response.status() ).isEqualTo( 401 );
     }
 
     @Test
@@ -71,7 +70,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
 
         // Then I should get a unauthorized response for access to the DB
         HTTP.Response response = HTTP.GET( testWebContainer.getBaseUri().resolve( "db/neo4j" ).toString() );
-        assertThat( response.status(), equalTo( 401 ) );
+        assertThat( response.status() ).isEqualTo( 401 );
     }
 
     @After

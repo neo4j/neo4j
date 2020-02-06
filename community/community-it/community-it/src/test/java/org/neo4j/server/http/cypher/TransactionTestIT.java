@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -38,11 +36,7 @@ import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsMapContaining.hasKey;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -71,7 +65,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         Map<String, Object> result = jsonToMap( response.entity() );
         assertNoErrors( result );
         Map<String, Object> node = resultCell( result, 0, 0 );
-        assertThat( node.get( "name" ), equalTo( "My Node" ) );
+        assertThat( node.get( "name" ) ).isEqualTo( "My Node" );
     }
 
     @Test
@@ -92,7 +86,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertThat(result, hasKey( "transaction" ));
+        assertThat( result ).containsKey( "transaction" );
         assertNoErrors( result );
     }
 
@@ -221,7 +215,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
         Integer id = resultCell( result, 0, 0 );
         verifyNodeExists( id );
-        assertThat( response.entity(), containsString( "My Node" ) );
+        assertThat( response.entity() ).contains( "My Node" );
     }
 
     @Test
@@ -331,7 +325,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertThat(result, not(hasKey( "transaction" )));
+        assertThat( result ).doesNotContainKey( "transaction" );
     }
 
     @Test
@@ -352,12 +346,12 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         assertNoErrors( entity );
         Map<String,Object> firstResult = ((List<Map<String,Object>>) entity.get( "results" )).get( 0 );
 
-        assertThat( firstResult, hasKey( "stats" ) );
+        assertThat( firstResult ).containsKey( "stats" );
         Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
-        assertThat( stats.get( "nodes_created" ), equalTo( 1 ) );
-        assertThat( stats.get( "contains_updates" ), equalTo( true ) );
-        assertThat( stats.get( "contains_system_updates" ), equalTo( false ) );
-        assertThat( stats.get( "system_updates" ), equalTo( 0 ) );
+        assertThat( stats.get( "nodes_created" ) ).isEqualTo( 1 );
+        assertThat( stats.get( "contains_updates" ) ).isEqualTo( true );
+        assertThat( stats.get( "contains_system_updates" ) ).isEqualTo( false );
+        assertThat( stats.get( "system_updates" ) ).isEqualTo( 0 );
     }
 
     private void assertNoErrors( Map<String, Object> response )
@@ -374,7 +368,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( errors.next().get( "code" ), equalTo( expected.next().code().serialize() ) );
+            assertThat( errors.next().get( "code" ) ).isEqualTo( expected.next().code().serialize() );
         }
         if ( errors.hasNext() )
         {
@@ -419,13 +413,13 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
     {
         ResponseEntity response = getNodeById( nodeId );
         // if at least one node is returned, there will be "node" in the metadata part od the the row
-        Assert.assertThat( response.entity(), Matchers.containsString( "node" ) );
+        assertThat( response.entity() ).contains( "node" );
     }
 
     private void verifyNodeDoesNotExist( long nodeId )
     {
         ResponseEntity response = getNodeById( nodeId );
-        Assert.assertThat( response.entity(), not( Matchers.containsString( "node" ) ) );
+        assertThat( response.entity() ).doesNotContain( "node" );
     }
 
     private ResponseEntity getNodeById( long nodeId )

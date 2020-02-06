@@ -37,9 +37,8 @@ import org.neo4j.test.server.SharedWebContainerTestBase;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -145,11 +144,11 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
 
     public static void assertHasTxLocation( HTTP.Response begin )
     {
-        assertThat( begin.location(), matches( txUri() + "/\\d+" ) );
+        assertThat( begin.location() ).matches( txUri() + "/\\d+" );
     }
 
     public static void assertHasTxLocation( HTTP.Response begin, String txUri )
     {
-        assertThat( begin.location(), matches( format( "http://localhost:\\d+/%s/\\d+", txUri ) ) );
+        assertThat( begin.location() ).matches( format( "http://localhost:\\d+/%s/\\d+", txUri ) );
     }
 }

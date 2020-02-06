@@ -39,8 +39,7 @@ import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -100,7 +99,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     {
         lastTransactionIdSource = new ArrayBasedLongSupplier();
         HTTP.Response response = executeOverHTTP( "MATCH (n) RETURN n.c" );
-        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
         Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
         assertEquals( "d", content.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 ) );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -120,7 +119,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     {
         HTTP.Builder httpClientBuilder = HTTP.withBaseUri( testWebContainer.getBaseUri() );
         HTTP.Response transactionStart = httpClientBuilder.POST( txEndpoint() );
-        assertThat( transactionStart.status(), equalTo( 201 ) );
+        assertThat( transactionStart.status() ).isEqualTo( 201 );
         return httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
     }
 

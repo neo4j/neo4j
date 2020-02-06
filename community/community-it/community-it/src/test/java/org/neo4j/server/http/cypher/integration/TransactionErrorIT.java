@@ -30,14 +30,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.ParameterizedTransactionEndpointsTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.SyntaxError;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoStackTraces;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoStackTraces;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
@@ -58,11 +56,11 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         // commit with invalid cypher
         response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
-        assertThat( response.status(), is( 200 ) );
-        assertThat( response, hasErrors( SyntaxError ) );
-        assertThat( response, containsNoStackTraces() );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response ).satisfies( hasErrors( SyntaxError ) );
+        assertThat( response ).satisfies( containsNoStackTraces() );
 
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
     @Test
@@ -77,10 +75,10 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         // commit with malformed json
         HTTP.Response response = POST( commitResource, rawPayload( "[{asd,::}]" ) );
 
-        assertThat( response.status(), is( 200 ) );
-        assertThat( response, hasErrors( InvalidFormat ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response ).satisfies( hasErrors( InvalidFormat ) );
 
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
@@ -104,8 +102,8 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
             HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");
             HTTP.Response response = POST( txUri + "/commit", payload );
 
-            assertThat( response.status(), equalTo( 200 ) );
-            assertThat( response, hasErrors( Status.Statement.ArithmeticError ) );
+            assertThat( response.status() ).isEqualTo( 200 );
+            assertThat( response ).satisfies( hasErrors( Status.Statement.ArithmeticError ) );
 
             JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
             assertTrue("Expected LOAD CSV line number information",
@@ -119,6 +117,6 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
 
     private long countNodes()
     {
-        return TransactionMatchers.countNodes( graphdb() );
+        return TransactionConditions.countNodes( graphdb() );
     }
 }

@@ -19,17 +19,17 @@
  */
 package org.neo4j.server;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -43,7 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -69,7 +69,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         bootstrapper.stop();
 
         List<String> captured = suppressOutput.getOutputVoice().lines();
-        assertThat( captured, containsAtLeastTheseLines(
+        assertThat( captured ).satisfies( containsAtLeastTheseLines(
                 warn( "Config file \\[nonexistent-file.conf\\] does not exist." ),
                 info( "Starting..." ),
                 info( NEO4J_IS_STARTING_MESSAGE ),
@@ -107,13 +107,9 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         return properties;
     }
 
-    @SafeVarargs
-    private static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String>... expectedLinePatterns )
+    private static Condition<? super List<? extends String>> containsAtLeastTheseLines( Pattern... expectedLinePatterns )
     {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( List<String> lines )
+        return new Condition<>( lines ->
             {
                 if ( expectedLinePatterns.length > lines.size() )
                 {
@@ -123,7 +119,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
                 for ( int i = 0, e = 0; i < lines.size(); i++ )
                 {
                     String line = lines.get( i );
-                    while ( !expectedLinePatterns[e].matches( line ) )
+                    while ( !expectedLinePatterns[e].matcher( line ).matches() )
                     {
                         if ( ++i >= lines.size() )
                         {
@@ -134,41 +130,21 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
                     e++;
                 }
                 return true;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendList( "", "\n", "", asList( expectedLinePatterns ) );
-            }
-        };
+            }, "Expected: " + asList( expectedLinePatterns ) );
     }
 
-    public static Matcher<String> info( String messagePattern )
+    private static Pattern info( String messagePattern )
     {
         return line( "INFO", messagePattern );
     }
 
-    public static Matcher<String> warn( String messagePattern )
+    private static Pattern warn( String messagePattern )
     {
         return line( "WARN", messagePattern );
     }
 
-    public static Matcher<String> line( final String level, final String messagePattern )
+    private static Pattern line( final String level, final String messagePattern )
     {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( String line )
-            {
-                return line.matches( ".*" + level + "\\s+" + messagePattern );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( level ).appendText( " " ).appendText( messagePattern );
-            }
-        };
+        return Pattern.compile(".*" + level + "\\s+" + messagePattern);
     }
 }

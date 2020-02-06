@@ -26,9 +26,8 @@ import org.neo4j.test.server.HTTP;
 
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_HEADERS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_METHODS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -51,7 +50,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
 
         assertEquals( OK.getStatusCode(), response.status() );
         assertCorsHeaderPresent( response );
-        assertThat( response.content().toString(), containsString( "42" ) );
+        assertThat( response.content().toString() ).contains( "42" );
     }
 
     @Test
@@ -78,7 +77,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
 
         assertEquals( OK.getStatusCode(), queryResponse.status() );
         assertCorsHeaderPresent( queryResponse );
-        assertThat( queryResponse.content().toString(), containsString( "42" ) );
+        assertThat( queryResponse.content().toString() ).contains( "42" );
     }
 
     @Test
@@ -90,7 +89,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
 
         assertEquals( UNAUTHORIZED.getStatusCode(), response.status() );
         assertCorsHeaderPresent( response );
-        assertThat( response.content().toString(), containsString( "Neo.ClientError.Security.Unauthorized" ) );
+        assertThat( response.content().toString() ).contains( "Neo.ClientError.Security.Unauthorized" );
     }
 
     @Test

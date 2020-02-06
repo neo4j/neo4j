@@ -26,9 +26,7 @@ import java.net.http.HttpRequest;
 
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedirectorIT extends AbstractRestFunctionalTestBase
 {
@@ -39,7 +37,7 @@ public class RedirectorIT extends AbstractRestFunctionalTestBase
 
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( not( 404 ) ) );
+        assertThat( response.statusCode() ).isNotEqualTo( 404 );
     }
 
     @Test
@@ -50,6 +48,6 @@ public class RedirectorIT extends AbstractRestFunctionalTestBase
 
         var response = newHttpClient().send( request, discarding() );
 
-        assertThat( response.statusCode(), is( 404 ) );
+        assertThat( response.statusCode() ).isEqualTo( 404 );
     }
 }

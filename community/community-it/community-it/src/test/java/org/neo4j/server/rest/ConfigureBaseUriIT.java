@@ -31,9 +31,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofByteArray;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -64,8 +62,8 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "http://foobar.com" ) );
-        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
+        assertThat( responseBodyString ).contains( "http://foobar.com" );
+        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
     }
 
     @Test
@@ -83,8 +81,8 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "https://foobar.com" ) );
-        assertThat( responseBodyString, not( containsString( "https://localhost" ) ) );
+        assertThat( responseBodyString ).contains( "https://foobar.com" );
+        assertThat( responseBodyString ).doesNotContain( "https://localhost" );
     }
 
     @Test
@@ -102,8 +100,8 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "http://foobar.com:9999" ) );
-        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
+        assertThat( responseBodyString ).contains( "http://foobar.com:9999" );
+        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
     }
 
     @Test
@@ -121,8 +119,8 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "http://foobar.com" ) );
-        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
+        assertThat( responseBodyString ).contains( "http://foobar.com" );
+        assertThat( responseBodyString ).doesNotContain( "http://localhost" );
     }
 
     @Test
@@ -140,8 +138,8 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "https://foobar.com:9999" ) );
-        assertThat( responseBodyString, not( containsString( "https://localhost" ) ) );
+        assertThat( responseBodyString ).contains( "https://foobar.com:9999" );
+        assertThat( responseBodyString ).doesNotContain( "https://localhost" );
     }
 
     @Test
@@ -157,9 +155,9 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         verifyContentLength( response );
 
         var responseBodyString = new String( response.body() );
-        assertThat( responseBodyString, containsString( "http://localhost" ) );
-        assertThat( responseBodyString, not( containsString( "https://foobar.com" ) ) );
-        assertThat( responseBodyString, not( containsString( ":0" ) ) );
+        assertThat( responseBodyString ).contains( "http://localhost" );
+        assertThat( responseBodyString ).doesNotContain( "https://foobar.com" );
+        assertThat( responseBodyString ).doesNotContain( ":0" );
     }
 
     private static void verifyContentLength( HttpResponse<byte[]> response )

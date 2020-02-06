@@ -36,9 +36,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.oneOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CommandPrimer
@@ -281,7 +279,7 @@ class CommandPrimer
                     {
                         cursor.setOffset( pageOffset );
                         Record actualRecord = recordFormat.readRecord( cursor );
-                        assertThat( toString(), actualRecord, is( oneOf( expectedRecord, recordFormat.zeroRecord() ) ) );
+                        assertThat( actualRecord ).as( toString() ).isIn( expectedRecord, recordFormat.zeroRecord() );
                         performInnerAction();
                     }
                 }

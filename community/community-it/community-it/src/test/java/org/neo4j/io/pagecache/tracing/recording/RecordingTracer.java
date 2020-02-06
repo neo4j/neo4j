@@ -19,21 +19,20 @@
  */
 package org.neo4j.io.pagecache.tracing.recording;
 
-import org.hamcrest.Matcher;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
 
 public class RecordingTracer
 {
     private final Set<Class<? extends Event>> eventTypesToTrace = new HashSet<>();
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
     private CountDownLatch trapLatch;
-    private Matcher<? extends Event> trap;
+    private Predicate<Event> trap;
 
     @SafeVarargs
     public RecordingTracer( Class<? extends Event>... eventTypesToTrace )
@@ -65,7 +64,7 @@ public class RecordingTracer
      * When the eviction thread performs the given trap-event, it will block on the latch after
      * making the event observable.
      */
-    public synchronized CountDownLatch trap( Matcher<? extends Event> trap )
+    public synchronized CountDownLatch trap( Predicate<Event> trap )
     {
         assert trap != null;
         trapLatch = new CountDownLatch( 1 );
@@ -75,7 +74,7 @@ public class RecordingTracer
 
     private void trip( Event event )
     {
-        Matcher<? extends Event> theTrap;
+        Predicate<Event> theTrap;
         CountDownLatch theTrapLatch;
 
         // The synchronized block is in here, so we don't risk calling await on
@@ -86,7 +85,7 @@ public class RecordingTracer
             theTrapLatch = trapLatch;
         }
 
-        if ( theTrap != null && theTrap.matches( event ) )
+        if ( theTrap != null && theTrap.test( event ) )
         {
             try
             {

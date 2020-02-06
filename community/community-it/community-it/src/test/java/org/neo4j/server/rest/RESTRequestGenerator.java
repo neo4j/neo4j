@@ -41,8 +41,7 @@ import static java.net.http.HttpRequest.BodyPublishers.noBody;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -251,7 +250,7 @@ public class RESTRequestGenerator
             var response = newHttpClient().send( request, BodyHandlers.ofString() );
 
             var responseContentType = response.headers().firstValue( CONTENT_TYPE );
-            responseContentType.ifPresent( responseType -> assertThat( responseType, equalToIgnoringCase( type.toString() ) ) );
+            responseContentType.ifPresent( responseType -> assertThat( responseType ).isEqualToIgnoringCase( type.toString() ) );
 
             var responseHeaders = response.headers();
             for ( var headerField : headerFields )

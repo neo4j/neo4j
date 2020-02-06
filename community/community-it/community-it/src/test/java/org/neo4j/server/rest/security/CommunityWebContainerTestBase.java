@@ -34,11 +34,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.exceptions.Status.Security.CredentialsExpired;
 import static org.neo4j.kernel.api.exceptions.Status.Security.Forbidden;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -101,13 +97,13 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
 
     private void assertPermissionError( HTTP.Response response, List<String> errors ) throws JsonParseException
     {
-        assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response.get( "errors" ).size(), equalTo( 1 ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.get( "errors" ).size() ).isEqualTo( 1 );
 
         JsonNode firstError = response.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), is(in( errors ) ) );
+        assertThat( firstError.get( "code" ).asText() ).isIn( errors );
 
-        assertThat( firstError.get( "message" ).asText(), startsWith( "Permission denied." ) );
+        assertThat( firstError.get( "message" ).asText() ).startsWith( "Permission denied." );
     }
 
     protected static HTTP.RawPayload query( String statement )

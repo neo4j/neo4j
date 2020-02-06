@@ -30,13 +30,12 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsAMetaListAtIndex;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsMetaNodesAtIndex;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsMetaRelsAtIndex;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsAMetaListAtIndex;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsMetaNodesAtIndex;
+import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsMetaRelsAtIndex;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
@@ -51,7 +50,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         // begin
         Response begin = http.POST( txUri() );
 
-        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin.status() ).isEqualTo( 201 );
         assertHasTxLocation( begin );
         try
         {
@@ -61,7 +60,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         {
             fail( "Exception caught when setting up test: " + e.getMessage() );
         }
-        assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
+        assertThat( commitResource ).isEqualTo( begin.location() + "/commit" );
     }
 
     @After
@@ -81,10 +80,10 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         Response commit = http.POST( commitResource,
                 queryAsJsonRow( "MATCH (s:Start)-[r:R]->(e:End) RETURN s, r, 1, e" ) );
 
-        assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsMetaNodesAtIndex( 0, 3 ) );
-        assertThat( commit, rowContainsMetaRelsAtIndex( 1 ) );
-        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit ).satisfies( containsNoErrors() );
+        assertThat( commit ).satisfies( rowContainsMetaNodesAtIndex( 0, 3 ) );
+        assertThat( commit ).satisfies( rowContainsMetaRelsAtIndex( 1 ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
     }
 
     @Test
@@ -97,9 +96,9 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         Response commit = http.POST( commitResource,
                 queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) RETURN p" ) );
 
-        assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsAMetaListAtIndex( 0 ) );
-        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit ).satisfies( containsNoErrors() );
+        assertThat( commit ).satisfies( rowContainsAMetaListAtIndex( 0 ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
     }
 
     @Test
@@ -112,9 +111,9 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         Response commit = http.POST( commitResource,
                 queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) RETURN 10, p" ) );
 
-        assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsAMetaListAtIndex( 1 ) );
-        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit ).satisfies( containsNoErrors() );
+        assertThat( commit ).satisfies( rowContainsAMetaListAtIndex( 1 ) );
+        assertThat( commit.status() ).isEqualTo( 200 );
     }
 
     private void executeTransactionally( String query )

@@ -37,10 +37,8 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.InsecureTrustManager;
 
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
@@ -69,8 +67,8 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     {
         startServer();
 
-        assertThat( GET( testWebContainer.httpsUri().get().toString() ).status(), is( 200 ) );
-        assertThat( GET( testWebContainer.getBaseUri().toString() ).status(), is( 200 ) );
+        assertThat( GET( testWebContainer.httpsUri().get().toString() ).status() ).isEqualTo( 200 );
+        assertThat( GET( testWebContainer.getBaseUri().toString() ).status() ).isEqualTo( 200 );
     }
 
     @Test
@@ -81,8 +79,8 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
         String baseUri = testWebContainer.getBaseUri().toString();
         HTTP.Response response = POST( baseUri + txEndpoint(), quotedJson( "{'statements':[]}" ) );
 
-        assertThat( response.location(), startsWith( baseUri ) );
-        assertThat( response.get( "commit" ).asText(), startsWith( baseUri ) );
+        assertThat( response.location() ).startsWith( baseUri );
+        assertThat( response.get( "commit" ).asText() ).startsWith( baseUri );
     }
 
     @Test
@@ -114,8 +112,8 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     {
         var response = GET( testWebContainer.getBaseUri().toString() );
 
-        assertThat( response.status(), is( 200 ) );
-        assertThat( response.stringFromContent( "transaction" ), startsWith( scheme + "://" ) );
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.stringFromContent( "transaction" ) ).startsWith( scheme + "://" );
     }
 
     private void startServer() throws Exception

@@ -39,9 +39,7 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
@@ -99,7 +97,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
 
         // Then
         Map<String,Object> map = JsonHelper.jsonToMap( response.body() );
-        assertThat( String.valueOf( map.get( "bolt_direct" ) ), containsString( "bolt://" + host + ":" + 9999 ) );
+        assertThat( String.valueOf( map.get( "bolt_direct" ) ) ).contains( "bolt://" + host + ":" + 9999 );
     }
 
     private void startServerWithBoltEnabled() throws IOException
@@ -124,7 +122,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
         conn.send(
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0} );
-        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 4} ) );
+        assertThat( conn.recv( 4 ) ).isEqualTo( new byte[]{0, 0, 0, 4} );
     }
 
     private <T> T getDependency( Class<T> clazz )

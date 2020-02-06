@@ -32,10 +32,7 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.helpers.WebContainerHelper.createNonPersistentContainer;
@@ -63,14 +60,14 @@ public class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
     {
         // Check the logs
         var logContent = out.toString();
-        assertThat( logContent.length(), is( greaterThan( 0 ) ) );
-        assertThat( logContent, containsString( NEO4J_IS_STARTING_MESSAGE ) );
+        assertThat( logContent.length() ).isGreaterThan( 0 );
+        assertThat( logContent ).contains( NEO4J_IS_STARTING_MESSAGE );
 
         // Check the server is alive
         var request = HttpRequest.newBuilder( webContainer.getBaseUri() ).GET().build();
         var client = HttpClient.newBuilder().followRedirects( NEVER ).build();
         var response = client.send( request, discarding() );
-        assertThat( response.statusCode(), is( greaterThan( 199 ) ) );
+        assertThat( response.statusCode() ).isGreaterThan( 199 );
 
     }
 }

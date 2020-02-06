@@ -32,8 +32,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -72,7 +71,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         HTTP.Response deadlock = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
 
         // Then
-        assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( DeadlockDetected.code().serialize() ) );
+        assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( DeadlockDetected.code().serialize() );
     }
 
     private OtherThreadExecutor.WorkerCommand<Object, Object> writeToFirstAndSecond()
