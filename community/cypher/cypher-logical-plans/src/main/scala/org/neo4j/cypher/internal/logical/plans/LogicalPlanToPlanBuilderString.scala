@@ -88,6 +88,7 @@ object LogicalPlanToPlanBuilderString {
       case _:NodeUniqueIndexSeek => "nodeIndexOperator"
       case _:NodeIndexContainsScan => "nodeIndexOperator"
       case _:NodeIndexEndsWithScan => "nodeIndexOperator"
+      case _:MultiNodeIndexSeek => "multiNodeIndexSeekOperator"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
@@ -254,7 +255,11 @@ object LogicalPlanToPlanBuilderString {
         val queryStr = queryExpressionStr(valueExpr, propNames)
         indexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr)
     }
-    plansWithContent.applyOrElse(logicalPlan, (_: LogicalPlan) => "")
+    val plansWithContent2: PartialFunction[LogicalPlan, String] = {
+      case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>
+        indexSeekLeafPlans.map(p => s"_.indexSeek(${plansWithContent(p)})").mkString(", ")
+    }
+    plansWithContent.orElse(plansWithContent2).applyOrElse(logicalPlan, (_: LogicalPlan) => "")
   }
 
   private def queryExpressionStr(valueExpr: QueryExpression[Expression],

@@ -555,6 +555,13 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"))
       .build())
 
+  testPlan("multiNodeIndexSeekOperator",
+    new TestPlanBuilder()
+     .produceResults("n", "m")
+     .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=5)"),
+                                 _.indexSeek("m:Label(prop=6)"))
+     .build())
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
