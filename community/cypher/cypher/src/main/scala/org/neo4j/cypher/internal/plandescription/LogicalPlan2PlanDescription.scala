@@ -563,8 +563,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    addPlanningAttributes(result, plan)
-    addRuntimeAttributes(result, plan)
+    addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
   override def onOneChildPlan(logicalPlan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
@@ -897,8 +896,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    addPlanningAttributes(result, plan)
-    addRuntimeAttributes(result, plan)
+    addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
   override def onTwoChildPlan(logicalPlan: LogicalPlan, lhs: InternalPlanDescription,
@@ -996,8 +994,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    addPlanningAttributes(result, plan)
-    addRuntimeAttributes(result, plan)
+    addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
   private def addPlanningAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
