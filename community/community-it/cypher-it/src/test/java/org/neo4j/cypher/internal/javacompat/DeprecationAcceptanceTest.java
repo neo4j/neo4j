@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,27 +78,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     // DEPRECATED SYNTAX
-
-    @Test
-    void deprecatedFutureAmbiguousRelTypeSeparator()
-    {
-        List<String> deprecatedQueries = Arrays.asList( "explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[x:A|:B|:C]-() RETURN a",
-                                                        "explain MATCH (a)-[:A|:B|:C*]-() RETURN a" );
-
-        List<String> nonDeprecatedQueries =
-                Arrays.asList( "explain MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
-                               "explain MATCH (a)-[:A|B|C]-(b) RETURN a,b" );
-
-        for ( String query : deprecatedQueries )
-        {
-            assertNotifications( newerVersions, query, containsItem( deprecatedSeparatorWarning ) );
-        }
-
-        for ( String query : nonDeprecatedQueries )
-        {
-            assertNotifications( newerVersions, query, containsNoItem( deprecatedSeparatorWarning ) );
-        }
-    }
 
     @Test
     void deprecatedBindingVariableLengthRelationship()
@@ -213,6 +193,30 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     {
         assertNotifications( List.of( "CYPHER 3.5 "), "EXPLAIN MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())",
                 containsItem( deprecatedLengthOnNonPath ) );
+    }
+
+    @Test
+    void deprecatedFutureAmbiguousRelTypeSeparator()
+    {
+        List<String> deprecatedQueries = Arrays.asList( "explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[x:A|:B|:C]-() RETURN a",
+                "explain MATCH (a)-[:A|:B|:C*]-() RETURN a" );
+
+        List<String> nonDeprecatedQueries =
+                Arrays.asList( "explain MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
+                        "explain MATCH (a)-[:A|B|C]-(b) RETURN a,b" );
+
+        for ( String query : deprecatedQueries )
+        {
+            assertNotifications( List.of( "CYPHER 3.5 "), query, containsItem( deprecatedSeparatorWarning ) );
+        }
+
+        // clear caches of the rewritten queries to not keep notifications around
+        db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class ).clearQueryCaches();
+
+        for ( String query : nonDeprecatedQueries )
+        {
+            assertNotifications( List.of( "CYPHER 3.5 "), query, containsNoItem( deprecatedSeparatorWarning ) );
+        }
     }
 
     // MATCHERS & HELPERS

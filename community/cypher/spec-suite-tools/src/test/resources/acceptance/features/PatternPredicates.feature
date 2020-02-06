@@ -383,7 +383,7 @@ Feature: PatternPredicates
     When executing query:
       """
       MATCH (a)
-      WHERE (a)-[:T1|:T2]->()
+      WHERE (a)-[:T1|T2]->()
       RETURN a
       """
     Then the result should be, in any order:

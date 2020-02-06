@@ -130,7 +130,7 @@ object PlanDescriptionArgumentSerializer {
       case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, min, max) =>
         val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
         val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
-        val types = typeNames.mkString(":", "|:", "")
+        val types = typeNames.mkString(":", "|", "")
         val lengthDescr = (min, max) match {
           case (1, Some(1)) => ""
           case (1, None) => "*"
@@ -145,7 +145,7 @@ object PlanDescriptionArgumentSerializer {
       case CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) =>
         val start = startLabel.map(l => ":" + l).mkString
         val end = endLabel.map(l => ":" + l).mkString
-        val types = typeNames.mkString(":", "|:", "")
+        val types = typeNames.mkString(":", "|", "")
         s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
       case Signature(procedureName, args, results) =>
         val argString = args.mkString(", ")

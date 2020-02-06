@@ -279,7 +279,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         |OPTIONAL MATCH(n2:Label5 {deleted: 0})<-[:REL1]-(:Label6)<-[:REL2]-(meState)
         |OPTIONAL MATCH(n3:Label7 {deleted: 0})<-[:REL1]-(:Label8)<-[:REL2]-(meState)
         |OPTIONAL MATCH(n4:Label9 {deleted: 0})<-[:REL1]-(:Label10) <-[:REL2]-(meState)
-        |OPTIONAL MATCH p1 = (:Label2 {deleted: 0})<-[:REL1|:REL3*]-(meState)
+        |OPTIONAL MATCH p1 = (:Label2 {deleted: 0})<-[:REL1|REL3*]-(meState)
         |OPTIONAL MATCH(:Label11 {deleted: 0})<-[r1:REL1]-(:Label12) <-[:REL5]-(meState)
         |OPTIONAL MATCH(:Label13 {deleted: 0})<-[r2:REL1]-(:Label14) <-[:REL6]-(meState)
         |OPTIONAL MATCH(:Label15 {deleted: 0})<-[r3:REL1]-(:Label16) <-[:REL7]-(meState)

@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceAliasedFunctionInvocations
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConstructionTestSupport {
+class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val rewriter = replaceAliasedFunctionInvocations(Deprecations.V1)
+  private val rewriter = replaceDeprecatedCypherSyntax(Deprecations.V1)
   private val deprecatedNameMap = Deprecations.V1.functionRenames
 
   test("should rewrite deprecated names regardless of casing") {

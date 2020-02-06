@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class replaceAliasedFunctionInvocations(deprecations: Deprecations) extends Rewriter {
+case class replaceDeprecatedCypherSyntax(deprecations: Deprecations) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
   val instance: Rewriter = bottomUp(Rewriter.lift(deprecations.find.andThen(d => d.generateReplacement())))

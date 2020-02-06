@@ -21,16 +21,19 @@ import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.FilterExpression
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceAliasedFunctionInvocations
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val rewriter4_0 = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_0)
+  private val rewriter4_0 = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_0)
   private val deprecatedNameMap4_0 = Deprecations.removedFeaturesIn4_0.removedFunctionsRenames
 
-  private val rewriter4_1 = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_1)
+  private val rewriter4_1 = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_1)
   private val deprecatedNameMap4_1 = Deprecations.removedFeaturesIn4_1.removedFunctionsRenames
 
   test("should rewrite removed function names regardless of casing") {
@@ -90,6 +93,22 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
 
     val after = parameter("param", symbols.CTString)
     rewriter4_0(before) should equal(after)
+  }
+
+  //noinspection RedundantDefaultArgument
+  test("should rewrite legacy type separator") {
+    val types = Seq(RelTypeName("A")(pos), RelTypeName("B")(pos))
+    val beforeVariable = RelationshipPattern(Some(varFor("a")), types, None, None, SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+    val beforeVarlength = RelationshipPattern(None, types, Some(None), None, SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+    val beforeProperties = RelationshipPattern(None, types, None, Some(varFor("x")), SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+
+    val afterVariable = RelationshipPattern(Some(varFor("a")), types, None, None, SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+    val afterVarlength = RelationshipPattern(None, types, Some(None), None, SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+    val afterProperties = RelationshipPattern(None, types, None, Some(varFor("x")), SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+
+    rewriter4_0(beforeVariable) should equal(afterVariable)
+    rewriter4_0(beforeVarlength) should equal(afterVarlength)
+    rewriter4_0(beforeProperties) should equal(afterProperties)
   }
 
   test("4.1 rewriter should not rewrite things removed in 4.0") {

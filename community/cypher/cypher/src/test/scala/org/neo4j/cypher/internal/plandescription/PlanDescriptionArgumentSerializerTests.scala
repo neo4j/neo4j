@@ -60,15 +60,15 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
   test("ExpandExpression should look like Cypher syntax") {
     serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, Some(1))) should
-      equal("(a)-[r:LIKES|:LOVES]->(b)")
+      equal("(a)-[r:LIKES|LOVES]->(b)")
     serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, Some(5))) should
-      equal("(a)-[r:LIKES|:LOVES*..5]->(b)")
+      equal("(a)-[r:LIKES|LOVES*..5]->(b)")
     serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, None)) should
-      equal("(a)-[r:LIKES|:LOVES*]->(b)")
+      equal("(a)-[r:LIKES|LOVES*]->(b)")
     serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 3, Some(5))) should
-      equal("(a)-[r:LIKES|:LOVES*3..5]->(b)")
+      equal("(a)-[r:LIKES|LOVES*3..5]->(b)")
     serialize(ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 3, None)) should
-      equal("(a)-[r:LIKES|:LOVES*3..]->(b)")
+      equal("(a)-[r:LIKES|LOVES*3..]->(b)")
   }
 
   test("serialize nested plan expression") {

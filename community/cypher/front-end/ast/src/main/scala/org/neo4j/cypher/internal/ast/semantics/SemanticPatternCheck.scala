@@ -236,7 +236,20 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(x.properties) chain
         expectType(CTMap.covariant, x.properties)
 
+    def variableIsGenerated(variable: LogicalVariable): Boolean = variable.name.startsWith("  UNNAMED") || variable.name.startsWith("  REL")
+
+    def checkForLegacyTypeSeparator: SemanticCheck = x match {
+      case RelationshipPattern(variable, _, length, properties, _, true, _) if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined =>
+        error(
+          """The semantics of using colon in the separation of alternative relationship types in conjunction with
+            |the use of variable binding, inlined property predicates, or variable length is no longer supported.
+            |Please separate the relationships types using `:A|B|C` instead""".stripMargin, x.position)
+      case _ =>
+        None
+    }
+
     checkNoVarLengthWhenUpdating chain
+      checkForLegacyTypeSeparator chain
       checkNoParamMapsWhenMatching(x.properties, ctx) chain
       checkProperties chain
       checkValidPropertyKeyNamesInPattern(x.properties) chain

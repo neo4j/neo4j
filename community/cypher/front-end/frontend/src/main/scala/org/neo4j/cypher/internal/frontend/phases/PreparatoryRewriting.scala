@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceAliasedFunctionInvocations
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.util.inSequence
 
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
@@ -33,7 +33,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
       normalizeWithAndReturnClauses(context.cypherExceptionFactory),
       insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
-      replaceAliasedFunctionInvocations(deprecations),
+      replaceDeprecatedCypherSyntax(deprecations),
       mergeInPredicates))
 
     from.withStatement(rewrittenStatement)
