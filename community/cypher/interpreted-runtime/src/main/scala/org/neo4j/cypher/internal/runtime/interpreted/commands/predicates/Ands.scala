@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Variable, VariableCommand}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -49,7 +49,7 @@ object Ands {
 
 @deprecated("Use Ands (plural) instead")
 class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m, state)
+  def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m, state)
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"

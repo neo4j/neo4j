@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.MapExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -123,7 +123,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       })
     }
 
-    val records = ArrayBuffer.empty[ExecutionContext]
+    val records = ArrayBuffer.empty[CypherRow]
     val subscriber: QuerySubscriber = new QuerySubscriberAdapter {
       private var record: mutable.Map[String, AnyValue] = mutable.Map.empty
 
@@ -131,7 +131,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
           record.put(columns(offset), value)
       }
       override def onRecordCompleted(): Unit = {
-        records.append(new MapExecutionContext(record))
+        records.append(new MapCypherRow(record))
         record =  mutable.Map.empty
       }
     }
@@ -182,13 +182,13 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 object PruningVarLengthExpandPipeTest {
   def createVarLengthPredicate(nodePredicate: Predicate, relationshipPredicate: Predicate): VarLengthPredicate = {
     new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
+      override def filterNode(row: CypherRow, state: QueryState)(node: NodeValue): Boolean = {
         val cp = row.copyWith("to", node)
         val result = nodePredicate.isTrue(cp, state)
         result
       }
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
+      override def filterRelationship(row: CypherRow, state: QueryState)(rel: RelationshipValue): Boolean = {
         val cp = row.copyWith("r", rel)
         val result = relationshipPredicate.isTrue(cp, state)
         result

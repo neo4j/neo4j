@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
@@ -43,7 +43,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   valueExpr.expressions.foreach(_.registerOwningPipe(this))
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newExecutionContext(executionContextFactory)
 

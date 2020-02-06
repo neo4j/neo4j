@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import java.time.temporal.ChronoUnit
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InternalException
@@ -58,7 +58,7 @@ class AvgFunction(val value: Expression)
     case _ => throw new InternalException(s"invalid aggregation type $aggregatingType")
   }
 
-  override def apply(data: ExecutionContext, state: QueryState): Unit = {
+  override def apply(data: CypherRow, state: QueryState): Unit = {
     val vl = value(data, state)
     applyValueDirectly(vl)
   }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 
-class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[ExecutionContext] {
+class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[CypherRow] {
 
   /*
   This field can have one of three states:
@@ -29,13 +29,13 @@ class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[Execution
     None    -> this iterator has been emptied
     Some(x) -> the next value has been fetched, but not yet seen by next()
   */
-  var currentValue: Option[ExecutionContext] = _
+  var currentValue: Option[CypherRow] = _
 
   /*
   Before the first pipe has been applied, currentIterator will have null in it. After that it will have an
   iterator in it always.
    */
-  var currentIterator: Iterator[ExecutionContext] = _
+  var currentIterator: Iterator[CypherRow] = _
   var pipesLeft: List[Pipe] = in.toList
 
   def hasNext: Boolean = {
@@ -43,7 +43,7 @@ class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[Execution
     currentValue.nonEmpty
   }
 
-  def next(): ExecutionContext = {
+  def next(): CypherRow = {
     stepIfNecessary()
 
     val result = currentValue.getOrElse(Iterator.empty.next())

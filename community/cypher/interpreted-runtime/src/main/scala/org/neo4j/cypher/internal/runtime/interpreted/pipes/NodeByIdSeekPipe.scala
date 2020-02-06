@@ -20,27 +20,27 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsList}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.JavaConverters._
 
 sealed trait SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): ListValue
+  def expressions(ctx: CypherRow, state: QueryState): ListValue
   def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SeekArgs {
   object empty extends SeekArgs {
-    def expressions(ctx: ExecutionContext, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
+    def expressions(ctx: CypherRow, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
 
     override def registerOwningPipe(pipe: Pipe){}
   }
 }
 
 case class SingleSeekArg(expr: Expression) extends SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): ListValue =
+  def expressions(ctx: CypherRow, state: QueryState): ListValue =
     expr(ctx, state) match {
       case value => VirtualValues.list(value)
     }
@@ -49,7 +49,7 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): ListValue = {
+  def expressions(ctx: CypherRow, state: QueryState): ListValue = {
     coll(ctx, state) match {
       case IsList(values) => values
     }
@@ -63,7 +63,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
 
   nodeIdsExpr.registerOwningPipe(this)
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val ctx = state.newExecutionContext(executionContextFactory)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(

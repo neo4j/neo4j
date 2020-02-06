@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 trait Pipe {
   self: Pipe =>
 
-  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
+  def createResults(state: QueryState) : Iterator[CypherRow] = {
     val decoratedState = state.decorator.decorate(self, state)
     decoratedState.setExecutionContextFactory(executionContextFactory)
     val innerResult = internalCreateResults(decoratedState)
@@ -44,7 +44,7 @@ trait Pipe {
     state.decorator.decorate(self, innerResult, () => state.initialContext)
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow]
 
   // Used by profiling to identify where to report dbhits and rows
   def id: Id
@@ -62,7 +62,7 @@ case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
-  override def createResults(state: QueryState): Iterator[ExecutionContext] = {
+  override def createResults(state: QueryState): Iterator[CypherRow] = {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this, state)
@@ -72,11 +72,11 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     state.decorator.decorate(this, result, sourceResult)
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] =
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
-  private[pipes] def testCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow]
+  private[pipes] def testCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     internalCreateResults(input, state)
 
   def getSource: Pipe = source

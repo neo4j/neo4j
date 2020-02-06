@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 
 /**
   * A pipe that relies on its input coming in a certain order and processing that input in chunks.
@@ -33,7 +33,7 @@ trait OrderedInputPipe {
     */
   def getReceiver(state: QueryState): OrderedChunkReceiver
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val receiver = getReceiver(state)
     internalCreateResultsWithReceiver(input, state, receiver)
   }
@@ -41,10 +41,10 @@ trait OrderedInputPipe {
   /**
     * Processes the input in chunks as described by [[OrderedChunkReceiver]].
     */
-  protected final def internalCreateResultsWithReceiver(input: Iterator[ExecutionContext], state: QueryState, receiver: OrderedChunkReceiver): Iterator[ExecutionContext] = {
+  protected final def internalCreateResultsWithReceiver(input: Iterator[CypherRow], state: QueryState, receiver: OrderedChunkReceiver): Iterator[CypherRow] = {
     val inputState = new InputState()
 
-    new Iterator[ExecutionContext] {
+    new Iterator[CypherRow] {
       private var processNextChunk = true
 
       override def hasNext: Boolean =
@@ -52,7 +52,7 @@ trait OrderedInputPipe {
           (processNextChunk && (
             inputState.firstRowOfNextChunk != null || input.hasNext))
 
-      override def next(): ExecutionContext = {
+      override def next(): CypherRow = {
         if (inputState.firstRowOfNextChunk == null && inputState.resultRowsOfChunk.isEmpty) {
           populateTableAndReturnFirstRow(null)
         } else if (inputState.resultRowsOfChunk.hasNext) {
@@ -62,7 +62,7 @@ trait OrderedInputPipe {
         }
       }
 
-      def populateTableAndReturnFirstRow(maybeFirstRow: ExecutionContext): ExecutionContext = {
+      def populateTableAndReturnFirstRow(maybeFirstRow: CypherRow): CypherRow = {
         receiver.clear()
         val firstRow = if (maybeFirstRow == null) input.next() else maybeFirstRow
         var currentRow = firstRow
@@ -85,8 +85,8 @@ trait OrderedInputPipe {
   }
 
   private class InputState() {
-    var firstRowOfNextChunk: ExecutionContext = _
-    var resultRowsOfChunk: Iterator[ExecutionContext] = Iterator.empty
+    var firstRowOfNextChunk: CypherRow = _
+    var resultRowsOfChunk: Iterator[CypherRow] = Iterator.empty
   }
 
 }
@@ -118,19 +118,19 @@ trait OrderedChunkReceiver {
     * @param current the row in question.
     * @return if the two rows are part of the same chunk.
     */
-  def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean
+  def isSameChunk(first: CypherRow, current: CypherRow): Boolean
 
   /**
     * Called for each row.
     */
-  def processRow(row: ExecutionContext): Unit
+  def processRow(row: CypherRow): Unit
 
   /**
     * Called at the end of a chunk.
     *
     * @return an iterator of rows.
     */
-  def result(): Iterator[ExecutionContext]
+  def result(): Iterator[CypherRow]
 
   /**
     * @return whether the next chunk needs to be processed

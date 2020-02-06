@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.graphdb.Entity
 
-trait EntityProducer[T <: Entity] extends ((ExecutionContext, QueryState) => Iterator[T]) {
+trait EntityProducer[T <: Entity] extends ((CypherRow, QueryState) => Iterator[T]) {
   def producerType: String
   def arguments: Seq[Argument]
 }
 
 object EntityProducer {
-  def apply[T <: Entity](nameStr: String, argument: Argument)(f:(ExecutionContext, QueryState) => Iterator[T]) =
+  def apply[T <: Entity](nameStr: String, argument: Argument)(f:(CypherRow, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def producerType = nameStr
       def arguments: Seq[Argument] = Seq(argument)
-      def apply(m: ExecutionContext, q: QueryState) = f(m, q)
+      def apply(m: CypherRow, q: QueryState) = f(m, q)
     }
 }

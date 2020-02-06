@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipIterator
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -62,7 +62,7 @@ case class ExpandIntoPipe(source: Pipe,
     case SemanticDirection.BOTH => Direction.BOTH
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val query = state.query
 
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
@@ -121,7 +121,7 @@ object ExpandIntoPipe {
   }
 
   @inline
-  def getRowNode(row: ExecutionContext, col: String): AnyValue = {
+  def getRowNode(row: CypherRow, col: String): AnyValue = {
     row.getByName(col) match {
       case n: NodeValue => n
       case IsNoValue() => NO_VALUE

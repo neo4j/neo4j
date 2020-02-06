@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -109,7 +109,7 @@ class ComparablePredicateTest extends CypherFunSuite {
 
   class compareUsing(left: Any, right: Any, operator: String) extends Matcher[ComparablePredicate] {
     def apply(predicate: ComparablePredicate): MatchResult = {
-      val actual = predicate.isMatch(ExecutionContext.empty, QueryStateHelper.empty)
+      val actual = predicate.isMatch(CypherRow.empty, QueryStateHelper.empty)
 
       if (isIncomparable(left, right))
         buildResult(actual.isEmpty, "null", actual)

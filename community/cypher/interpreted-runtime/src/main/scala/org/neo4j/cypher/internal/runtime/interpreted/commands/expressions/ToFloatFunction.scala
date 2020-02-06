@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
@@ -30,7 +30,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   override def rewrite(f: Expression => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+  override def compute(value: AnyValue, m: CypherRow, state: QueryState): AnyValue =
     CypherFunctions.toFloat(value)
 
   override def children: Seq[AstNode[_]] = Seq(a)

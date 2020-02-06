@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ResourceLinenumber}
 import org.neo4j.exceptions.{Neo4jException, LoadCsvStatusWrapCypherException}
 
 /*
@@ -33,12 +33,12 @@ trait PipeDecorator {
    */
   def afterCreateResults(pipe: Pipe, state: QueryState): Unit
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow]
 
   // These two are used for linenumber only
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext], sourceIter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = decorate(pipe, iter)
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow], sourceIter: Iterator[CypherRow]): Iterator[CypherRow] = decorate(pipe, iter)
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext], previousContextSupplier: () => Option[ExecutionContext]): Iterator[ExecutionContext] = decorate(pipe, iter)
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): Iterator[CypherRow] = decorate(pipe, iter)
 
   /*
    * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
@@ -48,7 +48,7 @@ trait PipeDecorator {
 }
 
 object NullPipeDecorator extends PipeDecorator {
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = iter
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
 
@@ -64,9 +64,9 @@ class LinenumberPipeDecorator() extends PipeDecorator {
 
   override def decorate(pipe: Pipe, state: QueryState): QueryState = inner.decorate(pipe, state)
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
 
-  override def decorate(pipe: Pipe, iter: Iterator[ExecutionContext], sourceIter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
+  override def decorate(pipe: Pipe, iter: Iterator[CypherRow], sourceIter: Iterator[CypherRow]): Iterator[CypherRow] = {
     val previousContextSupplier = sourceIter match {
       case p: LinenumberIterator => () => p.previousRecord
       case _ => () => None
@@ -74,15 +74,15 @@ class LinenumberPipeDecorator() extends PipeDecorator {
     decorate(pipe, iter, previousContextSupplier)
   }
 
-  override def decorate(pipe: Pipe, iter: Iterator[ExecutionContext], previousContextSupplier: () => Option[ExecutionContext]): Iterator[ExecutionContext] = {
+  override def decorate(pipe: Pipe, iter: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): Iterator[CypherRow] = {
     new LinenumberIterator(inner.decorate(pipe, iter), previousContextSupplier)
   }
 
   override def innerDecorator(owningPipe: Pipe): PipeDecorator = this
 
-  class LinenumberIterator(inner: Iterator[ExecutionContext], previousContextSupplier: () => Option[ExecutionContext]) extends Iterator[ExecutionContext] {
+  class LinenumberIterator(inner: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]) extends Iterator[CypherRow] {
 
-    var previousRecord: Option[ExecutionContext] = None
+    var previousRecord: Option[CypherRow] = None
 
     def hasNext: Boolean = {
       try {
@@ -97,7 +97,7 @@ class LinenumberPipeDecorator() extends PipeDecorator {
       }
     }
 
-    def next(): ExecutionContext = {
+    def next(): CypherRow = {
       try {
         val record = inner.next()
         previousRecord = Some(record)
@@ -112,13 +112,13 @@ class LinenumberPipeDecorator() extends PipeDecorator {
       }
     }
 
-    private def wrapException(e: Neo4jException, maybeContext: Option[ExecutionContext]): Exception = maybeContext match {
-      case Some(record: ExecutionContext) if record.getLinenumber.nonEmpty =>
+    private def wrapException(e: Neo4jException, maybeContext: Option[CypherRow]): Exception = maybeContext match {
+      case Some(record: CypherRow) if record.getLinenumber.nonEmpty =>
         new LoadCsvStatusWrapCypherException(errorMessage(record), e)
       case _ => e
     }
 
-    private def errorMessage(record: ExecutionContext): String = {
+    private def errorMessage(record: CypherRow): String = {
       record.getLinenumber match {
         case Some(ResourceLinenumber(file, line, last)) =>
           s"Failure when processing file '$file' on line $line" +

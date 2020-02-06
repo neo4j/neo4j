@@ -24,7 +24,7 @@ import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, NoMemoryTracker, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ExpressionCursors, NoMemoryTracker, QueryContext}
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
@@ -51,7 +51,7 @@ object QueryStateHelper extends MockitoSugar {
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
                 decorator: PipeDecorator = NullPipeDecorator,
-                initialContext: Option[ExecutionContext] = None
+                initialContext: Option[CypherRow] = None
                ):QueryState =
     new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoMemoryTracker,
                    decorator, initialContext = initialContext)

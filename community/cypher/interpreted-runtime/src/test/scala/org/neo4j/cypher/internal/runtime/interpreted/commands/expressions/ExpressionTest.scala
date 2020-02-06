@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
@@ -129,5 +129,5 @@ class TestExpression extends Expression {
 
   override def rewrite(f: Expression => Expression): Expression = null
 
-  override def apply(v1: ExecutionContext, state: QueryState): AnyValue = null
+  override def apply(v1: CypherRow, state: QueryState): AnyValue = null
 }

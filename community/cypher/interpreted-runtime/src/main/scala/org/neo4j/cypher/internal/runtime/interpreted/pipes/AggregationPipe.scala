@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
@@ -45,9 +45,9 @@ object AggregationPipe {
   trait AggregationTable {
     def clear(): Unit
 
-    def processRow(row: ExecutionContext): Unit
+    def processRow(row: CypherRow): Unit
 
-    def result(): Iterator[ExecutionContext]
+    def result(): Iterator[CypherRow]
   }
 
   /**
@@ -65,7 +65,7 @@ object AggregationPipe {
     * Precompute a function that computes the grouping key of a row.
     * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
     */
-  def computeGroupingFunction(groupingColumns: Array[GroupingCol]): (ExecutionContext, QueryState) => AnyValue = {
+  def computeGroupingFunction(groupingColumns: Array[GroupingCol]): (CypherRow, QueryState) => AnyValue = {
     groupingColumns.length match {
       case 0 =>
         (_, _) => null
@@ -94,7 +94,7 @@ object AggregationPipe {
     * Precompute a function that adds the grouping key columns to a result row.
     * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
     */
-  def computeAddKeysToResultRowFunction(groupingColumns: Array[GroupingCol]): (ExecutionContext, AnyValue) => Unit =
+  def computeAddKeysToResultRowFunction(groupingColumns: Array[GroupingCol]): (CypherRow, AnyValue) => Unit =
     groupingColumns.length match {
       case 0 =>
         // Do nothing

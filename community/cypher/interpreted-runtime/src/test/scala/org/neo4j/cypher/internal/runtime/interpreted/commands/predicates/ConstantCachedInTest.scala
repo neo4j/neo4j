@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -43,9 +43,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.copyWith("x", intValue(1))
-    val vNull = ExecutionContext.empty.copyWith("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.copyWith("x", intValue(14))
+    val v1 = CypherRow.empty.copyWith("x", intValue(1))
+    val vNull = CypherRow.empty.copyWith("x", NO_VALUE)
+    val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))
@@ -63,9 +63,9 @@ abstract class CachedInTest extends CypherFunSuite {
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
     val state = QueryStateHelper.empty
-    val v1 = ExecutionContext.empty.copyWith("x", intValue(1))
-    val vNull = ExecutionContext.empty.copyWith("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.copyWith("x", intValue(14))
+    val v1 = CypherRow.empty.copyWith("x", intValue(1))
+    val vNull = CypherRow.empty.copyWith("x", NO_VALUE)
+    val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))
@@ -85,9 +85,9 @@ abstract class CachedInTest extends CypherFunSuite {
     val state = QueryStateHelper.empty
 
 
-    val v1 = ExecutionContext.empty.copyWith("x", intValue(1))
-    val vNull = ExecutionContext.empty.copyWith("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.copyWith("x", intValue(14))
+    val v1 = CypherRow.empty.copyWith("x", intValue(1))
+    val vNull = CypherRow.empty.copyWith("x", NO_VALUE)
+    val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(None)
@@ -109,9 +109,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.copyWith("x", VirtualValues.list(intValue(1), intValue(2)))
-    val vNull = ExecutionContext.empty.copyWith("x", NO_VALUE)
-    val v14 = ExecutionContext.empty.copyWith("x", intValue(14))
+    val v1 = CypherRow.empty.copyWith("x", VirtualValues.list(intValue(1), intValue(2)))
+    val vNull = CypherRow.empty.copyWith("x", NO_VALUE)
+    val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
     predicate.isMatch(v1, state) should equal(Some(true))

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
 import org.neo4j.cypher.internal.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -39,7 +39,7 @@ case class NodeIndexScanPipe(ident: String,
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val baseContext = state.newExecutionContext(executionContextFactory)
     val cursor = state.query.indexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
     new IndexIterator(state.query, baseContext, cursor)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values._
@@ -96,21 +96,21 @@ class SplitFunctionTest extends CypherFunSuite {
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))
-    expr(ExecutionContext.empty, QueryStateHelper.empty)
+    expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: Char, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))
-    expr(ExecutionContext.empty, QueryStateHelper.empty)
+    expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: String, splitDelimiters: List[String]) = {
     val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
-    expr(ExecutionContext.empty, QueryStateHelper.empty)
+    expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: Char, splitDelimiters: List[String]) = {
     val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
-    expr(ExecutionContext.empty, QueryStateHelper.empty)
+    expr(CypherRow.empty, QueryStateHelper.empty)
   }
 }

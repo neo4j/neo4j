@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{LengthFunction, Variable}
@@ -35,7 +35,7 @@ class LengthFunctionTest extends CypherFunSuite {
   test("length can be used on paths") {
     //given
     val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> ValueUtils.fromPath(p))
+    val m = CypherRow.from("p" -> ValueUtils.fromPath(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
     //when
@@ -47,7 +47,7 @@ class LengthFunctionTest extends CypherFunSuite {
   test("length cannot be used on collections") {
     //given
     val l = Seq("it", "was", "the")
-    val m = ExecutionContext.from("l" -> l)
+    val m = CypherRow.from("l" -> l)
     val lengthFunction = LengthFunction(Variable("l"))
 
     //when/then
@@ -57,7 +57,7 @@ class LengthFunctionTest extends CypherFunSuite {
   test("length cannot be used on strings") {
     //given
     val s = "it was the"
-    val m = ExecutionContext.from("s" -> s)
+    val m = CypherRow.from("s" -> s)
     val lengthFunction = LengthFunction(Variable("s"))
 
     //when/then

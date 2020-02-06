@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
@@ -34,7 +34,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   exp.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val limitNumber = NumericHelper.asNumber(exp(state.newExecutionContext(executionContextFactory), state))
     if (limitNumber.isInstanceOf[FloatingPointValue]) {
       val limit = limitNumber.doubleValue()
@@ -48,12 +48,12 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
     if (limit == 0 || input.isEmpty) return empty
 
-    new AbstractIterator[ExecutionContext] {
+    new AbstractIterator[CypherRow] {
       private var remaining = limit
 
       def hasNext: Boolean = remaining > 0 && input.hasNext
 
-      def next(): ExecutionContext =
+      def next(): CypherRow =
         if (remaining > 0L) {
           remaining -= 1L
           input.next()

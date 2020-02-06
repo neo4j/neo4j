@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.values.{AnyValue, AnyValues}
 
-case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
-  override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[CypherRow] {
+  override def compare(a: CypherRow, b: CypherRow): Int = {
     val column = order.id
     val aVal = a.getByName(column)
     val bVal = b.getByName(column)
@@ -34,9 +34,9 @@ case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala
 }
 
 object InterpretedExecutionContextOrdering {
-  def asComparator(orderBy: Seq[ColumnOrder]): Comparator[ExecutionContext] =
+  def asComparator(orderBy: Seq[ColumnOrder]): Comparator[CypherRow] =
     orderBy.map(InterpretedExecutionContextOrdering.apply)
-    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
+    .reduceLeft[Comparator[CypherRow]]((a, b) => a.thenComparing(b))
 }
 
 sealed trait ColumnOrder {

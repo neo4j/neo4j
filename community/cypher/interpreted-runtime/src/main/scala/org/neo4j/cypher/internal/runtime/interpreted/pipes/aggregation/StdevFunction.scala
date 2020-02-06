@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -55,7 +55,7 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
     }
   }
 
-  override def apply(data: ExecutionContext, state: QueryState) {
+  override def apply(data: CypherRow, state: QueryState) {
     actOnNumber(value(data, state), number => {
       count += 1
       total += number.doubleValue()

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values
 class CountFunction(value: Expression) extends AggregationFunction {
   var count: Long = 0
 
-  override def apply(data: ExecutionContext, state: QueryState) {
+  override def apply(data: CypherRow, state: QueryState) {
     value(data, state) match {
       case IsNoValue() =>
       case _    => count += 1

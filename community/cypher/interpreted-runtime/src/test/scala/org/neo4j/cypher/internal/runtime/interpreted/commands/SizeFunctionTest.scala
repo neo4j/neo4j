@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{SizeFunction, Variable}
@@ -34,7 +34,7 @@ class SizeFunctionTest extends CypherFunSuite {
   test("size can be used on collections") {
     //given
     val l = Seq("it", "was", "the")
-    val m = ExecutionContext.from("l" -> l)
+    val m = CypherRow.from("l" -> l)
     val sizeFunction = SizeFunction(Variable("l"))
 
     //when
@@ -47,7 +47,7 @@ class SizeFunctionTest extends CypherFunSuite {
   test("size can be used on strings") {
     //given
     val s = "it was the"
-    val m = ExecutionContext.from("s" -> s)
+    val m = CypherRow.from("s" -> s)
     val sizeFunction = SizeFunction(Variable("s"))
 
     //when
@@ -60,7 +60,7 @@ class SizeFunctionTest extends CypherFunSuite {
   test("size cannot be used on paths") {
     //given
     val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> p)
+    val m = CypherRow.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
@@ -60,7 +60,7 @@ class ListSliceTest extends CypherFunSuite {
     slice(from = -10, to = -1) should equal(list(longValue(1), longValue(2), longValue(3)))
   }
 
-  private val ctx = ExecutionContext.empty
+  private val ctx = CypherRow.empty
   private implicit val state = QueryStateHelper.empty
   private val NO_VALUE = -666
 

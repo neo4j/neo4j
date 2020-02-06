@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.expressions.{NODE_TYPE, CachedProperty, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -29,7 +29,7 @@ class MapExecutionContextTest extends CypherFunSuite {
   test("create clone") {
     // given
     val key = "key"
-    val ctx = ExecutionContext.empty.copyWith(key, BooleanValue.FALSE)
+    val ctx = CypherRow.empty.copyWith(key, BooleanValue.FALSE)
 
     // when
     val ctxClone = ctx.createClone()
@@ -44,7 +44,7 @@ class MapExecutionContextTest extends CypherFunSuite {
   test("single key set") {
     // given
     val key = "key"
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     // when (written)
     ctx.set(key, BooleanValue.FALSE)
@@ -63,7 +63,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     // when (written)
     ctx.set(key1, BooleanValue.FALSE, key2, BooleanValue.FALSE)
@@ -85,7 +85,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     val key1 = "key1"
     val key2 = "key2"
     val key3 = "key3"
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     // when (written)
     ctx.set(key1, BooleanValue.FALSE, key2, BooleanValue.FALSE, key3, BooleanValue.FALSE)
@@ -108,7 +108,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     // when (written)
     ctx.set(Seq((key1, BooleanValue.FALSE), (key2, BooleanValue.FALSE)))
@@ -129,10 +129,10 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
+    val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
 
     // when (other map is equal or larger)
-    val rhsCtx1 = ExecutionContext.empty.copyWith(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
+    val rhsCtx1 = CypherRow.empty.copyWith(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
     lhsCtx.mergeWith(rhsCtx1, null)
 
     // then
@@ -140,7 +140,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
-    val rhsCtx2 = ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE)
+    val rhsCtx2 = CypherRow.empty.copyWith(key2, BooleanValue.FALSE)
     lhsCtx.mergeWith(rhsCtx2, null)
 
     // then
@@ -156,8 +156,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     val key1 = "key1"
     val key2 = "key2"
     val cachedPropertyKey = prop("n", "key")
-    val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
-    val rhsCtx = ExecutionContext.empty
+    val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
+    val rhsCtx = CypherRow.empty
     rhsCtx.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
     rhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
 
@@ -170,7 +170,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
-    lhsCtx.mergeWith(ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE), null)
+    lhsCtx.mergeWith(CypherRow.empty.copyWith(key2, BooleanValue.FALSE), null)
 
     // then
     lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
@@ -184,10 +184,10 @@ class MapExecutionContextTest extends CypherFunSuite {
     val key1 = "key1"
     val key2 = "key2"
     val cachedPropertyKey = prop("n", "key")
-    val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
+    val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
     lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
 
-    val rhsCtx1 = ExecutionContext.empty
+    val rhsCtx1 = CypherRow.empty
     rhsCtx1.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
 
     // when (other map is equal or larger)
@@ -199,7 +199,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
-    val rhsCtx2 = ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE)
+    val rhsCtx2 = CypherRow.empty.copyWith(key2, BooleanValue.FALSE)
     lhsCtx.mergeWith(rhsCtx2, null)
 
     // then
@@ -215,10 +215,10 @@ class MapExecutionContextTest extends CypherFunSuite {
     val key1 = "key1"
     val key2 = "key2"
     val cachedPropertyKey = prop("n", "key")
-    val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
+    val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
     lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
 
-    val rhsCtx1 = ExecutionContext.empty
+    val rhsCtx1 = CypherRow.empty
     rhsCtx1.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
     rhsCtx1.setCachedProperty(cachedPropertyKey, BooleanValue.FALSE)
 
@@ -231,7 +231,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.FALSE)
 
     // when (other map is smaller, the missing keys should not be removed)
-    val rhsCtx2 = ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE)
+    val rhsCtx2 = CypherRow.empty.copyWith(key2, BooleanValue.FALSE)
     lhsCtx.mergeWith(rhsCtx2, null)
 
     // then
@@ -245,7 +245,7 @@ class MapExecutionContextTest extends CypherFunSuite {
   test("set/get cached property") {
     // given
     val key = prop("n", "key")
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     // when (written)
     ctx.setCachedProperty(key, BooleanValue.FALSE)
@@ -263,7 +263,7 @@ class MapExecutionContextTest extends CypherFunSuite {
   test("single key copy") {
     // given
     val key = "key"
-    val lhsCtx = ExecutionContext.empty
+    val lhsCtx = CypherRow.empty
 
     // when
     val rhsCtx = lhsCtx.copyWith(key, BooleanValue.FALSE)
@@ -278,7 +278,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val lhsCtx = ExecutionContext.empty
+    val lhsCtx = CypherRow.empty
 
     // when
     val rhsCtx = lhsCtx.copyWith(key1, BooleanValue.FALSE, key2, BooleanValue.TRUE)
@@ -295,7 +295,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     val key1 = "key1"
     val key2 = "key2"
     val key3 = "key3"
-    val lhsCtx = ExecutionContext.empty
+    val lhsCtx = CypherRow.empty
 
     // when
     val newCtx = lhsCtx.copyWith(key1, BooleanValue.FALSE, key2, BooleanValue.TRUE, key3, BooleanValue.TRUE)
@@ -312,7 +312,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val lhsCtx = ExecutionContext.empty
+    val lhsCtx = CypherRow.empty
 
     // when (written)
     val newCtx = lhsCtx.copyWith(Seq((key1, BooleanValue.FALSE), (key2, BooleanValue.FALSE)))
@@ -324,7 +324,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     mutatingLeftDoesNotAffectRight(lhsCtx, newCtx)
   }
 
-  private def mutatingLeftDoesNotAffectRight(left: ExecutionContext, right: ExecutionContext): Unit = {
+  private def mutatingLeftDoesNotAffectRight(left: CypherRow, right: CypherRow): Unit = {
     // given
     left should not be theSameInstanceAs(right)
     val newKey = "this key should not yet exist in left or right"

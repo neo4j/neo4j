@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
-  def compute(value: AnyValue, m: ExecutionContext, state:QueryState): AnyValue
+  def compute(value: AnyValue, m: CypherRow, state:QueryState): AnyValue
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = argument(ctx, state) match {
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = argument(ctx, state) match {
     case x if x == Values.NO_VALUE => Values.NO_VALUE
     case x    => compute(x, ctx, state)
   }

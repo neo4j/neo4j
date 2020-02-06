@@ -71,7 +71,7 @@ class Profiler(databaseInfo: DatabaseInfo,
   }
 
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
+  def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = {
     val oldCount = stats.rowMap.get(pipe.id).map(_.count).getOrElse(0L)
 
     val resultIter =
@@ -117,7 +117,7 @@ class Profiler(databaseInfo: DatabaseInfo,
     def decorate(pipe: Pipe, state: QueryState): QueryState =
       outerProfiler.decorate(owningPipe, state)
 
-    def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+    def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = iter
 
     override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = outerProfiler.afterCreateResults(owningPipe, state)
   }
@@ -279,11 +279,11 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   override val relationshipOps: RelationshipOperations = new ProfilerOperations(inner.relationshipOps) with RelationshipOperations
 }
 
-class ProfilingIterator(inner: Iterator[ExecutionContext],
+class ProfilingIterator(inner: Iterator[CypherRow],
                         startValue: Long,
                         pipeId: Id,
                         startAccouting: Id => Unit,
-                        stopAccounting: Id => Unit) extends Iterator[ExecutionContext]
+                        stopAccounting: Id => Unit) extends Iterator[CypherRow]
   with Counter {
 
   _count = startValue
@@ -295,7 +295,7 @@ class ProfilingIterator(inner: Iterator[ExecutionContext],
     hasNext
   }
 
-  def next(): ExecutionContext = {
+  def next(): CypherRow = {
     increment()
     startAccouting(pipeId)
     val result = inner.next()

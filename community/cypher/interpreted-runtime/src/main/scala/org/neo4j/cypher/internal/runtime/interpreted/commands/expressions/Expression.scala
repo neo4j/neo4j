@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
@@ -57,7 +57,7 @@ abstract class Expression extends AstNode[Expression] {
 
   def containsAggregate: Boolean = exists(_.isInstanceOf[AggregationExpression])
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue
+  def apply(ctx: CypherRow, state: QueryState): AnyValue
 
   override def toString: String = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
@@ -71,7 +71,7 @@ abstract class Expression extends AstNode[Expression] {
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(key)
+  def apply(ctx: CypherRow, state: QueryState): AnyValue = ctx.getByName(key)
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
 
@@ -83,7 +83,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class LimitPipeTest extends CypherFunSuite {
   test("limit 0 should not pull anything from the incoming iterator") {
     // Given
-    val inputIterator = mock[Iterator[ExecutionContext]](new ReturnsMocks)
+    val inputIterator = mock[Iterator[CypherRow]](new ReturnsMocks)
 
     when(inputIterator.isEmpty).thenReturn(false)
 
@@ -45,10 +45,10 @@ class LimitPipeTest extends CypherFunSuite {
   }
 }
 
-class DummyPipe(inputIterator: Iterator[ExecutionContext]) extends Pipe {
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = ???
+class DummyPipe(inputIterator: Iterator[CypherRow]) extends Pipe {
+  override protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = ???
 
   override def id: Id = ???
 
-  override def createResults(state: QueryState): Iterator[ExecutionContext] = inputIterator
+  override def createResults(state: QueryState): Iterator[CypherRow] = inputIterator
 }

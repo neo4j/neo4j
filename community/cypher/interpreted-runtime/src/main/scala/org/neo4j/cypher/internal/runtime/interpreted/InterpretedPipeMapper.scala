@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{GroupingAggTable, NonGroupingAggTable, OrderedGroupingAggTable, OrderedNonGroupingAggTable}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexRegistrator}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ProcedureCallMode, QueryIndexRegistrator}
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.util.Eagerly
@@ -280,7 +280,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             val groupingColumns = groupingExpressions.map {
               case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value))
             }.toArray
-            val groupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(groupingColumns)
+            val groupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(groupingColumns)
             GroupingAggTable.Factory(groupingColumns, groupingFunction, aggregationColumns)
           }
         EagerAggregationPipe(source, tableFactory)(id = id)
@@ -294,8 +294,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         }.toArray
 
         val (orderedGroupingColumns, unorderedGroupingColumns) = groupingColumns.partition(_.ordered)
-        val unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(unorderedGroupingColumns)
-        val orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(orderedGroupingColumns)
+        val unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(unorderedGroupingColumns)
+        val orderedGroupingFunction: (CypherRow, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(orderedGroupingColumns)
 
         val tableFactory =
           if (groupingColumns.forall(_.ordered)) {
@@ -434,13 +434,13 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                  relationshipPredicate: Option[VariablePredicate]): VarLengthPredicate  = {
 
     //Creates commands out of the predicates
-    def asCommand(maybeVariablePredicate: Option[VariablePredicate]): ((ExecutionContext, QueryState, AnyValue) => Boolean, Option[Predicate]) =
+    def asCommand(maybeVariablePredicate: Option[VariablePredicate]): ((CypherRow, QueryState, AnyValue) => Boolean, Option[Predicate]) =
      maybeVariablePredicate match {
-       case None => ((_: ExecutionContext, _: QueryState, _: AnyValue) => true, None)
+       case None => ((_: CypherRow, _: QueryState, _: AnyValue) => true, None)
        case Some(VariablePredicate(variable, astPredicate)) =>
          val command = buildPredicate(id, astPredicate)
          val ev = ExpressionVariable.cast(variable)
-         ((context: ExecutionContext, state: QueryState, entity: AnyValue) => {
+         ((context: CypherRow, state: QueryState, entity: AnyValue) => {
            state.expressionVariables(ev.offset) = entity
            command.isTrue(context, state)
          }, Some(command))
@@ -450,8 +450,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
 
     new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
+      override def filterNode(row: CypherRow, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
+      override def filterRelationship(row: CypherRow, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
 
       override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
     }

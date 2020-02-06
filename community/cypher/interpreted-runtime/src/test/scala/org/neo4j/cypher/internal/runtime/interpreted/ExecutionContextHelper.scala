@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, MapCypherRow}
 import org.neo4j.values.AnyValue
 
 object ExecutionContextHelper {
 
-  implicit class RichExecutionContext(context: ExecutionContext) {
+  implicit class RichExecutionContext(context: CypherRow) {
     def toMap: Map[String, AnyValue] = context match {
-      case m: MapExecutionContext => m.toMap
+      case m: MapCypherRow => m.toMap
       case _ => throw new UnsupportedOperationException(s"cannot make a map out of $context")
     }
   }

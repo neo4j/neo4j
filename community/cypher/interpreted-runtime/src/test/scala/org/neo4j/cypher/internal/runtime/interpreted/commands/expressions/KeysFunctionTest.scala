@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
@@ -48,7 +48,7 @@ class KeysFunctionTest extends CypherFunSuite {
     when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext(mutable.Map("n" -> node))
+    val ctx = CypherRow(mutable.Map("n" -> node))
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx, state)
@@ -65,7 +65,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext(mutable.Map("n" -> node))
+    val ctx = CypherRow(mutable.Map("n" -> node))
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx, state)
@@ -78,7 +78,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
     val queryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
 
     val function = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))
     // WHEN

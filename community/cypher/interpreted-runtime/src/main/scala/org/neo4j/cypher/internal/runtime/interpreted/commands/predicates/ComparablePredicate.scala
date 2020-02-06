@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsFalseValue, IsNoValue, IsTrueValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsFalseValue, IsNoValue, IsTrueValue}
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.values.storable._
 import org.neo4j.values.{AnyValue, Equality}
@@ -32,7 +32,7 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def comparator: (AnyValue, AnyValue) => Value
 
-  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+  override def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = {
     val l = left(m, state)
     val r = right(m, state)
     comparator(l, r) match {
@@ -66,7 +66,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
     else None
   }
 
-  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+  override def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = {
     val l = a(m, state)
     val r = b(m, state)
 

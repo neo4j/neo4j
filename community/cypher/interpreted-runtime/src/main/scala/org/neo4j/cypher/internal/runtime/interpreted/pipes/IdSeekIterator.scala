@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.Operations
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 abstract class IdSeekIterator[T, CURSOR]
-  extends Iterator[ExecutionContext] {
+  extends Iterator[CypherRow] {
 
   private var cachedEntity: T = computeNextEntity()
 
@@ -60,7 +60,7 @@ abstract class IdSeekIterator[T, CURSOR]
 }
 
 final class NodeIdSeekIterator(ident: String,
-                               baseContext: ExecutionContext,
+                               baseContext: CypherRow,
                                executionContextFactory: ExecutionContextFactory,
                                protected val operations: Operations[NodeValue, NodeCursor],
                                protected val entityIds: Iterator[AnyValue])
@@ -68,14 +68,14 @@ final class NodeIdSeekIterator(ident: String,
 
   def hasNext: Boolean = hasNextEntity
 
-  def next(): ExecutionContext =
+  def next(): CypherRow =
     executionContextFactory.copyWith(baseContext, ident, nextEntity())
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
                                                fromNode: String,
                                                toNode: String,
-                                               baseContext: ExecutionContext,
+                                               baseContext: CypherRow,
                                                executionContextFactory: ExecutionContextFactory,
                                                protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                protected val entityIds: Iterator[AnyValue])
@@ -83,7 +83,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def hasNext: Boolean = hasNextEntity
 
-  def next(): ExecutionContext = {
+  def next(): CypherRow = {
     val rel = nextEntity()
     executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode()
     )
@@ -93,7 +93,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  fromNode: String,
                                                  toNode: String,
-                                                 baseContext: ExecutionContext,
+                                                 baseContext: CypherRow,
                                                  executionContextFactory: ExecutionContextFactory,
                                                  protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                  protected val entityIds: Iterator[AnyValue])
@@ -106,7 +106,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
 
   def hasNext: Boolean = emitSibling || hasNextEntity
 
-  def next(): ExecutionContext = {
+  def next(): CypherRow = {
     if (emitSibling) {
       emitSibling = false
       executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastEnd, toNode, lastStart)

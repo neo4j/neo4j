@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion.asValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue
 case class Literal(v: Any) extends Expression {
   val anyVal: AnyValue = asValue(v)
   //TODO this could have been figured out earlier
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = anyVal
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = anyVal
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
 

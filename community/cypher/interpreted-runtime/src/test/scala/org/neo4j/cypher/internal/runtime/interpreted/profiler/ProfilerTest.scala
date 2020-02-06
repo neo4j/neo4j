@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
@@ -212,7 +212,7 @@ class ProfilerTest extends CypherFunSuite {
       val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
       val profiled_1 = profiler.decorate(pipe1, state1)
-      val iter1 = Iterator(ExecutionContext.empty, ExecutionContext.empty, ExecutionContext.empty)
+      val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
 
       val profiled1 = profiler.decorate(pipe1, iter1)
       profiled1.toList // consume it
@@ -221,7 +221,7 @@ class ProfilerTest extends CypherFunSuite {
       val pipe2 = ArgumentPipe()(idGen.id())
       val ctx2: QueryContext = prepareQueryContext()
       val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
-      val iter2 = Iterator(ExecutionContext.empty, ExecutionContext.empty)
+      val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
 
       val profiled_2 = profiler.decorate(pipe2, state2)
       val profiled2 = profiler.decorate(pipe2, iter2)
@@ -282,14 +282,14 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
                             misses: Long = 0)(val id: Id)
     extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     input.size
     if (statisticProvider != null) {
       statisticProvider.hits = hits
       statisticProvider.misses = misses
     }
     (0 until dbAccess).foreach(_ => state.query.createNode(Array.empty))
-    (0 until rows).map(_ => ExecutionContext.empty).toIterator
+    (0 until rows).map(_ => CypherRow.empty).toIterator
   }
 }
 

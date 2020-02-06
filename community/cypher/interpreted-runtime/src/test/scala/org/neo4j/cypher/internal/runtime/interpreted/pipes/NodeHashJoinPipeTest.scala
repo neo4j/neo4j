@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -88,7 +88,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     lhsIterator.fetched should equal(0)
   }
 
-  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
   private def newMockedNode(id: Int) = {
     val node = mock[Node]

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, LenientCreateRelationship, Operations, QueryContext, _}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue, LenientCreateRelationship, Operations, QueryContext, _}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.values.AnyValue
@@ -36,7 +36,7 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
   /**
     * Set properties on node by delegating to `setProperty`.
     */
-  protected def setProperties(context: ExecutionContext,
+  protected def setProperties(context: CypherRow,
                               state: QueryState,
                               entityId: Long,
                               properties: Expression,
@@ -86,7 +86,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
     * Create node from command.
     */
-  protected def createNode(context: ExecutionContext,
+  protected def createNode(context: CypherRow,
                            state: QueryState,
                            data: CreateNodeCommand): (String, NodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query)).toArray
@@ -98,7 +98,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
     * Create relationship from command.
     */
-  protected def createRelationship(context: ExecutionContext,
+  protected def createRelationship(context: CypherRow,
                                    state: QueryState,
                                    data: CreateRelationshipCommand): (String, AnyValue) = {
     val start = getNode(context, data.idName, data.startNode, state.lenientCreateRelationship)
@@ -116,7 +116,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
     data.idName -> relationship
   }
 
-  private def getNode(row: ExecutionContext, relName: String, name: String, lenient: Boolean): NodeValue =
+  private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): NodeValue =
     row.getByName(name) match {
       case n: NodeValue => n
       case IsNoValue() =>
@@ -134,7 +134,7 @@ case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships:
   nodes.foreach(_.properties.foreach(_.registerOwningPipe(this)))
   relationships.foreach(_.properties.foreach(_.registerOwningPipe(this)))
 
-  override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(row => {
       nodes.foreach { nodeCommand =>
         val (key, node) = createNode(row, state, nodeCommand)
@@ -175,7 +175,7 @@ case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
 
   data.properties.foreach(_.registerOwningPipe(this))
 
-  override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(inRow => {
       val (idName, node) = createNode(inRow, state, data)
       inRow.copyWith(idName, node)
@@ -197,7 +197,7 @@ case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipComman
   extends EntityCreatePipe(src) {
   data.properties.foreach(_.registerOwningPipe(this))
 
-  override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(inRow => {
       val (idName, relationship) = createRelationship(inRow, state, data)
       inRow.copyWith(idName, relationship)

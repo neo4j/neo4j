@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipIterator
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.graphdb.Direction
@@ -45,8 +45,8 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
 
   predicate.foreach(_.registerOwningPipe(this))
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow],
+                                      state: QueryState): Iterator[CypherRow] = {
     val query = state.query
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection)
     input.flatMap {
@@ -71,7 +71,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                                                                            n.id())
                   query.resources.trace(selectionCursor)
                   val relationships = relationshipIterator(selectionCursor, query)
-                  val filteredRows = ListBuffer.empty[ExecutionContext]
+                  val filteredRows = ListBuffer.empty[CypherRow]
                   while (relationships.hasNext) {
                     val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {

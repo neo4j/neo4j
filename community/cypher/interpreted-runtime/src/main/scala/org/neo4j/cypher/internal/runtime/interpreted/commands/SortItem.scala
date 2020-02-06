@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.PatternException
 import org.neo4j.values.AnyValue
 
 case class SortItem(expression: Expression, ascending: Boolean) {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+  def apply(ctx: CypherRow, state: QueryState): AnyValue =
     if (!expression.isDeterministic)
       throw new PatternException("ORDER BY expressions must be deterministic. " +
         "For instance, you cannot use the rand() function in the expression")

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers._
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
@@ -181,10 +181,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
   }
 
 
-  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
-  private def rows(variable: String, values: AnyValue*): Iterator[ExecutionContext] =
-    values.map(x => ExecutionContext.from(variable -> x)).iterator
+  private def rows(variable: String, values: AnyValue*): Iterator[CypherRow] =
+    values.map(x => CypherRow.from(variable -> x)).iterator
 
 }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 
 case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+  override def compute(value: AnyValue, m: CypherRow, state: QueryState): AnyValue =
     CypherFunctions.labels(value, state.query, state.cursors.nodeCursor)
 
   override def rewrite(f: Expression => Expression): Expression = f(LabelsFunction(nodeExpr.rewrite(f)))

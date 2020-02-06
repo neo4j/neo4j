@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InternalException
@@ -43,7 +43,7 @@ class SumFunction(val value: Expression)
 
   }
 
-  override def apply(data: ExecutionContext, state: QueryState) {
+  override def apply(data: CypherRow, state: QueryState) {
     val vl = value(data, state)
     actOnNumberOrDuration(vl,
       number => {

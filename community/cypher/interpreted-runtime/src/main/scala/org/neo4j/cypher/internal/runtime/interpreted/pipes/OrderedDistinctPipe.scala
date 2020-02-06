@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
@@ -40,8 +40,8 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
   private val keyNames = groupingColumns.sortBy(!_.ordered).map(_.key)
   private val numberOfSortedColumns = groupingColumns.count(_.ordered)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow],
+                                      state: QueryState): Iterator[CypherRow] = {
 
     /*
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
@@ -88,8 +88,8 @@ case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingC
   // First the ordered columns, then the unordered ones
   private val keyNames = groupingColumns.map(_.key)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow],
+                                      state: QueryState): Iterator[CypherRow] = {
     var currentOrderedGroupingValue: AnyValue = null
 
     input.filter { ctx =>

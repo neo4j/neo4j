@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
@@ -37,11 +37,11 @@ trait IndexPipeWithValues extends Pipe {
   val indexCachedProperties: Array[CachedProperty]
 
   class IndexIterator(queryContext: QueryContext,
-                      baseContext: ExecutionContext,
+                      baseContext: CypherRow,
                       cursor: NodeValueIndexCursor
-                     ) extends IndexIteratorBase[ExecutionContext](cursor) {
+                     ) extends IndexIteratorBase[CypherRow](cursor) {
 
-    override protected def fetchNext(): ExecutionContext = {
+    override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {
         val newContext = executionContextFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
         var i = 0

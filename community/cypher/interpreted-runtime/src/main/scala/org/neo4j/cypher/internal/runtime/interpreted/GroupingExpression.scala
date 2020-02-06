@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.values.AnyValue
 
@@ -41,7 +41,7 @@ trait GroupingExpression {
     * @param state used for evaluating expressions
     * @return the grouping key
     */
-  def computeGroupingKey(context: ExecutionContext, state: QueryState): KeyType
+  def computeGroupingKey(context: CypherRow, state: QueryState): KeyType
 
   /**
     * Compute the grouping key for all columns that have a provided order.
@@ -56,14 +56,14 @@ trait GroupingExpression {
     * @param context The context to get the values for the key
     * @return The grouping key as read from the context
     */
-  def getGroupingKey(context: ExecutionContext): KeyType
+  def getGroupingKey(context: CypherRow): KeyType
 
   /**
     * Projects a computed key to the context
     * @param context The context where to project.
     * @param groupingKey The computed grouping key to project
     */
-  def project(context: ExecutionContext,  groupingKey: KeyType): Unit
+  def project(context: CypherRow, groupingKey: KeyType): Unit
 
   /**
     * @return `true` if there is no grouping, `false` otherwise.

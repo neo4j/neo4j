@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.createParameterArray
@@ -48,13 +48,13 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
   override def evaluate(expression: String): AnyValue =
     errorContext(expression) {
       val parsedExpression = SimpleInternalExpressionEvaluator.ExpressionParser.parse(expression)
-      doEvaluate(parsedExpression, MapValue.EMPTY, ExecutionContext.empty)
+      doEvaluate(parsedExpression, MapValue.EMPTY, CypherRow.empty)
     }
 
   def evaluate(
     expression: Expression,
     params: MapValue = MapValue.EMPTY,
-    context: ExecutionContext = ExecutionContext.empty
+    context: CypherRow = CypherRow.empty
   ): AnyValue = errorContext(expression.toString) {
     doEvaluate(expression, params, context)
   }
@@ -65,7 +65,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
         throw new EvaluationException(s"Failed to evaluate expression $expr", e)
     }
 
-  def doEvaluate(expression: Expression, params: MapValue, context: ExecutionContext): AnyValue = {
+  def doEvaluate(expression: Expression, params: MapValue, context: CypherRow): AnyValue = {
     val (expr, paramArray) = withSlottedParams(expression, params)
     val allocated = expressionVariableAllocation.allocate(expr)
     val state = queryState(allocated.nExpressionSlots, paramArray)

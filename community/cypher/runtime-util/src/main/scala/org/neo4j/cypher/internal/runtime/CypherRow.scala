@@ -34,16 +34,16 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.mutable
 
-object ExecutionContext {
-  def empty: ExecutionContext = apply()
+object CypherRow {
+  def empty: CypherRow = apply()
 
-  def from(x: (String, AnyValue)*): ExecutionContext = {
+  def from(x: (String, AnyValue)*): CypherRow = {
     val context = empty
     context.set(x)
     context
   }
 
-  def apply(m: mutable.Map[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
+  def apply(m: mutable.Map[String, AnyValue] = MutableMaps.empty): MapCypherRow = new MapCypherRow(m, null)
 }
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
@@ -55,58 +55,19 @@ trait WithHeapUsageEstimation {
   def estimatedHeapUsage: Long
 }
 
-trait ExecutionContext extends WithHeapUsageEstimation {
+trait CypherRow extends ReadableRow with WritableRow with WithHeapUsageEstimation {
 
-  def copyTo(target: ExecutionContext, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit
-  def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
-  def setLongAt(offset: Int, value: Long): Unit
-  def getLongAt(offset: Int): Long
-
-  def setRefAt(offset: Int, value: AnyValue): Unit
-  def getRefAt(offset: Int): AnyValue
-  def getByName(name: String): AnyValue
   @deprecated
   def containsName(name: String): Boolean
+  @deprecated
   def numberOfColumns: Int
 
-  def set(newEntries: Seq[(String, AnyValue)]): Unit
-  def set(key: String, value: AnyValue): Unit
-  def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit
-  def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit
-  def mergeWith(other: ExecutionContext, entityById: EntityById): Unit
-  def createClone(): ExecutionContext
+  def createClone(): CypherRow
 
-  def setCachedProperty(key: ASTCachedProperty, value: Value): Unit
-  def setCachedPropertyAt(offset: Int, value: Value): Unit
-
-  /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
-  def getCachedProperty(key: ASTCachedProperty): Value
-
-  /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
-  def getCachedPropertyAt(offset: Int): Value
-
-  /**
-    * Invalidate all cached node properties for the given node id
-    */
-  def invalidateCachedNodeProperties(node: Long): Unit
-
-  /**
-    * Invalidate all cached relationship properties for the given relationship id
-    */
-  def invalidateCachedRelationshipProperties(rel: Long): Unit
-
-  def copyWith(key: String, value: AnyValue): ExecutionContext
-  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
-  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
-  def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
+  def copyWith(key: String, value: AnyValue): CypherRow
+  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
+  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow
+  def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow
 
   // Needed by legacy pattern matcher. Returns a map of all bound nodes/relationships in the context.
   // Entities that are only references (ids) are materialized with the provided materialization functions
@@ -114,30 +75,28 @@ trait ExecutionContext extends WithHeapUsageEstimation {
 
   def isNull(key: String): Boolean
 
-  //Linenumber and filename specifics
   private var linenumber: Option[ResourceLinenumber] = None
 
-  def setLinenumber(file: String, line: Long, last: Boolean = false): Unit = {
+  override def setLinenumber(file: String, line: Long, last: Boolean = false): Unit = {
     // sets the linenumber for the first time, overwrite since it would mean we have a LoadCsv in a LoadCsv
     linenumber = Some(ResourceLinenumber(file, line, last))
   }
 
-  def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
+  override def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
     // used to copy the linenumber when copying the ExecutionContext, don't want to overwrite it
     case None => linenumber = line
     case _ =>
   }
 
-  def getLinenumber: Option[ResourceLinenumber] = linenumber
-
+  override def getLinenumber: Option[ResourceLinenumber] = linenumber
 }
 
-class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
-  extends ExecutionContext {
+class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
+  extends CypherRow {
 
-  override def copyTo(target: ExecutionContext, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit = fail()
+  override def copyTo(target: WritableRow, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit = fail()
 
-  override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
+  override def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit = fail()
 
   def remove(name: String): Option[AnyValue] = m.remove(name)
   //used for testing
@@ -155,8 +114,8 @@ class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private 
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
-  override def mergeWith(other: ExecutionContext, entityById: EntityById): Unit = other match {
-    case otherMapCtx: MapExecutionContext =>
+  override def mergeWith(other: ReadableRow, entityById: EntityById): Unit = other match {
+    case otherMapCtx: MapCypherRow =>
       m ++= otherMapCtx.m
       if (otherMapCtx.cachedProperties != null) {
         if (cachedProperties == null) {
@@ -190,13 +149,13 @@ class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private 
     m.put(key3, value3)
   }
 
-  override def copyWith(key: String, value: AnyValue): ExecutionContext = {
+  override def copyWith(key: String, value: AnyValue): CypherRow = {
     val newMap = m.clone()
     newMap.put(key, value)
     cloneFromMap(newMap)
   }
 
-  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
@@ -205,7 +164,7 @@ class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private 
 
   override def copyWith(key1: String, value1: AnyValue,
                         key2: String, value2: AnyValue,
-                        key3: String, value3: AnyValue): ExecutionContext = {
+                        key3: String, value3: AnyValue): CypherRow = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
@@ -213,11 +172,11 @@ class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private 
     cloneFromMap(newMap)
   }
 
-  override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+  override def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow = {
     cloneFromMap(m.clone() ++ newEntries)
   }
 
-  override def createClone(): ExecutionContext = cloneFromMap(m.clone())
+  override def createClone(): CypherRow = cloneFromMap(m.clone())
 
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] =
     m.collect {
@@ -289,17 +248,17 @@ class MapExecutionContext(private val m: mutable.Map[String, AnyValue], private 
     total
   }
 
-  private def cloneFromMap(newMap: mutable.Map[String, AnyValue]): ExecutionContext = {
+  private def cloneFromMap(newMap: mutable.Map[String, AnyValue]): CypherRow = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
-    val map = new MapExecutionContext(newMap, newCachedProperties)
+    val map = new MapCypherRow(newMap, newCachedProperties)
     map.setLinenumber(getLinenumber)
     map
   }
 
-  def canEqual(other: Any): Boolean = other.isInstanceOf[MapExecutionContext]
+  def canEqual(other: Any): Boolean = other.isInstanceOf[MapCypherRow]
 
   override def equals(other: Any): Boolean = other match {
-    case that: MapExecutionContext =>
+    case that: MapCypherRow =>
       (that canEqual this) &&
         m == that.m
     case _ => false

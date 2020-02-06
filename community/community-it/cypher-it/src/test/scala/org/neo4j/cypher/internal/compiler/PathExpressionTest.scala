@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
@@ -53,7 +53,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     val expression = ShortestPathExpression(pattern)
 
-    val m = ExecutionContext.from("a" -> a, "c" -> c)
+    val m = CypherRow.from("a" -> a, "c" -> c)
 
     val result = withQueryState { state =>
       expression(m, state).asInstanceOf[PathValue]

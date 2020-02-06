@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.{DoubleValue, LongValue}
@@ -93,5 +93,5 @@ class TypeTest extends CypherFunSuite {
     result shouldBe a [DoubleValue]
   }
 
-  private def calc(e:Expression) = e.apply(ExecutionContext.empty, QueryStateHelper.empty)
+  private def calc(e:Expression) = e.apply(CypherRow.empty, QueryStateHelper.empty)
 }

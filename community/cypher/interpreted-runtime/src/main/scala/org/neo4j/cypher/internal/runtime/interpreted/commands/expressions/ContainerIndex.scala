@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -31,7 +31,7 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
 
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
-  override def apply(ctx: ExecutionContext,
+  override def apply(ctx: CypherRow,
                      state: QueryState): AnyValue = expression(ctx, state) match {
     case x if x eq NO_VALUE => NO_VALUE
     case value =>

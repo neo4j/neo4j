@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.virtual.{NodeValue, PathValue, RelationshipValue}
@@ -33,8 +33,8 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
   expression.registerOwningPipe(this)
 
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                               state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[CypherRow],
+                                               state: QueryState): Iterator[CypherRow] = {
     input.map { row =>
       expression(row, state) match {
         case IsNoValue() => // do nothing

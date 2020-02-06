@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, DistinctPipe, ExecutionContextFactory, OrderedAggregationTableFactory, OrderedChunkReceiver, Pipe, QueryState}
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -37,9 +37,9 @@ import org.neo4j.values.AnyValue
   * @param unorderedGroupingColumns all grouping columns that do not have a provided order
   * @param aggregations all aggregation columns
   */
-class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+class OrderedGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                               orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                              unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+                              unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                               unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                               aggregations: Array[AggregationPipe.AggregatingCol],
                               state: QueryState,
@@ -54,14 +54,14 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
     super.clear()
   }
 
-  override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = {
+  override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = {
     if (currentGroupKey == null) {
       currentGroupKey = orderedGroupingFunction(first, state)
     }
     current.eq(first) || currentGroupKey == orderedGroupingFunction(current, state)
   }
 
-  override def result(): Iterator[ExecutionContext] = {
+  override def result(): Iterator[CypherRow] = {
     val addOrderedKeys = AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)
     super.result().map { row =>
       addOrderedKeys(row, currentGroupKey)
@@ -73,9 +73,9 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
 }
 
 object OrderedGroupingAggTable {
-  case class Factory(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+  case class Factory(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                      orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                     unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+                     unorderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                      unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                      aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =

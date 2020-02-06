@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{RETURNS_DEEP_STUBS, _}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
@@ -49,7 +49,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     pred.owningPipe should equal(pipe)
   }
 
-  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
   private def newMockedNode(id: Int) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
@@ -66,7 +66,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     relationship
   }
 
-  private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
+  private def newMockedPipe(node: String, rows: CypherRow*): Pipe = {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenAnswer(_ => rows.iterator)
 

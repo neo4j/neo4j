@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -37,7 +37,7 @@ The key for the cache is the expression and not the value, which saves in execut
 case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: CypherRow, state: QueryState): Option[Boolean] = {
     val inChecker = state.cachedIn.getOrElseUpdate(list, {
       val listValue = list(ctx, state)
       val checker = if (listValue eq Values.NO_VALUE)
@@ -69,7 +69,7 @@ It uses a cache for the <rhs-expression> value, and turns it into a Set, for fas
 case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: CypherRow, state: QueryState): Option[Boolean] = {
     val listValue: AnyValue = list(ctx, state)
 
     if(listValue eq Values.NO_VALUE)

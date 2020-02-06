@@ -21,27 +21,27 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters._
 
 case class PartialSortPipe(source: Pipe,
-                           prefixComparator: Comparator[ExecutionContext],
-                           suffixComparator: Comparator[ExecutionContext])
+                           prefixComparator: Comparator[CypherRow],
+                           suffixComparator: Comparator[CypherRow])
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with OrderedInputPipe {
 
   class PartialSortReceiver extends OrderedChunkReceiver {
-    private val buffer = new java.util.ArrayList[ExecutionContext]()
+    private val buffer = new java.util.ArrayList[CypherRow]()
 
     override def clear(): Unit = buffer.clear()
 
-    override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = prefixComparator.compare(first, current) == 0
+    override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
 
-    override def processRow(row: ExecutionContext): Unit = buffer.add(row)
+    override def processRow(row: CypherRow): Unit = buffer.add(row)
 
-    override def result(): Iterator[ExecutionContext] = {
+    override def result(): Iterator[CypherRow] = {
       if (buffer.size() > 1) {
         // Sort this chunk
         buffer.sort(suffixComparator)

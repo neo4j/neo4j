@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, InputCursor}
+import org.neo4j.cypher.internal.runtime.{CypherRow, InputCursor}
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class InputPipe(variables: Array[String])
                     (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    new Iterator[ExecutionContext] {
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+    new Iterator[CypherRow] {
       var cursor: InputCursor = _
       var cursorOnNextRow: Boolean = false
 
@@ -47,7 +47,7 @@ case class InputPipe(variables: Array[String])
         true
       }
 
-      override def next(): ExecutionContext = {
+      override def next(): CypherRow = {
         if (hasNext) {
           val ctx = state.newExecutionContext(executionContextFactory)
           var i = 0

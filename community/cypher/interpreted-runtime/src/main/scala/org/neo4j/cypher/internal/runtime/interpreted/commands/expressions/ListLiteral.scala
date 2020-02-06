@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -32,7 +32,7 @@ object ListLiteral {
 case class ListLiteral(override val arguments: Expression*) extends Expression {
   private val size = arguments.size
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
     val result = new Array[AnyValue](size)
     var i = 0
     while (i < size) {

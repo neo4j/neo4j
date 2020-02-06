@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, ExecutionContextFactory, Pipe, QueryState}
@@ -34,20 +34,20 @@ import org.neo4j.values.AnyValue
   * @param aggregations     all aggregation columns
   */
 class GroupingAggTable(groupingColumns: Array[GroupingCol],
-                       groupingFunction: (ExecutionContext, QueryState) => AnyValue,
+                       groupingFunction: (CypherRow, QueryState) => AnyValue,
                        aggregations: Array[AggregatingCol],
                        state: QueryState,
                        executionContextFactory: ExecutionContextFactory,
                        operatorId: Id) extends AggregationTable {
 
   protected var resultMap: java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]] = _
-  protected val addKeys: (ExecutionContext, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
+  protected val addKeys: (CypherRow, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
 
   override def clear(): Unit = {
     resultMap = new java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]]()
   }
 
-  override def processRow(row: ExecutionContext): Unit = {
+  override def processRow(row: CypherRow): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
     val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
       state.memoryTracker.allocated(groupingValue, operatorId.x)
@@ -66,12 +66,12 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
     }
   }
 
-  override def result(): Iterator[ExecutionContext] = {
+  override def result(): Iterator[CypherRow] = {
     val innerIterator = resultMap.entrySet().iterator()
-    new Iterator[ExecutionContext] {
+    new Iterator[CypherRow] {
       override def hasNext: Boolean = innerIterator.hasNext
 
-      override def next(): ExecutionContext = {
+      override def next(): CypherRow = {
         val entry = innerIterator.next()
         val unorderedGroupingValue = entry.getKey
         val aggregateFunctions = entry.getValue
@@ -93,7 +93,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
 object GroupingAggTable {
 
   case class Factory(groupingColumns: Array[GroupingCol],
-                     groupingFunction: (ExecutionContext, QueryState) => AnyValue,
+                     groupingFunction: (CypherRow, QueryState) => AnyValue,
                      aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
       new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, executionContextFactory, operatorId)

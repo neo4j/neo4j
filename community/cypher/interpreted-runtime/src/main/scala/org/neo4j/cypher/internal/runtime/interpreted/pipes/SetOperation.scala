@@ -34,7 +34,7 @@ import scala.collection.mutable.ArrayBuffer
 
 sealed trait SetOperation {
 
-  def set(executionContext: ExecutionContext, state: QueryState): Unit
+  def set(executionContext: CypherRow, state: QueryState): Unit
 
   def name: String
 
@@ -45,7 +45,7 @@ sealed trait SetOperation {
 
 object SetOperation {
 
-  private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression): MapValue = {
+  private[pipes] def toMap(executionContext: CypherRow, state: QueryState, expression: Expression): MapValue = {
     /* Make the map expression look like a map */
     expression(executionContext, state) match {
       case IsMap(map) => map(state)
@@ -56,7 +56,7 @@ object SetOperation {
 
 abstract class AbstractSetPropertyOperation extends SetOperation {
 
-  protected def setProperty[T, CURSOR](context: ExecutionContext,
+  protected def setProperty[T, CURSOR](context: CypherRow,
                                        state: QueryState,
                                        cursor: CURSOR,
                                        ops: Operations[T, CURSOR],
@@ -85,7 +85,7 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
                                                      expression: Expression)
   extends AbstractSetPropertyOperation {
 
-  override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
+  override def set(executionContext: CypherRow, state: QueryState): Unit = {
     val item = executionContext.getByName(itemName)
     if (!(item eq Values.NO_VALUE)) {
       val itemId = id(item)
@@ -107,7 +107,7 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
 
   protected def entityCursor(cursors: ExpressionCursors): CURSOR
 
-  protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
+  protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit
 
   override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
@@ -126,7 +126,7 @@ case class SetNodePropertyOperation(nodeName: String,
 
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 
-  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
+  override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedNodeProperties(id)
 }
 
@@ -144,7 +144,7 @@ case class SetRelationshipPropertyOperation(relName: String,
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 
-  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
+  override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedRelationshipProperties(id)
 }
 
@@ -153,7 +153,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
   override def name: String = "SetProperty"
 
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext, state)
     if (!(resolvedEntity eq Values.NO_VALUE)) {
       def setIt[T, CURSOR](entityId: Long, ops: Operations[T, CURSOR], cursor: CURSOR, invalidation: Long => Unit): Unit = {
@@ -232,7 +232,7 @@ abstract class AbstractSetPropertyFromMapOperation(expression: Expression) exten
 abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
                                                        expression: Expression,
                                                        removeOtherProps: Boolean) extends AbstractSetPropertyFromMapOperation(expression) {
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState) = {
     val item = executionContext.getByName(itemName)
     if (!(item eq Values.NO_VALUE)) {
       val ops = operations(state.query)
@@ -253,7 +253,7 @@ abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
 
   protected def operations(qtx: QueryContext): Operations[T, CURSOR]
 
-  protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
+  protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit
 
   protected def entityCursor(cursors: ExpressionCursors): CURSOR
 }
@@ -270,7 +270,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 
-  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit = executionContext.invalidateCachedNodeProperties(id)
+  override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit = executionContext.invalidateCachedNodeProperties(id)
 }
 
 
@@ -288,7 +288,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 
-  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit = executionContext.invalidateCachedRelationshipProperties(id)
+  override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit = executionContext.invalidateCachedRelationshipProperties(id)
 }
 
 case class SetPropertyFromMapOperation(entityExpr: Expression,
@@ -298,7 +298,7 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
 
   override def name = "SetPropertyFromMap"
 
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext, state)
     if (resolvedEntity != Values.NO_VALUE) {
       def setIt[T, CURSOR](entityId: Long, ops: Operations[T, CURSOR], cursor: CURSOR, invalidation: Long => Unit): Unit = {
@@ -333,7 +333,7 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
 
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState) = {
     val value: AnyValue = executionContext.getByName(nodeName)
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()

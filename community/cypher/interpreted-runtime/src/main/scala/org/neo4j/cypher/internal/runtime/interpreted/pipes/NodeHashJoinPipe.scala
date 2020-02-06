@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -30,7 +30,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     if (input.isEmpty)
       return Iterator.empty
 
@@ -59,8 +59,8 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.flatten
   }
 
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
-    val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
+  private def buildProbeTable(input: Iterator[CypherRow]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[CypherRow]] = {
+    val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[CypherRow]]
 
     for {context <- input
          joinKey <- computeKey(context)} {
@@ -73,7 +73,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   private val cachedVariables = nodeVariables.toIndexedSeq
 
-  private def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
+  private def computeKey(context: CypherRow): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](cachedVariables.length)
 
     for (idx <- cachedVariables.indices) {

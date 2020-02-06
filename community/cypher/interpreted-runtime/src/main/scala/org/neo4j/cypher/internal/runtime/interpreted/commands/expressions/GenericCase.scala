@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -29,7 +29,7 @@ case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], defaul
 
   require(alternatives.nonEmpty)
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
     val thisMatch: Option[Expression] = alternatives collectFirst {
       case (p, res) if p.isTrue(ctx, state) => res
     }

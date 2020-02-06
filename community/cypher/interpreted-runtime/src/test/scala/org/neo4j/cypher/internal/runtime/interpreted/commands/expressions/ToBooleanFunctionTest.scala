@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
@@ -54,11 +54,11 @@ class ToBooleanFunctionTest extends CypherFunSuite {
     a [ParameterWrongTypeException] shouldBe thrownBy(toBoolean(1))
     a [ParameterWrongTypeException] shouldBe thrownBy(toBoolean(1.0))
     val toBooleanOfList = ToBooleanFunction(ListLiteral.empty)
-    a [ParameterWrongTypeException] shouldBe thrownBy(toBooleanOfList(ExecutionContext.empty, QueryStateHelper.empty))
+    a [ParameterWrongTypeException] shouldBe thrownBy(toBooleanOfList(CypherRow.empty, QueryStateHelper.empty))
   }
 
   private def toBoolean(orig: Any) = {
-    ToBooleanFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty)
+    ToBooleanFunction(Literal(orig))(CypherRow.empty, QueryStateHelper.empty)
   }
 
 }

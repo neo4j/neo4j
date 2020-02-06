@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.mutable
@@ -31,7 +31,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
                                     (val id: Id = Id.INVALID_ID)
   extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
 
     if (input.isEmpty)
       return Iterator.empty
@@ -53,7 +53,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
           }
         }).flatten
 
-    def rowsWithoutRhsMatch: Iterator[ExecutionContext] = {
+    def rowsWithoutRhsMatch: Iterator[CypherRow] = {
       (lhsKeys -- rhsKeys).iterator.flatMap {
         x => probeTable(x).map(addNulls)
       }

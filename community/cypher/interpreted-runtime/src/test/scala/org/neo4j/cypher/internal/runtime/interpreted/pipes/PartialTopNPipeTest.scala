@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, InterpretedExecutionContextOrdering, QueryStateHelper}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PartialTopNPipeTest extends CypherFunSuite {
 
-  private val compareX: Comparator[ExecutionContext] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
-  private val compareY: Comparator[ExecutionContext] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))
+  private val compareX: Comparator[CypherRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
+  private val compareY: Comparator[CypherRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))
 
   test("partial top n should be lazy") {
     val input = List(

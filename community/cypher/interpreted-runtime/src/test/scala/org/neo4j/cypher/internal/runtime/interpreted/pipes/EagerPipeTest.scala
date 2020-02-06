@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
@@ -34,7 +34,7 @@ class EagerPipeTest extends CypherFunSuite {
 
   test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty
-    val lazyIterator = new LazyIterator[ExecutionContext](10, _ => ExecutionContext.empty)
+    val lazyIterator = new LazyIterator[CypherRow](10, _ => CypherRow.empty)
     val src = new FakePipe(lazyIterator.map(_.toMap))
     val eager = EagerPipe(src)()
     lazyIterator should not be empty

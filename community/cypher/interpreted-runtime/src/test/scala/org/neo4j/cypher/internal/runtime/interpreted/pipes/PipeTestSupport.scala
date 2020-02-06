@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
@@ -36,14 +36,14 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   val query = mock[QueryContext]
 
-  def pipeWithResults(f: QueryState => Iterator[ExecutionContext]): Pipe = new Pipe {
+  def pipeWithResults(f: QueryState => Iterator[CypherRow]): Pipe = new Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
 
     // Used by profiling to identify where to report dbhits and rows
     override def id: Id = Id.INVALID_ID
   }
 
-  def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
+  def row(values: (String, Any)*) = CypherRow.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
 
   def newMockedNode(id: Int) = {
     val node = mock[Node]
@@ -66,13 +66,13 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     relationship
   }
 
-  def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
+  def newMockedPipe(node: String, rows: CypherRow*): Pipe = {
     newMockedPipe(Map(node -> CTNode), rows: _*)
   }
 
-  def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
+  def newMockedPipe(symbols: Map[String, CypherType], rows: CypherRow*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+    when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[CypherRow]] {
       def answer(invocation: InvocationOnMock) = rows.iterator
     })
 

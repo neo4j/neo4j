@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class UnionPipe(l: Pipe, r: Pipe)
                     (val id: Id = Id.INVALID_ID) extends Pipe {
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] =
     l.createResults(state) ++ r.createResults(state)
 }

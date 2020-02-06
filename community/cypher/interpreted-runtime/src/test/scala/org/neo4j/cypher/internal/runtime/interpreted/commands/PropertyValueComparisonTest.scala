@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
@@ -33,7 +33,7 @@ class PropertyValueComparisonTest extends CypherFunSuite {
 
   test("nullNodeShouldGiveNullProperty") {
     val p = Property(Variable("variable"), PropertyKey("property"))
-    val ctx = ExecutionContext.from("variable" -> NO_VALUE)
+    val ctx = CypherRow.from("variable" -> NO_VALUE)
     val state = QueryStateHelper.empty
 
     p(ctx, state) should equal(expectedNull)
@@ -41,7 +41,7 @@ class PropertyValueComparisonTest extends CypherFunSuite {
 
   test("nonExistentPropertyShouldEvaluateToNull") {
     val p = Property(Variable("variable"), PropertyKey("nonExistent"))
-    val ctx = ExecutionContext.from("variable" -> Map("property" -> 42))
+    val ctx = CypherRow.from("variable" -> Map("property" -> 42))
     val state = QueryStateHelper.empty
 
     p(ctx, state) should equal(expectedNull)

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{Counter, ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{Counter, CypherRow, QueryContext}
 import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
@@ -209,7 +209,7 @@ class CoerceToTest extends CypherFunSuite {
 
       def notTo(typ: CypherType) = {
         a[CypherTypeException] should be thrownBy {
-          CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty, state)
+          CoerceTo(TestExpression(actualValue), typ)(CypherRow.empty, state)
         }
 
         remaining -= typ
@@ -225,12 +225,12 @@ class CoerceToTest extends CypherFunSuite {
 
         override def children: Seq[AstNode[_]] = Seq.empty
 
-        override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = in
+        override def apply(ctx: CypherRow, state: QueryState): AnyValue = in
 
       }
 
       case class to(typ: CypherType) {
-        private val coercedValue = CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty, state)
+        private val coercedValue = CoerceTo(TestExpression(actualValue), typ)(CypherRow.empty, state)
 
         counter += 1
         remaining -= typ

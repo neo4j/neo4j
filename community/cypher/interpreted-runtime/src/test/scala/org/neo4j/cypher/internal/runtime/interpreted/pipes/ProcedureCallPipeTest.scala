@@ -67,9 +67,9 @@ class ProcedureCallPipeTest
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
-      ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
-      ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
-      ExecutionContext.from("a" ->2, "r" -> "take 2/2")
+      CypherRow.from("a" ->1, "r" -> "take 1/1"),
+      CypherRow.from("a" ->2, "r" -> "take 1/2"),
+      CypherRow.from("a" ->2, "r" -> "take 2/2")
     ))
   }
 
@@ -89,9 +89,9 @@ class ProcedureCallPipeTest
 
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
-      ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
-      ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
-      ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
+      CypherRow.from("a" -> 1, "r" -> "take 1/1"),
+      CypherRow.from("a" -> 2, "r" -> "take 1/2"),
+      CypherRow.from("a" -> 2, "r" -> "take 2/2")
     ))
   }
 
@@ -111,8 +111,8 @@ class ProcedureCallPipeTest
 
     val qtx = fakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
-      ExecutionContext.from("a" -> 1),
-      ExecutionContext.from("a" -> 2)
+      CypherRow.from("a" -> 1),
+      CypherRow.from("a" -> 2)
     ))
   }
 

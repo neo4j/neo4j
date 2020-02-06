@@ -23,7 +23,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, RelationshipOperations}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext, RelationshipOperations}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
@@ -44,7 +44,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val result: Iterator[ExecutionContext] =
+    val result: Iterator[CypherRow] =
       DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
 
     // then
@@ -87,7 +87,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val result: Iterator[ExecutionContext] =
+    val result: Iterator[CypherRow] =
       DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
 
     // then

@@ -23,7 +23,7 @@ import java.util
 
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, NodeOperations, QueryContext, RelationshipOperations}
+import org.neo4j.cypher.internal.runtime.{CypherRow, NodeOperations, QueryContext, RelationshipOperations}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.{Node, Relationship}
@@ -96,6 +96,6 @@ class PropertiesFunctionTest extends CypherFunSuite {
   }
 
   private def properties(orig: Any) = {
-    PropertiesFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty.withQueryContext(query))
+    PropertiesFunction(Literal(orig))(CypherRow.empty, QueryStateHelper.empty.withQueryContext(query))
   }
 }

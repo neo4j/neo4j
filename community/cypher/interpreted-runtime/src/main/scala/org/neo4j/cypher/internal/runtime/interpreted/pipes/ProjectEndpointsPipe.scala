@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport, QueryContext}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
 
@@ -31,15 +31,15 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 simpleLength: Boolean)
                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
   with ListSupport  {
-  type Projector = ExecutionContext => Iterator[ExecutionContext]
+  type Projector = CypherRow => Iterator[CypherRow]
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState) =
     input.flatMap(projector(state.query))
 
   private def projector(qtx: QueryContext): Projector =
     if (simpleLength) project(qtx) else projectVarLength(qtx)
 
-  private def projectVarLength(qtx: QueryContext): Projector = (context: ExecutionContext) => {
+  private def projectVarLength(qtx: QueryContext): Projector = (context: CypherRow) => {
     findVarLengthRelEndpoints(context, qtx) match {
       case Some((InScopeReversed(startNode, endNode), rels)) if !directed =>
         context.set(start, endNode, end, startNode, relName, rels.reverse())
@@ -57,7 +57,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     }
   }
 
-  private def project(qtx: QueryContext): Projector = (context: ExecutionContext) => {
+  private def project(qtx: QueryContext): Projector = (context: CypherRow) => {
     findSimpleLengthRelEndpoints(context, qtx) match {
       case Some(InScopeReversed(startNode, endNode)) if !directed =>
         context.set(start, endNode, end, startNode)
@@ -75,7 +75,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     }
   }
 
-  private def findSimpleLengthRelEndpoints(context: ExecutionContext,
+  private def findSimpleLengthRelEndpoints(context: CypherRow,
                                            qtx: QueryContext
                                           ): Option[StartAndEnd] = {
       val relValue = context.getByName(relName) match {
@@ -89,7 +89,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
       }
   }
 
-  private def findVarLengthRelEndpoints(context: ExecutionContext,
+  private def findVarLengthRelEndpoints(context: CypherRow,
                                         qtx: QueryContext
                                        ): Option[(StartAndEnd, ListValue)] = {
     val rels = makeTraversable(context.getByName(relName))
@@ -126,7 +126,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   }
 
   private def pickStartAndEnd(relStart: RelationshipValue, relEnd: RelationshipValue,
-                              context: ExecutionContext, qtx: QueryContext): Option[StartAndEnd] = {
+                              context: CypherRow, qtx: QueryContext): Option[StartAndEnd] = {
     val s = relStart.startNode()
     val e = relEnd.endNode()
 

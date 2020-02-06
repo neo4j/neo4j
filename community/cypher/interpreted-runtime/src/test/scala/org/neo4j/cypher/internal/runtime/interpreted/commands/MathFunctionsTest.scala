@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
@@ -160,5 +160,5 @@ class MathFunctionsTest extends CypherFunSuite {
     intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
 
-  private def calc(e:Expression) = e(ExecutionContext.empty, QueryStateHelper.empty)
+  private def calc(e:Expression) = e(CypherRow.empty, QueryStateHelper.empty)
 }

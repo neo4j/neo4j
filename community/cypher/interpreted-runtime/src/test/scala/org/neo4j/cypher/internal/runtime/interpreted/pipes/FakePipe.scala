@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 
@@ -27,12 +27,12 @@ import scala.collection.Map
 
 class FakePipe(val data: Iterator[Map[String, Any]]) extends Pipe {
 
-  private var _countingIterator: CountingIterator[ExecutionContext] = _
+  private var _countingIterator: CountingIterator[CypherRow] = _
 
   def this(data: Traversable[Map[String, Any]]) = this(data.toIterator)
 
-  override def internalCreateResults(state: QueryState): CountingIterator[ExecutionContext] = {
-    _countingIterator = new CountingIterator(data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))))
+  override def internalCreateResults(state: QueryState): CountingIterator[CypherRow] = {
+    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))))
     _countingIterator
   }
 

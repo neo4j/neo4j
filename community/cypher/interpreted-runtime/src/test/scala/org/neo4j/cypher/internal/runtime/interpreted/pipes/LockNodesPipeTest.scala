@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, MapCypherRow, QueryContext}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
@@ -76,11 +76,11 @@ class LockNodesPipeTest extends CypherFunSuite {
     }
   }
 
-  private def iteratorWithValues(values: AnyValue*): Iterator[ExecutionContext] = {
+  private def iteratorWithValues(values: AnyValue*): Iterator[CypherRow] = {
     values.map(rowWithValue).iterator
   }
 
   private def rowWithValue(value: AnyValue) = {
-    new MapExecutionContext(mutable.Map("x" -> value), mutable.Map.empty)
+    new MapCypherRow(mutable.Map("x" -> value), mutable.Map.empty)
   }
 }

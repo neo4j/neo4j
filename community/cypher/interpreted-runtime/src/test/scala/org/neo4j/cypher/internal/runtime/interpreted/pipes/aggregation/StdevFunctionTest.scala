@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -35,7 +35,7 @@ trait StdevTest {
   def getStdev(values: List[Any]): Double = {
     val func = createAggregator(Variable("x"))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> ValueUtils.of(value)), QueryStateHelper.empty)
+      func(CypherRow.from("x" -> ValueUtils.of(value)), QueryStateHelper.empty)
     })
     func.result(state) match {
       case x: DoubleValue => x.doubleValue()

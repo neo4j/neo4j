@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, TokenType}
@@ -32,7 +32,7 @@ class HasLabelTests extends CypherFunSuite {
     val predicate = HasLabel(Literal(null), KeyToken.Unresolved("Person", TokenType.Label))
 
     //when
-    val ctx = ExecutionContext.empty
+    val ctx = CypherRow.empty
     val state = QueryStateHelper.empty
 
     //then

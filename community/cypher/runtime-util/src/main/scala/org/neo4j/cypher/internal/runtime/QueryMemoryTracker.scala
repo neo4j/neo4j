@@ -80,7 +80,7 @@ trait QueryMemoryTracker {
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
     * memory used by the query grows too large.
     */
-  def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T], operatorId: Int): Iterator[T]
+  def memoryTrackingIterator[T<: CypherRow](input: Iterator[T], operatorId: Int): Iterator[T]
 
   /**
     * Get the total allocated memory of this query, in bytes.

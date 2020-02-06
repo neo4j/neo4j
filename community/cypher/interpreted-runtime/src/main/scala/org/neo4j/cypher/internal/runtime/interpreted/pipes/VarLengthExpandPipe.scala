@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, RelationshipContainer}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue, RelationshipContainer}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -30,15 +30,15 @@ import org.neo4j.values.virtual._
 import scala.collection.mutable
 
 trait VarLengthPredicate {
-  def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
-  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean
+  def filterNode(row: CypherRow, state:QueryState)(node: NodeValue): Boolean
+  def filterRelationship(row: CypherRow, state:QueryState)(rel: RelationshipValue): Boolean
   def predicateExpressions: Seq[Predicate]
 }
 
 object VarLengthPredicate {
   val NONE: VarLengthPredicate = new VarLengthPredicate {
-    override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
-    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean = true
+    override def filterNode(row: CypherRow, state:QueryState)(node: NodeValue): Boolean = true
+    override def filterRelationship(row: CypherRow, state:QueryState)(rel: RelationshipValue): Boolean = true
     override def predicateExpressions: Seq[Predicate] = Seq.empty
   }
 }
@@ -59,7 +59,7 @@ case class VarLengthExpandPipe(source: Pipe,
   filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
 
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: ExecutionContext): Iterator[(NodeValue, RelationshipContainer)] = {
+                              row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
     val stack = new mutable.Stack[(NodeValue, RelationshipContainer)]
     stack.push((node, RelationshipContainer.EMPTY))
 
@@ -91,8 +91,8 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    def expand(row: ExecutionContext, n: NodeValue) = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+    def expand(row: CypherRow, n: NodeValue) = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
         paths.collect {
@@ -121,7 +121,7 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  private def isToNodeValid(row: ExecutionContext, state: QueryState, node: VirtualNodeValue): Boolean =
+  private def isToNodeValid(row: CypherRow, state: QueryState, node: VirtualNodeValue): Boolean =
     !nodeInScope || {
       row.getByName(toName) match {
         case toNode: VirtualNodeValue =>

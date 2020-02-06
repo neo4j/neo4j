@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
@@ -40,7 +40,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   valueExpr.registerOwningPipe(this)
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val baseContext = state.newExecutionContext(executionContextFactory)
     val value = valueExpr(baseContext, state)
 

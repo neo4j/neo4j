@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, DistinctPipe, ExecutionContextFactory, OrderedAggregationTableFactory, OrderedChunkReceiver, Pipe, QueryState}
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -34,7 +34,7 @@ import org.neo4j.values.AnyValue
   * @param orderedGroupingColumns all grouping columns
   * @param aggregations all aggregation columns
   */
-class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+class OrderedNonGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                                  orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                                  aggregations: Array[AggregationPipe.AggregatingCol],
                                  state: QueryState,
@@ -49,7 +49,7 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
     super.clear()
   }
 
-  override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = {
+  override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = {
     if (currentGroupKey == null) {
       currentGroupKey = orderedGroupingFunction(first, state)
     }
@@ -57,7 +57,7 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
   }
 
   // This is the result of one chunk, not the whole result
-  override def result(): Iterator[ExecutionContext] = {
+  override def result(): Iterator[CypherRow] = {
     val row = resultRow()
     AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)(row, currentGroupKey)
     Iterator.single(row)
@@ -67,7 +67,7 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
 }
 
 object OrderedNonGroupingAggTable {
-  case class Factory(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+  case class Factory(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                      orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                      aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =

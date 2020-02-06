@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class SortPipe(source: Pipe, comparator: Comparator[ExecutionContext])
+case class SortPipe(source: Pipe, comparator: Comparator[CypherRow])
                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val array = state.memoryTracker.memoryTrackingIterator(input, id.x).toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator

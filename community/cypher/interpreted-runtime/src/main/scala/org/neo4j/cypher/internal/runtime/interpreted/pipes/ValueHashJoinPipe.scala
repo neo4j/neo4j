@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
@@ -34,7 +34,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   lhsExpression.registerOwningPipe(this)
   rhsExpression.registerOwningPipe(this)
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
 
     if (input.isEmpty)
       return Iterator.empty
@@ -63,8 +63,8 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     result.flatten
   }
 
-  private def buildProbeTable(input: Iterator[ExecutionContext], state: QueryState) = {
-    val table = new mutable.HashMap[AnyValue, mutable.MutableList[ExecutionContext]]
+  private def buildProbeTable(input: Iterator[CypherRow], state: QueryState) = {
+    val table = new mutable.HashMap[AnyValue, mutable.MutableList[CypherRow]]
 
     for (context <- input;
          joinKey = lhsExpression(context, state) if joinKey != null) {

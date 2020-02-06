@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
@@ -29,7 +29,7 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
                                      (val id: Id = Id.INVALID_ID)
   extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
 
     val rhsResult = rhs.createResults(state)
     if (rhsResult.isEmpty)

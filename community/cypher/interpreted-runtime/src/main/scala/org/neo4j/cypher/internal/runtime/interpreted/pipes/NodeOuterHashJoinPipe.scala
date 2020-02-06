@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -35,7 +35,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
 
-  protected def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
+  protected def computeKey(context: CypherRow): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](myVariables.length)
 
     for (idx <- myVariables.indices) {
@@ -47,13 +47,13 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     Some(key.toIndexedSeq)
   }
 
-  protected def addNulls(in: ExecutionContext): ExecutionContext = {
+  protected def addNulls(in: CypherRow): CypherRow = {
     val withNulls = executionContextFactory.copyWith(in)
     withNulls.set(nullVariables)
     withNulls
   }
 
-  protected def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext], withNulls: Boolean): ProbeTable = {
+  protected def buildProbeTableAndFindNullRows(input: Iterator[CypherRow], withNulls: Boolean): ProbeTable = {
     val probeTable = new ProbeTable()
 
     for (context <- input) {
@@ -71,23 +71,23 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 
 //noinspection ReferenceMustBePrefixed
 class ProbeTable() {
-  private val table: mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]] =
-    new mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]]
+  private val table: mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]] =
+    new mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]]
 
-  private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
+  private val rowsWithNullInKey: ListBuffer[CypherRow] = new ListBuffer[CypherRow]()
 
-  def addValue(key: IndexedSeq[Long], newValue: ExecutionContext) {
+  def addValue(key: IndexedSeq[Long], newValue: CypherRow) {
     val values = table.getOrElseUpdate(key, MutableList.empty)
     values += newValue
   }
 
-  def addNull(context: ExecutionContext): Unit = rowsWithNullInKey += context
+  def addNull(context: CypherRow): Unit = rowsWithNullInKey += context
 
-  private val EMPTY: MutableList[ExecutionContext] = MutableList.empty
+  private val EMPTY: MutableList[CypherRow] = MutableList.empty
 
-  def apply(key: IndexedSeq[Long]): MutableList[ExecutionContext] = table.getOrElse(key, EMPTY)
+  def apply(key: IndexedSeq[Long]): MutableList[CypherRow] = table.getOrElse(key, EMPTY)
 
   def keySet: collection.Set[IndexedSeq[Long]] = table.keySet
 
-  def nullRows: Iterator[ExecutionContext] = rowsWithNullInKey.iterator
+  def nullRows: Iterator[CypherRow] = rowsWithNullInKey.iterator
 }

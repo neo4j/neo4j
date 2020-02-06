@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -64,7 +64,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
   sealed trait State {
     // Note that the ExecutionContext part here can be null.
     // This code is used in a hot spot, and avoiding object creation is important.
-    def next(): (State, ExecutionContext)
+    def next(): (State, CypherRow)
   }
 
   case object Empty extends State {
@@ -87,7 +87,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                       val path: Array[Long],
                       val pathLength: Int,
                       val state: QueryState,
-                      row: ExecutionContext,
+                      row: CypherRow,
                       expandMap: LongObjectHashMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
@@ -96,7 +96,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
      */
-    override def next(): (State, ExecutionContext) = {
+    override def next(): (State, CypherRow) = {
 
       if (rels == null)
         rels = expand(row, node)
@@ -182,7 +182,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                    val path: Array[Long],
                    val pathLength: Int,
                    val state: QueryState,
-                   row: ExecutionContext,
+                   row: CypherRow,
                    expandMap: LongObjectHashMap[FullExpandDepths],
                    updateMinFullExpandDepth: Int => Unit) extends State with Expandable with CheckPath {
 
@@ -191,7 +191,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     var idx = 0
     var fullExpandDepths: FullExpandDepths = UNINITIALIZED
 
-    override def next(): (State, ExecutionContext) = {
+    override def next(): (State, CypherRow) = {
 
       if (pathLength < self.max) {
         if (fullExpandDepths == UNINITIALIZED)
@@ -257,10 +257,10 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  class LoadNext(private val input: Iterator[ExecutionContext], val state: QueryState) extends State with Expandable {
+  class LoadNext(private val input: Iterator[CypherRow], val state: QueryState) extends State with Expandable {
 
-    override def next(): (State, ExecutionContext) = {
-      def nextState(row: ExecutionContext, node: NodeValue) = {
+    override def next(): (State, CypherRow) = {
+      def nextState(row: CypherRow, node: NodeValue) = {
         val nextState = new PrePruningDFS(whenEmptied = this,
           node = node,
           path = new Array[Long](max),
@@ -312,7 +312,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /**
       * List all relationships of a node, given the predicates of this pipe.
       */
-    def expand(row: ExecutionContext, node: NodeValue): Iterator[RelationshipValue] = {
+    def expand(row: CypherRow, node: NodeValue): Iterator[RelationshipValue] = {
       val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
       relationships.filter(r => {
         filteringStep.filterRelationship(row, state)(r) &&
@@ -350,8 +350,8 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    new Iterator[ExecutionContext] {
+  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+    new Iterator[CypherRow] {
 
       var (stateMachine, current) = new LoadNext(input, state).next()
 

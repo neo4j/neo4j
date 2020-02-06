@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
+import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
@@ -33,20 +33,20 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
 
   collection.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 
-  private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
-    private var context: ExecutionContext = _
+  private class UnwindIterator(input: Iterator[CypherRow], state: QueryState) extends Iterator[CypherRow] {
+    private var context: CypherRow = _
     private var unwindIterator: Iterator[AnyValue] = _
-    private var nextItem: ExecutionContext = _
+    private var nextItem: CypherRow = _
 
     prefetch()
 
     override def hasNext: Boolean = nextItem != null
 
-    override def next(): ExecutionContext = {
+    override def next(): CypherRow = {
       if (hasNext) {
         val ret = nextItem
         prefetch()

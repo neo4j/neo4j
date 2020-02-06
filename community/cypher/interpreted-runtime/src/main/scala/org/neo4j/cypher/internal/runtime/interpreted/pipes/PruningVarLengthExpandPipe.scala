@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -84,7 +84,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                    val path: Array[Long],
                    val pathLength: Int,
                    val queryState: QueryState,
-                   val row: ExecutionContext,
+                   val row: CypherRow,
                    val expandMap: LongObjectHashMap[NodeState],
                    val prevLocalRelIndex: Int,
                    val prevNodeState: NodeState ) {
@@ -238,7 +238,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     /**
       * If not already done, list all relationships of a node, given the predicates of this pipe.
       */
-    def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: VirtualNodeValue): Unit = {
+    def ensureExpanded(queryState: QueryState, row: CypherRow, node: VirtualNodeValue): Unit = {
       if ( rels == null ) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
         rels = allRels.filter(r => {
@@ -254,17 +254,17 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     * The overall state of the full pruning var expand. Mostly manages stack of PruningDFS nodes.
     */
   class FullPruneState(queryState:QueryState ) {
-    private var inputRow:ExecutionContext = _
+    private var inputRow:CypherRow = _
     private val nodeState = new Array[PruningDFS](self.max + 1)
     private val path = new Array[Long](max)
     private var depth = -1
 
-    def startRow( inputRow:ExecutionContext ): Unit = {
+    def startRow( inputRow:CypherRow ): Unit = {
       this.inputRow = inputRow
       depth = -1
     }
     def canContinue: Boolean = inputRow != null
-    def next(): ExecutionContext = {
+    def next(): CypherRow = {
       val endNode =
         if (depth == -1) {
           val fromValue = inputRow.getByName(fromName)
@@ -330,11 +330,11 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   }
 
   class FullyPruningIterator(
-                       private val input: Iterator[ExecutionContext],
-                       private val queryState: QueryState
-  ) extends Iterator[ExecutionContext] {
+                              private val input: Iterator[CypherRow],
+                              private val queryState: QueryState
+  ) extends Iterator[CypherRow] {
 
-    var outputRow:ExecutionContext = _
+    var outputRow:CypherRow = _
     val fullPruneState:FullPruneState = new FullPruneState( queryState )
     var hasPrefetched = false
 
@@ -343,7 +343,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       outputRow != null
     }
 
-    override def next(): ExecutionContext = {
+    override def next(): CypherRow = {
       prefetch()
       if (outputRow == null) {
         // fail
@@ -352,7 +352,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       consumePrefetched()
     }
 
-    private def consumePrefetched(): ExecutionContext = {
+    private def consumePrefetched(): CypherRow = {
       val temp = outputRow
       hasPrefetched = false
       outputRow = null
@@ -365,7 +365,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         hasPrefetched = true
       }
 
-    private def fetch(): ExecutionContext = {
+    private def fetch(): CypherRow = {
       while (fullPruneState.canContinue || input.nonEmpty) {
         if (!fullPruneState.canContinue) {
           fullPruneState.startRow(input.next())
@@ -378,8 +378,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                               state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[CypherRow],
+                                               state: QueryState): Iterator[CypherRow] = {
     new FullyPruningIterator(input, state)
   }
 }

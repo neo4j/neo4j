@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class EmptyResultPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
+  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState) = {
     while(input.hasNext) {
       input.next()
     }

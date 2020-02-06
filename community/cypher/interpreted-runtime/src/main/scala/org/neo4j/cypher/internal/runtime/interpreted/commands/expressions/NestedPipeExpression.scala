@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.util
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.values.AnyValue
@@ -35,7 +35,7 @@ case class NestedPipeExpression(pipe: Pipe,
                                 inner: Expression,
                                 availableExpressionVariables: Seq[ExpressionVariable]) extends Expression {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
     val initialContext = pipe.executionContextFactory.copyWith(ctx)
     availableExpressionVariables.foreach { expVar =>
       initialContext.set(expVar.name, state.expressionVariables(expVar.offset))

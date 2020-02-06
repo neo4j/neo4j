@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{AggregatingCol, AggregationTable, AggregationTableFactory}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExecutionContextFactory, Pipe, QueryState}
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -42,7 +42,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
     }
   }
 
-  override def processRow(row: ExecutionContext): Unit = {
+  override def processRow(row: CypherRow): Unit = {
     var i = 0
     while (i < aggregationFunctions.length) {
       aggregationFunctions(i)(row, state)
@@ -50,11 +50,11 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
     }
   }
 
-  override def result(): Iterator[ExecutionContext] = {
+  override def result(): Iterator[CypherRow] = {
     Iterator.single(resultRow())
   }
 
-  protected def resultRow(): ExecutionContext = {
+  protected def resultRow(): CypherRow = {
     val row = executionContextFactory.newExecutionContext()
     var i = 0
     while (i < aggregationFunctions.length) {

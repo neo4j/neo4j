@@ -27,7 +27,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{CypherRow, QueryContext}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeEntity}
@@ -423,7 +423,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     result should be('isEmpty)
   }
 
-  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
 
   private def newMockedNode(id: Int) = {
     val node = mock[Node]
@@ -456,7 +456,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     relationshipType
   }
 
-  private def newMockedPipe(rel: String, rows: ExecutionContext*): Pipe = {
+  private def newMockedPipe(rel: String, rows: CypherRow*): Pipe = {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenAnswer((_: InvocationOnMock) => rows.iterator)
 

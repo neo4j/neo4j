@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -31,7 +31,7 @@ import scala.collection.mutable.ArrayBuffer
 class CollectFunction(value:Expression, operatorId: Id) extends AggregationFunction {
   val collection = new ArrayBuffer[AnyValue]()
 
-  override def apply(data: ExecutionContext, state:QueryState): Unit = {
+  override def apply(data: CypherRow, state:QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
       case v    =>

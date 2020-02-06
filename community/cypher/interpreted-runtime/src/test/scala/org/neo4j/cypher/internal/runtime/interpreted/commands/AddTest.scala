@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import java.nio.charset.StandardCharsets
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterFromSlot}
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -31,7 +31,7 @@ import org.neo4j.values.storable.{UTF8StringValue, Values}
 
 class AddTest extends CypherFunSuite {
 
-  val m = ExecutionContext.empty
+  val m = CypherRow.empty
   val s = QueryStateHelper.empty
 
   test("numbers") {

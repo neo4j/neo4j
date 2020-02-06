@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.evaluator
 import java.lang.Math.PI
 import java.lang.Math.sin
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
 import org.neo4j.values.storable.Values
@@ -90,7 +90,7 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     evaluator
       .evaluate(
         expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("v + 1"),
-        context = ExecutionContext.from("v" -> Values.of(3))
+        context = CypherRow.from("v" -> Values.of(3))
       )
       .shouldEqual(Values.of(4))
   }
@@ -101,7 +101,7 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     evaluator
       .evaluate(
         expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("point({ latitude: p.y, longitude: p.x, height: 1000 })"),
-        context = ExecutionContext.from("p" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 56, 12))
+        context = CypherRow.from("p" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 56, 12))
       )
       .shouldEqual(pointValue(WGS84_3D, 56, 12, 1000))
   }
