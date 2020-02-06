@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.scheduler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
@@ -176,7 +177,25 @@ class TimeBasedTaskSchedulerTest
             clock.forward( 100, TimeUnit.NANOSECONDS );
             scheduler.tick();
         }
-        while ( executionCountDown.await( 1, TimeUnit.MILLISECONDS ) );
+        while ( !executionCountDown.await( 1, TimeUnit.MILLISECONDS ) );
+    }
+
+    @RepeatedTest( value = 100 )
+    void ensureRescheduledThrowingTasksAreRescheduledCorrectly() throws InterruptedException
+    {
+        //This is a added in a try to provoke an issue where it looks like tasks are scheduled more times than they should
+        AtomicInteger timesScheduled = new AtomicInteger( 0 );
+        Runnable runnable = () ->
+        {
+            timesScheduled.incrementAndGet();
+            semaphore.release();
+            throw new RuntimeException( "boom" );
+        };
+        JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 10, 10 );
+        clock.forward( 20, TimeUnit.NANOSECONDS ); // should run at MOST 2 times
+        scheduler.tick();
+        assertSemaphoreAcquire();
+        assertThat( timesScheduled.get() ).isLessThanOrEqualTo( 2 );
     }
 
     @Test
