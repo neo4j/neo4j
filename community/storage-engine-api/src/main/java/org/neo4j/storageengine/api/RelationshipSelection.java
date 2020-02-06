@@ -151,7 +151,7 @@ public abstract class RelationshipSelection
         @Override
         public boolean test( RelationshipDirection direction )
         {
-            return RelationshipSelection.matchesDirection( direction, this.direction );
+            return direction.matches( this.direction );
         }
 
         @Override
@@ -174,7 +174,7 @@ public abstract class RelationshipSelection
         @Override
         public boolean test( RelationshipDirection direction )
         {
-            return RelationshipSelection.matchesDirection( direction, this.direction );
+            return direction.matches( this.direction );
         }
 
         @Override
@@ -219,7 +219,7 @@ public abstract class RelationshipSelection
         @Override
         public boolean test( int type, RelationshipDirection direction )
         {
-            return this.type == type && matchesDirection( direction, this.direction );
+            return this.type == type && direction.matches( this.direction );
         }
 
         @Override
@@ -260,7 +260,7 @@ public abstract class RelationshipSelection
         @Override
         public boolean test( int type, RelationshipDirection direction )
         {
-            return test( type ) && matchesDirection( direction, this.direction );
+            return test( type ) && direction.matches( this.direction );
         }
 
         @Override
@@ -338,7 +338,7 @@ public abstract class RelationshipSelection
         @Override
         public boolean test( int type, RelationshipDirection direction )
         {
-            return matchesDirection( direction, this.direction );
+            return direction.matches( this.direction );
         }
 
         @Override
@@ -513,19 +513,4 @@ public abstract class RelationshipSelection
             return "RelationshipSelection[NOTHING]";
         }
     };
-
-    private static boolean matchesDirection( RelationshipDirection relationshipDirection, Direction selectionDirection )
-    {
-        switch ( selectionDirection )
-        {
-        case OUTGOING:
-            return relationshipDirection == RelationshipDirection.OUTGOING || relationshipDirection == RelationshipDirection.LOOP;
-        case INCOMING:
-            return relationshipDirection == RelationshipDirection.INCOMING || relationshipDirection == RelationshipDirection.LOOP;
-        case BOTH:
-            return true;
-        default:
-            throw new UnsupportedOperationException( selectionDirection.name() );
-        }
-    }
 }

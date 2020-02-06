@@ -40,6 +40,5 @@ class RelationshipDirectionTest
         assertThat( RelationshipDirection.ofId( 0 ) ).isEqualTo( RelationshipDirection.OUTGOING );
         assertThat( RelationshipDirection.ofId( 1 ) ).isEqualTo( RelationshipDirection.INCOMING );
         assertThat( RelationshipDirection.ofId( 2 ) ).isEqualTo( RelationshipDirection.LOOP );
-        assertThat( RelationshipDirection.ofId( 3 ) ).isEqualTo( RelationshipDirection.ERROR );
     }
 }
