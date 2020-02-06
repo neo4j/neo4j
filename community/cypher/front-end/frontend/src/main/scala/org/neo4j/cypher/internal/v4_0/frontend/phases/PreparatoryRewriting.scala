@@ -29,7 +29,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
       normalizeWithAndReturnClauses(context.cypherExceptionFactory),
       insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
-      replaceAliasedFunctionInvocations(deprecations),
+      replaceDeprecatedCypherSyntax(deprecations),
       mergeInPredicates))
 
     from.withStatement(rewrittenStatement)

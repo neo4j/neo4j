@@ -129,7 +129,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         A * B * relSelectivity
       },
 
-      "MATCH (a:A)-[:T1|:T2]->(:B)"
+      "MATCH (a:A)-[:T1|T2]->(:B)"
         -> {
         val patternNodeCrossProduct = N * N
         val labelSelectivity = Asel * Bsel
@@ -138,7 +138,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
 
-      "MATCH (a:A:E)-[:T1|:T2]->()"
+      "MATCH (a:A:E)-[:T1|T2]->()"
         -> {
         val patternNodeCrossProduct = N * N
         val labelSelectivity = Asel * Esel
@@ -149,7 +149,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
 
-      "MATCH (a:A:D)-[:T1|:T2]->()"
+      "MATCH (a:A:D)-[:T1|T2]->()"
         -> {
         val patternNodeCrossProduct = N * N
         val labelSelectivity = Asel * Dsel
@@ -160,7 +160,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
 
-      "MATCH (a:A:B)-[:T1|:T2]->(c:C:D)"
+      "MATCH (a:A:B)-[:T1|T2]->(c:C:D)"
         -> {
         val A_T2_C = 0
         val A_T2_D = 0

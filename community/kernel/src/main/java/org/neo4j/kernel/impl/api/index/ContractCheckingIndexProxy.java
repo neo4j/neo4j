@@ -47,7 +47,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
      *
      * Valid state transitions are:
      *
-     * INIT -[:start]-> STARTING -[:implicit]-> STARTED -[:close|:drop]-> CLOSED
+     * INIT -[:start]-> STARTING -[:implicit]-> STARTED -[:close|drop]-> CLOSED
      * INIT -[:close] -> CLOSED
      *
      * Additionally, {@link ContractCheckingIndexProxy} keeps track of the number of open

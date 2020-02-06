@@ -18,13 +18,13 @@ package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.replaceAliasedFunctionInvocations
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.v4_0.util.symbols
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val rewriter = replaceAliasedFunctionInvocations(Deprecations.removedFeaturesIn4_0)
+  private val rewriter = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_0)
   private val deprecatedNameMap = Deprecations.removedFeaturesIn4_0.removedFunctionsRenames
 
   test("should rewrite removed function names regardless of casing") {
@@ -81,5 +81,21 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
 
     val after = parameter("param", symbols.CTString)
     rewriter(before) should equal(after)
+  }
+
+  //noinspection RedundantDefaultArgument
+  test("should rewrite legacy type separator") {
+    val types = Seq(RelTypeName("A")(pos), RelTypeName("B")(pos))
+    val beforeVariable = RelationshipPattern(Some(varFor("a")), types, None, None, SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+    val beforeVarlength = RelationshipPattern(None, types, Some(None), None, SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+    val beforeProperties = RelationshipPattern(None, types, None, Some(varFor("x")), SemanticDirection.BOTH, legacyTypeSeparator = true)(pos)
+
+    val afterVariable = RelationshipPattern(Some(varFor("a")), types, None, None, SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+    val afterVarlength = RelationshipPattern(None, types, Some(None), None, SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+    val afterProperties = RelationshipPattern(None, types, None, Some(varFor("x")), SemanticDirection.BOTH, legacyTypeSeparator = false)(pos)
+
+    rewriter(beforeVariable) should equal(afterVariable)
+    rewriter(beforeVarlength) should equal(afterVarlength)
+    rewriter(beforeProperties) should equal(afterProperties)
   }
 }

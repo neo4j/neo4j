@@ -60,13 +60,6 @@ object Deprecations {
           () => Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
 
-      // legacy type separator
-      case p@RelationshipPattern(variable, _, length, properties, _, true, _) if variable.isDefined || length.isDefined || properties.isDefined =>
-        Deprecation(
-          () => p,
-          () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
-        )
-
       case i: ast.CreateIndex =>
         Deprecation(
           () => i,
@@ -161,6 +154,13 @@ object Deprecations {
         Deprecation(
           () => renameFunctionTo("size")(f),
           () => Some(LengthOnNonPathNotification(f.position))
+        )
+
+      // legacy type separator
+      case p@RelationshipPattern(variable, _, length, properties, _, true, _) if variable.isDefined || length.isDefined || properties.isDefined =>
+        Deprecation(
+          () => p.copy(legacyTypeSeparator = false)(p.position),
+          () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
         )
     }
   }

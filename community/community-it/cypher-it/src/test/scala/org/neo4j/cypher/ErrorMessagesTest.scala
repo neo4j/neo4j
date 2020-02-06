@@ -234,7 +234,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   test("should forbid bound relationship list in shortestPath pattern parts") {
     expectError(
-      "WITH [] AS r LIMIT 1 MATCH p = shortestPath(src-[r*]->dst) RETURN src, dst",
+      "WITH [] AS r LIMIT 1 MATCH p = shortestPath((src)-[r*]->(dst)) RETURN src, dst",
       "Bound relationships not allowed in shortestPath(...)"
     )
   }
