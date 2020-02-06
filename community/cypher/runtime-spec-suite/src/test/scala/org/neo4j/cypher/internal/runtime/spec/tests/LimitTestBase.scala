@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.virtual.VirtualNodeValue
 
@@ -332,5 +333,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
         xs.distinct.size == xs.size // Check that there is at most one row per x
       } =>
     })
+  }
+
+  test("LIMIT combined with fused-over-pipelines") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "rel", "y")
+      .cartesianProduct()
+      .|.argument()
+      .expand("(x)-[rel]->(y)")
+      .limit(1)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
   }
 }
