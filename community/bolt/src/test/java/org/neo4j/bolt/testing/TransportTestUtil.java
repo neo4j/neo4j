@@ -39,7 +39,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.client.WebSocketConnection;
+import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
@@ -223,6 +223,36 @@ public class TransportTestUtil
         {
             try
             {
+                for ( Consumer<ResponseMessage> messageCondition : messagesConsumers )
+                {
+                    var message = receiveOneResponseMessage( connection );
+                    assertThat( message ).satisfies( messageCondition );
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Messages[" + Arrays.toString( messagesConsumers ) + "]", e );
+            }
+        };
+    }
+
+    @SafeVarargs
+    public final <T extends TransportConnection> Consumer<T> eventuallyReceives( int skip,
+            Consumer<ResponseMessage>... messagesConsumers )
+    {
+        return connection ->
+        {
+            try
+            {
+                for ( int i = 0; i < skip; i++ )
+                {
+                    var message = receiveOneResponseMessage( connection );
+                    // we skip all record messages as it is not really a reply to a request message
+                    while ( message instanceof RecordMessage )
+                    {
+                        message = receiveOneResponseMessage( connection );
+                    }
+                }
                 for ( Consumer<ResponseMessage> messageCondition : messagesConsumers )
                 {
                     var message = receiveOneResponseMessage( connection );
