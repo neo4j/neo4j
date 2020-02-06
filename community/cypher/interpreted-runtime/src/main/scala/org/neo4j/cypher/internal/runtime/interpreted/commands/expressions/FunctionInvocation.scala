@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -34,7 +35,7 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
 
   override def children: Seq[AstNode[_]] = input
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
     val query = state.query
     val argValues = input.map(arg => {
       arg(ctx, state)

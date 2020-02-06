@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ListSupport
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
 import org.neo4j.values.AnyValue
 
 case class ReduceFunction(collection: Expression,
@@ -32,15 +33,15 @@ case class ReduceFunction(collection: Expression,
                           init: Expression)
   extends NullInNullOutExpression(collection) with ListSupport {
 
-  override def compute(value: AnyValue, m: CypherRow, state: QueryState): AnyValue = {
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
     val list = makeTraversable(value)
     val iterator = list.iterator()
-    val initialAcc = init(m, state)
+    val initialAcc = init(ctx, state)
 
     state.expressionVariables(accVariableOffset) = initialAcc
     while(iterator.hasNext) {
       state.expressionVariables(innerVariableOffset) = iterator.next()
-      state.expressionVariables(accVariableOffset) = expression(m, state)
+      state.expressionVariables(accVariableOffset) = expression(ctx, state)
     }
     state.expressionVariables(accVariableOffset)
   }

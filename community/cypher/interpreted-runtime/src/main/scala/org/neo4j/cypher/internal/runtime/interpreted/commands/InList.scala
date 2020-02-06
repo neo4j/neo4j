@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -44,7 +45,7 @@ abstract class InList(collection: Expression,
 
   def seqMethod(f: ListValue): CollectionPredicate
 
-  def isMatch(row: CypherRow, state: QueryState): Option[Boolean] = {
+  def isMatch(row: ReadableRow, state: QueryState): Option[Boolean] = {
     val list = collection(row, state)
 
     if (list eq Values.NO_VALUE) None

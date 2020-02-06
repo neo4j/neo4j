@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
-  override def compute(value: AnyValue, m: CypherRow, state: QueryState): AnyValue =
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.properties(
       value,
       state.query,

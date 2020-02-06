@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{CoalesceFunction, Expression, Literal, Null}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -54,7 +55,7 @@ class CoalesceTest extends CypherFunSuite {
 }
 
 case class BreakingExpression() extends Expression {
-  override def apply(v1: CypherRow, state: QueryState): AnyValue = {
+  override def apply(v1: ReadableRow, state: QueryState): AnyValue = {
     import org.scalatest.Assertions._
     fail("Coalesce is not lazy")
   }

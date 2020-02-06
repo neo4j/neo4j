@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
+import org.neo4j.values.AnyValue
 
 abstract class AggregationExpression extends Expression {
-  def apply(ctx: CypherRow, state: QueryState) =
+  def apply(ctx: ReadableRow, state: QueryState): AnyValue =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
   def createAggregationFunction(operatorId: Id): AggregationFunction

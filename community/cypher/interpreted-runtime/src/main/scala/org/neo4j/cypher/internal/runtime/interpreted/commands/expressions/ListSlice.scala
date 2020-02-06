@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{CastSupport, CypherRow, ListSupport}
@@ -32,7 +33,7 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
 
   override def children: Seq[AstNode[_]] = arguments
 
-  private val function: (AnyValue, CypherRow, QueryState) => AnyValue =
+  private val function: (AnyValue, ReadableRow, QueryState) => AnyValue =
     (from, to) match {
       case (Some(f), Some(n)) => fullSlice(f, n)
       case (Some(f), None)    => fromSlice(f)
@@ -40,32 +41,32 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
       case (None, None)       => (coll, _, _) => coll
     }
 
-  private def fullSlice(from: Expression, to: Expression)(collectionValue: AnyValue, ctx: CypherRow, state: QueryState) = {
+  private def fullSlice(from: Expression, to: Expression)(collectionValue: AnyValue, ctx: ReadableRow, state: QueryState) = {
     val fromValue = from(ctx, state)
     val toValue = to(ctx, state)
     if ((fromValue eq Values.NO_VALUE) || (toValue eq Values.NO_VALUE)) Values.NO_VALUE
     else CypherFunctions.fullSlice(collectionValue, fromValue, toValue)
   }
 
-  private def fromSlice(from: Expression)(collectionValue: AnyValue, ctx: CypherRow, state: QueryState) = {
+  private def fromSlice(from: Expression)(collectionValue: AnyValue, ctx: ReadableRow, state: QueryState) = {
     val fromValue = from(ctx, state)
     if (fromValue eq Values.NO_VALUE) Values.NO_VALUE
     else CypherFunctions.fromSlice(collectionValue, fromValue)
   }
 
-  private def toSlice(from: Expression)(collectionValue: AnyValue, ctx: CypherRow, state: QueryState) = {
+  private def toSlice(from: Expression)(collectionValue: AnyValue, ctx: ReadableRow, state: QueryState) = {
     val toValue = from(ctx, state)
     if (toValue eq Values.NO_VALUE) Values.NO_VALUE
     else CypherFunctions.toSlice(collectionValue, toValue)
   }
 
-  def asInt(e: Expression, ctx: CypherRow, state: QueryState): Option[Int] = {
+  def asInt(e: Expression, ctx: ReadableRow, state: QueryState): Option[Int] = {
     val index = e(ctx, state)
     if (index eq Values.NO_VALUE) None
     else Some(CastSupport.castOrFail[NumberValue](index).longValue().toInt)
   }
 
-  override def compute(value: AnyValue, ctx: CypherRow, state: QueryState): AnyValue =
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     function(value, ctx, state)
 
   override def rewrite(f: Expression => Expression): Expression =

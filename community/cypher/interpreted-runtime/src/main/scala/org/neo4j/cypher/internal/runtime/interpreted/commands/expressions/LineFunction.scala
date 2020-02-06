@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.net.URLDecoder
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{CypherRow, ResourceLinenumber}
@@ -28,7 +29,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class Linenumber() extends Expression {
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getLinenumber match {
     case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
     case _ => Values.NO_VALUE
   }
@@ -42,7 +43,7 @@ case class Linenumber() extends Expression {
 
 
 case class File() extends Expression {
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getLinenumber match {
     case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }

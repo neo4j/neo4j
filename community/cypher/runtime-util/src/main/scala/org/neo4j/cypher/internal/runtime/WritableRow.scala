@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
 
-// TODO: scaladoc
+/**
+  * Cypher row which allows writing variables and invalidating cached properties.
+  */
 trait WritableRow {
 
   def setLongAt(offset: Int, value: Long): Unit
@@ -36,12 +36,6 @@ trait WritableRow {
 
   def mergeWith(other: ReadableRow, entityById: EntityById): Unit
   def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit
-
-  // Cached properties
-  //===================================
-
-  def setCachedProperty(key: ASTCachedProperty, value: Value): Unit
-  def setCachedPropertyAt(offset: Int, value: Value): Unit
 
   /**
     * Invalidate all cached node properties for the given node id

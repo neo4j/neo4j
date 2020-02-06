@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -225,7 +226,7 @@ class CoerceToTest extends CypherFunSuite {
 
         override def children: Seq[AstNode[_]] = Seq.empty
 
-        override def apply(ctx: CypherRow, state: QueryState): AnyValue = in
+        override def apply(ctx: ReadableRow, state: QueryState): AnyValue = in
 
       }
 

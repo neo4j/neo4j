@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{CypherRow, ListSupport}
@@ -35,7 +36,7 @@ case class FilterFunction(collection: Expression,
   with ListSupport
   with Closure {
 
-  override def compute(value: AnyValue, row: CypherRow, state: QueryState): ListValue = {
+  override def compute(value: AnyValue, row: ReadableRow, state: QueryState): ListValue = {
     val list = makeTraversable(value)
     val filtered = new ArrayBuffer[AnyValue]
     val inputs = list.iterator()

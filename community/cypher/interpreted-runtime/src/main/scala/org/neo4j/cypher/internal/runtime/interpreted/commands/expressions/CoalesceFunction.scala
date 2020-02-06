@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols._
@@ -27,7 +28,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class CoalesceFunction(override val arguments: Expression*) extends Expression {
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue =
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
     arguments.
       view.
       map(expression => expression(ctx, state)).

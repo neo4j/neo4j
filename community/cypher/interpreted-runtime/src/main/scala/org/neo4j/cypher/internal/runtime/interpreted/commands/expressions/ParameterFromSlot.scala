@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class ParameterFromSlot(offset: Int, parameterName: String) extends Expression {
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = state.params(offset)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = state.params(offset)
 
   override def toString: String = "$" + parameterName
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions.distance
@@ -27,7 +28,7 @@ import org.neo4j.values.AnyValue
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = distance(p1(ctx, state), p2(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = distance(p1(ctx, state), p2(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
 

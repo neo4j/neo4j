@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{AstNode, coerce}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols._
@@ -28,7 +29,7 @@ import org.neo4j.values.AnyValue
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = coerce(expr(ctx, state), state, typ)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = coerce(expr(ctx, state), state, typ)
 
   override def rewrite(f: Expression => Expression): Expression = f(CoerceTo(expr.rewrite(f), typ))
 

@@ -19,21 +19,29 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsNoValue}
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.exceptions.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DurationValue, PointValue, TemporalValue, Values}
-import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.TemporalValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
-  def apply(ctx: CypherRow, state: QueryState): AnyValue = mapExpr(ctx, state) match {
+  def apply(ctx: ReadableRow, state: QueryState): AnyValue = mapExpr(ctx, state) match {
     case IsNoValue() => Values.NO_VALUE
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {

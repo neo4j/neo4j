@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.{CypherRow, ast}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.values.AnyValue
 
 object ExpressionVariable {
@@ -34,7 +35,7 @@ object ExpressionVariable {
 
 case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = state.expressionVariables(offset)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = state.expressionVariables(offset)
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

@@ -100,15 +100,15 @@ trait ExecutionContextFactory {
 
   def newExecutionContext(): CypherRow
 
-  def copyWith(init: CypherRow): CypherRow
+  def copyWith(init: ReadableRow): CypherRow
 
-  def copyWith(row: CypherRow, newEntries: Seq[(String, AnyValue)]): CypherRow
+  def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow
 
-  def copyWith(row: CypherRow, key: String, value: AnyValue): CypherRow
+  def copyWith(row: ReadableRow, key: String, value: AnyValue): CypherRow
 
-  def copyWith(row: CypherRow, key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
+  def copyWith(row: ReadableRow, key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
 
-  def copyWith(row: CypherRow,
+  def copyWith(row: ReadableRow,
                key1: String, value1: AnyValue,
                key2: String, value2: AnyValue,
                key3: String, value3: AnyValue): CypherRow
@@ -119,47 +119,56 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
   override def newExecutionContext(): CypherRow = CypherRow.empty
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(init: CypherRow): CypherRow = init match {
+  override def copyWith(init: ReadableRow): CypherRow = init match {
     case context: MapCypherRow =>
       context.createClone()
     case _ =>
-      init.createClone()
+      val x = newExecutionContext()
+      init.copyTo(x)
+      x
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: CypherRow, newEntries: Seq[(String, AnyValue)]): CypherRow = row match {
+  override def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow = row match {
     case context: MapCypherRow =>
       context.copyWith(newEntries)
     case _ =>
-      row.copyWith(newEntries)
+      val x = newExecutionContext()
+      row.copyTo(x)
+      x.set(newEntries)
+      x
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: CypherRow, key: String, value: AnyValue): CypherRow = row match {
+  override def copyWith(row: ReadableRow, key: String, value: AnyValue): CypherRow = row match {
     case context: MapCypherRow =>
       context.copyWith(key, value)
     case _ =>
-      row.copyWith(key, value)
+      val x = newExecutionContext()
+      row.copyTo(x)
+      x.set(key, value)
+      x
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row : CypherRow,
-                        key1: String, value1: AnyValue,
-                        key2: String, value2: AnyValue): CypherRow = row match {
+  override def copyWith(row: ReadableRow, key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow = row match {
     case context: MapCypherRow =>
       context.copyWith(key1, value1, key2, value2)
     case _ =>
-      row.copyWith(key1, value1, key2, value2)
+      val x = newExecutionContext()
+      row.copyTo(x)
+      x.set(key1, value1, key2, value2)
+      x
     }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row : CypherRow,
-                        key1: String, value1: AnyValue,
-                        key2: String, value2: AnyValue,
-                        key3: String, value3: AnyValue): CypherRow = row match {
+  override def copyWith(row: ReadableRow, key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow = row match {
     case context: MapCypherRow =>
       context.copyWith(key1, value1, key2, value2, key3, value3)
     case _ =>
-      row.copyWith(key1, value1, key2, value2, key3, value3)
+      val x = newExecutionContext()
+      row.copyTo(x)
+      x.set(key1, value1, key2, value2, key3, value3)
+      x
   }
 }

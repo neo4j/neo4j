@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
-  override def compute(value: AnyValue, ctx: CypherRow, state: QueryState): AnyValue =
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
     CypherFunctions.point(value, state.query, state.cursors)
 
   override def rewrite(f: Expression => Expression): Expression = f(PointFunction(data.rewrite(f)))

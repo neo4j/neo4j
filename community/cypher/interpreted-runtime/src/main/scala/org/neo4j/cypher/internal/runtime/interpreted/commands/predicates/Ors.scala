@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -33,7 +33,7 @@ case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPred
 
 @deprecated("Use Ors (plural) instead")
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  override def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m, state)
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(ctx, state)
 
   override def toString: String = s"($a OR $b)"
   override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull

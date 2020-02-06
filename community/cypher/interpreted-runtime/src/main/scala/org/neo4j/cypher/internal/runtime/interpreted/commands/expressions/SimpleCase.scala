@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends Expression {
 
-  override def apply(ctx: CypherRow, state: QueryState): AnyValue = {
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
     val value = expression(ctx, state)
 
     val matchingExpression: Option[Expression] = alternatives collectFirst {

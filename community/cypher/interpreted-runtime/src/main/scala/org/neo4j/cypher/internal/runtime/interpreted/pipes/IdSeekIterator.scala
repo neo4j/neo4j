@@ -85,8 +85,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def next(): CypherRow = {
     val rel = nextEntity()
-    executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode()
-    )
+    executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
   }
 }
 

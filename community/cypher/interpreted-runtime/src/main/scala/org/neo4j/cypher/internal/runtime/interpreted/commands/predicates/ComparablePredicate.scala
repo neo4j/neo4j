@@ -19,22 +19,28 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CypherRow, IsFalseValue, IsNoValue, IsTrueValue}
+import org.neo4j.cypher.internal.runtime.IsFalseValue
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.IsTrueValue
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.values.storable._
-import org.neo4j.values.{AnyValue, Equality}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.Equality
 
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
   def comparator: (AnyValue, AnyValue) => Value
 
-  override def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = {
-    val l = left(m, state)
-    val r = right(m, state)
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+    val l = left(ctx, state)
+    val r = right(ctx, state)
     comparator(l, r) match {
       case IsTrueValue() => Some(true)
       case IsFalseValue() => Some(false)
@@ -66,9 +72,9 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
     else None
   }
 
-  override def isMatch(m: CypherRow, state: QueryState): Option[Boolean] = {
-    val l = a(m, state)
-    val r = b(m, state)
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+    val l = a(ctx, state)
+    val r = b(ctx, state)
 
     l.ternaryEquals(r) match {
       case Equality.UNDEFINED => None
