@@ -132,7 +132,7 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <scope>test</scope>
-            <version>0.9.11</version>
+            <version>0.9.12</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
