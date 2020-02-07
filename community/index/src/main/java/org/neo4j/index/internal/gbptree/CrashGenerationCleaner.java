@@ -32,7 +32,7 @@ import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
@@ -41,13 +41,13 @@ import org.neo4j.util.concurrent.Futures;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
  */
 class CrashGenerationCleaner
 {
+    private static final String INDEX_CLEANER_TAG = "indexCleaner";
     private static final String NUMBER_OF_WORKERS_NAME = "number_of_workers";
     private static final int NUMBER_OF_WORKERS_DEFAULT = min( 8, Runtime.getRuntime().availableProcessors() );
     private static final int NUMBER_OF_WORKERS = FeatureToggles.getInteger( CrashGenerationCleaner.class, NUMBER_OF_WORKERS_NAME, NUMBER_OF_WORKERS_DEFAULT );
@@ -61,9 +61,10 @@ class CrashGenerationCleaner
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
+    private final PageCacheTracer pageCacheTracer;
 
     CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
-            long stableGeneration, long unstableGeneration, Monitor monitor )
+            long stableGeneration, long unstableGeneration, Monitor monitor, PageCacheTracer pageCacheTracer )
     {
         this.pagedFile = pagedFile;
         this.treeNode = treeNode;
@@ -72,6 +73,7 @@ class CrashGenerationCleaner
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     private static long batchSize( long pagesToClean, int threads )
@@ -99,7 +101,7 @@ class CrashGenerationCleaner
         List<Future<?>> cleanerFutures = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
-            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag );
+            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag, pageCacheTracer );
             Future<?> future = executor.submit( cleanerTask );
             cleanerFutures.add( future );
         }
@@ -117,13 +119,14 @@ class CrashGenerationCleaner
         monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), startTime.elapsed( MILLISECONDS ) );
     }
 
-    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicBoolean stopFlag )
+    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicBoolean stopFlag,
+            PageCacheTracer pageCacheTracer )
     {
         return () ->
         {
-            try ( PageCursorTracer tracer = TRACER_SUPPLIER.get();
-                    PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, tracer );
-                    PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, tracer ) )
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_CLEANER_TAG );
+                  PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorTracer );
+                  PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 long localNextId;
                 while ( ( localNextId = nextId.getAndAdd( batchSize )) < highTreeNodeId )

@@ -41,7 +41,7 @@ class RecordNodeCursorTest
     {
         // given
         NodeStore nodeStore = mock( NodeStore.class );
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
+        when( nodeStore.getHighestPossibleIdInUse( NULL ) ).thenReturn( 200L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
         doAnswer( invocationOnMock ->
         {

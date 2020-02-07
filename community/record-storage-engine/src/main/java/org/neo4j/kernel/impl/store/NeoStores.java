@@ -62,6 +62,8 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
  */
 public class NeoStores implements AutoCloseable
 {
+    private static final String ID_USAGE_LOGGER_TAG = "idUsageLogger";
+
     private static final String STORE_ALREADY_CLOSED_MESSAGE = "Specified store was already closed.";
     private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify" +
                                                                  " %s as one of the stores types that should be open" +
@@ -79,8 +81,8 @@ public class NeoStores implements AutoCloseable
     private final boolean createIfNotExist;
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
-    // All stores, as Object due to CountsTracker being different that all other stores.
     private final CommonAbstractStore[] stores;
+    private final PageCacheTracer pageCacheTracer;
     private final ImmutableSet<OpenOption> openOptions;
 
     NeoStores(
@@ -104,6 +106,7 @@ public class NeoStores implements AutoCloseable
         this.logProvider = logProvider;
         this.recordFormats = recordFormats;
         this.createIfNotExist = createIfNotExist;
+        this.pageCacheTracer = pageCacheTracer;
         this.openOptions = openOptions;
 
         stores = new CommonAbstractStore[StoreType.values().length];
@@ -399,7 +402,10 @@ public class NeoStores implements AutoCloseable
 
     public void logIdUsage( Logger msgLog )
     {
-        visitStores( store -> store.logIdUsage( msgLog ) );
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( ID_USAGE_LOGGER_TAG ) )
+        {
+            visitStores( store -> store.logIdUsage( msgLog, cursorTracer ) );
+        }
     }
 
     /**

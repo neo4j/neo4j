@@ -306,7 +306,7 @@ public class DatabaseCompositeIndexAccessorTest
             {
                 Thread.onSpinWait();
             }
-            sampler.sampleIndex();
+            sampler.sampleIndex( NULL );
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )

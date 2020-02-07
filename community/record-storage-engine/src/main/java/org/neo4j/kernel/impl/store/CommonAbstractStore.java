@@ -67,7 +67,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -198,7 +197,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
                 pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( ANY_PAGE_SIZE ) );
-                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile );
+                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorTracer );
                 if ( !defaultHeader.equals( readHeader ) )
                 {
                     // The header that we read was different from the default one so unmap
@@ -281,10 +280,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordSize = determineRecordSize();
     }
 
-    private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile ) throws IOException
+    private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
-              PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             HEADER readHeader;
             if ( pageCursor.next() )
@@ -498,7 +496,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /**
      * Return the highest id in use. If this store is not OK yet, the high id is calculated from the highest
-     * in use record on the store, using {@link #scanForHighId()}.
+     * in use record on the store, using {@link #scanForHighId(PageCursorTracer)}.
      *
      * @return The high id, i.e. highest id in use + 1.
      */
@@ -546,7 +544,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 int startingId = numberOfReservedLowIds;
                 int recordsPerPage = getRecordsPerPage();
                 int blockSize = getRecordSize();
-                long foundHighId = scanForHighId();
+                long foundHighId = scanForHighId( cursorTracer );
                 long[] foundIds = new long[recordsPerPage];
                 int foundIdsCursor;
 
@@ -610,22 +608,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private void openIdGenerator( PageCursorTracer cursorTracer )
     {
         boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), readOnly,
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnly,
                 cursorTracer, openOptions );
     }
 
     /**
      * Starts from the end of the file and scans backwards to find the highest in use record.
      * Can be used even if {@link #start(PageCursorTracer)} hasn't been called. Basically this method should be used
-     * over {@link #getHighestPossibleIdInUse()} and {@link #getHighId()} in cases where a store has been opened
+     * over {@link #getHighestPossibleIdInUse(PageCursorTracer)} and {@link #getHighId()} in cases where a store has been opened
      * but is in a scenario where recovery isn't possible, like some tooling or migration.
      *
      * @return the id of the highest in use record + 1, i.e. highId.
      */
-    protected long scanForHighId()
+    protected long scanForHighId( PageCursorTracer cursorTracer )
     {
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
@@ -782,9 +779,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /** @return The highest possible id in use, -1 if no id in use. */
     @Override
-    public long getHighestPossibleIdInUse()
+    public long getHighestPossibleIdInUse( PageCursorTracer cursorTracer )
     {
-        return idGenerator != null ? idGenerator.getHighestPossibleIdInUse() : scanForHighId() - 1;
+        return idGenerator != null ? idGenerator.getHighestPossibleIdInUse() : scanForHighId( cursorTracer ) - 1;
     }
 
     /**
@@ -825,9 +822,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         logger.log( getTypeDescriptor() + " " + storeVersion );
     }
 
-    void logIdUsage( Logger logger )
+    void logIdUsage( Logger logger, PageCursorTracer cursorTracer )
     {
-        logger.log( format( "%s: used=%s high=%s", getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+        logger.log( format( "%s: used=%s high=%s", getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse( cursorTracer ) ) );
     }
 
     @Override

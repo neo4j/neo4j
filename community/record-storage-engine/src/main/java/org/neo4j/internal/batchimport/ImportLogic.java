@@ -56,6 +56,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -502,7 +503,7 @@ public class ImportLogic implements Closeable
         neoStore.buildCountsStore( new CountsBuilder()
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater )
+            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
             {
                 MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
                 nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );

@@ -289,7 +289,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
         if ( descriptor.isUnique() )
         {
@@ -300,6 +300,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     IndexSample buildNonUniqueIndexSample()
     {
-        return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
+        return new FullScanNonUniqueIndexSampler<>( tree, layout ).sample( TRACER_SUPPLIER.get() );
     }
 }

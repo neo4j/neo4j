@@ -911,10 +911,10 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexSample sampleResult()
+        public IndexSample sample()
         {
             resultSampled = true;
-            return super.sampleResult();
+            return super.sample();
         }
     }
 }

@@ -638,7 +638,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
               IndexSampler sampler = reader.createSampler() )
         {
             // when
-            IndexSample sample = sampler.sampleIndex();
+            IndexSample sample = sampler.sampleIndex( NULL );
 
             // then
             assertEquals( updates.length, sample.indexSize() );

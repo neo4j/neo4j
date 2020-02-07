@@ -28,7 +28,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -46,7 +45,6 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 
 /**

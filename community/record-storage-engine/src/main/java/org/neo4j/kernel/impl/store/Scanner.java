@@ -68,7 +68,7 @@ public class Scanner
         Scan( RecordStore<R> store, boolean forward, PageCursorTracer cursorTracer, final Predicate<? super R>... filters )
         {
             this.filters = filters;
-            this.ids = new StoreIdIterator( store, forward );
+            this.ids = new StoreIdIterator( store, forward, cursorTracer );
             this.store = store;
             this.cursor = store.openPageCursorForReading( 0, cursorTracer );
             this.record = store.newRecord();

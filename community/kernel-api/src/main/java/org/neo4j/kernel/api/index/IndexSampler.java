@@ -22,13 +22,14 @@ package org.neo4j.kernel.api.index;
 import java.io.Closeable;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Component able to sample schema index.
  */
 public interface IndexSampler extends Closeable
 {
-    IndexSampler EMPTY = IndexSample::new;
+    IndexSampler EMPTY = cursorTracer -> null;
 
     /**
      * Sample this index (on the current thread)
@@ -36,7 +37,7 @@ public interface IndexSampler extends Closeable
      * @return the index sampling result
      * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    IndexSample sampleIndex() throws IndexNotFoundKernelException;
+    IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException;
 
     @Override
     default void close()

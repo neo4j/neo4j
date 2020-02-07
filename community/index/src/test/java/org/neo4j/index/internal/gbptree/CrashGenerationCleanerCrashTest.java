@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -93,6 +94,6 @@ class CrashGenerationCleanerCrashTest
             }
         };
         return new CrashGenerationCleaner( pagedFile, new TreeNodeFixedSize<>( pageSize, SimpleLongLayout.longLayout().build() ), 0,
-                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR );
+                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, PageCacheTracer.NULL );
     }
 }

@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
@@ -107,14 +108,14 @@ public interface IndexPopulator extends IndexDropper
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(IndexDescriptor, PageCursorTracer)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}. Supplying {@code false} can have two meanings:
      * <ul>
      *     <li>if {@link #markAsFailed(String)} have been called the end state should be {@link InternalIndexState#FAILED}.
      *     This method call should also make sure that the failure message gets stored for retrieval the next open, and made available for later requests
-     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor)}.</li>
+     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor, PageCursorTracer)}.</li>
      *     <li>if {@link #markAsFailed(String)} have NOT been called the end state should be {@link InternalIndexState#POPULATING}</li>
      * </ul>
      */
@@ -122,7 +123,7 @@ public interface IndexPopulator extends IndexDropper
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
-     * {@link IndexProvider#getPopulationFailure(IndexDescriptor)}. Called before {@link #close(boolean)}
+     * {@link IndexProvider#getPopulationFailure(IndexDescriptor, PageCursorTracer)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
@@ -140,7 +141,7 @@ public interface IndexPopulator extends IndexDropper
     /**
      * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
-    IndexSample sampleResult();
+    IndexSample sample();
 
     /**
      * Returns actual population progress, given the progress of the scan. This is for when a populator needs to do
@@ -203,7 +204,7 @@ public interface IndexPopulator extends IndexDropper
         }
 
         @Override
-        public IndexSample sampleResult()
+        public IndexSample sample()
         {
             return new IndexSample();
         }
@@ -272,9 +273,9 @@ public interface IndexPopulator extends IndexDropper
         }
 
         @Override
-        public IndexSample sampleResult()
+        public IndexSample sample()
         {
-            return delegate.sampleResult();
+            return delegate.sample();
         }
 
         @Override

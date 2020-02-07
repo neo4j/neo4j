@@ -413,7 +413,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private long nodeHighMark()
     {
-        return read.getHighestPossibleIdInUse();
+        return read.getHighestPossibleIdInUse( cursorTracer );
     }
 
     private void node( NodeRecord record, long reference, PageCursor pageCursor )

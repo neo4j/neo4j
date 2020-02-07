@@ -75,7 +75,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
         return sampler.result();
     }

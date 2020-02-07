@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -57,7 +58,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex() throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( indexSamplingConfig.sampleSizeLimit() );
         IndexReader indexReader = indexSearcher.getIndexReader();
@@ -87,7 +88,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
             }
         }
 
-        return sampler.result( indexReader.numDocs() );
+        return sampler.sample( indexReader.numDocs(), cursorTracer );
     }
 
     private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext )

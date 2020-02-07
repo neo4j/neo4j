@@ -23,6 +23,7 @@ import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
 
@@ -41,7 +42,7 @@ public class UniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex() throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         sampler.increment( indexSearcher.getIndexReader().numDocs() );

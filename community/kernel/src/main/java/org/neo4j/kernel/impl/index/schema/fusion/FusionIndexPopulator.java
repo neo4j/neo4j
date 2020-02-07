@@ -128,9 +128,9 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
-        return combineSamples( instanceSelector.transform( IndexPopulator::sampleResult ) );
+        return combineSamples( instanceSelector.transform( IndexPopulator::sample ) );
     }
 
     @Override

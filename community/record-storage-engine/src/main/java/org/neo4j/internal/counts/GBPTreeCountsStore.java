@@ -154,7 +154,7 @@ public class GBPTreeCountsStore implements CountsStore
             long txId = initialCountsBuilder.lastCommittedTxId();
             try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ), idSequence, txId ), lock ) )
             {
-                initialCountsBuilder.initialize( updater );
+                initialCountsBuilder.initialize( updater, cursorTracer );
             }
         }
         started = true;

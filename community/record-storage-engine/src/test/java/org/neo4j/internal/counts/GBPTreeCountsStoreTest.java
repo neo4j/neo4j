@@ -55,7 +55,6 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
@@ -344,9 +343,9 @@ class GBPTreeCountsStoreTest
         TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater )
+            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
             {
-                super.initialize( updater );
+                super.initialize( updater, cursorTracer );
                 updater.incrementNodeCount( labelId, 10 );
                 updater.incrementRelationshipCount( labelId, relationshipTypeId, labelId2, 14 );
             }
@@ -386,7 +385,7 @@ class GBPTreeCountsStoreTest
         instantiateCountsStore( new CountsBuilder()
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater )
+            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
             {
                 updater.incrementNodeCount( labelId, 2 );
             }
@@ -727,7 +726,7 @@ class GBPTreeCountsStoreTest
         }
 
         @Override
-        public void initialize( CountsAccessor.Updater updater )
+        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
         {
             initializeCalled = true;
         }

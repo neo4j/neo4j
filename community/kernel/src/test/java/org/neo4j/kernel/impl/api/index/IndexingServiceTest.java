@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -185,7 +184,7 @@ class IndexingServiceTest
     @BeforeEach
     void setUp()
     {
-        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( populator.sample() ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
     }
@@ -322,7 +321,7 @@ class IndexingServiceTest
         order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor );
         order.verify( updater ).close();
-        order.verify( populator ).sampleResult();
+        order.verify( populator ).sample();
         order.verify( populator ).close( true );
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );

@@ -149,7 +149,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
 
             // WHEN
             populator.scanCompleted( nullInstance, jobScheduler );
-            IndexSample sample = populator.sampleResult();
+            IndexSample sample = populator.sample();
 
             // THEN
             Value[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );

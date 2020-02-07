@@ -422,7 +422,7 @@ class UniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         assertEquals( new IndexSample(), sample );
     }
@@ -440,7 +440,7 @@ class UniqueDatabaseIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         assertEquals( new IndexSample( 4, 4, 4 ), sample );
     }

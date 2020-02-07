@@ -88,7 +88,7 @@ public class SchemaStorage35
     {
         return new PrefetchingIterator<>()
         {
-            private final long highestId = schemaStore.getHighestPossibleIdInUse();
+            private final long highestId = schemaStore.getHighestPossibleIdInUse( cursorTracer );
             private long currentId = 1; /*record 0 contains the block size*/
             private final byte[] scratchData = newRecordBuffer();
             private final DynamicRecord record = schemaStore.newRecord();

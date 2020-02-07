@@ -71,11 +71,11 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         // be none in a unique index).
 
         FullScanNonUniqueIndexSampler<KEY,VALUE> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
-        return () ->
+        return tracer ->
         {
             try
             {
-                return sampler.result();
+                return sampler.sample( tracer );
             }
             catch ( UncheckedIOException e )
             {

@@ -75,8 +75,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
 
     /**
      * @return highest id in use in this store.
+
      */
-    long getHighestPossibleIdInUse();
+    long getHighestPossibleIdInUse( PageCursorTracer cursorTracer );
 
     /**
      * Sets highest id in use for this store. This is for when records are applied to this store where
@@ -394,9 +395,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public long getHighestPossibleIdInUse()
+        public long getHighestPossibleIdInUse( PageCursorTracer cursorTracer )
         {
-            return actual.getHighestPossibleIdInUse();
+            return actual.getHighestPossibleIdInUse( cursorTracer );
         }
 
         @Override

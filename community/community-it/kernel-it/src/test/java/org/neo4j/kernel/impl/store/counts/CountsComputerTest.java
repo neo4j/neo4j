@@ -40,17 +40,20 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -59,6 +62,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,6 +93,22 @@ class CountsComputerTest
         dbBuilder = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent();
+    }
+
+    @Test
+    void tracePageCacheAccessOnInitialization() throws IOException
+    {
+        DatabaseManagementService managementService = dbBuilder.build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        var countsStore = db.getDependencyResolver().resolveDependency( GBPTreeCountsStore.class );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" );
+
+        countsStore.start( cursorTracer );
+
+        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
     }
 
     @Test

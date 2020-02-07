@@ -20,6 +20,7 @@
 package org.neo4j.internal.counts;
 
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
@@ -27,14 +28,14 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  */
 public interface CountsBuilder
 {
-    void initialize( CountsAccessor.Updater updater );
+    void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer );
 
     long lastCommittedTxId();
 
     CountsBuilder EMPTY = new CountsBuilder()
     {
         @Override
-        public void initialize( CountsAccessor.Updater updater )
+        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
         {
         }
 

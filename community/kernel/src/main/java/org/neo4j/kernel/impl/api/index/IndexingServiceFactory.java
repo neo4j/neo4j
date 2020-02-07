@@ -57,7 +57,7 @@ public final class IndexingServiceFactory
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
-                new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler, tokenNameLookup, internalLogProvider );
+                new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler, tokenNameLookup, internalLogProvider, pageCacheTracer );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxyCreator proxySetup =
                 new IndexProxyCreator( samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider );

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
+import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
@@ -176,16 +177,17 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
     public void flush()
     {
         int highest = highestCreatedId;
+        var cursorTracer = TRACER_SUPPLIER.get();
         for ( Map.Entry<Integer,String> tokenToCreate : sortCreatedTokensById() )
         {
             if ( tokenToCreate.getKey() > highestCreatedId )
             {
-                createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), PageCursorTracer.NULL );
+                createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), cursorTracer );
                 highest = Math.max( highest, tokenToCreate.getKey() );
             }
         }
         // Store them
-        int highestId = max( toIntExact( store.getHighestPossibleIdInUse() ), highest );
+        int highestId = max( toIntExact( store.getHighestPossibleIdInUse( cursorTracer ) ), highest );
         store.setHighestPossibleIdInUse( highestId );
         highestCreatedId = highestId;
     }

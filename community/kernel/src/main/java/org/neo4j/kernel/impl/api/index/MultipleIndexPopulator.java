@@ -116,7 +116,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final PhaseTracker phaseTracker;
     protected final JobScheduler jobScheduler;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
-    private TokenNameLookup tokenNameLookup;
+    private final TokenNameLookup tokenNameLookup;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup )
@@ -303,7 +303,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
@@ -632,7 +632,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                             {
                                 populator.verifyDeferredConstraints( propertyAccessor );
                             }
-                            IndexSample sample = populator.sampleResult();
+                            IndexSample sample = populator.sample();
                             indexStatisticsStore.replaceStats( indexId, sample );
                             populator.close( true );
                             schemaState.clear();

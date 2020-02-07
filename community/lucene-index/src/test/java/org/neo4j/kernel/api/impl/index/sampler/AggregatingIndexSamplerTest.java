@@ -24,10 +24,12 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class AggregatingIndexSamplerTest
 {
@@ -37,7 +39,7 @@ class AggregatingIndexSamplerTest
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
 
-        IndexSample sample = partitionedSampler.sampleIndex();
+        IndexSample sample = partitionedSampler.sampleIndex( NULL );
 
         assertEquals( new IndexSample( 3, 3, 6 ), sample );
     }
@@ -57,7 +59,7 @@ class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex()
+        public IndexSample sampleIndex( PageCursorTracer cursorTracer )
         {
             return new IndexSample( value, value, value * 2 );
         }

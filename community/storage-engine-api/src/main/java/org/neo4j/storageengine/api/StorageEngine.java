@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.stream.Stream;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;

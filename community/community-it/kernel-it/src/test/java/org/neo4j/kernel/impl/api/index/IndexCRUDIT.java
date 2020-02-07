@@ -250,7 +250,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexSample sampleResult()
+        public IndexSample sample()
         {
             long indexSize = 0;
             for ( Set<Long> nodeIds : indexSamples.values() )

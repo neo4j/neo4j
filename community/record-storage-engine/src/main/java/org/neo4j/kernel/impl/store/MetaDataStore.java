@@ -183,7 +183,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLatestConstraintIntroducingTx( 0, cursorTracer );
 
         initHighId();
-        flush( TRACER_SUPPLIER.get() );
+        flush( cursorTracer );
     }
 
     // Only for initialization and recovery, so we don't need to lock the records

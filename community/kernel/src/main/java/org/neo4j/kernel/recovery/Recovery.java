@@ -124,7 +124,7 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public final class Recovery
 {
-    public static final boolean IGNORE_STORE_ID = flag( Recovery.class, "ignoreStoreId", false );
+    private static final boolean IGNORE_STORE_ID = flag( Recovery.class, "ignoreStoreId", false );
 
     private Recovery()
     {
@@ -346,7 +346,7 @@ public final class Recovery
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
-                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker );
+                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, pageCacheTracer );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
@@ -413,14 +413,15 @@ public final class Recovery
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner, RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
-            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker )
+            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker,
+            PageCacheTracer pageCacheTracer )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
                 logVersionRepository, logFiles, positionMonitor, log );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles,
-                startupChecker );
+                startupChecker, pageCacheTracer );
     }
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()

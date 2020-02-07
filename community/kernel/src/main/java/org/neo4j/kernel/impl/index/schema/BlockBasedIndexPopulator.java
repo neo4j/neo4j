@@ -629,7 +629,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
         if ( !descriptor.isUnique() )
         {
@@ -639,7 +639,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     nonUniqueIndexSample.sampleSize(),
                     numberOfIndexUpdatesSinceSample.get() );
         }
-        return super.sampleResult();
+        return super.sample();
     }
 
     /**

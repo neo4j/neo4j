@@ -408,7 +408,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
      * tree creation, stored in meta page and read when opening tree later.
      */
-    private int pageSize;
+    private final int pageSize;
 
     /**
      * Whether or not the tree was created this time it was instantiated.
@@ -490,7 +490,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * True if initial tree state was dirty
      */
-    private boolean dirtyOnStartup;
+    private final boolean dirtyOnStartup;
 
     /**
      * State of cleanup job.
@@ -1430,7 +1430,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
-                            stableGeneration, unstableGeneration, monitor );
+                            stableGeneration, unstableGeneration, monitor, pageCacheTracer );
             GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor, indexFile );
             recoveryCleanupWorkCollector.add( cleanupJob );
             return cleanupJob;

@@ -92,7 +92,6 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.function.ThrowingAction.executeAll;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -101,6 +100,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private static final String STORAGE_ENGINE_START_TAG = "storageEngineStart";
     private static final String SCHEMA_CACHE_START_TAG = "schemaCacheStart";
+    private static final String TOKENS_INIT_TAG = "tokensInitialisation";
 
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -191,10 +191,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 
                 @Override
-                public void initialize( CountsAccessor.Updater updater )
+                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
                 {
                     log.warn( "Missing counts store, rebuilding it." );
-                    new CountsComputer( neoStores, pageCache, layout ).initialize( updater );
+                    new CountsComputer( neoStores, pageCache, layout ).initialize( updater, cursorTracer );
                     log.warn( "Counts store rebuild completed." );
                 }
 
@@ -469,7 +469,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), TRACER_SUPPLIER.get() );
+                try ( var cursorTracer = cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) )
+                {
+                    tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), cursorTracer );
+                }
                 loadSchemaCache();
             }
         };

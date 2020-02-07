@@ -90,7 +90,7 @@ class DirectRecordStoreMigrator
 
     private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, PageCursorTracer cursorTracer )
     {
-        to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse() );
+        to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorTracer ) );
 
         from.scanAllRecords( record ->
         {

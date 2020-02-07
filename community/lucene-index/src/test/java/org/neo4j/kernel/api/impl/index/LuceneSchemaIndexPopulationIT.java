@@ -110,7 +110,7 @@ class LuceneSchemaIndexPopulationIT
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 
-                    IndexSample sample = indexSampler.sampleIndex();
+                    IndexSample sample = indexSampler.sampleIndex( NULL );
                     assertEquals( affectedNodes, sample.indexSize() );
                     assertEquals( affectedNodes, sample.uniqueValues() );
                     assertEquals( affectedNodes, sample.sampleSize() );

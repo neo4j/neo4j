@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class DefaultNonUniqueIndexSamplerTest
 {
@@ -137,7 +138,7 @@ class DefaultNonUniqueIndexSamplerTest
     private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
             long expectedSampledSize )
     {
-        IndexSample sample = sampler.result();
+        IndexSample sample = sampler.sample( NULL );
         assertEquals( expectedIndexSize, sample.indexSize() );
         assertEquals( expectedUniqueValues, sample.uniqueValues() );
         assertEquals( expectedSampledSize, sample.sampleSize() );

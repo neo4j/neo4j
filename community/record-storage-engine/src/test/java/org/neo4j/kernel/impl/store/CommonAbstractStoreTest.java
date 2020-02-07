@@ -240,7 +240,7 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        public long scanForHighId()
+        public long scanForHighId( PageCursorTracer cursorTracer )
         {
             return HIGH_ID;
         }

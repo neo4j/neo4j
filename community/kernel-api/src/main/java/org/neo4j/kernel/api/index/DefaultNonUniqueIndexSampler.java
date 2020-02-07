@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 {
     private final int sampleSizeLimit;
@@ -80,13 +82,13 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     }
 
     @Override
-    public IndexSample result()
+    public IndexSample sample( PageCursorTracer cursorTracer )
     {
-        return result( -1 );
+        return sample( -1, cursorTracer );
     }
 
     @Override
-    public IndexSample result( int numDocs )
+    public IndexSample sample( int numDocs, PageCursorTracer cursorTracer )
     {
         if ( !values.isEmpty() )
         {

@@ -95,7 +95,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         assertEquals( new IndexSample(), sample );
     }
@@ -112,7 +112,7 @@ class NonUniqueDatabaseIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         assertEquals( new IndexSample( 3, 3, 3 ), sample );
     }
@@ -129,7 +129,7 @@ class NonUniqueDatabaseIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         assertEquals( new IndexSample( 3, 2, 3 ), sample );
     }

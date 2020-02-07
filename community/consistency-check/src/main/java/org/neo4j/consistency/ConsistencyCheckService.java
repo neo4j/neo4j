@@ -56,6 +56,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -367,10 +368,10 @@ public class ConsistencyCheckService
         return Runtime.getRuntime().availableProcessors();
     }
 
-    private class RebuildPreventingCountsInitializer implements CountsBuilder
+    private static class RebuildPreventingCountsInitializer implements CountsBuilder
     {
         @Override
-        public void initialize( CountsAccessor.Updater updater )
+        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
         {
             throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
         }
@@ -387,7 +388,7 @@ public class ConsistencyCheckService
      * and start it inside the checker where we have the report instance available. So we pass in something that can supply the store...
      * and it can also close it (we do here in {@link ConsistencyCheckService}.
      */
-    private class CountsManager extends LifecycleAdapter implements ThrowingSupplier<CountsStore,IOException>
+    private static class CountsManager extends LifecycleAdapter implements ThrowingSupplier<CountsStore,IOException>
     {
         private final PageCache pageCache;
         private final DatabaseLayout databaseLayout;

@@ -23,6 +23,8 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.NoSuchElementException;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 import static java.lang.String.format;
 
 public class StoreIdIterator implements LongIterator
@@ -32,14 +34,9 @@ public class StoreIdIterator implements LongIterator
     private long id;
     private final boolean forward;
 
-    public StoreIdIterator( RecordStore<?> store )
+    public StoreIdIterator( RecordStore<?> store, boolean forward, PageCursorTracer cursorTracer )
     {
-        this( store, true );
-    }
-
-    public StoreIdIterator( RecordStore<?> store, boolean forward )
-    {
-        this( store, forward, forward ? store.getNumberOfReservedLowIds() : store.getHighestPossibleIdInUse() );
+        this( store, forward, forward ? store.getNumberOfReservedLowIds() : store.getHighestPossibleIdInUse( cursorTracer ) );
     }
 
     public StoreIdIterator( RecordStore<?> store, boolean forward, long initialId )

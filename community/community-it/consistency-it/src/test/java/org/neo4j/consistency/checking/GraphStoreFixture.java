@@ -265,7 +265,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), new CountsBuilder()
                 {
                     @Override
-                    public void initialize( CountsAccessor.Updater updater )
+                    public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
                     {
                         throw new UnsupportedOperationException( "Should not be rebuilt" );
                     }

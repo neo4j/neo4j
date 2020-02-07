@@ -82,7 +82,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     }
 
     @Override
-    public IndexSample sampleResult()
+    public IndexSample sample()
     {
         return new IndexSample();
     }

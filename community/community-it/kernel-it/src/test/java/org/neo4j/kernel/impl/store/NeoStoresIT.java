@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -35,8 +34,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
@@ -47,6 +44,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -57,28 +55,37 @@ class NeoStoresIT
     private GraphDatabaseAPI db;
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
-
-    private static final String LONG_STRING_VALUE =
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
-            "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALONG!!";
+    private static final String LONG_STRING_VALUE = randomAscii( 2048 );
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
+    }
+
+    @Test
+    void tracePageCacheAccessOnHighIdScan()
+    {
+        var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        var neoStores = storageEngine.testAccessNeoStores();
+        var propertyStore = neoStores.getPropertyStore();
+
+        for ( int i = 0; i < 1000; i++ )
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                var node = transaction.createNode();
+                node.setProperty( "a", randomAscii( 1024 ) );
+                transaction.commit();
+            }
+        }
+
+        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnHighIdScan" );
+        propertyStore.scanForHighId( cursorTracer );
+
+        assertEquals( 6, cursorTracer.hits() );
+        assertEquals( 6, cursorTracer.pins() );
+        assertEquals( 6, cursorTracer.unpins() );
     }
 
     @Test

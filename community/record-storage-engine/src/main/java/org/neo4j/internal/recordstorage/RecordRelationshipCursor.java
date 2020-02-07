@@ -114,7 +114,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
 
     long relationshipHighMark()
     {
-        return relationshipStore.getHighestPossibleIdInUse();
+        return relationshipStore.getHighestPossibleIdInUse( cursorTracer );
     }
 
     @Override

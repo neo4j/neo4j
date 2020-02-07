@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class FakeClock extends SystemNanoClock
 {
-    private AtomicLong nanoTime = new AtomicLong();
+    private final AtomicLong nanoTime = new AtomicLong();
 
     public FakeClock()
     {

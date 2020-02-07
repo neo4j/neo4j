@@ -28,6 +28,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.NumberValue;
@@ -35,6 +37,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -60,15 +63,43 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
         IndexSample sample;
         try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler =
-                    new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
-            sample = sampler.result();
+            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            sample = sampler.sample( NULL );
         }
 
         // THEN
         assertEquals( values.length, sample.sampleSize() );
         assertEquals( countUniqueValues( values ), sample.uniqueValues() );
         assertEquals( values.length, sample.indexSize() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnSampling() throws IOException
+    {
+        Value[] values = generateNumberValues();
+        buildTree( values );
+
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = pageCacheTracer.createPageCursorTracer( "testTracer" );
+
+        assertZeroCursor( cursorTracer );
+
+        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
+        {
+            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            sampler.sample( cursorTracer );
+        }
+
+        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+    }
+
+    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    {
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.faults() ).isZero();
     }
 
     private Value[] generateNumberValues()

@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class UniqueDatabaseIndexSamplerTest
 {
@@ -45,7 +46,7 @@ class UniqueDatabaseIndexSamplerTest
         when( indexSearcher.getIndexReader().numDocs() ).thenReturn( 17 );
 
         UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
-        IndexSample sample = sampler.sampleIndex();
+        IndexSample sample = sampler.sampleIndex( NULL );
         assertEquals( 17, sample.indexSize() );
     }
 
@@ -59,8 +60,8 @@ class UniqueDatabaseIndexSamplerTest
         } );
 
         UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
-        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, sampler::sampleIndex );
-        assertEquals( notFoundKernelException.getMessage(), "Index dropped while sampling." );
+        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> sampler.sampleIndex( NULL ) );
+        assertEquals( "Index dropped while sampling.", notFoundKernelException.getMessage() );
     }
 
 }

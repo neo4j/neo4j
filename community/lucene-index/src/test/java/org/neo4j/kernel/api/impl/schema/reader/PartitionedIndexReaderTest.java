@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
@@ -170,7 +171,7 @@ class PartitionedIndexReaderTest
         when( indexReader3.createSampler() ).thenReturn( new SimpleSampler( 3 ) );
 
         IndexSampler sampler = indexReader.createSampler();
-        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex() );
+        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL ) );
     }
 
     private LongSet queryResultAsSet( PartitionedIndexReader indexReader, IndexQuery query ) throws IndexNotApplicableKernelException
@@ -220,7 +221,7 @@ class PartitionedIndexReaderTest
         }
 
         @Override
-        public IndexSample sampleIndex()
+        public IndexSample sampleIndex( PageCursorTracer cursorTracer )
         {
             return new IndexSample( sampleValue, sampleValue, sampleValue );
         }

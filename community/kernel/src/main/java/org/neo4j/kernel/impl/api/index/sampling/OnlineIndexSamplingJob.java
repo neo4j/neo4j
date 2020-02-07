@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -34,20 +35,23 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
 {
+    private static final String INDEX_SAMPLER_TAG = "indexSampler";
     private final long indexId;
     private final IndexProxy indexProxy;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
     private final String indexUserDescription;
+    private final PageCacheTracer pageCacheTracer;
 
     OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription,
-            LogProvider logProvider )
+            LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         this.indexId = indexId;
         this.indexProxy = indexProxy;
         this.indexStatisticsStore = indexStatisticsStore;
         this.log = logProvider.getLog( getClass() );
         this.indexUserDescription = indexUserDescription;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -64,9 +68,10 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             try
             {
                 try ( IndexReader reader = indexProxy.newReader();
+                      var cursor = pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG );
                       IndexSampler sampler = reader.createSampler() )
                 {
-                    IndexSample sample = sampler.sampleIndex();
+                    IndexSample sample = sampler.sampleIndex( cursor );
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )

@@ -113,7 +113,7 @@ class MultipleIndexPopulatorTest
 
         indexPopulation.flip( false );
 
-        verify( indexPopulation.populator, never() ).sampleResult();
+        verify( indexPopulation.populator, never() ).sample();
     }
 
     @Test
@@ -368,7 +368,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1, flipper, failedIndexProxyFactory );
         addPopulator( indexPopulator2, 2, flipper, failedIndexProxyFactory );
 
-        when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
+        when( indexPopulator1.sample() ).thenThrow( getSampleError() );
 
         multipleIndexPopulator.indexAllEntities();
         multipleIndexPopulator.flipAfterPopulation( false );
@@ -377,7 +377,7 @@ class MultipleIndexPopulatorTest
         verify( failedIndexProxyFactory ).create( any( RuntimeException.class ) );
 
         verify( indexPopulator2 ).close( true );
-        verify( indexPopulator2 ).sampleResult();
+        verify( indexPopulator2 ).sample();
         verify( indexStatisticsStore ).replaceStats( anyLong(), any() );
         verify( schemaState ).clear();
     }
@@ -475,7 +475,7 @@ class MultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
         IndexPopulator indexPopulator = createIndexPopulator();
         addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
-        when( indexPopulator.sampleResult() ).thenReturn( new IndexSample() );
+        when( indexPopulator.sample() ).thenReturn( new IndexSample() );
 
         // when
         multipleIndexPopulator.indexAllEntities();
@@ -502,7 +502,7 @@ class MultipleIndexPopulatorTest
         int sampleSize = 120;
         int updates = 130;
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
-        when( indexPopulator.sampleResult() ).thenReturn( sample );
+        when( indexPopulator.sample() ).thenReturn( sample );
 
         multipleIndexPopulator.indexAllEntities();
         multipleIndexPopulator.flipAfterPopulation( false );
@@ -533,7 +533,7 @@ class MultipleIndexPopulatorTest
     private static IndexPopulator createIndexPopulator()
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( populator.sample() ).thenReturn( new IndexSample() );
         return populator;
     }
 

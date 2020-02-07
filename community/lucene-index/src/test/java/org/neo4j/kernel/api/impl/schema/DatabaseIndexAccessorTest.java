@@ -313,7 +313,7 @@ public class DatabaseIndexAccessorTest
         try ( IndexReader reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
-            sampler.sampleIndex();
+            sampler.sampleIndex( NULL );
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 /**
  * Builds index sample.
  * It's implementation specific how sample will be build: using index directly or based on samples
@@ -35,9 +37,9 @@ public interface NonUniqueIndexSampler
 
     void exclude( String value, long decrement );
 
-    IndexSample result();
+    IndexSample sample( PageCursorTracer cursorTracer );
 
-    IndexSample result( int numDocs );
+    IndexSample sample( int numDocs, PageCursorTracer cursorTracer );
 
     abstract class Adapter implements NonUniqueIndexSampler
     {

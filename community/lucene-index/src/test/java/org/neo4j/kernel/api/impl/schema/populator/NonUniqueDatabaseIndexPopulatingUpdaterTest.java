@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -264,7 +265,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     private static void verifySamplingResult( NonUniqueIndexSampler sampler, long expectedIndexSize,
             long expectedUniqueValues, long expectedSampleSize )
     {
-        IndexSample sample = sampler.result();
+        IndexSample sample = sampler.sample( NULL );
 
         assertEquals( expectedIndexSize, sample.indexSize() );
         assertEquals( expectedUniqueValues, sample.uniqueValues() );

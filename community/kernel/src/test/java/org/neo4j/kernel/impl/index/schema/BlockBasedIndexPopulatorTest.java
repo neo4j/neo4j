@@ -406,7 +406,7 @@ class BlockBasedIndexPopulatorTest
         populator.close( true );
 
         // then
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
         assertEquals( populationUpdates.size(), sample.indexSize() );
         assertEquals( populationUpdates.size(), sample.sampleSize() );
         assertEquals( populationUpdates.size(), sample.uniqueValues() );

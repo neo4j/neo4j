@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
@@ -32,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexSampler;
  */
 public class AggregatingIndexSampler implements IndexSampler
 {
-    private List<IndexSampler> indexSamplers;
+    private final List<IndexSampler> indexSamplers;
 
     public AggregatingIndexSampler( List<IndexSampler> indexSamplers )
     {
@@ -40,19 +41,18 @@ public class AggregatingIndexSampler implements IndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex()
+    public IndexSample sampleIndex( PageCursorTracer cursorTracer )
     {
-        return indexSamplers.parallelStream()
-                .map( this::sampleIndex )
+        return indexSamplers.parallelStream().map( sampler -> sampleIndex( sampler, cursorTracer ) )
                 .reduce( this::combine )
                 .get();
     }
 
-    private IndexSample sampleIndex( IndexSampler sampler )
+    private IndexSample sampleIndex( IndexSampler sampler, PageCursorTracer cursorTracer )
     {
         try
         {
-            return sampler.sampleIndex();
+            return sampler.sampleIndex( cursorTracer );
         }
         catch ( IndexNotFoundKernelException e )
         {

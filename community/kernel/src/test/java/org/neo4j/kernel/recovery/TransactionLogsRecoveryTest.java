@@ -36,6 +36,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -83,9 +84,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -201,10 +203,9 @@ class TransactionLogsRecoveryTest
                 private int nr;
 
                 @Override
-                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
-                        throws Exception
+                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCursorTracer cursorTracer )
                 {
-                    RecoveryApplier actual = super.getRecoveryApplier( mode );
+                    RecoveryApplier actual = super.getRecoveryApplier( mode, cursorTracer );
                     if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                     {
                         return actual;
@@ -239,7 +240,7 @@ class TransactionLogsRecoveryTest
                         }
                     };
                 }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
 
             life.start();
 
@@ -297,11 +298,11 @@ class TransactionLogsRecoveryTest
             } );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
 
             life.start();
 
-            verifyZeroInteractions( monitor );
+            verifyNoInteractions( monitor );
         }
         finally
         {
@@ -438,7 +439,7 @@ class TransactionLogsRecoveryTest
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
 
         TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery( recoveryService, logPruner, schemaLife, monitor, ProgressReporter.SILENT,
-                true, EMPTY_CHECKER );
+                true, EMPTY_CHECKER, NULL );
 
         logsRecovery.init();
 
@@ -475,7 +476,7 @@ class TransactionLogsRecoveryTest
         var recoveryStartupChecker = new RecoveryStartupChecker( startupController, databaseId );
         var logsTruncator = mock( CorruptedLogsTruncator.class );
 
-        var exception = assertThrows( Exception.class, () -> recover( storeDir, logFiles, monitor, recoveryStartupChecker, logsTruncator ) );
+        var exception = assertThrows( Exception.class, () -> recover( storeDir, logFiles, recoveryStartupChecker ) );
         var rootCause = getRootCause( exception );
         assertThat( rootCause ).isInstanceOf( DatabaseStartAbortedException.class );
 
@@ -485,13 +486,10 @@ class TransactionLogsRecoveryTest
 
     private boolean recover( File storeDir, LogFiles logFiles )
     {
-        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
-        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
-        return recover( storeDir, logFiles, monitor, EMPTY_CHECKER, logPruner );
+        return recover( storeDir, logFiles, EMPTY_CHECKER );
     }
 
-    private boolean recover( File storeDir, LogFiles logFiles, RecoveryMonitor recoveryMonitor, RecoveryStartupChecker startupChecker,
-            CorruptedLogsTruncator logsTruncator )
+    private boolean recover( File storeDir, LogFiles logFiles, RecoveryStartupChecker startupChecker )
     {
         LifeSupport life = new LifeSupport();
 
@@ -516,7 +514,7 @@ class TransactionLogsRecoveryTest
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, NULL ) );
 
             life.start();
         }
@@ -534,7 +532,6 @@ class TransactionLogsRecoveryTest
 
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
-
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file, logFiles.getChannelNativeAccessor() );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel,

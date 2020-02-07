@@ -27,7 +27,7 @@ package org.neo4j.internal.helpers;
 public interface CancellationRequest
 {
     /**
-     * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
+     * @return True if a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
      * so once this method returns true it must always return true on all subsequent calls.
      */
     boolean cancellationRequested();

@@ -758,7 +758,7 @@ class BatchInsertTest
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders );
             List<Long> inUse = new ArrayList<>();
             SchemaRecord record = store.newRecord();
-            for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
+            for ( long i = 1, high = store.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
             {
                 store.getRecord( i, record, RecordLoad.FORCE, NULL );
                 if ( record.inUse() )
@@ -868,7 +868,7 @@ class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( populator.sample() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
@@ -905,7 +905,7 @@ class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( populator.sample() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
@@ -945,7 +945,7 @@ class BatchInsertTest
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( populator.sample() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(

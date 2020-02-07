@@ -128,7 +128,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
             populator.includeSample( update );
         }
         populator.scanCompleted( nullInstance, jobScheduler );
-        IndexSample sample = populator.sampleResult();
+        IndexSample sample = populator.sample();
 
         // THEN
         assertEquals( updates.length, sample.sampleSize() );
