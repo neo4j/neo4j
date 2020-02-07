@@ -336,4 +336,22 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       } =>
     })
   }
+
+  test("LIMIT combined with fused-over-pipelines") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "rel", "y")
+      .cartesianProduct()
+      .|.argument()
+      .expand("(x)-[rel]->(y)")
+      .limit(1)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
+  }
 }
