@@ -57,7 +57,7 @@ public class DbmsDiagnosticsManager
         dumpSystemDiagnostics( log );
     }
 
-    public void dumpDatabaseDiagnostics( Database database )
+    public synchronized void dumpDatabaseDiagnostics( Database database )
     {
         dumpDatabaseDiagnostics( database, log, false );
     }
@@ -78,7 +78,7 @@ public class DbmsDiagnosticsManager
         dump( namedDatabaseId, log );
     }
 
-    public void dump( NamedDatabaseId namedDatabaseId, Log log )
+    private void dump( NamedDatabaseId namedDatabaseId, Log log )
     {
         getDatabaseManager().getDatabaseContext( namedDatabaseId ).map( DatabaseContext::database )
                 .ifPresent( database -> dumpDatabaseDiagnostics( database, log, true ) );
