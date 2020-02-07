@@ -128,6 +128,11 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return fileSystem;
     }
 
+    public File getHomeDirectory()
+    {
+        return homeDirectory;
+    }
+
     public TestDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -77,7 +78,12 @@ public class DbmsSupportController
         return getStore( context ).remove( CONTROLLER, DbmsSupportController.class );
     }
 
-    public void startDbms() throws Exception
+    public final void startDbms() throws Exception
+    {
+        startDbms( UnaryOperator.identity() );
+    }
+
+    public void startDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback ) throws Exception
     {
         // Find closest configuration
         TestConfiguration configuration = getConfigurationFromAnnotations(
@@ -85,7 +91,7 @@ public class DbmsSupportController
                 getTestAnnotation( ImpermanentDbmsExtension.class ) );
 
         // Make service
-        buildDbms( configuration.configurationCallback );
+        buildDbms( configuration.configurationCallback, callback );
         startDatabase( configuration.injectableDatabase );
     }
 
@@ -156,7 +162,7 @@ public class DbmsSupportController
                 .or( () -> context.getTestClass().map( cls -> cls.getAnnotation( annotationType ) ) );
     }
 
-    public DatabaseManagementService buildDbms( String configurationCallback )
+    public DatabaseManagementService buildDbms( String configurationCallback, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
     {
         var testDir = getTestDirectory();
         var builder = createBuilder( testDir.homeDir(), testDir.getFileSystem() );
@@ -164,6 +170,7 @@ public class DbmsSupportController
         {
             maybeInvokeCallback( testInstance, builder, configurationCallback );
         }
+        builder = callback.apply( builder );
         dbms = builder.build();
         ExtensionContext.Store store = getStore( context );
         store.put( DBMS, dbms );
@@ -192,16 +199,26 @@ public class DbmsSupportController
 
     public DbmsController asDbmsController()
     {
-        return () ->
+        return new DbmsController()
         {
-            try
+            @Override
+            public void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
             {
                 shutdown();
-                startDbms();
+                try
+                {
+                    startDbms( callback );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
-            catch ( Exception e )
+
+            @Override
+            public void restartDatabase()
             {
-                throw new RuntimeException( e );
+                restartDbms();
             }
         };
     }

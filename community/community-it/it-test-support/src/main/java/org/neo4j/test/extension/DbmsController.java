@@ -19,11 +19,32 @@
  */
 package org.neo4j.test.extension;
 
+import java.util.function.UnaryOperator;
+
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
 /**
  * Implementations of this interface can be {@link Inject injected} into {@link DbmsExtension} based tests, to allow them to restart the DBMS or the database
  * the test is operating on.
  */
 public interface DbmsController
 {
-    void restart();
+    /**
+     * Restart the DBMS while applying the given changes to the builder.
+     * @param callback The callback that will apply changes to the DBMS builder.
+     */
+    void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback );
+
+    /**
+     * Restart the DBMS without changing anything.
+     */
+    default void restartDbms()
+    {
+        restartDbms( UnaryOperator.identity() );
+    }
+
+    /**
+     * Restart the database without changing anything.
+     */
+    void restartDatabase();
 }
