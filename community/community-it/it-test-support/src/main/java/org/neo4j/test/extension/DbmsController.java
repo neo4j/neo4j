@@ -19,23 +19,11 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-
-public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallback
+/**
+ * Implementations of this interface can be {@link Inject injected} into {@link DbmsExtension} based tests, to allow them to restart the DBMS or the database
+ * the test is operating on.
+ */
+public interface DbmsController
 {
-
-    @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
-    {
-        DbmsSupportController controller = new DbmsSupportController( context );
-        controller.startDbms();
-    }
-
-    @Override
-    public void afterEach( ExtensionContext context )
-    {
-        DbmsSupportController.remove( context ).shutdown();
-    }
+    void restart();
 }

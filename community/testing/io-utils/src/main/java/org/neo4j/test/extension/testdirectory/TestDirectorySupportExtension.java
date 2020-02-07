@@ -98,7 +98,7 @@ public class TestDirectorySupportExtension extends StatefullFieldExtension<TestD
         testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
     }
 
-    private void cleanUp( ExtensionContext context )
+    public void cleanUp( ExtensionContext context )
     {
         TestDirectory testDirectory = getStoredValue( context );
         try
