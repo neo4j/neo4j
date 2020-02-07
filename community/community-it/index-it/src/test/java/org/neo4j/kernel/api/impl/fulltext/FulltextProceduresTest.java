@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -2720,66 +2722,79 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
     }
 
-    @Test
-    void queryNodesMustApplySkip()
+    @Nested
+    class SkipAndLimit
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            createSimpleNodesIndex( tx );
-            tx.commit();
-        }
-        awaitIndexesOnline();
+        long topNode;
+        long middleNode;
+        long bottomNode;
 
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
+        @BeforeEach
+        void setUp()
         {
-            tx.createNode( LABEL ).setProperty( PROP, "zebra zebra" ); // Two zebras! This will be the top result, which we will skip.
-            Node node = tx.createNode( LABEL );
-            node.setProperty( PROP, "zebra" );
-            nodeId = node.getId();
-            tx.commit();
+            try ( Transaction tx = db.beginTx() )
+            {
+                createSimpleNodesIndex( tx );
+                tx.commit();
+            }
+            awaitIndexesOnline();
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node top = tx.createNode( LABEL );
+                Node middle = tx.createNode( LABEL );
+                Node bottom = tx.createNode( LABEL );
+                top.setProperty( PROP, "zebra zebra zebra" );
+                middle.setProperty( PROP, "zebra zebra" );
+                bottom.setProperty( PROP, "zebra" );
+                topNode = top.getId();
+                middleNode = middle.getId();
+                bottomNode = bottom.getId();
+                tx.commit();
+            }
         }
 
-        try ( Transaction tx = db.beginTx();
-              var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
+        @Test
+        void queryNodesMustApplySkip()
         {
-            assertTrue( iterator.hasNext() );
-            assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
-            assertFalse( iterator.hasNext() );
-            tx.commit();
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( middleNode );
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( bottomNode );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryNodesMustApplyLimit()
+        {
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {limit:1})" ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( topNode );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryNodesMustApplySkipAndLimit()
+        {
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1, limit:1})" ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( middleNode );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
         }
     }
-
-    @Test
-    void queryNodesMustApplyLimit()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            createSimpleNodesIndex( tx );
-            tx.commit();
-        }
-        awaitIndexesOnline();
-
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( LABEL );
-            node.setProperty( PROP, "zebra zebra" );
-            nodeId = node.getId();
-            tx.createNode( LABEL ).setProperty( PROP, "zebra" );
-            tx.commit();
-        }
-
-        try ( Transaction tx = db.beginTx();
-              var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {limit:1})" ).columnAs( "node" ) )
-        {
-            assertTrue( iterator.hasNext() );
-            assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
-            assertFalse( iterator.hasNext() );
-            tx.commit();
-        }
-    }
-    // todo query nodes must apply skip and limit
     // todo query nodes with skip and limit must ignore nodes deleted in transaction
     // todo query nodes with skip and limit must include nodes added in transaction
     // todo query relationships must apply skip
