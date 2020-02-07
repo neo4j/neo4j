@@ -33,17 +33,15 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.EntityState;
-import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
-public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor
+public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<LabelSet>, IntSupplier
 {
-    private static final long NO_NODE = -1L;
-    private static final long NO_RELATIONSHIP = -1L;
-
+    private static final int NODE = -2;
     private Read read;
     private StoragePropertyCursor storeCursor;
     private final PageCursorTracer cursorTracer;
@@ -53,11 +51,10 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private long nodeReference = NO_NODE;
-    private long relationshipReference = NO_RELATIONSHIP;
+    private long entityReference = NO_ID;
     private LabelSet labels;
-    private Supplier<LabelSet> getLabel = this::labelsIgnoringTxStateSetRemove;
-    private IntSupplier getRelType = this::getRelType;
+    //stores relationship type or NODE if not a relationship
+    private int type = NO_TOKEN;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer )
     {
@@ -71,9 +68,9 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         assert nodeReference != NO_ID;
 
         init( read, assertOpen );
+        this.type = NODE;
         storeCursor.initNodeProperties( reference );
-        this.nodeReference = nodeReference;
-        relationshipReference = NO_RELATIONSHIP;
+        this.entityReference = nodeReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -94,8 +91,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
-        nodeReference = NO_NODE;
-        this.relationshipReference = relationshipReference;
+        this.entityReference = relationshipReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -115,6 +111,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         this.assertOpen = assertOpen;
         this.read = read;
         this.labels = null;
+        this.type = NO_TOKEN;
     }
 
     boolean allowed()
@@ -122,14 +119,13 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         if ( isNode() )
         {
             ensureAccessMode();
-            return accessMode.allowsReadNodeProperty( getLabel, propertyKey() );
+            return accessMode.allowsReadNodeProperty( this, propertyKey() );
         }
-        if ( isRelationship() )
+        else
         {
             ensureAccessMode();
-            return accessMode.allowsReadRelationshipProperty( getRelType, propertyKey() );
+            return accessMode.allowsReadRelationshipProperty( this, propertyKey() );
         }
-        return true;
     }
 
     @Override
@@ -221,7 +217,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     @Override
     public boolean seekProperty( int property )
     {
-        if ( property == TokenConstants.NO_TOKEN  )
+        if ( property == NO_TOKEN  )
         {
             return false;
         }
@@ -255,7 +251,12 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         }
     }
 
-    public LabelSet labelsIgnoringTxStateSetRemove()
+    /**
+     * Gets the label while ignoring removes in the tx state. Implemented as a Supplier so that we don't need additional
+     * allocations.
+     */
+    @Override
+    public LabelSet get()
     {
         assert isNode();
 
@@ -263,12 +264,30 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         {
             try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor( cursorTracer ) )
             {
-                read.singleNode( nodeReference, nodeCursor );
+                read.singleNode( entityReference, nodeCursor );
                 nodeCursor.next();
                 labels = nodeCursor.labelsIgnoringTxStateSetRemove();
             }
         }
         return labels;
+    }
+
+    @Override
+    public int getAsInt()
+    {
+        assert isRelationship();
+
+        if ( type < 0 )
+        {
+            try ( RelationshipScanCursor relCursor = read.cursors()
+                    .allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+            {
+                read.singleRelationship( entityReference, relCursor );
+                relCursor.next();
+                this.type = relCursor.type();
+            }
+        }
+        return type;
     }
 
     private void ensureAccessMode()
@@ -279,18 +298,6 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         }
     }
 
-    private int getRelType()
-    {
-        assert isRelationship();
-
-        try ( RelationshipScanCursor relCursor = read.cursors().allocateFullAccessRelationshipScanCursor( cursorTracer ) )
-        {
-            read.singleRelationship( relationshipReference, relCursor );
-            relCursor.next();
-            return relCursor.type();
-        }
-    }
-
     public void release()
     {
         storeCursor.close();
@@ -298,11 +305,11 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
     private boolean isNode()
     {
-        return nodeReference != NO_NODE;
+        return type == NODE;
     }
 
     private boolean isRelationship()
     {
-        return relationshipReference != NO_RELATIONSHIP;
+        return type != NODE;
     }
 }
