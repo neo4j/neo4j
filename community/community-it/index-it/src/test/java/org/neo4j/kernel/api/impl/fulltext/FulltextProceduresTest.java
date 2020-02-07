@@ -20,24 +20,13 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.queryparser.flexible.standard.QueryParserUtil;
-import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,16 +37,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongFunction;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -70,39 +52,28 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Level;
 import org.neo4j.procedure.builtin.FulltextProcedures;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.ThreadTestUtils;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.VerboseTimeout;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.util.concurrent.BinaryLatch;
-import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DB_AWAIT_INDEX;
@@ -115,51 +86,11 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUE
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
 
-public class FulltextProceduresTest
+class FulltextProceduresTest extends FulltextProceduresTestSupport
 {
-    private static final String SCORE = "score";
-    private static final String NODE = "node";
-    private static final String RELATIONSHIP = "relationship";
-    private static final String DESCARTES_MEDITATIONES = "/meditationes--rene-descartes--public-domain.txt";
-    private static final Label LABEL = Label.label( "Label" );
-    private static final RelationshipType REL = RelationshipType.withName( "REL" );
-
-    private final Timeout timeout = VerboseTimeout.builder().withTimeout( 1, TimeUnit.HOURS ).build();
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final ExpectedException expectedException = ExpectedException.none();
-    private final CleanupRule cleanup = new CleanupRule();
-
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( timeout ).around( fs ).around( testDirectory ).around( expectedException ).around( cleanup );
-
-    private GraphDatabaseAPI db;
-    private DatabaseManagementServiceBuilder builder;
-    private static final String PROP = "prop";
-    private static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
-    private static final String EVENTUALLY_CONSISTENT_PREFIXED = ", {`fulltext.eventually_consistent`: 'true'}";
-    private DatabaseManagementService managementService;
-
-    @Before
-    public void before()
-    {
-        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
-        builder.setConfig( GraphDatabaseSettings.store_internal_log_level, Level.DEBUG );
-    }
-
-    @After
-    public void tearDown()
-    {
-        if ( db != null )
-        {
-            managementService.shutdown();
-        }
-    }
-
     @Test
-    public void createNodeFulltextIndex()
+    void createNodeFulltextIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction
@@ -193,8 +124,7 @@ public class FulltextProceduresTest
             assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
-        managementService.shutdown();
-        db = createDatabase();
+        restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             result = tx.execute( DB_INDEXES );
@@ -214,9 +144,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void createRelationshipFulltextIndex()
+    void createRelationshipFulltextIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction
@@ -251,8 +180,7 @@ public class FulltextProceduresTest
             assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
-        managementService.shutdown();
-        db = createDatabase();
+        restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             result = tx.execute( DB_INDEXES );
@@ -272,9 +200,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void dropIndex()
+    void dropIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
@@ -302,139 +229,145 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustNotBeAbleToCreateTwoIndexesWithSameName()
+    void mustNotBeAbleToCreateTwoIndexesWithSameName()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
-        expectedException.expectMessage( "already exists" );
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop3", "prop4" ) ) ).close();
-            transaction.commit();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop3", "prop4" ) ) ).close();
+                transaction.commit();
+            }
+        }, "already exists" );
     }
 
     @Test
-    public void mustNotBeAbleToCreateNormalIndexWithSameNameAndSchemaAsExistingFulltextIndex()
+    void mustNotBeAbleToCreateNormalIndexWithSameNameAndSchemaAsExistingFulltextIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1" ) ) ).close();
             transaction.commit();
         }
-        expectedException.expectMessage( "already exists" );
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-            transaction.commit();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+                transaction.commit();
+            }
+        }, "already exists" );
     }
 
     @Test
-    public void mustNotBeAbleToCreateNormalIndexWithSameNameDifferentSchemaAsExistingFulltextIndex()
+    void mustNotBeAbleToCreateNormalIndexWithSameNameDifferentSchemaAsExistingFulltextIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
-        expectedException.expectMessage( "There already exists an index called 'node'." );
+        assertThrows( QueryExecutionException.class, () ->
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+                transaction.commit();
+            }
+        }, "There already exists an index called 'node'." );
+    }
+
+    @Test
+    void mustNotBeAbleToCreateFulltextIndexWithSameNameAndSchemaAsExistingNormalIndex()
+    {
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
+        assertThrows( QueryExecutionException.class, () ->
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1" ) ) ).close();
+                transaction.commit();
+            }
+        }, "already exists" );
     }
 
     @Test
-    public void mustNotBeAbleToCreateFulltextIndexWithSameNameAndSchemaAsExistingNormalIndex()
+    void mustNotBeAbleToCreateFulltextIndexWithSameNameDifferentSchemaAsExistingNormalIndex()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
-        expectedException.expectMessage( "already exists" );
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1" ) ) ).close();
-            transaction.commit();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
+                transaction.commit();
+            }
+        }, "already exists" );
     }
 
     @Test
-    public void mustNotBeAbleToCreateFulltextIndexWithSameNameDifferentSchemaAsExistingNormalIndex()
+    void nodeIndexesMustHaveLabels()
     {
-        db = createDatabase();
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-            transaction.commit();
-        }
-        expectedException.expectMessage( "already exists" );
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            transaction.commit();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) ).close();
+            }
+        } );
     }
 
     @Test
-    public void nodeIndexesMustHaveLabels()
+    void relationshipIndexesMustHaveRelationshipTypes()
     {
-        db = createDatabase();
-        expectedException.expect( QueryExecutionException.class );
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) ).close();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) );
+            }
+        } );
     }
 
     @Test
-    public void relationshipIndexesMustHaveRelationshipTypes()
+    void nodeIndexesMustHaveProperties()
     {
-        db = createDatabase();
-        expectedException.expect( QueryExecutionException.class );
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) );
-        }
+        assertThrows( QueryExecutionException.class, () -> {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( "Label" ), asCypherStringsList() ) ).close();
+            }
+        } );
     }
 
     @Test
-    public void nodeIndexesMustHaveProperties()
+    void relationshipIndexesMustHaveProperties()
     {
-        db = createDatabase();
-        expectedException.expect( QueryExecutionException.class );
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( QueryExecutionException.class, () ->
         {
-            transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( "Label" ), asCypherStringsList() ) ).close();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( "RELTYPE" ), asCypherStringsList() ) );
+            }
+        } );
     }
 
     @Test
-    public void relationshipIndexesMustHaveProperties()
+    void creatingIndexesWhichImpliesTokenCreateMustNotBlockForever()
     {
-        db = createDatabase();
-        expectedException.expect( QueryExecutionException.class );
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( "RELTYPE" ), asCypherStringsList() ) );
-        }
-    }
-
-    @Test
-    public void creatingIndexesWhichImpliesTokenCreateMustNotBlockForever()
-    {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
@@ -448,9 +381,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void creatingIndexWithSpecificAnalyzerMustUseThatAnalyzerForPopulationUpdatingAndQuerying()
+    void creatingIndexWithSpecificAnalyzerMustUseThatAnalyzerForPopulationUpdatingAndQuerying()
     {
-        db = createDatabase();
         LongHashSet noResults = new LongHashSet();
         LongHashSet swedishNodes = new LongHashSet();
         LongHashSet englishNodes = new LongHashSet();
@@ -516,9 +448,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryShouldFindDataAddedInLaterTransactions()
+    void queryShouldFindDataAddedInLaterTransactions()
     {
-        db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
@@ -554,13 +485,12 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryShouldFindDataAddedInIndexPopulation()
+    void queryShouldFindDataAddedInIndexPopulation()
     {
         // when
         Node node1;
         Node node2;
         Relationship relationship;
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             node1 = tx.createNode( LABEL );
@@ -587,11 +517,9 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void updatesToEventuallyConsistentIndexMustEventuallyBecomeVisible()
+    void updatesToEventuallyConsistentIndexMustEventuallyBecomeVisible()
     {
         String value = "bla bla";
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
@@ -640,11 +568,9 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void updatesToEventuallyConsistentIndexMustBecomeVisibleAfterAwaitRefresh()
+    void updatesToEventuallyConsistentIndexMustBecomeVisibleAfterAwaitRefresh()
     {
         String value = "bla bla";
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
@@ -680,11 +606,9 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void eventuallyConsistentIndexMustPopulateWithExistingDataWhenCreated()
+    void eventuallyConsistentIndexMustPopulateWithExistingDataWhenCreated()
     {
         String value = "bla bla";
-        db = createDatabase();
-
         int entityCount = 200;
         LongHashSet nodeIds = new LongHashSet();
         LongHashSet relIds = new LongHashSet();
@@ -715,12 +639,10 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void concurrentPopulationAndUpdatesToAnEventuallyConsistentIndexMustEventuallyResultInCorrectIndexState() throws Exception
+    void concurrentPopulationAndUpdatesToAnEventuallyConsistentIndexMustEventuallyResultInCorrectIndexState() throws Exception
     {
         String oldValue = "red";
         String newValue = "green";
-        db = createDatabase();
-
         int entityCount = 200;
         LongHashSet nodeIds = new LongHashSet();
         LongHashSet relIds = new LongHashSet();
@@ -767,87 +689,34 @@ public class FulltextProceduresTest
                 startLatch.await();
             }
         };
-        ExecutorService executor = cleanup.add( Executors.newFixedThreadPool( 2 ) );
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
         Future<?> future1 = executor.submit( createIndexes );
         Future<?> future2 = executor.submit( makeAllEntitiesGreen );
         readyLatch.await();
         startLatch.release();
 
         // Finally, when everything has settled down, we should see that all of the nodes and relationships are indexed with the value "green".
-        future1.get();
-        future2.get();
-        awaitIndexesOnline();
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( AWAIT_REFRESH ).close();
-        }
-        assertQueryFindsIds( db, true, "node", newValue, nodeIds );
-        assertQueryFindsIds( db, false, "rel", newValue, relIds );
-    }
-
-    @Test
-    public void fulltextIndexesMustBeEventuallyConsistentByDefaultWhenThisIsConfigured() throws InterruptedException
-    {
-        builder.setConfig( FulltextSettings.eventually_consistent, true );
-        db = createDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) ) );
-            tx.commit();
-        }
-        awaitIndexesOnline();
-
-        // Prevent index updates from being applied to eventually consistent indexes.
-        BinaryLatch indexUpdateBlocker = new BinaryLatch();
-        db.getDependencyResolver().resolveDependency( JobScheduler.class ).schedule( Group.INDEX_UPDATING, indexUpdateBlocker::await );
-
-        LongHashSet nodeIds = new LongHashSet();
-        long relId;
         try
         {
-            try ( Transaction tx = db.beginTx() )
+            future1.get();
+            future2.get();
+            awaitIndexesOnline();
+            try ( Transaction transaction = db.beginTx() )
             {
-                Node node1 = tx.createNode( LABEL );
-                node1.setProperty( PROP, "bla bla" );
-                Node node2 = tx.createNode( LABEL );
-                node2.setProperty( "otherprop", "bla bla" );
-                Relationship relationship = node1.createRelationshipTo( node2, REL );
-                relationship.setProperty( PROP, "bla bla" );
-                nodeIds.add( node1.getId() );
-                nodeIds.add( node2.getId() );
-                relId = relationship.getId();
-                tx.commit();
+                transaction.execute( AWAIT_REFRESH ).close();
             }
-
-            // Index updates are still blocked for eventually consistent indexes, so we should not find anything at this point.
-            assertQueryFindsIds( db, true, "node", "bla", new LongHashSet() );
-            assertQueryFindsIds( db, false, "rel", "bla", new LongHashSet() );
+            assertQueryFindsIds( db, true, "node", newValue, nodeIds );
+            assertQueryFindsIds( db, false, "rel", newValue, relIds );
         }
         finally
         {
-            // Uncork the eventually consistent fulltext index updates.
-            Thread.sleep( 10 );
-            indexUpdateBlocker.release();
+            IOUtils.closeAllSilently( executor::shutdown );
         }
-        // And wait for them to apply.
-        try ( Transaction transaction = db.beginTx() )
-        {
-            transaction.execute( AWAIT_REFRESH ).close();
-            transaction.commit();
-        }
-
-        // Now we should see our data.
-        assertQueryFindsIds( db, true, "node", "bla", nodeIds );
-        assertQueryFindsIds( db, false, "rel", "bla", newSetWith( relId ) );
     }
 
     @Test
-    public void mustBeAbleToListAvailableAnalyzers()
+    void mustBeAbleToListAvailableAnalyzers()
     {
-        db = createDatabase();
-
         // Verify that a couple of expected analyzers are available.
         try ( Transaction tx = db.beginTx() )
         {
@@ -890,10 +759,8 @@ public class FulltextProceduresTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void analyzersMustKnowTheirStopWords()
+    void analyzersMustKnowTheirStopWords()
     {
-        db = createDatabase();
-
         // Verify that analyzers have stop-words.
         try ( Transaction tx = db.beginTx() )
         {
@@ -948,9 +815,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryNodesMustThrowWhenQueryingRelationshipIndex()
+    void queryNodesMustThrowWhenQueryingRelationshipIndex()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -961,17 +827,13 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            expectedException.expect( Exception.class );
-            tx.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next();
-            tx.commit();
+            assertThrows( Exception.class, () -> tx.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next() );
         }
     }
 
     @Test
-    public void queryRelationshipsMustThrowWhenQueryingNodeIndex()
+    void queryRelationshipsMustThrowWhenQueryingNodeIndex()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -982,17 +844,13 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            expectedException.expect( Exception.class );
-            tx.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next();
-            tx.commit();
+            assertThrows( Exception.class, () -> tx.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next() );
         }
     }
 
     @Test
-    public void fulltextIndexMustIgnoreNonStringPropertiesForUpdate()
+    void fulltextIndexMustIgnoreNonStringPropertiesForUpdate()
     {
-        db = createDatabase();
-
         Label label = LABEL;
         try ( Transaction tx = db.beginTx() )
         {
@@ -1049,10 +907,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void fulltextIndexMustIgnoreNonStringPropertiesForPopulation()
+    void fulltextIndexMustIgnoreNonStringPropertiesForPopulation()
     {
-        db = createDatabase();
-
         List<Value> values = generateRandomNonStringValues();
 
         try ( Transaction tx = db.beginTx() )
@@ -1107,10 +963,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void entitiesMustBeRemovedFromFulltextIndexWhenPropertyValuesChangeAwayFromText()
+    void entitiesMustBeRemovedFromFulltextIndexWhenPropertyValuesChangeAwayFromText()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1144,10 +998,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void entitiesMustBeAddedToFulltextIndexWhenPropertyValuesChangeToText()
+    void entitiesMustBeAddedToFulltextIndexWhenPropertyValuesChangeToText()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1175,10 +1027,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void propertiesMustBeRemovedFromFulltextIndexWhenTheirValueTypeChangesAwayFromText()
+    void propertiesMustBeRemovedFromFulltextIndexWhenTheirValueTypeChangesAwayFromText()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
@@ -1214,10 +1064,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void propertiesMustBeAddedToFulltextIndexWhenTheirValueTypeChangesToText()
+    void propertiesMustBeAddedToFulltextIndexWhenTheirValueTypeChangesToText()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
@@ -1247,7 +1095,7 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustBeAbleToIndexHugeTextPropertiesInIndexUpdates() throws Exception
+    void mustBeAbleToIndexHugeTextPropertiesInIndexUpdates() throws Exception
     {
         String meditationes;
         try ( BufferedReader reader = new BufferedReader(
@@ -1255,8 +1103,6 @@ public class FulltextProceduresTest
         {
             meditationes = reader.lines().collect( Collectors.joining( "\n" ) );
         }
-
-        db = createDatabase();
 
         Label label = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
@@ -1281,7 +1127,7 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustBeAbleToIndexHugeTextPropertiesInIndexPopulation() throws Exception
+    void mustBeAbleToIndexHugeTextPropertiesInIndexPopulation() throws Exception
     {
         String meditationes;
         try ( BufferedReader reader = new BufferedReader(
@@ -1289,8 +1135,6 @@ public class FulltextProceduresTest
         {
             meditationes = reader.lines().collect( Collectors.joining( "\n" ) );
         }
-
-        db = createDatabase();
 
         Label label = Label.label( "Book" );
         long nodeId;
@@ -1315,9 +1159,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustBeAbleToQuerySpecificPropertiesViaLuceneSyntax()
+    void mustBeAbleToQuerySpecificPropertiesViaLuceneSyntax()
     {
-        db = createDatabase();
         Label book = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
@@ -1344,9 +1187,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustIndexNodesByCorrectProperties()
+    void mustIndexNodesByCorrectProperties()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "a", "b", "c", "d", "e", "f" ) ) ).close();
@@ -1365,9 +1207,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryingIndexInPopulatingStateMustBlockUntilIndexIsOnline()
+    void queryingIndexInPopulatingStateMustBlockUntilIndexIsOnline()
     {
-        db = createDatabase();
         long nodeCount = 10_000;
         try ( Transaction tx = db.beginTx() )
         {
@@ -1395,9 +1236,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryingIndexInPopulatingStateMustBlockUntilIndexIsOnlineEvenWhenTransactionHasState()
+    void queryingIndexInPopulatingStateMustBlockUntilIndexIsOnlineEvenWhenTransactionHasState()
     {
-        db = createDatabase();
         long nodeCount = 10_000;
         try ( Transaction tx = db.beginTx() )
         {
@@ -1426,21 +1266,18 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryingIndexInTransactionItWasCreatedInMustThrow()
+    void queryingIndexInTransactionItWasCreatedInMustThrow()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
-            expectedException.expect( QueryExecutionException.class );
-            tx.execute( format( QUERY_NODES, "nodes", "value" ) ).next();
+            assertThrows( QueryExecutionException.class, () -> tx.execute( format( QUERY_NODES, "nodes", "value" ) ).next() );
         }
     }
 
     @Test
-    public void queryResultsMustNotIncludeNodesDeletedInOtherConcurrentlyCommittedTransactions() throws Exception
+    void queryResultsMustNotIncludeNodesDeletedInOtherConcurrentlyCommittedTransactions() throws Exception
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1480,9 +1317,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeRelationshipsDeletedInOtherConcurrentlyCommittedTransactions() throws Exception
+    void queryResultsMustNotIncludeRelationshipsDeletedInOtherConcurrentlyCommittedTransactions() throws Exception
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1523,9 +1359,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeNodesDeletedInThisTransaction()
+    void queryResultsMustNotIncludeNodesDeletedInThisTransaction()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1557,9 +1392,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeRelationshipsDeletedInThisTransaction()
+    void queryResultsMustNotIncludeRelationshipsDeletedInThisTransaction()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1592,9 +1426,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeNodesAddedInThisTransaction()
+    void queryResultsMustIncludeNodesAddedInThisTransaction()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1612,9 +1445,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeRelationshipsAddedInThisTransaction()
+    void queryResultsMustIncludeRelationshipsAddedInThisTransaction()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1633,9 +1465,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeNodesWithPropertiesAddedToBeIndexed()
+    void queryResultsMustIncludeNodesWithPropertiesAddedToBeIndexed()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1657,9 +1488,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeRelationshipsWithPropertiesAddedToBeIndexed()
+    void queryResultsMustIncludeRelationshipsWithPropertiesAddedToBeIndexed()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1684,9 +1514,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeNodesWithLabelsModifedToBeIndexed()
+    void queryResultsMustIncludeNodesWithLabelsModifedToBeIndexed()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1711,9 +1540,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeUpdatedValueOfChangedNodeProperties()
+    void queryResultsMustIncludeUpdatedValueOfChangedNodeProperties()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1738,9 +1566,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeUpdatedValuesOfChangedRelationshipProperties()
+    void queryResultsMustIncludeUpdatedValuesOfChangedRelationshipProperties()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1766,9 +1593,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeNodesWithRemovedIndexedProperties()
+    void queryResultsMustNotIncludeNodesWithRemovedIndexedProperties()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1792,9 +1618,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeRelationshipsWithRemovedIndexedProperties()
+    void queryResultsMustNotIncludeRelationshipsWithRemovedIndexedProperties()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1819,9 +1644,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustNotIncludeNodesWithRemovedIndexedLabels()
+    void queryResultsMustNotIncludeNodesWithRemovedIndexedLabels()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1844,9 +1668,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeOldNodePropertyValuesWhenModificationsAreUndone()
+    void queryResultsMustIncludeOldNodePropertyValuesWhenModificationsAreUndone()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1882,9 +1705,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeOldRelationshipPropertyValuesWhenModificationsAreUndone()
+    void queryResultsMustIncludeOldRelationshipPropertyValuesWhenModificationsAreUndone()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1921,9 +1743,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeOldNodePropertyValuesWhenRemovalsAreUndone()
+    void queryResultsMustIncludeOldNodePropertyValuesWhenRemovalsAreUndone()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -1956,9 +1777,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeOldRelationshipPropertyValuesWhenRemovalsAreUndone()
+    void queryResultsMustIncludeOldRelationshipPropertyValuesWhenRemovalsAreUndone()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -1992,9 +1812,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustIncludeNodesWhenNodeLabelRemovalsAreUndone()
+    void queryResultsMustIncludeNodesWhenNodeLabelRemovalsAreUndone()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2026,9 +1845,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsFromTransactionStateMustSortTogetherWithResultFromBaseIndex()
+    void queryResultsFromTransactionStateMustSortTogetherWithResultFromBaseIndex()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2059,9 +1877,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryResultsMustBeOrderedByScore()
+    void queryResultsMustBeOrderedByScore()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2096,9 +1913,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryingDroppedIndexForNodesInDroppingTransactionMustThrow()
+    void queryingDroppedIndexForNodesInDroppingTransactionMustThrow()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2108,15 +1924,13 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( DROP, "nodes" ) ).close();
-            expectedException.expect( QueryExecutionException.class );
-            tx.execute( format( QUERY_NODES, "nodes", "blabla" ) ).next();
+            assertThrows( QueryExecutionException.class, () -> tx.execute( format( QUERY_NODES, "nodes", "blabla" ) ).next() );
         }
     }
 
     @Test
-    public void queryingDroppedIndexForRelationshipsInDroppingTransactionMustThrow()
+    void queryingDroppedIndexForRelationshipsInDroppingTransactionMustThrow()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex( tx );
@@ -2126,15 +1940,13 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( DROP, "rels" ) ).close();
-            expectedException.expect( QueryExecutionException.class );
-            tx.execute( format( QUERY_RELS, "rels", "blabla" ) ).next();
+            assertThrows( QueryExecutionException.class, () -> tx.execute( format( QUERY_RELS, "rels", "blabla" ) ).next() );
         }
     }
 
     @Test
-    public void creatingAndDroppingIndexesInSameTransactionMustNotThrow()
+    void creatingAndDroppingIndexesInSameTransactionMustNotThrow()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2156,9 +1968,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void eventuallyConsistenIndexMustNotIncludeEntitiesAddedInTransaction()
+    void eventuallyConsistenIndexMustNotIncludeEntitiesAddedInTransaction()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
@@ -2185,9 +1996,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void prefixedFulltextIndexSettingMustBeRecognized()
+    void prefixedFulltextIndexSettingMustBeRecognized()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) )
@@ -2213,9 +2023,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void prefixedFulltextIndexSettingMustBeRecognizedTogetherWithNonPrefixed()
+    void prefixedFulltextIndexSettingMustBeRecognizedTogetherWithNonPrefixed()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             String mixedPrefixConfig = ", {`fulltext.analyzer`: 'english', eventually_consistent: 'true'}";
@@ -2246,9 +2055,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustThrowOnDuplicateFulltextIndexSetting()
+    void mustThrowOnDuplicateFulltextIndexSetting()
     {
-        db = createDatabase();
         String duplicateConfig = ", {`fulltext.analyzer`: 'english', analyzer: 'swedish'}";
 
         try ( Transaction tx = db.beginTx() )
@@ -2277,9 +2085,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void transactionStateMustNotPreventIndexUpdatesFromBeingApplied() throws Exception
+    void transactionStateMustNotPreventIndexUpdatesFromBeingApplied() throws Exception
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2289,39 +2096,45 @@ public class FulltextProceduresTest
         awaitIndexesOnline();
         LongHashSet nodeIds = new LongHashSet();
         LongHashSet relIds = new LongHashSet();
-        try ( Transaction tx = db.beginTx() )
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try
         {
-            Node node = tx.createNode( LABEL );
-            node.setProperty( PROP, "value" );
-            Relationship rel = node.createRelationshipTo( node, REL );
-            rel.setProperty( PROP, "value" );
-            nodeIds.add( node.getId() );
-            relIds.add( rel.getId() );
-
-            ExecutorService executor = cleanup.add( Executors.newSingleThreadExecutor() );
-            executor.submit( () ->
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction forkedTx = db.beginTx() )
+                Node node = tx.createNode( LABEL );
+                node.setProperty( PROP, "value" );
+                Relationship rel = node.createRelationshipTo( node, REL );
+                rel.setProperty( PROP, "value" );
+                nodeIds.add( node.getId() );
+                relIds.add( rel.getId() );
+
+                executor.submit( () ->
                 {
-                    Node node2 = forkedTx.createNode( LABEL );
-                    node2.setProperty( PROP, "value" );
-                    Relationship rel2 = node2.createRelationshipTo( node2, REL );
-                    rel2.setProperty( PROP, "value" );
-                    nodeIds.add( node2.getId() );
-                    relIds.add( rel2.getId() );
-                    forkedTx.commit();
-                }
-            }).get();
-            tx.commit();
+                    try ( Transaction forkedTx = db.beginTx() )
+                    {
+                        Node node2 = forkedTx.createNode( LABEL );
+                        node2.setProperty( PROP, "value" );
+                        Relationship rel2 = node2.createRelationshipTo( node2, REL );
+                        rel2.setProperty( PROP, "value" );
+                        nodeIds.add( node2.getId() );
+                        relIds.add( rel2.getId() );
+                        forkedTx.commit();
+                    }
+                }).get();
+                tx.commit();
+            }
+            assertQueryFindsIds( db, true, "nodes", "value", nodeIds );
+            assertQueryFindsIds( db, false, "rels", "value", relIds );
         }
-        assertQueryFindsIds( db, true, "nodes", "value", nodeIds );
-        assertQueryFindsIds( db, false, "rels", "value", relIds );
+        finally
+        {
+            executor.shutdown();
+        }
     }
 
     @Test
-    public void dropMustNotApplyToRegularSchemaIndexes()
+    void dropMustNotApplyToRegularSchemaIndexes()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().indexFor( LABEL ).on( PROP ).create();
@@ -2336,15 +2149,13 @@ public class FulltextProceduresTest
                 assertTrue( result.hasNext() );
                 schemaIndexName = result.next().get( "name" ).toString();
             }
-            expectedException.expect( QueryExecutionException.class );
-            tx.execute( format( DROP, schemaIndexName ) ).close();
+            assertThrows( QueryExecutionException.class, () -> tx.execute( format( DROP, schemaIndexName ) ).close() );
         }
     }
 
     @Test
-    public void fulltextIndexMustNotBeAvailableForRegularIndexSeeks()
+    void fulltextIndexMustNotBeAvailableForRegularIndexSeeks()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2379,16 +2190,14 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void fulltextIndexMustNotBeAvailableForRegularIndexSeeksAfterShutDown()
+    void fulltextIndexMustNotBeAvailableForRegularIndexSeeksAfterShutDown()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
             tx.commit();
         }
-        managementService.shutdown();
-        db = createDatabase();
+        restartDatabase();
         String valueToQueryFor = "value to query for";
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
@@ -2418,7 +2227,7 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void nodeOutputMustBeOrderedByScoreDescending()
+    void nodeOutputMustBeOrderedByScoreDescending()
     {
         FulltextProcedures.NodeOutput a = new FulltextProcedures.NodeOutput( null, Float.NaN );
         FulltextProcedures.NodeOutput b = new FulltextProcedures.NodeOutput( null, Float.POSITIVE_INFINITY );
@@ -2441,7 +2250,7 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void relationshipOutputMustBeOrderedByScoreDescending()
+    void relationshipOutputMustBeOrderedByScoreDescending()
     {
         FulltextProcedures.RelationshipOutput a = new FulltextProcedures.RelationshipOutput( null, Float.NaN );
         FulltextProcedures.RelationshipOutput b = new FulltextProcedures.RelationshipOutput( null, Float.POSITIVE_INFINITY );
@@ -2464,9 +2273,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void awaitIndexProcedureMustWorkOnIndexNames()
+    void awaitIndexProcedureMustWorkOnIndexNames()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 1000; i++ )
@@ -2493,9 +2301,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustBePossibleToDropFulltextIndexByNameForWhichNormalIndexExistWithMatchingSchema()
+    void mustBePossibleToDropFulltextIndexByNameForWhichNormalIndexExistWithMatchingSchema()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "CREATE INDEX FOR (n:Person) ON (n.name)" ).close();
@@ -2521,9 +2328,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void fulltextIndexesMustNotPreventNormalSchemaIndexesFromBeingDropped()
+    void fulltextIndexesMustNotPreventNormalSchemaIndexesFromBeingDropped()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "CREATE INDEX FOR (n:Person) ON (n.name)" ).close();
@@ -2549,9 +2355,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void creatingNormalIndexWithFulltextProviderMustThrow()
+    void creatingNormalIndexWithFulltextProviderMustThrow()
     {
-        db = createDatabase();
         assertThat( FulltextIndexProviderFactory.DESCRIPTOR.name() ).isEqualTo( "fulltext-1.0" ); // Sanity check that this test is up to date.
 
         try ( Transaction tx = db.beginTx() )
@@ -2576,9 +2381,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustSupportWildcardEndsLikeStartsWith()
+    void mustSupportWildcardEndsLikeStartsWith()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2603,9 +2407,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustSupportWildcardBeginningsLikeEndsWith()
+    void mustSupportWildcardBeginningsLikeEndsWith()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2630,9 +2433,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustSupportWildcardBeginningsAndEndsLikeContains()
+    void mustSupportWildcardBeginningsAndEndsLikeContains()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2657,10 +2459,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustMatchCaseInsensitiveWithStandardAnalyzer()
+    void mustMatchCaseInsensitiveWithStandardAnalyzer()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
@@ -2695,10 +2495,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustMatchCaseInsensitiveWithSimpleAnalyzer()
+    void mustMatchCaseInsensitiveWithSimpleAnalyzer()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
@@ -2733,10 +2531,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void mustMatchCaseInsensitiveWithDefaultAnalyzer()
+    void mustMatchCaseInsensitiveWithDefaultAnalyzer()
     {
-        db = createDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
@@ -2771,10 +2567,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void makeSureFulltextIndexDoesNotBlockSchemaIndexOnSameSchemaPattern()
+    void makeSureFulltextIndexDoesNotBlockSchemaIndexOnSameSchemaPattern()
     {
-        db = createDatabase();
-
         final Label label = Label.label( "label" );
         final String prop = "prop";
         try ( Transaction tx = db.beginTx() )
@@ -2805,10 +2599,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void makeSureSchemaIndexDoesNotBlockFulltextIndexOnSameSchemaPattern()
+    void makeSureSchemaIndexDoesNotBlockFulltextIndexOnSameSchemaPattern()
     {
-        db = createDatabase();
-
         final Label label = Label.label( "label" );
         final String prop = "prop";
         try ( Transaction tx = db.beginTx() )
@@ -2839,58 +2631,50 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void shouldNotBePossibleToCreateIndexWithDuplicateProperty()
+    void shouldNotBePossibleToCreateIndexWithDuplicateProperty()
     {
-        db = createDatabase();
-
-        final Exception e = assertThrows( Exception.class, () ->
+        Exception e = assertThrows( Exception.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id", "id" ) ) );
             }
         } );
-        final Throwable cause = getRootCause( e );
+        Throwable cause = getRootCause( e );
         assertThat( cause ).isInstanceOf( RepeatedPropertyInSchemaException.class );
     }
 
     @Test
-    public void shouldNotBePossibleToCreateIndexWithDuplicateLabel()
+    void shouldNotBePossibleToCreateIndexWithDuplicateLabel()
     {
-        db = createDatabase();
-
-        final Exception e = assertThrows( Exception.class, () ->
+        Exception e = assertThrows( Exception.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label", "Label" ), asCypherStringsList( "id" ) ) );
             }
         } );
-        final Throwable cause = getRootCause( e );
+        Throwable cause = getRootCause( e );
         assertThat( cause ).isInstanceOf( RepeatedLabelInSchemaException.class );
     }
 
     @Test
-    public void shouldNotBePossibleToCreateIndexWithDuplicateRelType()
+    void shouldNotBePossibleToCreateIndexWithDuplicateRelType()
     {
-        db = createDatabase();
-
-        final Exception e = assertThrows( Exception.class, () ->
+        Exception e = assertThrows( Exception.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( RELATIONSHIP_CREATE, "myindex", asCypherStringsList( "RelType", "RelType" ), asCypherStringsList( "id" ) ) );
             }
         } );
-        final Throwable cause = getRootCause( e );
+        Throwable cause = getRootCause( e );
         assertThat( cause ).isInstanceOf( RepeatedRelationshipTypeInSchemaException.class );
     }
 
     @Test
-    public void attemptingToIndexOnPropertyUsedForInternalReferenceMustThrow()
+    void attemptingToIndexOnPropertyUsedForInternalReferenceMustThrow()
     {
-        db = createDatabase();
-
         var e = assertThrows( Exception.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
@@ -2906,10 +2690,9 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void fulltextIndexMustWorkAfterRestartWithTxStateChanges()
+    void fulltextIndexMustWorkAfterRestartWithTxStateChanges()
     {
         // Create node and relationship fulltext indexes
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2918,9 +2701,7 @@ public class FulltextProceduresTest
         }
         awaitIndexesOnline();
 
-        // Restart
-        managementService.shutdown();
-        db = createDatabase();
+        restartDatabase();
 
         // Query node
         try ( Transaction tx = db.beginTx() )
@@ -2940,9 +2721,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryNodesMustApplySkip()
+    void queryNodesMustApplySkip()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -2971,9 +2751,8 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void queryNodesMustApplyLimit()
+    void queryNodesMustApplyLimit()
     {
-        db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
@@ -3008,162 +2787,4 @@ public class FulltextProceduresTest
     // todo query relationships must apply skip and limit
     // todo query relationships with skip and limit must ignore relationships deleted in transaction
     // todo query relationships with skip and limit must include relationships added in transaction
-
-    private void assertNoIndexSeeks( Result result )
-    {
-        assertThat( result.stream().count() ).isEqualTo( 1L );
-        String planDescription = result.getExecutionPlanDescription().toString();
-        assertThat( planDescription ).contains( "NodeByLabel" );
-        assertThat( planDescription ).doesNotContain( "IndexSeek" );
-    }
-
-    private GraphDatabaseAPI createDatabase()
-    {
-        managementService = builder.build();
-        cleanup.add( managementService );
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    private void awaitIndexesOnline()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
-    }
-
-    static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-            Result result = tx.execute( format( queryCall, index, query ) );
-            int num = 0;
-            Double score = Double.MAX_VALUE;
-            while ( result.hasNext() )
-            {
-                Map<String, Object> entry = result.next();
-                Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
-                Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore ).isLessThanOrEqualTo( score );
-                score = nextScore;
-                if ( num < ids.length )
-                {
-                    assertEquals( format( "Result returned id %d, expected %d", nextId, ids[num] ), ids[num], nextId.longValue() );
-                }
-                else
-                {
-                    fail( format( "Result returned id %d, which is beyond the number of ids (%d) that were expected.", nextId, ids.length ) );
-                }
-                num++;
-            }
-            assertEquals( "Number of results differ from expected", ids.length, num );
-            tx.commit();
-        }
-    }
-
-    static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids )
-    {
-        ids = new LongHashSet( ids ); // Create a defensive copy, because we're going to modify this instance.
-        String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-        long[] expectedIds = ids.toArray();
-        MutableLongSet actualIds = new LongHashSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            LongFunction<Entity> getEntity = queryNodes ? tx::getNodeById : tx::getRelationshipById;
-            Result result = tx.execute( format( queryCall, index, query ) );
-            Double score = Double.MAX_VALUE;
-            while ( result.hasNext() )
-            {
-                Map<String, Object> entry = result.next();
-                long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
-                Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore ).isLessThanOrEqualTo( score );
-                score = nextScore;
-                actualIds.add( nextId );
-                if ( !ids.remove( nextId ) )
-                {
-                    String msg = "This id was not expected: " + nextId;
-                    failQuery( getEntity, index, query, ids, expectedIds, actualIds, msg );
-                }
-            }
-            if ( !ids.isEmpty() )
-            {
-                String msg = "Not all expected ids were found: " + ids;
-                failQuery( getEntity, index, query, ids, expectedIds, actualIds, msg );
-            }
-            tx.commit();
-        }
-    }
-
-    private static void failQuery( LongFunction<Entity> getEntity, String index, String query, MutableLongSet ids, long[] expectedIds, MutableLongSet actualIds,
-            String msg )
-    {
-        StringBuilder message = new StringBuilder( msg ).append( '\n' );
-        MutableLongIterator itr = ids.longIterator();
-        while ( itr.hasNext() )
-        {
-            long id = itr.next();
-            Entity entity = getEntity.apply( id );
-            message.append( '\t' ).append( entity ).append( entity.getAllProperties() ).append( '\n' );
-        }
-        message.append( "for query: '" ).append( query ).append( "'\nin index: " ).append( index ).append( '\n' );
-        message.append( "all expected ids: " ).append( Arrays.toString( expectedIds ) ).append( '\n' );
-        message.append( "actual ids: " ).append( actualIds );
-        itr = actualIds.longIterator();
-        while ( itr.hasNext() )
-        {
-            long id = itr.next();
-            Entity entity = getEntity.apply( id );
-            message.append( "\n\t" ).append( entity ).append( entity.getAllProperties() );
-        }
-        fail( message.toString() );
-    }
-
-    private List<Value> generateRandomNonStringValues()
-    {
-        Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT;
-        return generateRandomValues( nonString );
-    }
-
-    private List<Value> generateRandomSimpleValues()
-    {
-        EnumSet<ValueGroup> simpleTypes = EnumSet.of(
-                ValueGroup.BOOLEAN, ValueGroup.BOOLEAN_ARRAY, ValueGroup.NUMBER, ValueGroup.NUMBER_ARRAY );
-        return generateRandomValues( v -> simpleTypes.contains( v.valueGroup() ) );
-    }
-
-    private List<Value> generateRandomValues( Predicate<Value> predicate )
-    {
-        int valuesToGenerate = 1000;
-        RandomValues generator = RandomValues.create();
-        List<Value> values = new ArrayList<>( valuesToGenerate );
-        for ( int i = 0; i < valuesToGenerate; i++ )
-        {
-            Value value;
-            do
-            {
-                value = generator.nextValue();
-            }
-            while ( !predicate.test( value ) );
-            values.add( value );
-        }
-        return values;
-    }
-
-    private String quoteValueForQuery( Value value )
-    {
-        return QueryParserUtil.escape( value.prettyPrint() ).replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
-    }
-
-    private void createSimpleRelationshipIndex( Transaction tx )
-    {
-        tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) ) ).close();
-    }
-
-    private void createSimpleNodesIndex( Transaction tx )
-    {
-        tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) ) ).close();
-    }
 }

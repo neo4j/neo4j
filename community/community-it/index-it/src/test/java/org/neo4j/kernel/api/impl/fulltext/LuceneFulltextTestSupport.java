@@ -21,13 +21,9 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -50,17 +46,19 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
+@DbmsExtension
 public class LuceneFulltextTestSupport
 {
     static final Label LABEL = Label.label( "LABEL" );
@@ -69,29 +67,25 @@ public class LuceneFulltextTestSupport
     static final String PROP2 = "prop2";
     static final String PROP3 = "prop3";
 
-    DbmsRule db = new EmbeddedDbmsRule();
-    private RepeatRule repeatRule = createRepeatRule();
-
-    @Rule
-    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
-
+    @Inject
+    DbmsController controller;
+    @Inject
+    GraphDatabaseAPI db;
+    @Inject
+    IndexProviderMap indexProviderMap;
+    @Inject
+    KernelImpl kernel;
     FulltextIndexProvider indexProvider;
 
-    protected RepeatRule createRepeatRule()
-    {
-        return new RepeatRule( false, 1 );
-    }
-
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         indexProvider = getAdapter();
     }
 
-    void applySetting( Setting<String> setting, String value ) throws IOException
+    void applySetting( Setting<String> setting, String value )
     {
-        db.restartDatabase( Map.of( setting, value ) );
-        db.ensureStarted();
+        controller.restartDbms( builder -> builder.setConfig( setting, value ) );
         indexProvider = getAdapter();
     }
 
@@ -99,8 +93,7 @@ public class LuceneFulltextTestSupport
     {
         try
         {
-            return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).beginTransaction(
-                    KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
+            return (KernelTransactionImplementation) kernel.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )
         {
@@ -110,7 +103,7 @@ public class LuceneFulltextTestSupport
 
     private FulltextIndexProvider getAdapter()
     {
-        return (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( FulltextIndexProviderFactory.DESCRIPTOR );
+        return (FulltextIndexProvider) indexProviderMap.lookup( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
     long createNodeIndexableByPropertyValue( Transaction tx, Label label, Object propertyValue )
@@ -163,7 +156,7 @@ public class LuceneFulltextTestSupport
                 while ( cursor.next() )
                 {
                     long nodeId = cursor.nodeReference();
-                    assertTrue( format( "Result returned node id %d, expected one of %s", nodeId, Arrays.toString( ids ) ), set.remove( nodeId ) );
+                    assertTrue( set.remove( nodeId ), format( "Result returned node id %d, expected one of %s", nodeId, Arrays.toString( ids ) ) );
                 }
             }
         }
@@ -175,8 +168,8 @@ public class LuceneFulltextTestSupport
                 while ( cursor.next() )
                 {
                     long relationshipId = cursor.relationshipReference();
-                    assertTrue( format( "Result returned relationship id %d, expected one of %s",
-                            relationshipId, Arrays.toString( ids ) ), set.remove( relationshipId ) );
+                    assertTrue( set.remove( relationshipId ), format( "Result returned relationship id %d, expected one of %s",
+                            relationshipId, Arrays.toString( ids ) ) );
                 }
             }
         }
@@ -204,10 +197,10 @@ public class LuceneFulltextTestSupport
                 float nextScore = cursor.score();
                 assertThat( nextScore ).isLessThanOrEqualTo( score );
                 score = nextScore;
-                assertEquals( format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
+                assertEquals( ids[num], nextId, format( "Result returned node id %d, expected %d", nextId, ids[num] ) );
                 num++;
             }
-            assertEquals( "Number of results differ from expected", ids.length, num );
+            assertEquals( ids.length, num, "Number of results differ from expected" );
         }
     }
 

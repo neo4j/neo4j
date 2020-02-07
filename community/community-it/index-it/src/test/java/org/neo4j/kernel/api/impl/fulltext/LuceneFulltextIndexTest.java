@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.codegen.api.Throw;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -39,7 +37,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -49,24 +46,24 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
-public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
+class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {
     private static final String NODE_INDEX_NAME = "nodes";
     private static final String REL_INDEX_NAME = "rels";
 
     @Test
-    public void tracePageCacheAccessOnIndexQuering() throws Exception
+    void tracePageCacheAccessOnIndexQuering() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -97,7 +94,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldFindNodeWithString() throws Exception
+    void shouldFindNodeWithString() throws Exception
     {
         prepareNodeLabelPropIndex();
         long firstID;
@@ -123,7 +120,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldRepresentPropertyChanges() throws Exception
+    void shouldRepresentPropertyChanges() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -160,7 +157,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotFindRemovedNodes() throws Exception
+    void shouldNotFindRemovedNodes() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -195,7 +192,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotFindRemovedProperties() throws Exception
+    void shouldNotFindRemovedProperties() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -251,7 +248,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldOnlyIndexIndexedProperties() throws Exception
+    void shouldOnlyIndexIndexedProperties() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -277,7 +274,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldSearchAcrossMultipleProperties() throws Exception
+    void shouldSearchAcrossMultipleProperties() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -313,7 +310,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldOrderResultsBasedOnRelevance() throws Exception
+    void shouldOrderResultsBasedOnRelevance() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -354,7 +351,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldDifferentiateNodesAndRelationships() throws Exception
+    void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -397,7 +394,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldNotReturnNonMatches() throws Exception
+    void shouldNotReturnNonMatches() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -432,7 +429,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
+    void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
     {
         long firstNodeID;
         long secondNodeID;
@@ -482,7 +479,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
+    void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -535,7 +532,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void shouldBeAbleToDropAndReadIndex() throws Exception
+    void shouldBeAbleToDropAndReadIndex() throws Exception
     {
         prepareNodeLabelPropIndex();
 
@@ -565,7 +562,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void completeConfigurationMustInjectMissingConfigurations() throws Exception
+    void completeConfigurationMustInjectMissingConfigurations() throws Exception
     {
         int label;
         int propertyKey;
@@ -594,7 +591,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void completeConfigurationMustNotOverwriteExistingConfiguration()
+    void completeConfigurationMustNotOverwriteExistingConfiguration()
     {
         IndexConfig indexConfig = IndexConfig.with( "A", Values.stringValue( "B" ) );
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
@@ -605,7 +602,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void completeConfigurationMustBeIdempotent()
+    void completeConfigurationMustBeIdempotent()
     {
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
@@ -616,7 +613,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void mustAssignCapabilitiesToDescriptorsThatHaveNone()
+    void mustAssignCapabilitiesToDescriptorsThatHaveNone()
     {
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
@@ -629,7 +626,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void mustNotOverwriteExistingCapabilities()
+    void mustNotOverwriteExistingCapabilities()
     {
         IndexCapability capability = new IndexCapability()
         {
@@ -654,7 +651,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fulltextIndexMustNotAnswerCoreApiIndexQueries()
+    void fulltextIndexMustNotAnswerCoreApiIndexQueries()
     {
         prepareNodeLabelPropIndex();
         long nodeId;
@@ -672,7 +669,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void fulltextIndexMustNotAnswerCoreApiCompositeIndexQueries()
+    void fulltextIndexMustNotAnswerCoreApiCompositeIndexQueries()
     {
         try ( Transaction tx = db.beginTx() )
         {
