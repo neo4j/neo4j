@@ -68,9 +68,12 @@ public interface Read
      *
      * @param index {@link IndexDescriptor} for the index to query. This must be an index of relationships.
      * @param cursor the cursor to use for consuming the results.
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
+     * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query ) throws KernelException;
+    void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+            throws KernelException;
 
     /**
      * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]),

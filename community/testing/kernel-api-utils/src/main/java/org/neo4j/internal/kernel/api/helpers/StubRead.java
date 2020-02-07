@@ -61,7 +61,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query )
+    public void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }

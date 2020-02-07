@@ -110,7 +110,7 @@ import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 
@@ -280,11 +280,11 @@ class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodeIndex",
-                    asCypherStringsList( "Label1", "Label2" ),
-                    asCypherStringsList( "prop1", "prop2" ) ) ).close();
+                    asStrList( "Label1", "Label2" ),
+                    asStrList( "prop1", "prop2" ) ) ).close();
             tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
-                    asCypherStringsList( "RelType1", "RelType2" ),
-                    asCypherStringsList( "prop1", "prop2" ) ) ).close();
+                    asStrList( "RelType1", "RelType2" ),
+                    asStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
 
@@ -381,8 +381,8 @@ class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "nodeIndex",
-                    asCypherStringsList( label1.name(), label2.name(), label3.name() ),
-                    asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
+                    asStrList( label1.name(), label2.name(), label3.name() ),
+                    asStrList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 
@@ -400,8 +400,8 @@ class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
-                    asCypherStringsList( relType1.name(), relType2.name(), relType3.name() ),
-                    asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
+                    asStrList( relType1.name(), relType2.name(), relType3.name() ),
+                    asStrList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 
@@ -1318,17 +1318,17 @@ class FulltextIndexProviderTest
             IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
             try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
             {
-                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "valuuu" ) );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "villa" ) );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
                 assertEquals( secondRelId, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "value3" ) );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value3" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertTrue( cursor.next() );

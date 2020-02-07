@@ -113,7 +113,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query )
+    public final void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
@@ -127,7 +127,7 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
-        reader.query( this, withFullPrecision, unconstrained(), cursorTracer, query );
+        reader.query( this, withFullPrecision, constraints, cursorTracer, query );
     }
 
     @Override

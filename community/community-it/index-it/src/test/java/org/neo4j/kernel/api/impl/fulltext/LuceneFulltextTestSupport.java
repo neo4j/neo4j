@@ -164,7 +164,7 @@ public class LuceneFulltextTestSupport
         {
             try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
             {
-                ktx.dataRead().relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long relationshipId = cursor.relationshipReference();

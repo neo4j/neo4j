@@ -48,6 +48,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
@@ -289,7 +290,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
               RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor() )
         {
             cursor.setTracer( tracer );
-            tx.dataRead().relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( "transformational" ) );
+            tx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "transformational" ) );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );

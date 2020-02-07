@@ -28,6 +28,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexReader.ALWAYS_FALSE;
 import static org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.mergeIterators;
 
 /**
@@ -119,10 +121,15 @@ class FulltextIndexTransactionState implements Closeable
         IOUtils.closeAll( toCloseLater );
     }
 
+    public LongPredicate isModifiedInTransactionPredicate()
+    {
+        return modifiedEntityIdsInThisTransaction::contains;
+    }
+
     public ValuesIterator filter( ValuesIterator iterator, BooleanQuery query, IndexQueryConstraints constraints )
     {
-        iterator = ScoreEntityIterator.filter( iterator, entityId -> !modifiedEntityIdsInThisTransaction.contains( entityId ) );
-        iterator = mergeIterators( asList( iterator, FulltextIndexReader.searchLucene( currentSearcher, query, constraints ) ) );
+        ValuesIterator transactionStateIterator = FulltextIndexReader.searchLucene( currentSearcher, query, constraints, ALWAYS_FALSE );
+        iterator = mergeIterators( asList( iterator, transactionStateIterator ) );
         return iterator;
     }
 }

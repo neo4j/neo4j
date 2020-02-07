@@ -36,7 +36,7 @@ import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.new
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 
 class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestSupport
 {
@@ -53,8 +53,8 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();

@@ -31,6 +31,7 @@ import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.function.LongPredicate;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -40,9 +41,11 @@ class FulltextResultCollector implements Collector
     private static final int NO_LIMIT = -1;
     private final long limit;
     private final EntityScorePriorityQueue pq;
+    private final LongPredicate exclusionFilter;
 
-    FulltextResultCollector( IndexQueryConstraints constraints )
+    FulltextResultCollector( IndexQueryConstraints constraints, LongPredicate exclusionFilter )
     {
+        this.exclusionFilter = exclusionFilter;
         if ( constraints.limit().isPresent() )
         {
             long limit = constraints.limit().getAsLong();
@@ -91,7 +94,7 @@ class FulltextResultCollector implements Collector
     @Override
     public LeafCollector getLeafCollector( LeafReaderContext context ) throws IOException
     {
-        return new ScoredEntityLeafCollector( context, pq, limit );
+        return new ScoredEntityLeafCollector( context, pq, limit, exclusionFilter );
     }
 
     @Override
@@ -104,13 +107,15 @@ class FulltextResultCollector implements Collector
     {
         private final EntityScorePriorityQueue pq;
         private final long limit;
+        private final LongPredicate exclusionFilter;
         private final NumericDocValues values;
         private Scorable scorer;
 
-        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq, long limit ) throws IOException
+        ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq, long limit, LongPredicate exclusionFilter ) throws IOException
         {
             this.pq = pq;
             this.limit = limit;
+            this.exclusionFilter = exclusionFilter;
             LeafReader reader = context.reader();
             values = reader.getNumericDocValues( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
         }
@@ -129,6 +134,10 @@ class FulltextResultCollector implements Collector
             {
                 float score = scorer.score();
                 long entityId = values.longValue();
+                if ( exclusionFilter.test( entityId ) )
+                {
+                    return;
+                }
                 if ( limit == NO_LIMIT || pq.size() < limit )
                 {
                     pq.insert( entityId, score );

@@ -59,7 +59,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NOD
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 
 @DbmsExtension( configurationCallback = "configure" )
 class FulltextProceduresTestSupport
@@ -233,11 +233,11 @@ class FulltextProceduresTestSupport
 
     void createSimpleRelationshipIndex( Transaction tx )
     {
-        tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) ) ).close();
+        tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
     }
 
     void createSimpleNodesIndex( Transaction tx )
     {
-        tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) ) ).close();
+        tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) ) ).close();
     }
 }

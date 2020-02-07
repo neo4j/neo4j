@@ -38,6 +38,7 @@ import org.apache.lucene.search.WildcardQuery;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -66,6 +67,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventua
 
 public class FulltextIndexReader implements IndexReader
 {
+    static final LongPredicate ALWAYS_FALSE = value -> false;
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
     private final IndexDescriptor index;
@@ -91,22 +93,22 @@ public class FulltextIndexReader implements IndexReader
         return multiFieldQueryParser.parse( query );
     }
 
-    private ValuesIterator indexQuery( Query query, IndexQueryConstraints constraints )
+    private ValuesIterator indexQuery( Query query, IndexQueryConstraints constraints, LongPredicate modifiedInTransactionPredicate )
     {
         List<ValuesIterator> results = new ArrayList<>();
         for ( SearcherReference searcher : searchers )
         {
-            ValuesIterator iterator = searchLucene( searcher, query, constraints );
+            ValuesIterator iterator = searchLucene( searcher, query, constraints, modifiedInTransactionPredicate );
             results.add( iterator );
         }
         return ScoreEntityIterator.mergeIterators( results );
     }
 
-    static ValuesIterator searchLucene( SearcherReference searcher, Query query, IndexQueryConstraints constraints )
+    static ValuesIterator searchLucene( SearcherReference searcher, Query query, IndexQueryConstraints constraints, LongPredicate exclusionFilter )
     {
         try
         {
-            FulltextResultCollector collector = new FulltextResultCollector( constraints );
+            FulltextResultCollector collector = new FulltextResultCollector( constraints, exclusionFilter );
             searcher.getIndexSearcher().search( query, collector );
             return collector.iterator();
         }
@@ -189,12 +191,17 @@ public class FulltextIndexReader implements IndexReader
             }
         }
         BooleanQuery query = queryBuilder.build();
-        ValuesIterator itr = indexQuery( query, constraints );
         ReadableTransactionState state = context.getTransactionStateOrNull();
+        ValuesIterator itr;
         if ( state != null && !isEventuallyConsistent( index ) )
         {
             transactionState.maybeUpdate( context, cursorTracer );
+            itr = indexQuery( query, constraints, transactionState.isModifiedInTransactionPredicate() );
             itr = transactionState.filter( itr, query, constraints );
+        }
+        else
+        {
+            itr = indexQuery( query, constraints, ALWAYS_FALSE );
         }
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );

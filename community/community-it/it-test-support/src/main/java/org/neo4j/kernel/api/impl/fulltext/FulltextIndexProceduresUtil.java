@@ -50,7 +50,7 @@ public final class FulltextIndexProceduresUtil
     {
     }
 
-    public static String asCypherStringsList( String... args )
+    public static String asStrList( String... args )
     {
         if ( args.length == 0 )
         {

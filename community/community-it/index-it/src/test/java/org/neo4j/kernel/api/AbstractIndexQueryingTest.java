@@ -73,7 +73,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor() )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( "search" ) ) );
+                    read.relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 }

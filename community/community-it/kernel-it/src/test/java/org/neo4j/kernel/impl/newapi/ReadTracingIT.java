@@ -108,7 +108,7 @@ class ReadTracingIT
 
             try ( var cursor = kernelTransaction.cursors().allocateRelationshipIndexCursor() )
             {
-                dataRead.relationshipIndexSeek( indexDescriptor, cursor, fulltextSearch( testPropertyValue ) );
+                dataRead.relationshipIndexSeek( indexDescriptor, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
 
                 consumeCursor( cursor );
             }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -86,19 +87,17 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NOD
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 
 class FulltextProceduresTest extends FulltextProceduresTestSupport
 {
     @Test
     void createNodeFulltextIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction
-                    .execute( format( NODE_CREATE, "test-index", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) )
-                    .close();
-            transaction.commit();
+            tx.execute( format( NODE_CREATE, "test-index", asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.commit();
         }
         Result result;
         Map<String,Object> row;
@@ -148,13 +147,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void createRelationshipFulltextIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction
-                    .execute( format( RELATIONSHIP_CREATE, "test-index", asCypherStringsList( "Reltype1", "Reltype2" ),
-                            asCypherStringsList( "prop1", "prop2" ) ) )
-                    .close();
-            transaction.commit();
+            tx.execute( format( RELATIONSHIP_CREATE, "test-index", asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.commit();
         }
         Result result;
         Map<String,Object> row;
@@ -204,46 +200,42 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void dropIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            transaction
-                    .execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( "Reltype1", "Reltype2" ), asCypherStringsList( "prop1", "prop2" ) ) )
-                    .close();
+            tx.execute( format( NODE_CREATE, "node", asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
             Map<String,String> indexes = new HashMap<>();
-            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
+            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
 
-            transaction.execute( format( DROP, "node" ) );
+            tx.execute( format( DROP, "node" ) );
             indexes.remove( "node" );
             Map<String,String> newIndexes = new HashMap<>();
-            transaction.execute( "call db.indexes()" ).forEachRemaining(
-                    m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
+            tx.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
 
-            transaction.execute( format( DROP, "rel" ) );
+            tx.execute( format( DROP, "rel" ) );
             indexes.remove( "rel" );
             newIndexes.clear();
-            transaction.execute( "call db.indexes()" ).forEachRemaining(
-                    m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
+            tx.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
-            transaction.commit();
+            tx.commit();
         }
     }
 
     @Test
     void mustNotBeAbleToCreateTwoIndexesWithSameName()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            transaction.commit();
+            tx.execute( format( NODE_CREATE, "node", asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.commit();
         }
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop3", "prop4" ) ) ).close();
-                transaction.commit();
+                tx.execute( format( NODE_CREATE, "node", asStrList( "Label1", "Label2" ), asStrList( "prop3", "prop4" ) ) ).close();
+                tx.commit();
             }
         }, "already exists" );
     }
@@ -251,17 +243,17 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void mustNotBeAbleToCreateNormalIndexWithSameNameAndSchemaAsExistingFulltextIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1" ) ) ).close();
-            transaction.commit();
+            tx.execute( format( NODE_CREATE, "node", asStrList( "Label1" ), asStrList( "prop1" ) ) ).close();
+            tx.commit();
         }
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-                transaction.commit();
+                tx.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+                tx.commit();
             }
         }, "already exists" );
     }
@@ -269,17 +261,17 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void mustNotBeAbleToCreateNormalIndexWithSameNameDifferentSchemaAsExistingFulltextIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            transaction.commit();
+            tx.execute( format( NODE_CREATE, "node", asStrList( "Label1" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.commit();
         }
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-                transaction.commit();
+                tx.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+                tx.commit();
             }
         }, "There already exists an index called 'node'." );
     }
@@ -287,17 +279,17 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void mustNotBeAbleToCreateFulltextIndexWithSameNameAndSchemaAsExistingNormalIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-            transaction.commit();
+            tx.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+            tx.commit();
         }
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1" ) ) ).close();
-                transaction.commit();
+                tx.execute( format( NODE_CREATE, "node", asStrList( "Label1" ), asStrList( "prop1" ) ) ).close();
+                tx.commit();
             }
         }, "already exists" );
     }
@@ -305,17 +297,17 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void mustNotBeAbleToCreateFulltextIndexWithSameNameDifferentSchemaAsExistingNormalIndex()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
-            transaction.commit();
+            tx.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
+            tx.commit();
         }
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-                transaction.commit();
+                tx.execute( format( NODE_CREATE, "node", asStrList( "Label1" ), asStrList( "prop1", "prop2" ) ) ).close();
+                tx.commit();
             }
         }, "already exists" );
     }
@@ -325,9 +317,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) ).close();
+                tx.execute( format( NODE_CREATE, "nodeIndex", asStrList(), asStrList( PROP ) ) ).close();
             }
         } );
     }
@@ -337,9 +329,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList(), asCypherStringsList( PROP ) ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "relIndex", asStrList(), asStrList( PROP ) ) );
             }
         } );
     }
@@ -348,9 +340,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     void nodeIndexesMustHaveProperties()
     {
         assertThrows( QueryExecutionException.class, () -> {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( "Label" ), asCypherStringsList() ) ).close();
+                tx.execute( format( NODE_CREATE, "nodeIndex", asStrList( "Label" ), asStrList() ) ).close();
             }
         } );
     }
@@ -360,9 +352,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         assertThrows( QueryExecutionException.class, () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( "RELTYPE" ), asCypherStringsList() ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "relIndex", asStrList( "RELTYPE" ), asStrList() ) );
             }
         } );
     }
@@ -375,10 +367,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
             // This test verifies that the locking required for the index modifications do not conflict with the
             // locking required for the token allocation.
-            tx.execute( format( NODE_CREATE, "nodesA", asCypherStringsList( "SOME_LABEL" ), asCypherStringsList( "this" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsA", asCypherStringsList( "SOME_REL_TYPE" ), asCypherStringsList( "foo" ) ) );
-            tx.execute( format( NODE_CREATE, "nodesB", asCypherStringsList( "SOME_OTHER_LABEL" ), asCypherStringsList( "that" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsB", asCypherStringsList( "SOME_OTHER_REL_TYPE" ), asCypherStringsList( "bar" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesA", asStrList( "SOME_LABEL" ), asStrList( "this" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsA", asStrList( "SOME_REL_TYPE" ), asStrList( "foo" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesB", asStrList( "SOME_OTHER_LABEL" ), asStrList( "that" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsB", asStrList( "SOME_OTHER_REL_TYPE" ), asStrList( "bar" ) ) );
         }
     }
 
@@ -413,9 +405,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            String lbl = asCypherStringsList( LABEL.name() );
-            String rel = asCypherStringsList( REL.name() );
-            String props = asCypherStringsList( PROP );
+            String lbl = asStrList( LABEL.name() );
+            String rel = asStrList( REL.name() );
+            String props = asStrList( PROP );
             String swedish = props + ", {analyzer: '" + FulltextAnalyzerTest.SWEDISH + "'}";
             tx.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
             tx.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
@@ -452,13 +444,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void queryShouldFindDataAddedInLaterTransactions()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            transaction
-                    .execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( "Reltype1", "Reltype2" ), asCypherStringsList( "prop1", "prop2" ) ) )
-                    .close();
-            transaction.commit();
+            tx.execute( format( NODE_CREATE, "node", asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.commit();
         }
         awaitIndexesOnline();
         long horseId;
@@ -505,8 +495,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -524,8 +514,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         String value = "bla bla";
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -575,8 +565,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         String value = "bla bla";
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -630,8 +620,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -673,8 +663,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             startLatch.await();
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "node", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
-                tx.execute( format( RELATIONSHIP_CREATE, "rel", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
                 tx.commit();
             }
         };
@@ -703,9 +693,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             future1.get();
             future2.get();
             awaitIndexesOnline();
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                transaction.execute( AWAIT_REFRESH ).close();
+                tx.execute( AWAIT_REFRESH ).close();
             }
             assertQueryFindsIds( db, true, "node", newValue, nodeIds );
             assertQueryFindsIds( db, false, "rel", newValue, relIds );
@@ -856,7 +846,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label label = LABEL;
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( label.name() ), asCypherStringsList( PROP ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( label.name() ), asStrList( PROP ) ) ).close();
             createSimpleRelationshipIndex( tx );
             tx.commit();
         }
@@ -879,14 +869,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         for ( Value value : values )
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 String fulltextQuery = quoteValueForQuery( value );
                 String cypherQuery = format( QUERY_NODES, "nodes", fulltextQuery );
                 Result nodes;
                 try
                 {
-                    nodes = transaction.execute( cypherQuery );
+                    nodes = tx.execute( cypherQuery );
                 }
                 catch ( QueryExecutionException e )
                 {
@@ -897,13 +887,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                     fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
                 }
                 nodes.close();
-                Result relationships = transaction.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
+                Result relationships = tx.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
                 if ( relationships.hasNext() )
                 {
                     fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
                 }
                 relationships.close();
-                transaction.commit();
+                tx.commit();
             }
         }
     }
@@ -935,14 +925,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         for ( Value value : values )
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 String fulltextQuery = quoteValueForQuery( value );
                 String cypherQuery = format( QUERY_NODES, "nodes", fulltextQuery );
                 Result nodes;
                 try
                 {
-                    nodes = transaction.execute( cypherQuery );
+                    nodes = tx.execute( cypherQuery );
                 }
                 catch ( QueryExecutionException e )
                 {
@@ -953,13 +943,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                     fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
                 }
                 nodes.close();
-                Result relationships = transaction.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
+                Result relationships = tx.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
                 if ( relationships.hasNext() )
                 {
                     fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
                 }
                 relationships.close();
-                transaction.commit();
+                tx.commit();
             }
         }
     }
@@ -1033,7 +1023,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1070,7 +1060,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1109,7 +1099,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label label = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asCypherStringsList( label.name() ), asCypherStringsList( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", asStrList( label.name() ), asStrList( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1151,7 +1141,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asCypherStringsList( label.name() ), asCypherStringsList( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", asStrList( label.name() ), asStrList( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
 
@@ -1166,7 +1156,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label book = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asCypherStringsList( book.name() ), asCypherStringsList( "title", "author" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", asStrList( book.name() ), asStrList( "title", "author" ) ) ).close();
             tx.commit();
         }
 
@@ -1193,7 +1183,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( "a", "b", "c", "d", "e", "f" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( "a", "b", "c", "d", "e", "f" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1974,8 +1964,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2002,10 +1992,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) )
-                    .close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) )
-                    .close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2030,10 +2018,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             String mixedPrefixConfig = ", {`fulltext.analyzer`: 'english', eventually_consistent: 'true'}";
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + mixedPrefixConfig ) )
-                    .close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + mixedPrefixConfig ) )
-                    .close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) + mixedPrefixConfig ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) + mixedPrefixConfig ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2063,7 +2049,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) + duplicateConfig ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) + duplicateConfig ) ).close();
             fail( "Expected to fail" );
         }
         catch ( QueryExecutionException e )
@@ -2075,7 +2061,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( REL.name() ), asCypherStringsList( PROP ) + duplicateConfig ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) + duplicateConfig ) ).close();
             fail( "Expected to fail" );
         }
         catch ( QueryExecutionException e )
@@ -2175,19 +2161,19 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
             tx.commit();
         }
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Map<String,Object> params = new HashMap<>();
             params.put( "prop", valueToQueryFor );
-            try ( Result result = transaction.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
+            try ( Result result = tx.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
             {
                 assertNoIndexSeeks( result );
             }
-            try ( Result result = transaction.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
+            try ( Result result = tx.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
             {
                 assertNoIndexSeeks( result );
             }
-            transaction.commit();
+            tx.commit();
         }
     }
 
@@ -2212,19 +2198,19 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
             tx.commit();
         }
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Map<String,Object> params = new HashMap<>();
             params.put( "prop", valueToQueryFor );
-            try ( Result result = transaction.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
+            try ( Result result = tx.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
             {
                 assertNoIndexSeeks( result );
             }
-            try ( Result result = transaction.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
+            try ( Result result = tx.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
             {
                 assertNoIndexSeeks( result );
             }
-            transaction.commit();
+            tx.commit();
         }
     }
 
@@ -2359,12 +2345,12 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void creatingNormalIndexWithFulltextProviderMustThrow()
     {
-        assertThat( FulltextIndexProviderFactory.DESCRIPTOR.name() ).isEqualTo( "fulltext-1.0" ); // Sanity check that this test is up to date.
+        String providerName = FulltextIndexProviderFactory.DESCRIPTOR.name();
+        assertThat( providerName ).isEqualTo( "fulltext-1.0" ); // Sanity check that this test is up to date.
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( "call db.createIndex( \"MyIndex\", ['User'], ['searchableString'], \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" )
-                    .close();
+            tx.execute( "call db.createIndex( \"MyIndex\", ['User'], ['searchableString'], \"" + providerName + "\" );" ).close();
             tx.commit();
         }
         catch ( QueryExecutionException e )
@@ -2473,7 +2459,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id" ) + ", {analyzer: 'standard'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", asStrList( "Label" ), asStrList( "id" ) + ", {analyzer: 'standard'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2509,7 +2495,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id" ) + ", {analyzer: 'simple'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", asStrList( "Label" ), asStrList( "id" ) + ", {analyzer: 'simple'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2545,7 +2531,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", asStrList( "Label" ), asStrList( "id" ) ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2575,7 +2561,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         final String prop = "prop";
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( label.name() ), asCypherStringsList( prop ) ) );
+            tx.execute( format( NODE_CREATE, "myindex", asStrList( label.name() ), asStrList( prop ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2617,7 +2603,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( label.name() ), asCypherStringsList( prop ) ) );
+            tx.execute( format( NODE_CREATE, "myindex", asStrList( label.name() ), asStrList( prop ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2639,7 +2625,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label" ), asCypherStringsList( "id", "id" ) ) );
+                tx.execute( format( NODE_CREATE, "myindex", asStrList( "Label" ), asStrList( "id", "id" ) ) );
             }
         } );
         Throwable cause = getRootCause( e );
@@ -2653,7 +2639,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "myindex", asCypherStringsList( "Label", "Label" ), asCypherStringsList( "id" ) ) );
+                tx.execute( format( NODE_CREATE, "myindex", asStrList( "Label", "Label" ), asStrList( "id" ) ) );
             }
         } );
         Throwable cause = getRootCause( e );
@@ -2667,7 +2653,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( RELATIONSHIP_CREATE, "myindex", asCypherStringsList( "RelType", "RelType" ), asCypherStringsList( "id" ) ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "myindex", asStrList( "RelType", "RelType" ), asStrList( "id" ) ) );
             }
         } );
         Throwable cause = getRootCause( e );
@@ -2682,8 +2668,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             try ( Transaction tx = db.beginTx() )
             {
                 tx.execute( format( NODE_CREATE, "myindex",
-                        asCypherStringsList( "Label" ),
-                        asCypherStringsList( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) ) )
+                        asStrList( "Label" ),
+                        asStrList( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) ) )
                         .close();
                 tx.commit();
             }
@@ -2723,7 +2709,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Nested
-    class SkipAndLimit
+    class SkipAndLimitNodes
     {
         long topNode;
         long middleNode;
@@ -2794,12 +2780,170 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                 tx.commit();
             }
         }
+
+        @Test
+        void queryNodesWithSkipAndLimitMustIgnoreNodesDeletedInTransaction()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.getNodeById( topNode ).delete();
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1})" ).columnAs( "node" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Node) iterator.next()).getId() ).isEqualTo( bottomNode ); // Without topNode, middleNode is now the one we skip.
+                    assertFalse( iterator.hasNext() );
+                }
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {limit:1})" ).columnAs( "node" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Node) iterator.next()).getId() ).isEqualTo( middleNode ); // Without topNode, middleNode is now the best match.
+                    assertFalse( iterator.hasNext() );
+                }
+                tx.commit();
+            }
+        }
+
+        @Disabled( "Disabled until the bug in scoring across partitions has been fixed." )
+        @Test
+        void queryNodesWithSkipAndLimitMustIncludeNodesAddedInTransaction()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode( LABEL );
+                long nodeId = node.getId();
+                node.setProperty( PROP, "zebra zebra donkey" );
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryNodes('nodes', 'zebra', {skip:1, limit:2})" ).columnAs( "node" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Node) iterator.next()).getId() ).isEqualTo( middleNode );
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
+                    assertFalse( iterator.hasNext() );
+                    tx.commit();
+                }
+                tx.commit();
+            }
+        }
     }
-    // todo query nodes with skip and limit must ignore nodes deleted in transaction
-    // todo query nodes with skip and limit must include nodes added in transaction
-    // todo query relationships must apply skip
-    // todo query relationships must apply limit
-    // todo query relationships must apply skip and limit
-    // todo query relationships with skip and limit must ignore relationships deleted in transaction
-    // todo query relationships with skip and limit must include relationships added in transaction
+
+    @Nested
+    class SkipAndLimitRelationships
+    {
+        long topRel;
+        long middleRel;
+        long bottomRel;
+
+        @BeforeEach
+        void setUp()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                createSimpleRelationshipIndex( tx );
+                tx.commit();
+            }
+            awaitIndexesOnline();
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode();
+                Relationship top = node.createRelationshipTo( node, REL );
+                Relationship middle = node.createRelationshipTo( node, REL );
+                Relationship bottom = node.createRelationshipTo( node, REL );
+                top.setProperty( PROP, "zebra zebra zebra" );
+                middle.setProperty( PROP, "zebra zebra" );
+                bottom.setProperty( PROP, "zebra" );
+                topRel = top.getId();
+                middleRel = middle.getId();
+                bottomRel = bottom.getId();
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryRelationshipsMustApplySkip()
+        {
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {skip:1})" ).columnAs( "relationship" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( middleRel );
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( bottomRel );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryRelationshipsMustApplyLimit()
+        {
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {limit:1})" ).columnAs( "relationship" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( topRel );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryRelationshipsMustApplySkipAndLimit()
+        {
+            try ( Transaction tx = db.beginTx();
+                  var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {skip:1, limit:1})" ).columnAs( "relationship" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( middleRel );
+                assertFalse( iterator.hasNext() );
+                tx.commit();
+            }
+        }
+
+        @Test
+        void queryRelationshipsWithSkipAndLimitMustIgnoreRelationshipsDeletedInTransaction()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.getRelationshipById( topRel ).delete();
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {skip:1})" ).columnAs( "relationship" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( bottomRel ); // Without topRel, middleRel is now the one we skip.
+                    assertFalse( iterator.hasNext() );
+                }
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {limit:1})" ).columnAs( "relationship" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( middleRel ); // Without topRel, middleRel is now the best match.
+                    assertFalse( iterator.hasNext() );
+                }
+                tx.commit();
+            }
+        }
+
+        @Disabled( "Disabled until the bug in scoring across partitions has been fixed." )
+        @Test
+        void queryRelationshipsWithSkipAndLimitMustIncludeRelationshipsAddedInTransaction()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode();
+                Relationship rel = node.createRelationshipTo( node, REL );
+                long relId = rel.getId();
+                rel.setProperty( PROP, "zebra zebra donkey" );
+                try ( var iterator = tx.execute( "CALL db.index.fulltext.queryRelationships('rels', 'zebra', {skip:1, limit:2})" ).columnAs( "relationship" ) )
+                {
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( middleRel );
+                    assertTrue( iterator.hasNext() );
+                    assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( relId );
+                    assertFalse( iterator.hasNext() );
+                    tx.commit();
+                }
+                tx.commit();
+            }
+        }
+    }
+    // todo fix doc scoring across partitions and transaction state
 }

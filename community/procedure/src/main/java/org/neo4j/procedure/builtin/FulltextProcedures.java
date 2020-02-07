@@ -272,9 +272,13 @@ public class FulltextProcedures
     }
 
     @SystemProcedure
-    @Description( "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score." )
+    @Description( "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. " +
+            "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned." )
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
-    public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
+    public Stream<RelationshipOutput> queryFulltextForRelationships(
+            @Name( "indexName" ) String name,
+            @Name( "queryString" ) String query,
+            @Name( value = "options", defaultValue = "{}" ) Map<String, Object> options ) throws Exception
     {
         if ( callContext.isSystemDatabase() )
         {
@@ -290,7 +294,8 @@ public class FulltextProcedures
                     ", so it cannot be queried for relationships." );
         }
         RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor();
-        tx.dataRead().relationshipIndexSeek( indexReference, cursor, IndexQuery.fulltextSearch( query ) );
+        IndexQueryConstraints constraints = queryConstraints( options );
+        tx.dataRead().relationshipIndexSeek( indexReference, cursor, constraints, IndexQuery.fulltextSearch( query ) );
 
         Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>()
         {
