@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -54,6 +56,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private long nodeReference = NO_NODE;
     private long relationshipReference = NO_RELATIONSHIP;
     private LabelSet labels;
+    private Supplier<LabelSet> getLabel = this::labelsIgnoringTxStateSetRemove;
+    private IntSupplier getRelType = this::getRelType;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer )
     {
@@ -118,12 +122,12 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         if ( isNode() )
         {
             ensureAccessMode();
-            return accessMode.allowsReadNodeProperty( this::labelsIgnoringTxStateSetRemove, propertyKey() );
+            return accessMode.allowsReadNodeProperty( getLabel, propertyKey() );
         }
         if ( isRelationship() )
         {
             ensureAccessMode();
-            return accessMode.allowsReadRelationshipProperty( this::getRelType, propertyKey() );
+            return accessMode.allowsReadRelationshipProperty( getRelType, propertyKey() );
         }
         return true;
     }
