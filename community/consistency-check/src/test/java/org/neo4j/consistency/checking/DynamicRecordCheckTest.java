@@ -19,10 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -30,24 +27,18 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@RunWith( Suite.class )
-@Suite.SuiteClasses( {
-        DynamicRecordCheckTest.StringDynamicRecordCheckTest.class,
-        DynamicRecordCheckTest.ArrayDynamicRecordCheckTest.class,
-} )
-public abstract class DynamicRecordCheckTest
-        extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
+public abstract class DynamicRecordCheckTest extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
 {
     private final int blockSize;
 
-    private DynamicRecordCheckTest( DynamicRecordCheck check, int blockSize )
+    DynamicRecordCheckTest( DynamicRecordCheck check, int blockSize )
     {
         super( check, ConsistencyReport.DynamicConsistencyReport.class, new int[0] );
         this.blockSize = blockSize;
@@ -142,21 +133,6 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidDataLength()
-    {
-        // given
-        DynamicRecord record = mock( DynamicRecord.class );
-        when( record.getLength() ).thenReturn( -1 );
-
-        // when
-        ConsistencyReport.DynamicConsistencyReport report = check( record );
-
-        // then
-        verify( report ).invalidLength();
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
     public void shouldReportEmptyRecord()
     {
         // given
@@ -217,50 +193,6 @@ public abstract class DynamicRecordCheckTest
     abstract DynamicRecord fill( DynamicRecord record, int size );
 
     abstract DynamicRecord record( long id );
-
-    @RunWith( JUnit4.class )
-    public static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
-    {
-        public StringDynamicRecordCheckTest()
-        {
-            super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.STRING ), 66 );
-        }
-
-        @Override
-        DynamicRecord record( long id )
-        {
-            return string( new DynamicRecord( id ) );
-        }
-
-        @Override
-        DynamicRecord fill( DynamicRecord record, int size )
-        {
-            record.setData( new byte[size] );
-            return record;
-        }
-    }
-
-    @RunWith( JUnit4.class )
-    public static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
-    {
-        public ArrayDynamicRecordCheckTest()
-        {
-            super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ), 66 );
-        }
-
-        @Override
-        DynamicRecord record( long id )
-        {
-            return array( new DynamicRecord( id ) );
-        }
-
-        @Override
-        DynamicRecord fill( DynamicRecord record, int size )
-        {
-            record.setData( new byte[size] );
-            return record;
-        }
-    }
 
     public static RecordStore<DynamicRecord> configureDynamicStore( int blockSize )
     {
