@@ -87,6 +87,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def writes() = transactionalContext.dataWrite
 
+  private def accessMode() = transactionalContext.tc.securityContext().mode()
+
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor()
   private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor()
 
@@ -356,37 +358,37 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
       reads().singleNode(node, nodeCursor)
       if (!nodeCursor.next()) 0
-      else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors)
+      else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, accessMode())
   }
 
   override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = {
       reads().singleNode(node, nodeCursor)
       if (!nodeCursor.next()) 0
-      else Nodes.countIncoming(nodeCursor, transactionalContext.cursors)
+      else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, accessMode())
   }
 
   override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = {
       reads().singleNode(node, nodeCursor)
       if (!nodeCursor.next()) 0
-      else Nodes.countAll(nodeCursor, transactionalContext.cursors)
+      else Nodes.countAll(nodeCursor, transactionalContext.cursors, accessMode())
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, relationship, accessMode())
   }
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, relationship, accessMode())
   }
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, transactionalContext.cursors, relationship)
+    else Nodes.countAll(nodeCursor, transactionalContext.cursors, relationship, accessMode())
   }
 
   override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = {

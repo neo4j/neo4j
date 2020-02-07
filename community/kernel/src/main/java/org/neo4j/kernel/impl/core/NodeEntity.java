@@ -659,7 +659,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
 
-        return Nodes.countAll( nodes, transaction.cursors() );
+        return Nodes.countAll( nodes, transaction.cursors(), transaction.securityContext().mode() );
     }
 
     @Override
@@ -674,7 +674,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        return Nodes.countAll( nodes, transaction.cursors(), typeId );
+        return Nodes.countAll( nodes, transaction.cursors(), typeId, transaction.securityContext().mode() );
     }
 
     @Override
@@ -687,11 +687,11 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors() );
+            return Nodes.countOutgoing( nodes, transaction.cursors(), transaction.securityContext().mode() );
         case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors() );
+            return Nodes.countIncoming( nodes, transaction.cursors(), transaction.securityContext().mode() );
         case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors() );
+            return Nodes.countAll( nodes, transaction.cursors(), transaction.securityContext().mode() );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -712,11 +712,11 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, transaction.cursors(), typeId );
+            return Nodes.countOutgoing( nodes, transaction.cursors(), typeId, transaction.securityContext().mode() );
         case INCOMING:
-            return Nodes.countIncoming( nodes, transaction.cursors(), typeId );
+            return Nodes.countIncoming( nodes, transaction.cursors(), typeId, transaction.securityContext().mode() );
         case BOTH:
-            return Nodes.countAll( nodes, transaction.cursors(), typeId );
+            return Nodes.countAll( nodes, transaction.cursors(), typeId, transaction.securityContext().mode() );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }

@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
@@ -37,12 +38,11 @@ public abstract class CompiledExpandUtils
 {
     private static final int NOT_DENSE_DEGREE = -1;
 
-    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
-            NodeCursor nodeCursor,
-            long fromNode, Direction direction, long toNode )
+    public static RelationshipSelectionCursor connectingRelationships( Read read, AccessMode mode,
+            CursorFactory cursors, NodeCursor nodeCursor, long fromNode, Direction direction, long toNode )
     {
         //Check from
-        int fromDegree = nodeGetDegreeIfDense( read, fromNode, nodeCursor, cursors, direction );
+        int fromDegree = nodeGetDegreeIfDense( read, mode, fromNode, nodeCursor, cursors, direction );
         if ( fromDegree == 0 )
         {
             return RelationshipSelectionCursor.EMPTY;
@@ -61,7 +61,7 @@ public abstract class CompiledExpandUtils
         if ( fromNodeIsDense && toNodeIsDense )
         {
             //Note that we have already position the cursor at toNode
-            int toDegree = nodeGetDegree( nodeCursor, cursors, direction );
+            int toDegree = nodeGetDegree( mode, nodeCursor, cursors, direction );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -93,11 +93,11 @@ public abstract class CompiledExpandUtils
         }
     }
 
-    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
+    public static RelationshipSelectionCursor connectingRelationships( Read read, AccessMode mode, CursorFactory cursors,
             NodeCursor nodeCursor, long fromNode, Direction direction, long toNode, int[] relTypes )
     {
         //Check from
-        int fromDegree = calculateTotalDegreeIfDense( read, fromNode, nodeCursor, direction, relTypes, cursors );
+        int fromDegree = calculateTotalDegreeIfDense( read, mode, fromNode, nodeCursor, direction, relTypes, cursors );
         if ( fromDegree == 0 )
         {
             return RelationshipSelectionCursor.EMPTY;
@@ -116,7 +116,7 @@ public abstract class CompiledExpandUtils
         if ( fromNodeIsDense && toNodeIsDense )
         {
             //Note that we have already position the cursor at toNode
-            int toDegree = calculateTotalDegree( nodeCursor, direction, relTypes, cursors );
+            int toDegree = calculateTotalDegree( mode, nodeCursor, direction, relTypes, cursors );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -148,8 +148,7 @@ public abstract class CompiledExpandUtils
         }
     }
 
-    static int nodeGetDegreeIfDense( Read read, long node, NodeCursor nodeCursor, CursorFactory cursors,
-            Direction direction )
+    static int nodeGetDegreeIfDense( Read read, AccessMode mode, long node, NodeCursor nodeCursor, CursorFactory cursors, Direction direction )
     {
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -161,27 +160,25 @@ public abstract class CompiledExpandUtils
             return NOT_DENSE_DEGREE;
         }
 
-        return nodeGetDegree( nodeCursor, cursors, direction );
+        return nodeGetDegree( mode, nodeCursor, cursors, direction );
     }
 
-    private static int nodeGetDegree( NodeCursor nodeCursor, CursorFactory cursors,
-            Direction direction )
+    private static int nodeGetDegree( AccessMode mode, NodeCursor nodeCursor, CursorFactory cursors, Direction direction )
     {
         switch ( direction )
         {
         case OUTGOING:
-            return countOutgoing( nodeCursor, cursors );
+            return countOutgoing( nodeCursor, cursors, mode );
         case INCOMING:
-            return countIncoming( nodeCursor, cursors );
+            return countIncoming( nodeCursor, cursors, mode );
         case BOTH:
-            return countAll( nodeCursor, cursors );
+            return countAll( nodeCursor, cursors, mode );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
     }
 
-    static int nodeGetDegreeIfDense( Read read, long node, NodeCursor nodeCursor, CursorFactory cursors,
-            Direction direction, int type )
+    static int nodeGetDegreeIfDense( Read read, AccessMode mode, long node, NodeCursor nodeCursor, CursorFactory cursors, Direction direction, int type )
     {
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -193,27 +190,26 @@ public abstract class CompiledExpandUtils
             return NOT_DENSE_DEGREE;
         }
 
-        return nodeGetDegree( nodeCursor, cursors, direction, type );
+        return nodeGetDegree( mode, nodeCursor, cursors, direction, type );
     }
 
-    private static int nodeGetDegree( NodeCursor nodeCursor, CursorFactory cursors,
-            Direction direction, int type )
+    private static int nodeGetDegree( AccessMode mode, NodeCursor nodeCursor, CursorFactory cursors, Direction direction, int type )
     {
         switch ( direction )
         {
         case OUTGOING:
-            return countOutgoing( nodeCursor, cursors, type );
+            return countOutgoing( nodeCursor, cursors, type, mode );
         case INCOMING:
-            return countIncoming( nodeCursor, cursors, type );
+            return countIncoming( nodeCursor, cursors, type, mode );
         case BOTH:
-            return countAll( nodeCursor, cursors, type );
+            return countAll( nodeCursor, cursors, type, mode );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
     }
 
-    private static int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
-            int[] relTypes, CursorFactory cursors )
+    private static int calculateTotalDegreeIfDense( Read read, AccessMode mode, long node,
+            NodeCursor nodeCursor, Direction direction, int[] relTypes, CursorFactory cursors )
     {
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -224,16 +220,15 @@ public abstract class CompiledExpandUtils
         {
             return NOT_DENSE_DEGREE;
         }
-        return calculateTotalDegree( nodeCursor, direction, relTypes, cursors );
+        return calculateTotalDegree( mode, nodeCursor, direction, relTypes, cursors );
     }
 
-    private static int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] relTypes,
-            CursorFactory cursors )
+    private static int calculateTotalDegree( AccessMode mode, NodeCursor nodeCursor, Direction direction, int[] relTypes, CursorFactory cursors )
     {
         int degree = 0;
         for ( int relType : relTypes )
         {
-            degree += nodeGetDegree( nodeCursor, cursors, direction, relType );
+            degree += nodeGetDegree( mode, nodeCursor, cursors, direction, relType );
         }
 
         return degree;
