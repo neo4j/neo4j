@@ -26,20 +26,20 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.neo4j.test.extension.StatefullFieldExtension;
 
-public class ThreadingExtension  extends StatefullFieldExtension<ThreadingRule>
+public class ThreadingExtension extends StatefullFieldExtension<ThreadingRule>
         implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
     private static final String THREADING = "threading";
     private static final ExtensionContext.Namespace THREADING_NAMESPACE = ExtensionContext.Namespace.create( THREADING );
     @Override
-    public void afterEach( ExtensionContext extensionContext ) throws Exception
+    public void afterEach( ExtensionContext extensionContext )
     {
         ThreadingRule threadingRule = getStoredValue( extensionContext );
         threadingRule.after();
     }
 
     @Override
-    public void beforeEach( ExtensionContext extensionContext ) throws Exception
+    public void beforeEach( ExtensionContext extensionContext )
     {
         ThreadingRule threadingRule = getStoredValue( extensionContext );
         threadingRule.before();
@@ -60,8 +60,7 @@ public class ThreadingExtension  extends StatefullFieldExtension<ThreadingRule>
     @Override
     protected ThreadingRule createField( ExtensionContext extensionContext )
     {
-        ThreadingRule threadingRule = new ThreadingRule();
-        return threadingRule;
+        return new ThreadingRule();
     }
 
     @Override
