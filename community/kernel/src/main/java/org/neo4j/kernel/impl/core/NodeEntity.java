@@ -41,6 +41,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -801,8 +802,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     }
 
     @Override
-    public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId )
+    public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor )
     {
-        return internalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId );
+        return internalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId, cursor );
     }
 }

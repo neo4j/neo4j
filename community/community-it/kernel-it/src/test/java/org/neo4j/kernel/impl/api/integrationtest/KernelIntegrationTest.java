@@ -269,13 +269,13 @@ public abstract class KernelIntegrationTest
             {
             case OUTGOING:
                 return outgoingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id,  transaction.cursorContext()  );
+                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id,  transaction.cursorContext()  );
             case INCOMING:
                 return incomingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.cursorContext()  );
+                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id, transaction.cursorContext()  );
             case BOTH:
                 return allIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.cursorContext() );
+                        ( id, startNodeId, typeId, endNodeId, relCursor ) -> id, transaction.cursorContext() );
             default:
                 throw new IllegalStateException( direction + " is not a valid direction" );
             }

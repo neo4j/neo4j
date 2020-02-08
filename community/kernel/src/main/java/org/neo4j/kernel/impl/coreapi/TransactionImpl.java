@@ -59,6 +59,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -758,6 +759,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     public RelationshipEntity newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId )
     {
         return new RelationshipEntity( this, id, startNodeId, typeId, endNodeId );
+    }
+
+    @Override
+    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor )
+    {
+        return new RelationshipEntity( this, id, startNodeId, typeId, endNodeId, cursor );
     }
 
     @Override

@@ -228,7 +228,7 @@ public final class RelationshipSelections
             if ( relationshipTraversalCursor.next() )
             {
                 return factory.relationship( relationshipTraversalCursor.relationshipReference(), relationshipTraversalCursor.sourceNodeReference(),
-                        relationshipTraversalCursor.type(), relationshipTraversalCursor.targetNodeReference() );
+                        relationshipTraversalCursor.type(), relationshipTraversalCursor.targetNodeReference(), relationshipTraversalCursor );
             }
             close();
             return null;

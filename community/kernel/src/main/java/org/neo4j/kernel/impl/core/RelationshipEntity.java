@@ -35,10 +35,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -59,21 +59,30 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntity.class );
 
     private final InternalTransaction internalTransaction;
+    private final RelationshipTraversalCursor cursor;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode,
+            RelationshipTraversalCursor cursor )
     {
         this.internalTransaction = internalTransaction;
+        this.cursor = cursor;
         visit( id, type, startNode, endNode );
+    }
+
+    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    {
+        this( internalTransaction, id, startNode, type, endNode, null );
     }
 
     public RelationshipEntity( InternalTransaction internalTransaction, long id )
     {
         this.internalTransaction = internalTransaction;
         this.id = id;
+        this.cursor = null;
     }
 
     public static boolean isDeletedInCurrentTransaction( Relationship relationship )
@@ -234,6 +243,24 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         return internalTransaction.getRelationshipTypeById( typeId() );
     }
 
+    private PropertyCursor initializePropertyCursor( PropertyCursor properties, KernelTransaction transaction )
+    {
+        if ( cursor != null && !cursor.isClosed() && cursor.relationshipReference() == id )
+        {
+            // If this relationship entity instance was instantiated from a node.getRelationships()and the cursor hasn't moved on,
+            // then we can use that relationship cursor to get the properties from to avoid looking up and loading the relationship again
+            cursor.properties( properties );
+        }
+        else
+        {
+            // Otherwise fall back to looking up the relationship by ID
+            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+            singleRelationship( transaction, relationships );
+            relationships.properties( properties );
+        }
+        return properties;
+    }
+
     @Override
     public Iterable<String> getPropertyKeys()
     {
@@ -241,11 +268,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         List<String> keys = new ArrayList<>();
         try
         {
-            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-            PropertyCursor properties = transaction.ambientPropertyCursor();
-            singleRelationship( transaction, relationships );
+            PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
             TokenRead token = transaction.tokenRead();
-            relationships.properties( properties );
             while ( properties.next() )
             {
                 keys.add( token.propertyKeyName( properties.propertyKey() ));
@@ -287,10 +311,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         }
 
         Map<String,Object> properties = new HashMap<>( itemsToReturn );
-        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
-        singleRelationship( transaction, relationships );
-        relationships.properties( propertyCursor );
+        PropertyCursor propertyCursor = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
         int propertiesToFind = itemsToReturn;
         while ( propertiesToFind > 0 && propertyCursor.next() )
         {
@@ -325,10 +346,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
         try
         {
-            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+            initializePropertyCursor( propertyCursor, transaction );
             TokenRead token = transaction.tokenRead();
-            singleRelationship( transaction, relationships );
-            relationships.properties( propertyCursor );
             while ( propertyCursor.next() )
             {
                 properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
@@ -356,10 +375,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
-        singleRelationship( transaction, relationships );
-        relationships.properties( properties );
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
+        TokenRead token = transaction.tokenRead();
         if ( !properties.seekProperty( propertyKey ) )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
@@ -375,15 +392,13 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
-        singleRelationship( transaction, relationships );
-        relationships.properties( properties );
+
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
         return properties.seekProperty( propertyKey ) ? properties.propertyValue().asObjectCopy() : defaultValue;
     }
 
@@ -402,10 +417,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             return false;
         }
 
-        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
-        singleRelationship( transaction, relationships );
-        relationships.properties( properties );
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
         return properties.seekProperty( propertyKey );
     }
 
