@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
@@ -235,6 +236,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def limit(count: Long): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, literalInt(count), DoNotIncludeTies)(_)))
+    self
+  }
+
+  def skip(count: Long): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Skip(lp, literalInt(count))(_)))
     self
   }
 
