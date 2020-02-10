@@ -158,10 +158,10 @@ trait SemanticAnalysisTooling {
     else
       state => traversable.map { types(_)(state) } reduce { _ leastUpperBounds _ }
 
-  val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
-  val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   def withScopedState(check: => SemanticCheck): SemanticCheck =
-    pushStateScope chain check chain popStateScope
+    SemanticAnalysisTooling.pushStateScope chain
+      check chain
+      SemanticAnalysisTooling.popStateScope
 
   def typeSwitch(expr: Expression)(choice: TypeSpec => SemanticCheck): SemanticCheck =
     (state: SemanticState) => choice(state.expressionType(expr).actual)(state)
@@ -236,3 +236,7 @@ trait SemanticAnalysisTooling {
   def types(expression:Expression): TypeGenerator = _.expressionType(expression).actual
 }
 
+object SemanticAnalysisTooling {
+  private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
+  private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
+}
