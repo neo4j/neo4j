@@ -1912,7 +1912,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextWithPageIdMustAllowTraversingInReverse()
     {
-        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordCount, recordSize );
