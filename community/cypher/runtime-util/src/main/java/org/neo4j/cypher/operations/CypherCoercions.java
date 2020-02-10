@@ -22,10 +22,10 @@ package org.neo4j.cypher.operations;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -259,13 +259,13 @@ public final class CypherCoercions
         {
             return (MapValue) value;
         }
-        else if ( value instanceof NodeValue )
+        else if ( value instanceof VirtualNodeValue )
         {
-            return access.nodeAsMap( ((NodeValue) value).id(), nodeCursor, propertyCursor );
+            return access.nodeAsMap( ((VirtualNodeValue) value).id(), nodeCursor, propertyCursor );
         }
-        else if ( value instanceof RelationshipValue )
+        else if ( value instanceof VirtualRelationshipValue )
         {
-            return access.relationshipAsMap( ((RelationshipValue) value).id(), relationshipCursor, propertyCursor );
+            return access.relationshipAsMap( ((VirtualRelationshipValue) value).id(), relationshipCursor, propertyCursor );
         }
         else
         {
