@@ -24,7 +24,6 @@
 
     <properties>
         <moduleName>org.neo4j.cypher.internal.rewriting</moduleName>
-        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <licenses>

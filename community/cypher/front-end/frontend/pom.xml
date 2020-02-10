@@ -37,7 +37,6 @@
 
     <properties>
         <moduleName>org.neo4j.cypher.internal.frontend</moduleName>
-        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <licenses>

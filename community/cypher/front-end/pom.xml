@@ -20,7 +20,6 @@
     <properties>
         <licensing.prepend.text>licensing/notice-asl-prefix.txt</licensing.prepend.text>
         <license-text.header>headers/ASL-2-header.txt</license-text.header>
-        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <scm>
