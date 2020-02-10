@@ -849,9 +849,9 @@ public final class CypherFunctions
     public static ListValue labels( AnyValue item, DbAccess access, NodeCursor nodeCursor )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( item instanceof NodeValue )
+        if ( item instanceof VirtualNodeValue )
         {
-            return access.getLabelsForNode( ((NodeValue) item).id(), nodeCursor );
+            return access.getLabelsForNode( ((VirtualNodeValue) item).id(), nodeCursor );
         }
         else
         {
