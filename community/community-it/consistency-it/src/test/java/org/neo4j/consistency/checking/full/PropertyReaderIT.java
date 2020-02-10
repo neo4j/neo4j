@@ -19,20 +19,30 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
@@ -42,6 +52,17 @@ class PropertyReaderIT
     private GraphDatabaseAPI databaseAPI;
     @Inject
     private RecordStorageEngine storageEngine;
+    private PropertyReader reader;
+    private NeoStores neoStores;
+    private DefaultPageCacheTracer pageCacheTracer;
+
+    @BeforeEach
+    void setUp()
+    {
+        neoStores = storageEngine.testAccessNeoStores();
+        reader = new PropertyReader( new StoreAccess( neoStores ) );
+        pageCacheTracer = new DefaultPageCacheTracer();
+    }
 
     @Test
     void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
@@ -49,7 +70,7 @@ class PropertyReaderIT
         // Create property chain 1 --> 2 --> 3 --> 4
         //                             ↑           │
         //                             └───────────┘
-        PropertyStore propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
+        PropertyStore propertyStore = neoStores.getPropertyStore();
         PropertyRecord record = propertyStore.newRecord();
         // 1
         record.setId( 1 );
@@ -69,8 +90,80 @@ class PropertyReaderIT
         propertyStore.updateRecord( record, NULL );
 
         // when
-        PropertyReader reader = new PropertyReader( new StoreAccess( storageEngine.testAccessNeoStores() ) );
-        var e = assertThrows(PropertyReader.CircularPropertyRecordChainException.class, () -> reader.getPropertyRecordChain( 1 ) );
+        var e = assertThrows(PropertyReader.CircularPropertyRecordChainException.class, () -> reader.getPropertyRecordChain( 1, NULL ) );
         assertEquals( 4, e.propertyRecordClosingTheCircle().getId() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnPropertyChainRead() throws PropertyReader.CircularPropertyRecordChainException
+    {
+        PropertyStore propertyStore = neoStores.getPropertyStore();
+        PropertyRecord record = propertyStore.newRecord();
+        record.setId( 1 );
+        record.initialize( true, -1, 2 );
+        propertyStore.updateRecord( record, NULL );
+        record.setId( 2 );
+        record.initialize( true, 1, -1 );
+        propertyStore.updateRecord( record, NULL );
+
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyChainRead" ) )
+        {
+            reader.getPropertyRecordChain( 1, cursorTracer );
+
+            assertCursorTracer( cursorTracer, 2 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnPropertyValueRead()
+    {
+        var propertyStore = neoStores.getPropertyStore();
+        var record = propertyStore.newRecord();
+        record.setId( 1 );
+        record.initialize( true, -1, -1 );
+
+        PropertyBlock block = new PropertyBlock();
+        TextValue expectedValue = Values.stringValue( randomAscii( 100 ) );
+        propertyStore.encodeValue( block, 1, expectedValue, NULL );
+        record.addPropertyBlock( block );
+
+        propertyStore.updateRecord( record, NULL );
+
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyValueRead" ) )
+        {
+            block.getValueRecords().clear();
+            assertTrue( block.isLight() );
+
+            reader.propertyValue( block, cursorTracer );
+
+            assertCursorTracer( cursorTracer, 1 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodePropertyValueRead()
+    {
+        long nodeId;
+        try ( var tx = databaseAPI.beginTx() )
+        {
+            var node = tx.createNode();
+            node.setProperty( "a", randomAscii( 1024 ) );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyValueRead" ) )
+        {
+            reader.getNodePropertyValue( nodeId, 1, cursorTracer );
+
+            assertCursorTracer( cursorTracer, 2 );
+        }
+    }
+
+    private static void assertCursorTracer( PageCursorTracer cursorTracer, int expectedValue )
+    {
+        assertThat( cursorTracer.pins() ).isEqualTo( expectedValue );
+        assertThat( cursorTracer.unpins() ).isEqualTo( expectedValue );
+        assertThat( cursorTracer.hits() ).isEqualTo( expectedValue );
     }
 }

@@ -45,6 +45,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.reset;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -366,7 +367,7 @@ class SafePropertyChainReaderTest extends CheckerTestBase
 
     private void checkNode( long nodeId ) throws Exception
     {
-        try ( SafePropertyChainReader checker = new SafePropertyChainReader( context() ) )
+        try ( SafePropertyChainReader checker = new SafePropertyChainReader( context(), PageCursorTracer.NULL ) )
         {
             checkNode( checker, nodeId );
         }
@@ -374,7 +375,7 @@ class SafePropertyChainReaderTest extends CheckerTestBase
 
     private void checkNode( SafePropertyChainReader checker, long nodeId )
     {
-        boolean chainOk = checker.read( new IntObjectHashMap<>(), loadNode( nodeId ), reporter::forNode );
+        boolean chainOk = checker.read( new IntObjectHashMap<>(), loadNode( nodeId ), reporter::forNode, PageCursorTracer.NULL );
         assertFalse( chainOk );
     }
 }

@@ -24,6 +24,7 @@ import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -186,9 +187,8 @@ enum NodeField implements
     }
 
     @Override
-    public void checkConsistency( RelationshipRecord relationship,
-                                  CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                                  RecordAccess records )
+    public void checkConsistency( RelationshipRecord relationship, CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
+            RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( valueFrom( relationship ) < 0 )
         {
@@ -209,15 +209,14 @@ enum NodeField implements
             node.setCreated();
             if ( records.shouldCheck( node.getId(), MultiPassStore.NODES ) )
             {
-                engine.comparativeCheck( new DirectRecordReference<>( node, records ), this );
+                engine.comparativeCheck( new DirectRecordReference<>( node, records, cursorTracer ), this );
             }
         }
     }
 
     @Override
     public void checkReference( RelationshipRecord relationship, NodeRecord node,
-                                CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                                RecordAccess records )
+            CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !node.inUse() )
         {
@@ -230,7 +229,7 @@ enum NodeField implements
                 CacheAccess.Client cacheAccess = records.cacheAccess().client();
                 if ( node.getNextRel() != relationship.getId() )
                 {
-                    node = ((DirectRecordReference<NodeRecord>)records.node( node.getId())).record();
+                    node = ((DirectRecordReference<NodeRecord>)records.node( node.getId(), cursorTracer )).record();
 
                     if ( node.isDense() )
                     {

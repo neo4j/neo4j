@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -45,14 +46,13 @@ public class PropertyChain<RECORD extends PrimitiveRecord, REPORT extends Consis
     }
 
     @Override
-    public void checkConsistency( RECORD record, CheckerEngine<RECORD, REPORT> engine,
-                                  RecordAccess records )
+    public void checkConsistency( RECORD record, CheckerEngine<RECORD,REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !Record.NO_NEXT_PROPERTY.is( record.getNextProp() ) )
         {
             // Check the whole chain here instead of scattered during multiple checks.
             // This type of check obviously favors chains with good locality, performance-wise.
-            Iterator<PropertyRecord> props = records.rawPropertyChain( record.getNextProp() );
+            Iterator<PropertyRecord> props = records.rawPropertyChain( record.getNextProp(), cursorTracer );
             PropertyRecord firstProp = props.next();
             if ( !Record.NO_PREVIOUS_PROPERTY.is( firstProp.getPrevProp() ) )
             {
@@ -114,8 +114,8 @@ public class PropertyChain<RECORD extends PrimitiveRecord, REPORT extends Consis
     }
 
     @Override
-    public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,
-                                RecordAccess records )
+    public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD,REPORT> engine, RecordAccess records,
+            PageCursorTracer cursorTracer )
     {
         if ( !property.inUse() )
         {
@@ -127,7 +127,7 @@ public class PropertyChain<RECORD extends PrimitiveRecord, REPORT extends Consis
             {
                 engine.report().propertyNotFirstInChain( property );
             }
-            new ChainCheck<RECORD, REPORT>().checkReference( record, property, engine, records );
+            new ChainCheck<RECORD, REPORT>().checkReference( record, property, engine, records, cursorTracer );
         }
     }
 }

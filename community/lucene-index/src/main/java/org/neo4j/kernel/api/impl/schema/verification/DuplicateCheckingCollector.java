@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.Buck
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 public class DuplicateCheckingCollector extends SimpleCollector
 {
     protected final NodePropertyAccessor accessor;
@@ -74,7 +76,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId );
+        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId, NULL );
         duplicateCheckStrategy.checkForDuplicate( value, nodeId );
     }
 

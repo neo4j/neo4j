@@ -24,24 +24,27 @@ import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.Scanner.scan;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
 {
+    private static final String CONSISTENCY_CHECKER_CACHE_WARM_UP_TAG = "consistencyCheckerCacheWarmUp";
     private final RecordStore<RECORD> store;
     private final boolean forward;
+    private final PageCacheTracer pageCacheTracer;
     private ResourceIterator<RECORD> iterator;
 
-    public IterableStore( RecordStore<RECORD> store, boolean forward )
+    public IterableStore( RecordStore<RECORD> store, boolean forward, PageCacheTracer pageCacheTracer )
     {
         this.store = store;
         this.forward = forward;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -69,7 +72,7 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
     public Iterator<RECORD> iterator()
     {
         closeIterator();
-        ResourceIterable<RECORD> iterable = scan( store, forward, TRACER_SUPPLIER.get() );
+        ResourceIterable<RECORD> iterable = scan( store, forward, pageCacheTracer );
         return cloned( iterator = iterable.iterator() );
     }
 
@@ -79,10 +82,13 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
         long id = 0;
         long half = store.getHighId() / 2;
         RECORD record = store.newRecord();
-        while ( id < half )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_CHECKER_CACHE_WARM_UP_TAG ) )
         {
-            store.getRecord( id, record, FORCE, TRACER_SUPPLIER.get() );
-            id += recordsPerPage - 1;
+            while ( id < half )
+            {
+                store.getRecord( id, record, FORCE, cursorTracer );
+                id += recordsPerPage - 1;
+            }
         }
     }
 }

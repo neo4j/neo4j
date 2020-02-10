@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.consistency.checking.ChainCheck;
@@ -30,6 +31,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -42,13 +44,13 @@ public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeIndexCheck;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyCheck;
     private final CacheAccess cacheAccess;
-    private final Function<NodeRecord,Check<NodeRecord,NodeConsistencyReport>> mandatoryProperties;
+    private final BiFunction<NodeRecord,PageCursorTracer,Check<NodeRecord,NodeConsistencyReport>> mandatoryProperties;
 
     public PropertyAndNode2LabelIndexProcessor( ConsistencyReporter reporter,
             IndexAccessors indexes,
             PropertyReader propertyReader,
             CacheAccess cacheAccess,
-            Function<NodeRecord,MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> mandatoryProperties )
+            BiFunction<NodeRecord,PageCursorTracer,MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> mandatoryProperties )
     {
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -58,12 +60,12 @@ public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter
     }
 
     @Override
-    public void process( NodeRecord nodeRecord )
+    public void process( NodeRecord nodeRecord, PageCursorTracer cursorTracer )
     {
-        reporter.forNode( nodeRecord, nodeIndexCheck );
+        reporter.forNode( nodeRecord, nodeIndexCheck, cursorTracer );
         CacheAccess.Client client = cacheAccess.client();
         try ( MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport> mandatoryCheck =
-                mandatoryProperties.apply( nodeRecord ) )
+                mandatoryProperties.apply( nodeRecord, cursorTracer ) )
         {
             Iterable<PropertyRecord> properties = client.getPropertiesFromCache();
 
@@ -75,7 +77,7 @@ public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter
             {
                 for ( PropertyRecord property : properties )
                 {
-                    reporter.forProperty( property, propertyCheck );
+                    reporter.forProperty( property, propertyCheck, cursorTracer );
                     mandatoryCheck.receive( ChainCheck.keys( property ) );
                 }
             }

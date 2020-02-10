@@ -258,6 +258,6 @@ class RelationshipGroupCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipGroupChecker( context() ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
+        new RelationshipGroupChecker( context() ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }

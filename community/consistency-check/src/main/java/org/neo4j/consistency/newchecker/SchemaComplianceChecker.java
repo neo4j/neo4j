@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -50,7 +51,6 @@ import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class SchemaComplianceChecker implements AutoCloseable
 {
@@ -58,14 +58,17 @@ class SchemaComplianceChecker implements AutoCloseable
     private final MutableIntSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
+    private final PageCursorTracer cursorTracer;
     private final DefaultNodePropertyAccessor propertyAccessor;
 
-    SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes )
+    SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
+            PageCursorTracer cursorTracer )
     {
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), TRACER_SUPPLIER.get() );
+        this.cursorTracer = cursorTracer;
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorTracer );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -95,7 +98,7 @@ class SchemaComplianceChecker implements AutoCloseable
             }
             else
             {
-                long count = reader.countIndexedNodes( entity.getId(), TRACER_SUPPLIER.get(), schema.getPropertyIds(), valueArray );
+                long count = reader.countIndexedNodes( entity.getId(), cursorTracer, schema.getPropertyIds(), valueArray );
                 reportIncorrectIndexCount( entity, valueArray, indexRule, count, reportSupplier );
             }
         }
@@ -148,7 +151,7 @@ class SchemaComplianceChecker implements AutoCloseable
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, unconstrained(), TRACER_SUPPLIER.get(), query );
+            reader.query( NULL_CONTEXT, iterator, unconstrained(), cursorTracer, query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )
@@ -156,7 +159,7 @@ class SchemaComplianceChecker implements AutoCloseable
             throw new RuntimeException( format( "Consistency checking error: index provider does not support exact query %s", Arrays.toString( query ) ), e );
         }
 
-        return reader.hasFullValuePrecision( query ) ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyAccessor, indexedNodeIds, query );
+        return reader.hasFullValuePrecision( query ) ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyAccessor, indexedNodeIds, cursorTracer, query );
     }
 
     private <ENTITY extends PrimitiveRecord> void reportIncorrectIndexCount( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,

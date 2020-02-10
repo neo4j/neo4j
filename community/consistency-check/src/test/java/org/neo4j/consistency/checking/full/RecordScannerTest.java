@@ -26,14 +26,19 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.Arrays.asList;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class RecordScannerTest
 {
@@ -54,7 +59,7 @@ class RecordScannerTest
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
         RecordScanner<Integer> scanner = new SequentialRecordScanner<>( "our test task", Statistics.NONE, 1, store,
-                progressBuilder, recordProcessor );
+                progressBuilder, recordProcessor, PageCacheTracer.NULL );
 
         // when
         scanner.run();
@@ -80,7 +85,7 @@ class RecordScannerTest
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
         RecordScanner<Integer> scanner = new ParallelRecordScanner<>( "our test task", Statistics.NONE, 1, store,
-                progressBuilder, recordProcessor, CacheAccess.EMPTY, QueueDistribution.ROUND_ROBIN );
+                progressBuilder, recordProcessor, CacheAccess.EMPTY, QueueDistribution.ROUND_ROBIN, PageCacheTracer.NULL );
 
         // when
         scanner.run();
@@ -92,9 +97,9 @@ class RecordScannerTest
     private static void verifyProcessCloseAndDone( RecordProcessor<Integer> recordProcessor, BoundedIterable<Integer> store, ProgressListener progressListener )
             throws Exception
     {
-        verify( recordProcessor ).process( 42 );
-        verify( recordProcessor ).process( 75 );
-        verify( recordProcessor ).process( 192 );
+        verify( recordProcessor ).process( eq( 42 ), any() );
+        verify( recordProcessor ).process( eq( 75 ), any() );
+        verify( recordProcessor ).process( eq( 192 ), any() );
         verify( recordProcessor ).close();
 
         verify( store ).close();

@@ -45,6 +45,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistenc
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -183,7 +184,7 @@ class OwnerCheck implements CheckDecorator
         {
             return checker;
         }
-        return ( record, engine, records ) ->
+        return ( record, engine, records, cursorTracer ) ->
         {
             if ( record.inUse() )
             {
@@ -211,14 +212,14 @@ class OwnerCheck implements CheckDecorator
                                 DynamicOwner prev = dynamicOwners.put( id, owner );
                                 if ( prev != null )
                                 {
-                                    engine.comparativeCheck( prev.record( records ), owner );
+                                    engine.comparativeCheck( prev.record( records, cursorTracer ), owner );
                                 }
                             }
                         }
                     }
                 }
             }
-            checker.check( record, engine, records );
+            checker.check( record, engine, records, cursorTracer );
         };
     }
 
@@ -305,7 +306,7 @@ class OwnerCheck implements CheckDecorator
         {
             return checker;
         }
-        return ( record, engine, records ) ->
+        return ( record, engine, records, cursorTracer ) ->
         {
             if ( record.inUse() )
             {
@@ -321,11 +322,11 @@ class OwnerCheck implements CheckDecorator
                     DynamicOwner prevOwner = dynamicOwners.put( record.getNextBlock(), nextOwner );
                     if ( prevOwner != null )
                     {
-                        engine.comparativeCheck( prevOwner.record( records ), nextOwner );
+                        engine.comparativeCheck( prevOwner.record( records, cursorTracer ), nextOwner );
                     }
                 }
             }
-            checker.check( record, engine, records );
+            checker.check( record, engine, records, cursorTracer );
         };
     }
 
@@ -354,7 +355,7 @@ class OwnerCheck implements CheckDecorator
 
         @Override
         @SuppressWarnings( "unchecked" )
-        public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
+        public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( record.inUse() )
             {
@@ -364,11 +365,11 @@ class OwnerCheck implements CheckDecorator
                     PropertyOwner previous = owners.put( prop, owner( record ) );
                     if ( previous != null )
                     {
-                        engine.comparativeCheck( previous.record( records ), checker.ownerCheck() );
+                        engine.comparativeCheck( previous.record( records, cursorTracer ), checker.ownerCheck() );
                     }
                 }
             }
-            checker.check( record, engine, records );
+            checker.check( record, engine, records, cursorTracer );
         }
 
         @Override
@@ -395,7 +396,7 @@ class OwnerCheck implements CheckDecorator
 
         @SuppressWarnings( "unchecked" )
         @Override
-        public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
+        public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( record.inUse() )
             {
@@ -403,15 +404,15 @@ class OwnerCheck implements CheckDecorator
                 DynamicOwner prev = owners.put( (long)record.getNameId(), owner );
                 if ( prev != null )
                 {
-                    engine.comparativeCheck( prev.record( records ), owner );
+                    engine.comparativeCheck( prev.record( records, cursorTracer ), owner );
                 }
             }
-            checker.check( record, engine, records );
+            checker.check( record, engine, records, cursorTracer );
         }
 
         abstract DynamicOwner.NameOwner owner( RECORD record );
     }
 
     private static final ComparativeRecordChecker<PropertyRecord, PrimitiveRecord, PropertyConsistencyReport> ORPHAN_CHECKER =
-            ( record, primitiveRecord, engine, records ) -> engine.report().orphanPropertyChain();
+            ( record, primitiveRecord, engine, records, cursorTracer ) -> engine.report().orphanPropertyChain();
 }

@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -55,7 +56,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, NodeRecord referred,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records )
+                CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -64,8 +65,8 @@ public class RelationshipGroupRecordCheck implements
         }
 
         @Override
-        public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records )
+        public void checkConsistency( RelationshipGroupRecord record, CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( record.getOwningNode() < 0 )
             {
@@ -73,7 +74,7 @@ public class RelationshipGroupRecordCheck implements
             }
             else
             {
-                engine.comparativeCheck( records.node( record.getOwningNode() ), this );
+                engine.comparativeCheck( records.node( record.getOwningNode(), cursorTracer ), this );
             }
         }
 
@@ -91,9 +92,8 @@ public class RelationshipGroupRecordCheck implements
         RELATIONSHIP_TYPE;
 
         @Override
-        public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+        public void checkConsistency( RelationshipGroupRecord record, CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( record.getType() < 0 )
             {
@@ -101,7 +101,7 @@ public class RelationshipGroupRecordCheck implements
             }
             else
             {
-                engine.comparativeCheck( records.relationshipType( record.getType() ), this );
+                engine.comparativeCheck( records.relationshipType( record.getType(), cursorTracer ), this );
             }
         }
 
@@ -113,8 +113,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipTypeTokenRecord referred,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+                CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -130,13 +129,12 @@ public class RelationshipGroupRecordCheck implements
         NEXT;
 
         @Override
-        public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+        public void checkConsistency( RelationshipGroupRecord record, CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( record.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                engine.comparativeCheck( records.relationshipGroup( record.getNext() ), this );
+                engine.comparativeCheck( records.relationshipGroup( record.getNext(), cursorTracer ), this );
             }
         }
 
@@ -148,8 +146,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipGroupRecord referred,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+                CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -271,21 +268,19 @@ public class RelationshipGroupRecordCheck implements
         };
 
         @Override
-        public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+        public void checkConsistency( RelationshipGroupRecord record, CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             long relId = valueFrom( record );
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                engine.comparativeCheck( records.relationship( relId ), this );
+                engine.comparativeCheck( records.relationship( relId, cursorTracer ), this );
             }
         }
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipRecord referred,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                RecordAccess records )
+                CheckerEngine<RelationshipGroupRecord,RelationshipGroupConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -315,7 +310,7 @@ public class RelationshipGroupRecordCheck implements
 
     @Override
     public void check( RelationshipGroupRecord record,
-            CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records )
+            CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !record.inUse() )
         {
@@ -323,7 +318,7 @@ public class RelationshipGroupRecordCheck implements
         }
         for ( RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport> field : fields )
         {
-            field.checkConsistency( record, engine, records );
+            field.checkConsistency( record, engine, records, cursorTracer );
         }
     }
 }

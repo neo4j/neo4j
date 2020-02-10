@@ -23,7 +23,6 @@ import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
@@ -31,11 +30,11 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyRep
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordAccessStub;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         REPORT extends ConsistencyReport,
@@ -85,7 +85,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             @Override
             public void check( NodeRecord record,
                                CheckerEngine<NodeRecord, NodeConsistencyReport> engine,
-                               RecordAccess records )
+                               RecordAccess records, PageCursorTracer cursorTracer )
             {
             }
         };
@@ -98,7 +98,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             @Override
             public void check( RelationshipRecord record,
                                CheckerEngine<RelationshipRecord, RelationshipConsistencyReport> engine,
-                               RecordAccess records )
+                               RecordAccess records, PageCursorTracer cursorTracer )
             {
             }
         };
@@ -106,20 +106,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
 
     public static RecordCheck<PropertyRecord, PropertyConsistencyReport> dummyPropertyChecker()
     {
-        return ( record, engine, records ) -> {};
-    }
-
-    public static PrimitiveRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> dummyNeoStoreCheck()
-    {
-        return new NeoStoreCheck( new PropertyChain<>( from -> null ) )
-        {
-            @Override
-            public void check( NeoStoreRecord record,
-                               CheckerEngine<NeoStoreRecord, NeoStoreConsistencyReport> engine,
-                               RecordAccess records )
-            {
-            }
-        };
+        return ( record, engine, records, cursorTracer ) -> {};
     }
 
     public static RecordCheck<DynamicRecord, DynamicConsistencyReport> dummyDynamicCheck(
@@ -130,7 +117,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             @Override
             public void check( DynamicRecord record,
                                CheckerEngine<DynamicRecord, DynamicConsistencyReport> engine,
-                               RecordAccess records )
+                               RecordAccess records, PageCursorTracer cursorTracer )
             {
             }
         };
@@ -143,7 +130,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             @Override
             public void check( PropertyKeyTokenRecord record,
                                CheckerEngine<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> engine,
-                               RecordAccess records )
+                               RecordAccess records, PageCursorTracer cursorTracer )
             {
             }
         };
@@ -156,7 +143,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             @Override
             public void check( RelationshipTypeTokenRecord record,
                                CheckerEngine<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> engine,
-                               RecordAccess records )
+                               RecordAccess records, PageCursorTracer cursorTracer )
             {
             }
         };
@@ -190,13 +177,8 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     void check( REPORT report, RecordCheck<RECORD, REPORT> checker, RECORD record,
                   final RecordAccessStub records )
     {
-        checker.check( record, records.engine( record, report ), records );
+        checker.check( record, records.engine( record, report ), records, NULL );
         records.checkDeferred();
-    }
-
-    <R extends AbstractBaseRecord> R addChange( R oldRecord, R newRecord )
-    {
-        return records.addChange( oldRecord, newRecord );
     }
 
     <R extends AbstractBaseRecord> R add( R record )

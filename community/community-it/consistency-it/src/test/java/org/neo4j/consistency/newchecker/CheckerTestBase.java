@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -201,18 +202,18 @@ class CheckerTestBase
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders, neoStores, new IndexSamplingConfig( config ),
-                new LookupAccessorsFromRunningDb( indexingService ) );
+                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL );
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
-        reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), cacheAccess ), report, monitor );
+        reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), cacheAccess ), report, monitor, PageCacheTracer.NULL );
         countsState = new CountsState( neoStores, cacheAccess );
         NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, 100 );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders, new RecordLoading( neoStores ),
-                countsState, limiter, progress, pageCache, false, ConsistencyFlags.DEFAULT );
+                countsState, limiter, progress, pageCache, PageCacheTracer.NULL, false, ConsistencyFlags.DEFAULT );
         context.initialize();
         return context;
     }
@@ -410,7 +411,7 @@ class CheckerTestBase
         {
             try
             {
-                IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor.getId() );
+                IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
                 while ( proxy instanceof AbstractDelegatingIndexProxy )
                 {
                     proxy = ((AbstractDelegatingIndexProxy) proxy).getDelegate();

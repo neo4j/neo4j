@@ -32,6 +32,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -42,7 +43,6 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.entityIntersectsSchema;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.getPropertyValues;
 import static org.neo4j.consistency.checking.full.PropertyAndNodeIndexedCheck.properties;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
 {
@@ -59,7 +59,7 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
 
     @Override
     public void check( RelationshipRecord record, CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-            RecordAccess records )
+            RecordAccess records, PageCursorTracer cursorTracer )
     {
         try
         {
@@ -71,17 +71,17 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
                 {
                     if ( propertyMap == null )
                     {
-                        Collection<PropertyRecord> propertyRecs = propertyReader.getPropertyRecordChain( record.getNextProp() );
-                        propertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
+                        Collection<PropertyRecord> propertyRecs = propertyReader.getPropertyRecordChain( record.getNextProp(), cursorTracer );
+                        propertyMap = properties( propertyRecs );
                     }
 
                     if ( entityIntersectsSchema( propertyMap, schema ) )
                     {
-                        Value[] values = getPropertyValues( propertyReader, propertyMap, schema.getPropertyIds() );
+                        Value[] values = getPropertyValues( propertyReader, propertyMap, schema.getPropertyIds(), cursorTracer );
                         try ( IndexReader reader = indexes.accessorFor( index ).newReader() )
                         {
                             long entityId = record.getId();
-                            long count = reader.countIndexedNodes( entityId, TRACER_SUPPLIER.get(), schema.getPropertyIds(), values );
+                            long count = reader.countIndexedNodes( entityId, cursorTracer, schema.getPropertyIds(), values );
                             reportIncorrectIndexCount( values, engine, index, count );
                         }
                     }

@@ -29,6 +29,7 @@ import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -88,9 +89,8 @@ public class RelationshipRecordCheck extends
     {
         RELATIONSHIP_TYPE;
         @Override
-        public void checkConsistency( RelationshipRecord record,
-                                      CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-                                      RecordAccess records )
+        public void checkConsistency( RelationshipRecord record, CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine, RecordAccess records,
+                PageCursorTracer cursorTracer )
         {
             if ( record.getType() < 0 )
             {
@@ -98,7 +98,7 @@ public class RelationshipRecordCheck extends
             }
             else
             {
-                engine.comparativeCheck( records.relationshipType( record.getType() ), this );
+                engine.comparativeCheck( records.relationshipType( record.getType(), cursorTracer ), this );
             }
         }
 
@@ -110,8 +110,7 @@ public class RelationshipRecordCheck extends
 
         @Override
         public void checkReference( RelationshipRecord record, RelationshipTypeTokenRecord referred,
-                                    CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-                                    RecordAccess records )
+                CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -383,8 +382,7 @@ public class RelationshipRecordCheck extends
 
             @Override
             public void checkConsistency( RelationshipRecord relationship,
-                    CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-                    RecordAccess records )
+                    CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
             {
                 if ( !relationship.inUse() )
                 {
@@ -460,7 +458,7 @@ public class RelationshipRecordCheck extends
         }
 
         private RecordReference<RelationshipRecord> buildFromCache( RelationshipRecord relationship, long reference,
-                long nodeId, RecordAccess records )
+                long nodeId, RecordAccess records, PageCursorTracer cursorTracer )
         {
             CacheAccess.Client cacheAccess = records.cacheAccess().client();
             if ( !cacheAccess.withinBounds( nodeId ) )
@@ -478,7 +476,7 @@ public class RelationshipRecordCheck extends
                 }
                 //these are "bad links", and hopefully few. So, get the real ones anyway.
                 cacheAccess.incAndGetCount( Counts.Type.missCheck );
-                return records.relationship( reference );
+                return records.relationship( reference, cursorTracer );
             }
             // now, use cached info to build a fake relationship, but with partial real values that had been cached before
             RelationshipRecord rel = new RelationshipRecord( reference );
@@ -497,7 +495,7 @@ public class RelationshipRecordCheck extends
                 rel.setSecondNode( nodeId );
             }
             rel = populateRelationshipFromCache( nodeId, rel, cacheAccess );
-            return new DirectRecordReference<>( rel, records );
+            return new DirectRecordReference<>( rel, records, cursorTracer );
         }
 
         private boolean referenceShouldBeSkipped( RelationshipRecord relationship, long reference,
@@ -508,9 +506,8 @@ public class RelationshipRecordCheck extends
         }
 
         @Override
-        public void checkConsistency( RelationshipRecord relationship,
-                                      CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-                                      RecordAccess records )
+        public void checkConsistency( RelationshipRecord relationship, CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             /*
              * The algorithm for fast consistency check does 2 passes over the relationship store - one forward and one backward.
@@ -537,7 +534,7 @@ public class RelationshipRecordCheck extends
                     else
                     {
                         // Not first, we can compare to the previous value
-                        referred = buildFromCache( relationship, reference, nodeId, records );
+                        referred = buildFromCache( relationship, reference, nodeId, records, cursorTracer );
                         if ( referred == RecordReference.SkippingReference.<RelationshipRecord>skipReference() )
                         {
                             cacheAccess.incAndGetCount( Counts.Type.skipCheck );
@@ -567,8 +564,7 @@ public class RelationshipRecordCheck extends
 
         @Override
         public void checkReference( RelationshipRecord record, RelationshipRecord referred,
-                                    CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
-                                    RecordAccess records )
+                CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             NodeField field = NodeField.select( referred, node( record ) );
             if ( field == null )
@@ -587,9 +583,9 @@ public class RelationshipRecordCheck extends
                     if ( referred.isCreated() )
                     {
                         //get the actual record and check again
-                        RecordReference<RelationshipRecord> refRel = records.relationship( referred.getId() );
+                        RecordReference<RelationshipRecord> refRel = records.relationship( referred.getId(), cursorTracer );
                         referred = (RelationshipRecord) ((DirectRecordReference) refRel).record();
-                        checkReference( record, referred, engine, records );
+                        checkReference( record, referred, engine, records, cursorTracer );
                         cacheAccess.incAndGetCount( Counts.Type.skipBackup );
                     }
                     else

@@ -79,9 +79,9 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, NodeRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, NodeRecord record, PageCursorTracer cursorTracer ) throws FAILURE
     {
-        processor.processNode( this, record );
+        processor.processNode( this, record, cursorTracer );
     }
 
     @Override

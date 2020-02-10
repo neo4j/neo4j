@@ -86,13 +86,13 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckService
 {
+    private static final String CONSISTENCY_TOKEN_READER_TAG = "consistencyTokenReader";
     private final Date timestamp;
 
     public ConsistencyCheckService()
@@ -151,15 +151,16 @@ public class ConsistencyCheckService
     {
         Log log = logProvider.getLog( getClass() );
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+        var pageCacheTracer = PageCacheTracer.NULL;
         ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fileSystem, config, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ),
+                new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
                         EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
         {
             return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
-                    reportDir, consistencyFlags );
+                    reportDir, consistencyFlags, pageCacheTracer );
         }
         finally
         {
@@ -183,16 +184,17 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, ConsistencyFlags consistencyFlags )
+            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer )
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
-                defaultReportDir( config ), consistencyFlags );
+                defaultReportDir( config ), consistencyFlags, pageCacheTracer );
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
+            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer )
+            throws ConsistencyCheckIncompleteException
     {
         assertRecovered( databaseLayout, config, fileSystem );
         Log log = logProvider.getLog( getClass() );
@@ -230,7 +232,10 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             // Load tokens before starting extensions, etc.
-            tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ), TRACER_SUPPLIER.get() );
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_TAG ) )
+            {
+                tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ), cursorTracer );
+            }
 
             life.start();
 
@@ -257,7 +262,7 @@ public class ConsistencyCheckService
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
-            summary = check.execute( pageCache, stores, countsManager, new DuplicatingLog( log, reportLog ) );
+            summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {

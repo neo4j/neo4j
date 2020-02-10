@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,93 +44,93 @@ public class DelegatingRecordAccess implements RecordAccess
     }
 
     @Override
-    public RecordReference<SchemaRecord> schema( long id )
+    public RecordReference<SchemaRecord> schema( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.schema( id );
+        return delegate.schema( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<NodeRecord> node( long id )
+    public RecordReference<NodeRecord> node( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.node( id );
+        return delegate.node( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<RelationshipRecord> relationship( long id )
+    public RecordReference<RelationshipRecord> relationship( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.relationship( id );
+        return delegate.relationship( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<PropertyRecord> property( long id )
+    public RecordReference<PropertyRecord> property( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.property( id );
+        return delegate.property( id, cursorTracer );
     }
 
     @Override
-    public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+    public Iterator<PropertyRecord> rawPropertyChain( long firstId, PageCursorTracer cursorTracer )
     {
-        return delegate.rawPropertyChain( firstId );
+        return delegate.rawPropertyChain( firstId, cursorTracer );
     }
 
     @Override
-    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.relationshipType( id );
+        return delegate.relationshipType( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.propertyKey( id );
+        return delegate.propertyKey( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> string( long id )
+    public RecordReference<DynamicRecord> string( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.string( id );
+        return delegate.string( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> array( long id )
+    public RecordReference<DynamicRecord> array( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.array( id );
+        return delegate.array( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipTypeName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.relationshipTypeName( id );
+        return delegate.relationshipTypeName( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> nodeLabels( long id )
+    public RecordReference<DynamicRecord> nodeLabels( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.nodeLabels( id );
+        return delegate.nodeLabels( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<LabelTokenRecord> label( int id )
+    public RecordReference<LabelTokenRecord> label( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.label( id );
+        return delegate.label( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> labelName( int id )
+    public RecordReference<DynamicRecord> labelName( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.labelName( id );
+        return delegate.labelName( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<DynamicRecord> propertyKeyName( int id )
+    public RecordReference<DynamicRecord> propertyKeyName( int id, PageCursorTracer cursorTracer )
     {
-        return delegate.propertyKeyName( id );
+        return delegate.propertyKeyName( id, cursorTracer );
     }
 
     @Override
-    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id, PageCursorTracer cursorTracer )
     {
-        return delegate.relationshipGroup( id );
+        return delegate.relationshipGroup( id, cursorTracer );
     }
 
     @Override

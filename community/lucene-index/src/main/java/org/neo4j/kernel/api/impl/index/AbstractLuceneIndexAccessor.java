@@ -154,7 +154,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     public abstract void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException;
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
         final LuceneIndexConsistencyCheckVisitor visitor = reporterFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
         final boolean isConsistent = luceneIndex.isValid();

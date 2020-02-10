@@ -33,6 +33,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -105,16 +106,16 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, PageCursorTracer cursorTracer )
     {
         try
         {
-            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
+            return tree.consistencyCheck( visitor, cursorTracer );
         }
         catch ( IOException e )
         {

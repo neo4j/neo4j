@@ -23,24 +23,29 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+
 /**
  * Base class for workers that processes records during consistency check.
  */
 public class RecordCheckWorker<RECORD> implements Runnable
 {
+    private static final String RECORD_CHECK_WORKER_TAG = "recordCheckWorker";
     private volatile boolean done;
     protected final BlockingQueue<RECORD> recordsQ;
     private final int id;
     private final AtomicInteger idQueue;
     private final RecordProcessor<RECORD> processor;
+    private final PageCacheTracer pageCacheTracer;
 
     public RecordCheckWorker( int id, AtomicInteger idQueue, BlockingQueue<RECORD> recordsQ,
-            RecordProcessor<RECORD> processor )
+            RecordProcessor<RECORD> processor, PageCacheTracer pageCacheTracer )
     {
         this.id = id;
         this.idQueue = idQueue;
         this.recordsQ = recordsQ;
         this.processor = processor;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public void done()
@@ -66,21 +71,24 @@ public class RecordCheckWorker<RECORD> implements Runnable
         processor.init( id );
         tellNextThreadToInitialize();
 
-        while ( !done || !recordsQ.isEmpty() )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( RECORD_CHECK_WORKER_TAG ) )
         {
-            RECORD record;
-            try
+            while ( !done || !recordsQ.isEmpty() )
             {
-                record = recordsQ.poll( 10, TimeUnit.MILLISECONDS );
-                if ( record != null )
+                RECORD record;
+                try
                 {
-                    processor.process( record );
+                    record = recordsQ.poll( 10, TimeUnit.MILLISECONDS );
+                    if ( record != null )
+                    {
+                        processor.process( record, cursorTracer );
+                    }
                 }
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                break;
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                    break;
+                }
             }
         }
     }

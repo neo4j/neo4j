@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -134,7 +135,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
             p.add( singletonList( update ) );
             // ...is the same as update using updater
-            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId ) -> propertyValue ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorTracer ) -> propertyValue ) )
             {
                 updater.process( update );
             }
@@ -305,7 +306,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
-    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId )
+    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId, PageCursorTracer cursorTracer )
     {
         for ( NodeAndValue x : valueSet1 )
         {

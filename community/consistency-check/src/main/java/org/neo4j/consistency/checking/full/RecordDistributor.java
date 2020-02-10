@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * Takes a stream of RECORDs and distributes them, via {@link BlockingQueue} onto multiple workers.
@@ -44,7 +45,8 @@ public class RecordDistributor
             Iterator<RECORD> records,
             final ProgressListener progress,
             RecordProcessor<RECORD> processor,
-            QueueDistributor<RECORD> idDistributor )
+            QueueDistributor<RECORD> idDistributor,
+            PageCacheTracer pageCacheTracer )
     {
         if ( !records.hasNext() )
         {
@@ -58,7 +60,7 @@ public class RecordDistributor
         for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
         {
             recordQ[threadId] = new ArrayBlockingQueue<>( queueSize );
-            workers.start( new RecordCheckWorker<>( threadId, idGroup, recordQ[threadId], processor ) );
+            workers.start( new RecordCheckWorker<>( threadId, idGroup, recordQ[threadId], processor, pageCacheTracer ) );
         }
 
         final int[] recsProcessed = new int[numberOfThreads];

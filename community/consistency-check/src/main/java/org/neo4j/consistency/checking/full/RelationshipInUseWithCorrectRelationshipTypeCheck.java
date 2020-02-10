@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -42,7 +43,8 @@ public class RelationshipInUseWithCorrectRelationshipTypeCheck
     }
 
     @Override
-    public void checkReference( RECORD record, RelationshipRecord relationshipRecord, CheckerEngine<RECORD,REPORT> engine, RecordAccess records )
+    public void checkReference( RECORD record, RelationshipRecord relationshipRecord, CheckerEngine<RECORD,REPORT> engine, RecordAccess records,
+            PageCursorTracer cursorTracer )
     {
         if ( relationshipRecord.inUse() )
         {

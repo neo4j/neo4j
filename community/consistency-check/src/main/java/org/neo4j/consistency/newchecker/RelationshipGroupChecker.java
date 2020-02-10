@@ -31,12 +31,12 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -44,6 +44,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
  */
 class RelationshipGroupChecker implements Checker
 {
+    private static final String RELATIONSHIP_GROUPS_CHECKER_TAG = "relationshipGroupsChecker";
     private final NeoStores neoStores;
     private final ConsistencyReport.Reporter reporter;
     private final CheckerContext context;
@@ -58,11 +59,11 @@ class RelationshipGroupChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         ParallelExecution execution = context.execution;
         execution.run( getClass().getSimpleName(), execution.partition( neoStores.getRelationshipGroupStore(),
-                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to ) ) );
+                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to, context.pageCacheTracer ) ) );
     }
 
     @Override
@@ -71,12 +72,13 @@ class RelationshipGroupChecker implements Checker
         return flags.isCheckGraph();
     }
 
-    private void check( LongRange nodeIdRange, boolean firstRound, long fromGroupId, long toGroupId )
+    private void check( LongRange nodeIdRange, boolean firstRound, long fromGroupId, long toGroupId, PageCacheTracer pageCacheTracer )
     {
-        try ( RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
-                RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
-                RecordStorageReader reader = new RecordStorageReader( neoStores );
-                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG );
+              RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), cursorTracer );
+              RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), cursorTracer );
+              RecordStorageReader reader = new RecordStorageReader( neoStores );
+              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = context.cacheAccess.client();
@@ -113,7 +115,7 @@ class RelationshipGroupChecker implements Checker
                     }
                     checkValidToken( record, record.getType(), context.tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                             ( group, token ) -> reporter.forRelationshipGroup( group ).illegalRelationshipType(),
-                            ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ) );
+                            ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ), cursorTracer );
 
                     if ( !NULL_REFERENCE.is( record.getNext() ) )
                     {
@@ -139,17 +141,20 @@ class RelationshipGroupChecker implements Checker
                             group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotInUse(),
                             group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotFirstInChain(),
                             group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipDoesNotShareNodeWithGroup( rel ) );
+                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipDoesNotShareNodeWithGroup( rel ),
+                            cursorTracer );
                     checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstIn(), RelationshipGroupLink.IN,
                             group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotInUse(),
                             group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotFirstInChain(),
                             group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipDoesNotShareNodeWithGroup( rel ) );
+                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipDoesNotShareNodeWithGroup( rel ),
+                            cursorTracer );
                     checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstLoop(), RelationshipGroupLink.LOOP,
                             group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotInUse(),
                             group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotFirstInChain(),
                             group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstLoopRelationshipDoesNotShareNodeWithGroup( rel ) );
+                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstLoopRelationshipDoesNotShareNodeWithGroup( rel ),
+                            cursorTracer );
                 }
             }
             localProgress.done();
@@ -159,7 +164,7 @@ class RelationshipGroupChecker implements Checker
     private void checkRelationshipGroupRelationshipLink( RecordRelationshipScanCursor relationshipCursor, RelationshipGroupRecord record, long relationshipId,
             RelationshipGroupLink relationshipGroupLink, Consumer<RelationshipGroupRecord> reportRelationshipNotInUse,
             Consumer<RelationshipGroupRecord> reportRelationshipNotFirstInChain, Consumer<RelationshipGroupRecord> reportRelationshipOfOtherType,
-            BiConsumer<RelationshipGroupRecord,RelationshipRecord> reportNodeNotSharedWithGroup  )
+            BiConsumer<RelationshipGroupRecord,RelationshipRecord> reportNodeNotSharedWithGroup, PageCursorTracer cursorTracer )
     {
         if ( !NULL_REFERENCE.is( relationshipId ) )
         {
@@ -183,7 +188,7 @@ class RelationshipGroupChecker implements Checker
                         relationshipCursor.getFirstNode() == record.getOwningNode() || relationshipCursor.getSecondNode() == record.getOwningNode();
                 if ( !hasCorrectNode )
                 {
-                    reportNodeNotSharedWithGroup.accept( record, context.recordLoader.relationship( relationshipCursor.getId() ) );
+                    reportNodeNotSharedWithGroup.accept( record, context.recordLoader.relationship( relationshipCursor.getId(), cursorTracer ) );
                 }
             }
         }

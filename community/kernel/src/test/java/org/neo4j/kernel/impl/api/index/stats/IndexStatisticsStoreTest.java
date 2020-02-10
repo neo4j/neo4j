@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.Function;
 
+import org.neo4j.annotations.documented.ReporterFactories;
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.Race.throwing;
@@ -82,6 +85,27 @@ class IndexStatisticsStoreTest
     {
         var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, pageCacheTracer );
         return lifeSupport.add( statisticsStore );
+    }
+
+    @Test
+    void tracePageCacheAccessOnConsistencyCheck() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+
+        var store = openStore( cacheTracer, "consistencyCheck" );
+        try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                store.replaceStats( i, new IndexSample() );
+            }
+            store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
+            store.consistencyCheck( noopReporterFactory(), cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 16 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 16 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 16 );
+        }
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
@@ -65,7 +66,7 @@ class IndexSizesTest
             return mock;
         } );
 
-        sizes = new IndexSizes( execution, indexAccessors, highNodeId );
+        sizes = new IndexSizes( execution, indexAccessors, highNodeId, PageCacheTracer.NULL );
     }
 
     @Test

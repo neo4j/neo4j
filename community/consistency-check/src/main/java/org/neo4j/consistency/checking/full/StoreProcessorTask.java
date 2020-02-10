@@ -24,12 +24,12 @@ import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static java.lang.String.format;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class StoreProcessorTask<R extends AbstractBaseRecord> extends ConsistencyCheckerTask
 {
@@ -39,10 +39,11 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
     private final StoreAccess storeAccess;
     private final CacheAccess cacheAccess;
     private final QueueDistribution distribution;
+    private final PageCacheTracer pageCacheTracer;
 
     StoreProcessorTask( String name, Statistics statistics, int threads, RecordStore<R> store, StoreAccess storeAccess,
             String builderPrefix, ProgressMonitorFactory.MultiPartBuilder builder, CacheAccess cacheAccess,
-            StoreProcessor processor, QueueDistribution distribution )
+            StoreProcessor processor, QueueDistribution distribution, PageCacheTracer pageCacheTracer )
     {
         super( name, statistics, threads );
         this.store = store;
@@ -50,6 +51,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
         this.cacheAccess = cacheAccess;
         this.processor = processor;
         this.distribution = distribution;
+        this.pageCacheTracer = pageCacheTracer;
         this.progressListener = builder.progressForPart( name +
                 indexedPartName( store.getStorageFile().getName(), builderPrefix ), store.getHighId() );
     }
@@ -90,11 +92,11 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
                 }
                 long recordsPerCPU = RecordDistributor.calculateRecordsPerCpu( highId, numberOfThreads );
                 QueueDistributor<R> distributor = distribution.distributor( recordsPerCPU, numberOfThreads );
-                processor.applyFilteredParallel( store, progressListener, numberOfThreads, recordsPerCPU, distributor );
+                processor.applyFilteredParallel( store, progressListener, numberOfThreads, recordsPerCPU, distributor, pageCacheTracer );
             }
             else
             {
-                processor.applyFiltered( store, progressListener, TRACER_SUPPLIER.get() );
+                processor.applyFiltered( store, progressListener, pageCacheTracer );
             }
             cacheAccess.setForward( true );
         }

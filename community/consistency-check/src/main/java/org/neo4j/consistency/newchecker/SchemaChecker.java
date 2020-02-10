@@ -42,6 +42,8 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -54,7 +56,6 @@ import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -63,6 +64,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
  */
 class SchemaChecker
 {
+    private static final String CONSISTENCY_TOKEN_CHECKER_TAG = "consistencyTokenChecker";
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final IndexAccessors indexAccessors;
@@ -82,18 +84,18 @@ class SchemaChecker
         this.execution = context.execution;
     }
 
-    void check(
-            MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
-            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties ) throws Exception
+    void check( MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties, MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
+            PageCursorTracer cursorTracer ) throws Exception
     {
-        checkSchema( mandatoryNodeProperties, mandatoryRelationshipProperties );
+        checkSchema( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorTracer );
         checkTokens();
     }
 
-    private void checkSchema( MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties, MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties )
+    private void checkSchema( MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties, MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
+            PageCursorTracer cursorTracer )
     {
         long highId = schemaStore.getHighId();
-        try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore ) )
+        try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, cursorTracer ) )
         {
             Map<Long,SchemaRecord> indexObligations = new HashMap<>();
             Map<Long,SchemaRecord> constraintObligations = new HashMap<>();
@@ -101,16 +103,16 @@ class SchemaChecker
 
             // Build map of obligations and such
             SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
-            buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords );
+            buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords, cursorTracer );
 
             // Verify all things, now that we have the complete map of obligations back and forth
             performSchemaCheck( highId, schemaReader, indexObligations, constraintObligations, schemaStorage,
-                    mandatoryNodeProperties, mandatoryRelationshipProperties );
+                    mandatoryNodeProperties, mandatoryRelationshipProperties, cursorTracer );
         }
     }
 
     private void buildObligationsMap( long highId, RecordReader<SchemaRecord> reader, SchemaStorage schemaStorage, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,SchemaRecord> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords )
+            Map<Long,SchemaRecord> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, PageCursorTracer cursorTracer )
     {
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -122,7 +124,7 @@ class SchemaChecker
                     continue;
                 }
 
-                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, TRACER_SUPPLIER.get() );
+                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, cursorTracer );
                 SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), record.copy() );
                 if ( previousContentRecord != null )
                 {
@@ -163,10 +165,10 @@ class SchemaChecker
 
     private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, Map<Long,SchemaRecord> indexObligations,
             Map<Long,SchemaRecord> constraintObligations, SchemaStorage schemaStorage, MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
-            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties )
+            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, PageCursorTracer cursorTracer )
     {
         SchemaRecord record = reader.record();
-        SchemaProcessor basicSchemaCheck = new BasicSchemaCheck( record );
+        SchemaProcessor basicSchemaCheck = new BasicSchemaCheck( record, cursorTracer );
         SchemaProcessor mandatoryPropertiesBuilder = new MandatoryPropertiesBuilder( mandatoryNodeProperties, mandatoryRelationshipProperties );
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -175,7 +177,7 @@ class SchemaChecker
                 reader.read( id );
                 if ( record.inUse() )
                 {
-                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, TRACER_SUPPLIER.get() );
+                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, cursorTracer );
                     schemaRule.schema().processWith( basicSchemaCheck );
                     if ( schemaRule instanceof IndexDescriptor )
                     {
@@ -243,24 +245,25 @@ class SchemaChecker
     private void checkTokens() throws Exception
     {
         execution.run( getClass().getSimpleName() + "-checkTokens" , () -> checkTokens( neoStores.getLabelTokenStore(), reporter::forLabelName,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.LABEL_NAME, dynamicRecord ) ),
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.LABEL_NAME, dynamicRecord ), context.pageCacheTracer ),
                 () -> checkTokens( neoStores.getRelationshipTypeTokenStore(), reporter::forRelationshipTypeName,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.RELATIONSHIP_TYPE_NAME, dynamicRecord ) ),
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.RELATIONSHIP_TYPE_NAME, dynamicRecord ), context.pageCacheTracer ),
                 () -> checkTokens( neoStores.getPropertyKeyTokenStore(), reporter::forPropertyKey,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.PROPERTY_KEY_NAME, dynamicRecord ) ) );
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.PROPERTY_KEY_NAME, dynamicRecord ), context.pageCacheTracer ) );
     }
 
     private <R extends TokenRecord> void checkTokens( TokenStore<R> store,
             Function<R,ConsistencyReport.NameConsistencyReport> report,
-            Function<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport )
+            Function<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport, PageCacheTracer pageCacheTracer )
     {
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
         long highId = store.getHighId();
         MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
         int blockSize = store.getNameStore().getRecordDataSize();
-        try ( RecordReader<R> tokenReader = new RecordReader<>( store );
-              RecordReader<DynamicRecord> nameReader = new RecordReader<>( store.getNameStore() ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_CHECKER_TAG );
+              RecordReader<R> tokenReader = new RecordReader<>( store, cursorTracer );
+              RecordReader<DynamicRecord> nameReader = new RecordReader<>( store.getNameStore(), cursorTracer ) )
         {
             for ( long id = 0; id < highId; id++ )
             {
@@ -282,17 +285,19 @@ class SchemaChecker
     private class BasicSchemaCheck implements SchemaProcessor
     {
         private final SchemaRecord record;
+        private final PageCursorTracer cursorTracer;
 
-        BasicSchemaCheck( SchemaRecord record )
+        BasicSchemaCheck( SchemaRecord record, PageCursorTracer cursorTracer )
         {
             this.record = record;
+            this.cursorTracer = cursorTracer;
         }
 
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
         {
             checkValidToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
-                    ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ) );
+                    ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorTracer );
             checkValidPropertyKeyIds( schema );
         }
 
@@ -300,7 +305,7 @@ class SchemaChecker
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             checkValidToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
-                    ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ) );
+                    ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorTracer );
             checkValidPropertyKeyIds( schema );
         }
 
@@ -313,14 +318,14 @@ class SchemaChecker
                 for ( int labelTokenId : schema.getEntityTokenIds() )
                 {
                     checkValidToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
-                            ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ) );
+                            ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorTracer );
                 }
                 break;
             case RELATIONSHIP:
                 for ( int relationshipTypeTokenId : schema.getEntityTokenIds() )
                 {
                     checkValidToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
-                            ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ) );
+                            ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorTracer );
                 }
                 break;
             default:
@@ -334,12 +339,12 @@ class SchemaChecker
             for ( int propertyKeyId : schema.getPropertyIds() )
             {
                 checkValidToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
-                        ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ) );
+                        ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ), cursorTracer );
             }
         }
     }
 
-    private class MandatoryPropertiesBuilder implements SchemaProcessor
+    private static class MandatoryPropertiesBuilder implements SchemaProcessor
     {
         private final MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties;
         private final MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties;

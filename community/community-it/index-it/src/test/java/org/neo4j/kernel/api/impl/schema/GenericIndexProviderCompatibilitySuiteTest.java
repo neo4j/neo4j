@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
@@ -69,6 +70,6 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     @Override
     public void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory() );
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
     }
 }

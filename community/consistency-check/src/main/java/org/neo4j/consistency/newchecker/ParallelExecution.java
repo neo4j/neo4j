@@ -81,16 +81,15 @@ class ParallelExecution
 
     private void run( String taskName, int numberOfThreads, ThrowingRunnable... runnables ) throws Exception
     {
-        var forkJoinPool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + "-" + taskName ) );
+        var pool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + "-" + taskName ) );
         try
         {
-            Exception exceptionChain = null;
             List<InternalTask> tasks = Arrays.stream( runnables ).map( InternalTask::new ).collect( Collectors.toList() );
-            Futures.getAllResults( forkJoinPool.invokeAll( tasks ) );
+            Futures.getAllResults( pool.invokeAll( tasks ) );
         }
         finally
         {
-            forkJoinPool.shutdown();
+            pool.shutdown();
         }
     }
 

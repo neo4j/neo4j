@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
@@ -53,9 +54,9 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipGroupRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipGroupRecord record, PageCursorTracer cursorTracer )
             throws FAILURE
     {
-        processor.processRelationshipGroup( this, record );
+        processor.processRelationshipGroup( this, record, cursorTracer );
     }
 }

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -49,7 +50,7 @@ public class TestNodePropertyAccessor implements NodePropertyAccessor
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

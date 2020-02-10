@@ -42,6 +42,8 @@ import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -62,20 +64,20 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 import static org.neo4j.internal.helpers.collection.Iterables.resourceIterable;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class RecordAccessStub implements RecordAccess
 {
     public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     CheckerEngine<RECORD, REPORT> engine( final RECORD record, final REPORT report )
     {
-        return new Engine<RECORD, REPORT>( report )
+        return new Engine<>( report )
         {
             @Override
             @SuppressWarnings( "unchecked" )
-            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
-                                 AbstractBaseRecord newReference )
+            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference, AbstractBaseRecord newReference )
             {
-                checker.checkReference( record, newReference, this, RecordAccessStub.this );
+                checker.checkReference( record, newReference, this, RecordAccessStub.this, NULL );
             }
         };
     }
@@ -83,14 +85,13 @@ public class RecordAccessStub implements RecordAccess
     public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     CheckerEngine<RECORD, REPORT> engine( final RECORD oldRecord, final RECORD newRecord, REPORT report )
     {
-        return new Engine<RECORD, REPORT>( report )
+        return new Engine<>( report )
         {
             @Override
             @SuppressWarnings( "unchecked" )
-            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
-                                 AbstractBaseRecord newReference )
+            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference, AbstractBaseRecord newReference )
             {
-                checker.checkReference( newRecord, newReference, this, RecordAccessStub.this );
+                checker.checkReference( newRecord, newReference, this, RecordAccessStub.this, NULL );
             }
         };
     }
@@ -114,12 +115,12 @@ public class RecordAccessStub implements RecordAccess
             {
                 PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
                 DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
-                doAnswer( check ).when( mock ).checkReference( isNull(), isNull() );
+                doAnswer( check ).when( mock ).checkReference( isNull(), isNull(), isNull() );
                 doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
-                                                               any( RecordAccess.class ) );
+                                                               any( RecordAccess.class ), any( PageCursorTracer.class ) );
                 doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
                                                                    any( AbstractBaseRecord.class ),
-                                                                   any( RecordAccess.class ) );
+                                                                   any( RecordAccess.class ), any( PageCursorTracer.class ) );
                 other.dispatch( mock );
             } );
         }
@@ -150,7 +151,7 @@ public class RecordAccessStub implements RecordAccess
             Object[] arguments = invocation.getArguments();
             AbstractBaseRecord oldReference = null;
             AbstractBaseRecord newReference;
-            if ( arguments.length == 3 )
+            if ( arguments.length == 4 )
             {
                 oldReference = (AbstractBaseRecord) arguments[0];
                 newReference = (AbstractBaseRecord) arguments[1];
@@ -189,7 +190,7 @@ public class RecordAccessStub implements RecordAccess
     private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
     private final Map<Long, Delta<RelationshipGroupRecord>> relationshipGroups = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
-    private final CacheAccess cacheAccess = new DefaultCacheAccess( defaultByteArray( (long) 1_000 ), Counts.NONE, 1 );
+    private final CacheAccess cacheAccess = new DefaultCacheAccess( defaultByteArray( 1_000 ), Counts.NONE, 1 );
     private final MultiPassStore[] storesToCheck;
 
     public RecordAccessStub()
@@ -209,14 +210,14 @@ public class RecordAccessStub implements RecordAccess
     public void populateCache()
     {
         CacheTask action = new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
-                resourceIterable( new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
-        {
-            @Override
-            protected NodeRecord underlyingObjectToObject( Delta<NodeRecord> node )
-            {
-                return node.newRecord;
-            }
-        } ) );
+                resourceIterable( new IterableWrapper<>( nodes.values() )
+                {
+                    @Override
+                    protected NodeRecord underlyingObjectToObject( Delta<NodeRecord> node )
+                    {
+                        return node.newRecord;
+                    }
+                } ), PageCacheTracer.NULL );
         action.run();
     }
 
@@ -314,59 +315,6 @@ public class RecordAccessStub implements RecordAccess
         return add( labelNames, name );
     }
 
-    public <R extends AbstractBaseRecord> R addChange( R oldRecord, R newRecord )
-    {
-        if ( newRecord instanceof NodeRecord )
-        {
-            add( nodes, (NodeRecord) oldRecord, (NodeRecord) newRecord );
-        }
-        else if ( newRecord instanceof RelationshipRecord )
-        {
-            add( relationships, (RelationshipRecord) oldRecord, (RelationshipRecord) newRecord );
-        }
-        else if ( newRecord instanceof PropertyRecord )
-        {
-            add( properties, (PropertyRecord) oldRecord, (PropertyRecord) newRecord );
-        }
-        else if ( newRecord instanceof DynamicRecord )
-        {
-            DynamicRecord dyn = (DynamicRecord) newRecord;
-            if ( dyn.getType() == PropertyType.STRING )
-            {
-                add( strings, (DynamicRecord) oldRecord, dyn );
-            }
-            else if ( dyn.getType() == PropertyType.ARRAY )
-            {
-                add( arrays, (DynamicRecord) oldRecord, dyn );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Invalid dynamic record type" );
-            }
-        }
-        else if ( newRecord instanceof RelationshipTypeTokenRecord )
-        {
-            add( relationshipTypeTokens, (RelationshipTypeTokenRecord) oldRecord, (RelationshipTypeTokenRecord) newRecord );
-        }
-        else if ( newRecord instanceof PropertyKeyTokenRecord )
-        {
-            add( propertyKeyTokens, (PropertyKeyTokenRecord) oldRecord, (PropertyKeyTokenRecord) newRecord );
-        }
-        else if ( newRecord instanceof NeoStoreRecord )
-        {
-            this.graph = new Delta<>( (NeoStoreRecord) oldRecord, (NeoStoreRecord) newRecord );
-        }
-        else if ( newRecord instanceof SchemaRecord )
-        {
-            add( schemata, (SchemaRecord) oldRecord, (SchemaRecord) newRecord );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Invalid record type" );
-        }
-        return newRecord;
-    }
-
     public <R extends AbstractBaseRecord> R add( R record )
     {
         if ( record instanceof NodeRecord )
@@ -430,7 +378,7 @@ public class RecordAccessStub implements RecordAccess
 
     private <R extends AbstractBaseRecord> DirectRecordReference<R> reference( Map<Long, Delta<R>> records,long id, Version version )
     {
-        return new DirectRecordReference<>( record( records, id, version ), this );
+        return new DirectRecordReference<>( record( records, id, version ), this, NULL );
     }
 
     private static <R extends AbstractBaseRecord> R record( Map<Long, Delta<R>> records, long id,
@@ -449,33 +397,33 @@ public class RecordAccessStub implements RecordAccess
     }
 
     @Override
-    public RecordReference<SchemaRecord> schema( long id )
+    public RecordReference<SchemaRecord> schema( long id, PageCursorTracer cursorTracer )
     {
         return reference( schemata, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<NodeRecord> node( long id )
+    public RecordReference<NodeRecord> node( long id, PageCursorTracer cursorTracer )
     {
         return reference( nodes, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<RelationshipRecord> relationship( long id )
+    public RecordReference<RelationshipRecord> relationship( long id, PageCursorTracer cursorTracer )
     {
         return reference( relationships, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<PropertyRecord> property( long id )
+    public RecordReference<PropertyRecord> property( long id, PageCursorTracer cursorTracer )
     {
         return reference( properties, id, Version.LATEST );
     }
 
     @Override
-    public Iterator<PropertyRecord> rawPropertyChain( final long firstId )
+    public Iterator<PropertyRecord> rawPropertyChain( final long firstId, PageCursorTracer cursorTracer )
     {
-        return new PrefetchingIterator<PropertyRecord>()
+        return new PrefetchingIterator<>()
         {
             private long next = firstId;
 
@@ -494,61 +442,61 @@ public class RecordAccessStub implements RecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id, PageCursorTracer cursorTracer )
     {
         return reference( relationshipTypeTokens, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id, PageCursorTracer cursorTracer )
     {
         return reference( propertyKeyTokens, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> string( long id )
+    public RecordReference<DynamicRecord> string( long id, PageCursorTracer cursorTracer )
     {
         return reference( strings, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> array( long id )
+    public RecordReference<DynamicRecord> array( long id, PageCursorTracer cursorTracer )
     {
         return reference( arrays, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> relationshipTypeName( int id )
+    public RecordReference<DynamicRecord> relationshipTypeName( int id, PageCursorTracer cursorTracer )
     {
         return reference( relationshipTypeNames, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> nodeLabels( long id )
+    public RecordReference<DynamicRecord> nodeLabels( long id, PageCursorTracer cursorTracer )
     {
         return reference( nodeDynamicLabels, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<LabelTokenRecord> label( int id )
+    public RecordReference<LabelTokenRecord> label( int id, PageCursorTracer cursorTracer )
     {
         return reference( labelTokens, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> labelName( int id )
+    public RecordReference<DynamicRecord> labelName( int id, PageCursorTracer cursorTracer )
     {
         return reference( labelNames, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<DynamicRecord> propertyKeyName( int id )
+    public RecordReference<DynamicRecord> propertyKeyName( int id, PageCursorTracer cursorTracer )
     {
         return reference( propertyKeyNames, id, Version.LATEST );
     }
 
     @Override
-    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id, PageCursorTracer cursorTracer )
     {
         return reference( relationshipGroups, id, Version.LATEST );
     }

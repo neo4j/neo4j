@@ -146,9 +146,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, SchemaRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, SchemaRecord record, PageCursorTracer cursorTracer ) throws FAILURE
     {
-        processor.processSchema( this, record );
+        processor.processSchema( this, record, cursorTracer );
     }
 
     public PropertyStore propertyStore()

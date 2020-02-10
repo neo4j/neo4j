@@ -22,6 +22,7 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class PendingReferenceCheck<REFERENCED extends AbstractBaseRecord>
@@ -48,14 +49,14 @@ public class PendingReferenceCheck<REFERENCED extends AbstractBaseRecord>
         }
     }
 
-    public void checkReference( REFERENCED referenced, RecordAccess records )
+    public void checkReference( REFERENCED referenced, RecordAccess records, PageCursorTracer cursorTracer )
     {
-        ConsistencyReporter.dispatchReference( engine(), checker, referenced, records );
+        ConsistencyReporter.dispatchReference( engine(), checker, referenced, records, cursorTracer );
     }
 
-    public void checkDiffReference( REFERENCED oldReferenced, REFERENCED newReferenced, RecordAccess records )
+    public void checkDiffReference( REFERENCED oldReferenced, REFERENCED newReferenced, RecordAccess records, PageCursorTracer cursorTracer )
     {
-        ConsistencyReporter.dispatchChangeReference( engine(), checker, oldReferenced, newReferenced, records );
+        ConsistencyReporter.dispatchChangeReference( engine(), checker, oldReferenced, newReferenced, records, cursorTracer );
     }
 
     public synchronized void skip()

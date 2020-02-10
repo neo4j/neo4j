@@ -188,10 +188,10 @@ public class StoreAccess
         return new RecordStore.Delegator<>( store )
         {
             @Override
-            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record )
+            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record, PageCursorTracer cursorTracer )
                     throws FAILURE
             {
-                processor.processLabelArrayWithOwner( this, record );
+                processor.processLabelArrayWithOwner( this, record, cursorTracer );
             }
         };
     }
@@ -202,10 +202,10 @@ public class StoreAccess
     }
 
     @SuppressWarnings( "unchecked" )
-    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store, PageCursorTracer cursorTracer )
+    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store, PageCacheTracer pageCacheTracer )
             throws FAILURE
     {
-        processor.applyFiltered( store, cursorTracer );
+        processor.applyFiltered( store, pageCacheTracer );
     }
 
     public synchronized void close()

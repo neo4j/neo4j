@@ -51,6 +51,8 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -65,11 +67,13 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class FullCheck
 {
+    private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
+    private static final String CONSISTENCY_RECORD_ACCESSOR_TAG = "consistencyRecordAccessor";
+    private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private final boolean useExperimentalChecker;
     private final Config config;
     private final boolean verbose;
@@ -95,12 +99,12 @@ public class FullCheck
     }
 
     public ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier,
-            Log log ) throws ConsistencyCheckIncompleteException
+            PageCacheTracer pageCacheTracer, Log log ) throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
         CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
-        execute( pageCache, stores, report, countsStore );
+        execute( pageCache, stores, report, countsStore, pageCacheTracer );
 
         if ( !summary.isConsistent() )
         {
@@ -109,11 +113,15 @@ public class FullCheck
         return summary;
     }
 
-    private void checkCountsStoreConsistency( InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records, CountsStore countsStore )
+    private void checkCountsStoreConsistency( InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records, CountsStore countsStore,
+            PageCacheTracer pageCacheTracer )
     {
-        if ( flags.isCheckGraph() && countsStore != CountsStore.nullInstance )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) )
         {
-            countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report ), progressFactory );
+            if ( flags.isCheckGraph() && countsStore != CountsStore.NULL_INSTANCE )
+            {
+                countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report, pageCacheTracer ), progressFactory, cursorTracer );
+            }
         }
     }
 
@@ -121,7 +129,7 @@ public class FullCheck
     {
         // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
         // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
-        CountsStore countsStore = CountsStore.nullInstance;
+        CountsStore countsStore = CountsStore.NULL_INSTANCE;
         if ( flags.isCheckGraph() || flags.isCheckIndexStructure() )
         {
             try
@@ -137,15 +145,16 @@ public class FullCheck
         return countsStore;
     }
 
-    void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore )
-            throws ConsistencyCheckIncompleteException
+    void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore,
+            PageCacheTracer pageCacheTracer ) throws ConsistencyCheckIncompleteException
     {
-        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig ) )
+        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(),
+                samplingConfig, pageCacheTracer ) )
         {
             if ( flags.isCheckIndexStructure() )
             {
                 consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
-                        allIdGenerators( directStoreAccess ), report, progressFactory );
+                        allIdGenerators( directStoreAccess ), report, progressFactory, pageCacheTracer );
             }
 
             if ( !useExperimentalChecker )
@@ -153,30 +162,30 @@ public class FullCheck
                 CacheAccess cacheAccess =
                         new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( directStoreAccess.nativeStores().getNodeStore().getHighId() ),
                                 statistics.getCounts(), threads );
-                RecordAccess recordAccess = recordAccess( directStoreAccess.nativeStores(), cacheAccess );
+                RecordAccess recordAccess = recordAccess( directStoreAccess.nativeStores(), cacheAccess, pageCacheTracer );
                 OwnerCheck ownerCheck = new OwnerCheck( flags.isCheckPropertyOwners() );
                 CountsBuilderDecorator countsBuilder = new CountsBuilderDecorator( directStoreAccess.nativeStores() );
                 CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
-                final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, NO_MONITOR );
+                final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, NO_MONITOR, pageCacheTracer );
                 final StoreAccess nativeStores = directStoreAccess.nativeStores();
                 StoreProcessor processEverything = new StoreProcessor( decorator, reporter, Stage.SEQUENTIAL_FORWARD, cacheAccess );
                 ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full Consistency Check" );
-                MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR );
+                MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR, pageCacheTracer );
                 ConsistencyCheckTasks taskCreator =
                         new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
-                                indexes, multiPass, reporter, threads );
+                                indexes, multiPass, reporter, threads, pageCacheTracer );
                 List<ConsistencyCheckerTask> tasks = taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckIndexes(),
                         flags.isCheckGraph() );
                 progress.build();
                 TaskExecutor.execute( tasks, decorator::prepare );
-                checkCountsStoreConsistency( report, countsBuilder, recordAccess, countsStore );
+                checkCountsStoreConsistency( report, countsBuilder, recordAccess, countsStore, pageCacheTracer );
                 ownerCheck.scanForOrphanChains( progressFactory );
             }
             else
             {
                 try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
                         directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(), indexes, report, progressFactory,
-                        config, threads, verbose, flags, memoryLimit ) )
+                        config, threads, verbose, flags, memoryLimit, pageCacheTracer ) )
                 {
                     checker.check();
                 }
@@ -195,56 +204,62 @@ public class FullCheck
         return idGenerators;
     }
 
-    private static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess )
+    private static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess, PageCacheTracer pageCacheTracer )
     {
-        return new CacheSmallStoresRecordAccess(
-                new DirectRecordAccess( store, cacheAccess ),
-                readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
-                readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
-                readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_RECORD_ACCESSOR_TAG ) )
+        {
+            return new CacheSmallStoresRecordAccess( new DirectRecordAccess( store, cacheAccess ),
+                    readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore(), cursorTracer ),
+                    readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore(), cursorTracer ),
+                    readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore(), cursorTracer ) );
+        }
     }
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, IndexAccessors indexes,
-            List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory )
+            List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
-        final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-        final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
-        final long idGeneratorsCount = idGenerators.size();
-        final long totalCount = schemaIndexCount + additionalCount + idGeneratorsCount;
-        final ProgressListener listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
-        listener.started();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) )
+        {
+            final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
+            final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            final long idGeneratorsCount = idGenerators.size();
+            final long totalCount = schemaIndexCount + additionalCount + idGeneratorsCount;
+            var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
+            listener.started();
 
-        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore, idGenerators );
-        consistencyCheckSchemaIndexes( indexes, report, listener );
-
-        listener.done();
+            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore, idGenerators, cursorTracer );
+            consistencyCheckSchemaIndexes( indexes, report, listener, cursorTracer );
+            listener.done();
+        }
     }
 
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators )
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators,
+            PageCursorTracer cursorTracer )
     {
-        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT );
-        consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS );
-        consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS );
+        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorTracer );
+        consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorTracer );
+        consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorTracer );
         for ( IdGenerator idGenerator : idGenerators )
         {
-            consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE );
+            consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE, cursorTracer );
         }
     }
 
     private static void consistencyCheckSingleCheckable( InconsistencyReport report, ProgressListener listener, ConsistencyCheckable checkable,
-            RecordType recordType )
+            RecordType recordType, PageCursorTracer cursorTracer )
     {
         ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, recordType );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
 
-        checkable.consistencyCheck( proxyFactory );
+        checkable.consistencyCheck( proxyFactory, cursorTracer );
         handler.updateSummary();
         listener.add( 1 );
     }
 
-    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener )
+    private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener,
+            PageCursorTracer cursorTracer )
     {
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( IndexDescriptor onlineRule : indexes.onlineRules() )
@@ -252,7 +267,7 @@ public class FullCheck
             ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.INDEX );
             ReporterFactory reporterFactory = new ReporterFactory( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
-            if ( !accessor.consistencyCheck( reporterFactory ) )
+            if ( !accessor.consistencyCheck( reporterFactory, cursorTracer ) )
             {
                 rulesToRemove.add( onlineRule );
             }
@@ -265,13 +280,13 @@ public class FullCheck
         }
     }
 
-    private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )
+    private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store, PageCursorTracer cursorTracer )
     {
         @SuppressWarnings( "unchecked" )
         T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
         for ( int i = 0; i < records.length; i++ )
         {
-            records[i] = store.getRecord( i, store.newRecord(), FORCE, TRACER_SUPPLIER.get() );
+            records[i] = store.getRecord( i, store.newRecord(), FORCE, cursorTracer );
         }
         return records;
     }

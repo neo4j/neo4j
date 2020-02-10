@@ -88,7 +88,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         mandatoryProperties.put( label3, IntSets.mutable.of( propertyKey1 ) );
 
         // when
-        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ) ) )
+        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
+                PageCursorTracer.NULL ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -200,7 +201,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ) ) )
+                context().indexAccessors.onlineRules( NODE ), PageCursorTracer.NULL ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( nodeId ), reporter::forNode );
@@ -209,11 +210,11 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
     private MutableIntObjectMap<Value> readPropertyValues( long nodeId ) throws Exception
     {
-        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting() ) )
+        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), PageCursorTracer.NULL ) )
         {
             NodeRecord node = loadNode( nodeId );
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, node, reporter::forNode );
+            reader.read( values, node, reporter::forNode, PageCursorTracer.NULL );
             return values;
         }
     }

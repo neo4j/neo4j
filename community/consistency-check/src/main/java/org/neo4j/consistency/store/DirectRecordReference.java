@@ -20,23 +20,26 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.consistency.report.PendingReferenceCheck;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class DirectRecordReference<RECORD extends AbstractBaseRecord> implements RecordReference<RECORD>
 {
     final RECORD record;
     final RecordAccess records;
+    private final PageCursorTracer cursorTracer;
 
-    public DirectRecordReference( RECORD record, RecordAccess records )
+    public DirectRecordReference( RECORD record, RecordAccess records, PageCursorTracer cursorTracer )
     {
         this.record = record;
         this.records = records;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public void dispatch( PendingReferenceCheck<RECORD> reporter )
     {
-        reporter.checkReference( record, records );
+        reporter.checkReference( record, records, cursorTracer );
     }
 
     public RECORD record()

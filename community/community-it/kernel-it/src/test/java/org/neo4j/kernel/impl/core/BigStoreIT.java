@@ -60,6 +60,7 @@ class BigStoreIT
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
     private static final RelationshipType BIG_TYPE = RelationshipType.withName( "BIG_TYPE" );
+    private static final Label REFERENCE = Label.label( "Reference" );
 
     @Inject
     private TestDirectory testDirectory;
@@ -173,8 +174,6 @@ class BigStoreIT
         }
         assertEquals( count, verified );
     }
-
-    private static final Label REFERENCE = Label.label( "Reference" );
 
     private static Node createReferenceNode( GraphDatabaseService db )
     {

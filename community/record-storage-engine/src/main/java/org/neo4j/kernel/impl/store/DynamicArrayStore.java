@@ -124,10 +124,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record, PageCursorTracer cursorTracer )
             throws FAILURE
     {
-        processor.processArray( this, record );
+        processor.processArray( this, record, cursorTracer );
     }
 
     public static byte[] encodeFromNumbers( Object array, int offsetBytes )

@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CacheSmallStoresRecordAccessTest
 {
@@ -41,18 +42,18 @@ class CacheSmallStoresRecordAccessTest
         CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null, null );
 
         // when
-        recordAccess.node( 42 );
-        recordAccess.relationship( 2001 );
-        recordAccess.property( 2468 );
-        recordAccess.string( 666 );
-        recordAccess.array( 11 );
+        recordAccess.node( 42, NULL );
+        recordAccess.relationship( 2001, NULL );
+        recordAccess.property( 2468, NULL );
+        recordAccess.string( 666, NULL );
+        recordAccess.array( 11, NULL );
 
         // then
-        verify( delegate ).node( 42 );
-        verify( delegate ).relationship( 2001 );
-        verify( delegate ).property( 2468 );
-        verify( delegate ).string( 666 );
-        verify( delegate ).array( 11 );
+        verify( delegate ).node( 42, NULL );
+        verify( delegate ).relationship( 2001, NULL );
+        verify( delegate ).property( 2468, NULL );
+        verify( delegate ).string( 666, NULL );
+        verify( delegate ).array( 11, NULL );
     }
 
     @Test
@@ -86,15 +87,15 @@ class CacheSmallStoresRecordAccessTest
         } );
 
         // when
-        assertThat( getRecord( recordAccess.propertyKey( 0 ) ) ).isSameAs( propertyKey0 );
-        assertThat( getRecord( recordAccess.propertyKey( 1 ) ) ).isSameAs( propertyKey1 );
-        assertThat( getRecord( recordAccess.propertyKey( 2 ) ) ).isSameAs( propertyKey2 );
-        assertThat( getRecord( recordAccess.relationshipType( 0 ) ) ).isSameAs( relationshipType0 );
-        assertThat( getRecord( recordAccess.relationshipType( 1 ) ) ).isSameAs( relationshipType1 );
-        assertThat( getRecord( recordAccess.relationshipType( 2 ) ) ).isSameAs( relationshipType2 );
-        assertThat( getRecord( recordAccess.label( 0 ) ) ).isSameAs( label0 );
-        assertThat( getRecord( recordAccess.label( 1 ) ) ).isSameAs( label1 );
-        assertThat( getRecord( recordAccess.label( 2 ) ) ).isSameAs( label2 );
+        assertThat( getRecord( recordAccess.propertyKey( 0, NULL ) ) ).isSameAs( propertyKey0 );
+        assertThat( getRecord( recordAccess.propertyKey( 1, NULL ) ) ).isSameAs( propertyKey1 );
+        assertThat( getRecord( recordAccess.propertyKey( 2, NULL ) ) ).isSameAs( propertyKey2 );
+        assertThat( getRecord( recordAccess.relationshipType( 0, NULL ) ) ).isSameAs( relationshipType0 );
+        assertThat( getRecord( recordAccess.relationshipType( 1, NULL ) ) ).isSameAs( relationshipType1 );
+        assertThat( getRecord( recordAccess.relationshipType( 2, NULL ) ) ).isSameAs( relationshipType2 );
+        assertThat( getRecord( recordAccess.label( 0, NULL ) ) ).isSameAs( label0 );
+        assertThat( getRecord( recordAccess.label( 1, NULL ) ) ).isSameAs( label1 );
+        assertThat( getRecord( recordAccess.label( 2, NULL ) ) ).isSameAs( label2 );
 
         verifyNoInteractions( delegate );
     }

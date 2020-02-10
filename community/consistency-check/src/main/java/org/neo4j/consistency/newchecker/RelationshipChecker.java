@@ -38,6 +38,7 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -48,7 +49,6 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -56,6 +56,8 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
  */
 class RelationshipChecker implements Checker
 {
+    private static final String UNUSED_RELATIONSHIP_CHECKER_TAG = "unusedRelationshipChecker";
+    private static final String RELATIONSHIP_RANGE_CHECKER_TAG = "relationshipRangeChecker";
     private final NeoStores neoStores;
     private final ParallelExecution execution;
     private final ConsistencyReport.Reporter reporter;
@@ -90,13 +92,13 @@ class RelationshipChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         execution.run( getClass().getSimpleName() + "-relationships", execution.partition( neoStores.getRelationshipStore(),
                 ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to ) ) );
         // Let's not report progress for this since it's so much faster than store checks, it's just scanning the cache
         execution.run( getClass().getSimpleName() + "-unusedRelationships", execution.partition( nodeIdRange,
-                ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to ) ) );
+                ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to, context.pageCacheTracer ) ) );
     }
 
     private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId )
@@ -104,9 +106,10 @@ class RelationshipChecker implements Checker
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
-                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() );
-                SafePropertyChainReader property = new SafePropertyChainReader( context );
-                SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes ) )
+              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG );
+              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
+              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = cacheAccess.client();
@@ -131,7 +134,7 @@ class RelationshipChecker implements Checker
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeDoesNotReferenceBack( node ),
                             ( relationship, node ) -> reporter.forNode( node ).relationshipNotFirstInSourceChain( relationship ),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeHasNoRelationships( node ),
-                            relationship -> reporter.forRelationship( relationship ).illegalSourceNode() );
+                            relationship -> reporter.forRelationship( relationship ).illegalSourceNode(), cursorTracer );
                 }
                 long endNode = relationshipCursor.getSecondNode();
                 boolean endNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( endNode );
@@ -143,25 +146,25 @@ class RelationshipChecker implements Checker
                             ( relationship, node ) -> reporter.forRelationship( relationship ).targetNodeDoesNotReferenceBack( node ),
                             ( relationship, node ) -> reporter.forNode( node ).relationshipNotFirstInTargetChain( relationship ),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).targetNodeHasNoRelationships( node ),
-                            relationship -> reporter.forRelationship( relationship ).illegalTargetNode() );
+                            relationship -> reporter.forRelationship( relationship ).illegalTargetNode(), cursorTracer );
                 }
 
                 if ( firstRound )
                 {
                     if ( startNode >= context.highNodeId )
                     {
-                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( startNode ) );
+                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( startNode, cursorTracer ) );
                     }
 
                     if ( endNode >= context.highNodeId )
                     {
-                        reporter.forRelationship( relationshipCursor ).targetNodeNotInUse( context.recordLoader.node( endNode ) );
+                        reporter.forRelationship( relationshipCursor ).targetNodeNotInUse( context.recordLoader.node( endNode, cursorTracer ) );
                     }
 
                     // Properties
                     typeHolder[0] = relationshipCursor.getType();
                     lightClear( propertyValues );
-                    boolean propertyChainIsOk = property.read( propertyValues, relationshipCursor, reporter::forRelationship );
+                    boolean propertyChainIsOk = property.read( propertyValues, relationshipCursor, reporter::forRelationship, cursorTracer );
                     if ( propertyChainIsOk )
                     {
                         schemaComplianceChecker.checkContainsMandatoryProperties( relationshipCursor, typeHolder, propertyValues, reporter::forRelationship );
@@ -174,7 +177,7 @@ class RelationshipChecker implements Checker
                     // Type and count
                     checkValidToken( relationshipCursor, relationshipCursor.type(), tokenHolders.relationshipTypeTokens(),
                             neoStores.getRelationshipTypeTokenStore(), ( rel, token ) -> reporter.forRelationship( rel ).illegalRelationshipType(),
-                            ( rel, token ) -> reporter.forRelationship( rel ).relationshipTypeNotInUse( token ) );
+                            ( rel, token ) -> reporter.forRelationship( rel ).relationshipTypeNotInUse( token ), cursorTracer );
                     observedCounts.incrementRelationshipTypeCounts( counter, relationshipCursor );
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
@@ -188,12 +191,12 @@ class RelationshipChecker implements Checker
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeDoesNotReferenceBack,
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeNotFirstInChain,
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeHasNoChain,
-            Consumer<RelationshipRecord> reportIllegalNode )
+            Consumer<RelationshipRecord> reportIllegalNode, PageCursorTracer cursorTracer )
     {
         // Check validity of node reference
         if ( node < 0 )
         {
-            reportIllegalNode.accept( recordLoader.relationship( relationshipCursor.getId() ) );
+            reportIllegalNode.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ) );
             return;
         }
 
@@ -201,7 +204,7 @@ class RelationshipChecker implements Checker
         boolean nodeInUse = client.getBooleanFromCache( node, CacheSlots.NodeLink.SLOT_IN_USE );
         if ( !nodeInUse )
         {
-            reportNodeNotInUse.accept( recordLoader.relationship( relationshipCursor.getId() ), recordLoader.node( node ) );
+            reportNodeNotInUse.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), recordLoader.node( node, cursorTracer ) );
             return;
         }
 
@@ -209,7 +212,7 @@ class RelationshipChecker implements Checker
         long nodeNextRel = client.getFromCache( node, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID );
         if ( NULL_REFERENCE.is( nodeNextRel ) )
         {
-            reportNodeHasNoChain.accept( recordLoader.relationship( relationshipCursor.getId() ), recordLoader.node( node ) );
+            reportNodeHasNoChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), recordLoader.node( node, cursorTracer ) );
             return;
         }
 
@@ -222,68 +225,73 @@ class RelationshipChecker implements Checker
                 if ( nodeNextRel != relationshipCursor.getId() )
                 {
                     // Report RELATIONSHIP -> NODE inconsistency
-                    reportNodeDoesNotReferenceBack.accept( recordLoader.relationship( relationshipCursor.getId() ), recordLoader.node( node ) );
+                    reportNodeDoesNotReferenceBack.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
+                            recordLoader.node( node, cursorTracer ) );
                     // Before marking this node as fully checked we should also check and report any NODE -> RELATIONSHIP inconsistency
-                    RelationshipRecord relationshipThatNodeActuallyReferences = recordLoader.relationship( nodeNextRel );
+                    RelationshipRecord relationshipThatNodeActuallyReferences = recordLoader.relationship( nodeNextRel, cursorTracer );
                     if ( !relationshipThatNodeActuallyReferences.inUse() )
                     {
-                        reporter.forNode( recordLoader.node( node ) ).relationshipNotInUse( relationshipThatNodeActuallyReferences );
+                        reporter.forNode( recordLoader.node( node, cursorTracer ) ).relationshipNotInUse( relationshipThatNodeActuallyReferences );
                     }
                     else if ( relationshipThatNodeActuallyReferences.getFirstNode() != node && relationshipThatNodeActuallyReferences.getSecondNode() != node )
                     {
-                        reporter.forNode( recordLoader.node( node ) ).relationshipForOtherNode( relationshipThatNodeActuallyReferences );
+                        reporter.forNode( recordLoader.node( node,cursorTracer ) ).relationshipForOtherNode( relationshipThatNodeActuallyReferences );
                     }
                 }
                 client.putToCacheSingle( node, CacheSlots.NodeLink.SLOT_CHECK_MARK, 0 );
             }
             if ( !firstInChain && nodeNextRel == relationshipCursor.getId() )
             {
-                reportNodeNotFirstInChain.accept( recordLoader.relationship( relationshipCursor.getId() ), recordLoader.node( node ) );
+                reportNodeNotFirstInChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
+                        recordLoader.node( node, cursorTracer ) );
             }
         }
     }
 
-    private void checkNodesReferencingUnusedRelationships( long fromNodeId, long toNodeId )
+    private void checkNodesReferencingUnusedRelationships( long fromNodeId, long toNodeId, PageCacheTracer pageCacheTracer )
     {
         // Do this after we've done node.nextRel caching and checking of those. Checking also clears those values, so simply
         // go through the cache and see if there are any relationship ids left and report them
         CacheAccess.Client client = cacheAccess.client();
-        for ( long id = fromNodeId; id < toNodeId && !context.isCancelled(); id++ )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( UNUSED_RELATIONSHIP_CHECKER_TAG ) )
         {
-            // Only check if we haven't come across this sparse node while checking relationships
-            boolean nodeInUse = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_IN_USE );
-            if ( nodeInUse )
+            for ( long id = fromNodeId; id < toNodeId && !context.isCancelled(); id++ )
             {
-                boolean needsChecking = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_CHECK_MARK );
-                if ( needsChecking )
+                // Only check if we haven't come across this sparse node while checking relationships
+                boolean nodeInUse = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_IN_USE );
+                if ( nodeInUse )
                 {
-                    long nodeNextRel = client.getFromCache( id, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID );
-                    boolean nodeIsDense = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_IS_DENSE );
-                    if ( !NULL_REFERENCE.is( nodeNextRel ) )
+                    boolean needsChecking = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_CHECK_MARK );
+                    if ( needsChecking )
                     {
-                        if ( !nodeIsDense )
+                        long nodeNextRel = client.getFromCache( id, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID );
+                        boolean nodeIsDense = client.getBooleanFromCache( id, CacheSlots.NodeLink.SLOT_IS_DENSE );
+                        if ( !NULL_REFERENCE.is( nodeNextRel ) )
                         {
-                            RelationshipRecord relationship = recordLoader.relationship( nodeNextRel );
-                            NodeRecord node = recordLoader.node( id );
-                            if ( !relationship.inUse() )
+                            if ( !nodeIsDense )
                             {
-                                reporter.forNode( node ).relationshipNotInUse( relationship );
+                                RelationshipRecord relationship = recordLoader.relationship( nodeNextRel, cursorTracer );
+                                NodeRecord node = recordLoader.node( id, cursorTracer );
+                                if ( !relationship.inUse() )
+                                {
+                                    reporter.forNode( node ).relationshipNotInUse( relationship );
+                                }
+                                else
+                                {
+                                    reporter.forNode( node ).relationshipForOtherNode( relationship );
+                                }
                             }
                             else
                             {
-                                reporter.forNode( node ).relationshipForOtherNode( relationship );
-                            }
-                        }
-                        else
-                        {
-                            RelationshipGroupRecord group = recordLoader.relationshipGroup( nodeNextRel );
-                            if ( !group.inUse() )
-                            {
-                                reporter.forNode( recordLoader.node( id ) ).relationshipGroupNotInUse( group );
-                            }
-                            else
-                            {
-                                reporter.forNode( recordLoader.node( id ) ).relationshipGroupHasOtherOwner( group );
+                                RelationshipGroupRecord group = recordLoader.relationshipGroup( nodeNextRel, cursorTracer );
+                                if ( !group.inUse() )
+                                {
+                                    reporter.forNode( recordLoader.node( id, cursorTracer ) ).relationshipGroupNotInUse( group );
+                                }
+                                else
+                                {
+                                    reporter.forNode( recordLoader.node( id, cursorTracer ) ).relationshipGroupHasOtherOwner( group );
+                                }
                             }
                         }
                     }

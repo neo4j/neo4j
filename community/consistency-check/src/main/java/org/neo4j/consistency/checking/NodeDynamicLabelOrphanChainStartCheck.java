@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -39,9 +40,8 @@ public class NodeDynamicLabelOrphanChainStartCheck
         ComparativeRecordChecker<DynamicRecord, DynamicRecord, DynamicLabelConsistencyReport>
 {
 
-    private static final
-    ComparativeRecordChecker<DynamicRecord, NodeRecord, DynamicLabelConsistencyReport> VALID_NODE_RECORD =
-            ( record, nodeRecord, engine, records ) ->
+    private static final ComparativeRecordChecker<DynamicRecord,NodeRecord,DynamicLabelConsistencyReport> VALID_NODE_RECORD =
+            ( record, nodeRecord, engine, records, cursorTracer ) ->
             {
                 if ( ! nodeRecord.inUse() )
                 {
@@ -67,7 +67,7 @@ public class NodeDynamicLabelOrphanChainStartCheck
     @Override
     public void check( DynamicRecord record,
                        CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
-                       RecordAccess records )
+                       RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( record.inUse() && record.isStartRecord() )
         {
@@ -80,15 +80,14 @@ public class NodeDynamicLabelOrphanChainStartCheck
             else
             {
                 // look at owning node record to verify consistency
-                engine.comparativeCheck( records.node( ownerId ), VALID_NODE_RECORD );
+                engine.comparativeCheck( records.node( ownerId, cursorTracer ), VALID_NODE_RECORD );
             }
         }
     }
 
     @Override
-    public void checkReference( DynamicRecord record, DynamicRecord record2,
-                                CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
-                                RecordAccess records )
+    public void checkReference( DynamicRecord record, DynamicRecord record2, CheckerEngine<DynamicRecord,DynamicLabelConsistencyReport> engine,
+            RecordAccess records, PageCursorTracer cursorTracer )
     {
     }
 }

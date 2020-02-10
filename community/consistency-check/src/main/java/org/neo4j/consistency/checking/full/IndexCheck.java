@@ -28,6 +28,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>
 {
@@ -59,20 +60,21 @@ public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.Inde
     }
 
     @Override
-    public void check( IndexEntry record, CheckerEngine<IndexEntry,ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
+    public void check( IndexEntry record, CheckerEngine<IndexEntry,ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records,
+            PageCursorTracer cursorTracer )
     {
         long id = record.getId();
         switch ( entityType )
         {
         case NODE:
-            engine.comparativeCheck( records.node( id ), nodeChecker );
+            engine.comparativeCheck( records.node( id, cursorTracer ), nodeChecker );
             break;
         case RELATIONSHIP:
             if ( indexRule.isUnique() )
             {
                 engine.report().relationshipConstraintIndex();
             }
-            engine.comparativeCheck( records.relationship( id ), relationshipChecker );
+            engine.comparativeCheck( records.relationship( id, cursorTracer ), relationshipChecker );
             break;
         default:
             throw new IllegalStateException( "Don't know how to check index entry of entity type " + entityType );

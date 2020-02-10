@@ -26,6 +26,7 @@ import org.neo4j.consistency.checking.full.CheckStage;
 import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.checking.full.StoreProcessor;
 import org.neo4j.consistency.statistics.Counts;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -37,7 +38,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CheckNextRelTaskTest
 {
@@ -59,7 +59,8 @@ class CheckNextRelTaskTest
         storeAccess.initialize();
 
         DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( highNodeId ), Counts.NONE, 1 );
-        CacheTask.CheckNextRel cacheTask = new CacheTask.CheckNextRel( Stage.SEQUENTIAL_FORWARD, cacheAccess, storeAccess, storeProcessor );
+        CacheTask.CheckNextRel cacheTask = new CacheTask.CheckNextRel( Stage.SEQUENTIAL_FORWARD, cacheAccess, storeAccess, storeProcessor,
+                PageCacheTracer.NULL );
 
         cacheAccess.setCacheSlotSizes( CheckStage.Stage5_Check_NextRel.getCacheSlotSizes() );
         cacheTask.processCache();

@@ -323,6 +323,6 @@ class NodeCheckerTest extends CheckerTestBase
     private void check() throws Exception
     {
         NodeChecker checker = new NodeChecker( context(), noMandatoryProperties );
-        checker.check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
+        checker.check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }

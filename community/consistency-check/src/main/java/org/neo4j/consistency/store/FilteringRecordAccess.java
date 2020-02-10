@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.internal.helpers.collection.FilteringIterator;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -55,99 +56,99 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
     }
 
     @Override
-    public RecordReference<NodeRecord> node( long id )
+    public RecordReference<NodeRecord> node( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.NODES ) )
         {
-            return super.node( id );
+            return super.node( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<RelationshipRecord> relationship( long id )
+    public RecordReference<RelationshipRecord> relationship( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.RELATIONSHIPS ) )
         {
-            return super.relationship( id );
+            return super.relationship( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.RELATIONSHIP_GROUPS ) )
         {
-            return super.relationshipGroup( id );
+            return super.relationshipGroup( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<PropertyRecord> property( long id )
+    public RecordReference<PropertyRecord> property( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.PROPERTIES ) )
         {
-            return super.property( id );
+            return super.property( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+    public Iterator<PropertyRecord> rawPropertyChain( long firstId, PageCursorTracer cursorTracer )
     {
-        return new FilteringIterator<>( super.rawPropertyChain( firstId ),
+        return new FilteringIterator<>( super.rawPropertyChain( firstId, cursorTracer ),
                 item -> shouldCheck( item.getId() /*for some reason we don't care about the id*/,
                         MultiPassStore.PROPERTIES ) );
     }
 
     @Override
-    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.PROPERTY_KEYS ) )
         {
-            return super.propertyKey( id );
+            return super.propertyKey( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<DynamicRecord> string( long id )
+    public RecordReference<DynamicRecord> string( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.STRINGS ) )
         {
-            return super.string( id );
+            return super.string( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<DynamicRecord> array( long id )
+    public RecordReference<DynamicRecord> array( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.ARRAYS ) )
         {
-            return super.array( id );
+            return super.array( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<LabelTokenRecord> label( int id )
+    public RecordReference<LabelTokenRecord> label( int id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.LABELS ) )
         {
-            return super.label( id );
+            return super.label( id, cursorTracer );
         }
         return skipReference();
     }
 
     @Override
-    public RecordReference<DynamicRecord> nodeLabels( long id )
+    public RecordReference<DynamicRecord> nodeLabels( long id, PageCursorTracer cursorTracer )
     {
         if ( shouldCheck( id, MultiPassStore.LABELS ) )
         {
-            return super.nodeLabels( id );
+            return super.nodeLabels( id, cursorTracer );
         }
         return skipReference();
     }

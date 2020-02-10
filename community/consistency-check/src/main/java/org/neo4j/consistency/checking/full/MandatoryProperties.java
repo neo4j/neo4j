@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.consistency.RecordType;
@@ -38,6 +39,8 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -45,62 +48,39 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class MandatoryProperties
 {
+    private static final String MANDATORY_PROPERTIES_CHECKER_TAG = "mandatoryPropertiesChecker";
     private final MutableIntObjectMap<int[]> nodes = new IntObjectHashMap<>();
     private final MutableIntObjectMap<int[]> relationships = new IntObjectHashMap<>();
     private final StoreAccess storeAccess;
 
-    public MandatoryProperties( StoreAccess storeAccess )
+    public MandatoryProperties( StoreAccess storeAccess, PageCacheTracer pageCacheTracer )
     {
         this.storeAccess = storeAccess;
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores(), TRACER_SUPPLIER.get() );
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
-        for ( ConstraintDescriptor constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( MANDATORY_PROPERTIES_CHECKER_TAG ) )
         {
-            if ( constraint.enforcesPropertyExistence() )
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores(), cursorTracer );
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
+            for ( ConstraintDescriptor constraint : constraintsIgnoringMalformed( schemaRuleAccess, cursorTracer ) )
             {
-                constraint.schema().processWith( constraintRecorder );
+                if ( constraint.enforcesPropertyExistence() )
+                {
+                    SchemaProcessor constraintRecorder = new MandatoryPropertiesSchemaProcessor();
+                    constraint.schema().processWith( constraintRecorder );
+                }
             }
         }
     }
 
-    private final SchemaProcessor constraintRecorder = new SchemaProcessor()
-    {
-        @Override
-        public void processSpecific( LabelSchemaDescriptor schema )
-        {
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                recordConstraint( schema.getLabelId(), propertyId, nodes );
-            }
-        }
-
-        @Override
-        public void processSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                recordConstraint( schema.getRelTypeId(), propertyId, relationships );
-            }
-        }
-
-        @Override
-        public void processSpecific( SchemaDescriptor schema )
-        {
-            throw new IllegalStateException( "General SchemaDescriptors cannot support constraints" );
-        }
-    };
-
-    public Function<NodeRecord,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> forNodes(
+    public BiFunction<NodeRecord,PageCursorTracer,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> forNodes(
             final ConsistencyReporter reporter )
     {
-        return node ->
+        return ( node, cursorTracer ) ->
         {
             MutableIntSet keys = null;
-            for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
+            for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore(), cursorTracer ) )
             {
                 // labelId _is_ actually an int. A technical detail in the store format has these come in a long[]
                 int[] propertyKeys = nodes.get( safeCastLongToInt( labelId ) );
@@ -117,8 +97,7 @@ public class MandatoryProperties
                 }
             }
             return keys != null
-                    ? new RealCheck<>( node, ConsistencyReport.NodeConsistencyReport.class, reporter,
-                            RecordType.NODE, keys )
+                    ? new RealCheck<>( node, ConsistencyReport.NodeConsistencyReport.class, reporter, RecordType.NODE, keys )
                     : MandatoryProperties.noCheck();
         };
     }
@@ -143,9 +122,9 @@ public class MandatoryProperties
         };
     }
 
-    private Iterable<ConstraintDescriptor> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage )
+    private Iterable<ConstraintDescriptor> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage, PageCursorTracer cursorTracer )
     {
-        return () -> schemaStorage.constraintsGetAllIgnoreMalformed( TRACER_SUPPLIER.get() );
+        return () -> schemaStorage.constraintsGetAllIgnoreMalformed( cursorTracer );
     }
 
     private static void recordConstraint( int labelOrRelType, int propertyKey, MutableIntObjectMap<int[]> storage )
@@ -208,8 +187,7 @@ public class MandatoryProperties
         private final ConsistencyReporter reporter;
         private final RecordType recordType;
 
-        RealCheck( RECORD record, Class<REPORT> reportClass, ConsistencyReporter reporter, RecordType recordType,
-            MutableIntSet mandatoryKeys )
+        RealCheck( RECORD record, Class<REPORT> reportClass, ConsistencyReporter reporter, RecordType recordType, MutableIntSet mandatoryKeys )
         {
             this.record = record;
             this.reportClass = reportClass;
@@ -243,6 +221,33 @@ public class MandatoryProperties
         public String toString()
         {
             return "Mandatory properties: " + mandatoryKeys;
+        }
+    }
+
+    private class MandatoryPropertiesSchemaProcessor implements SchemaProcessor
+    {
+        @Override
+        public void processSpecific( LabelSchemaDescriptor schema )
+        {
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                recordConstraint( schema.getLabelId(), propertyId, nodes );
+            }
+        }
+
+        @Override
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
+        {
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                recordConstraint( schema.getRelTypeId(), propertyId, relationships );
+            }
+        }
+
+        @Override
+        public void processSpecific( SchemaDescriptor schema )
+        {
+            throw new IllegalStateException( "General SchemaDescriptors cannot support constraints" );
         }
     }
 }

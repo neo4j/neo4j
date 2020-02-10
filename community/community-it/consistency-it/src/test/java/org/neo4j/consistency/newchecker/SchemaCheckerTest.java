@@ -575,7 +575,7 @@ class SchemaCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties );
+        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties, PageCursorTracer.NULL );
     }
 
     interface TokenCreator

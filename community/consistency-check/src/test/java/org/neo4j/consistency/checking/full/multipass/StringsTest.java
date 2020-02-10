@@ -24,6 +24,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 class StringsTest extends MultiPassStoreAbstractTest
 {
     @Override
@@ -35,15 +37,15 @@ class StringsTest extends MultiPassStoreAbstractTest
     @Override
     protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
     {
-        return filter.string( id );
+        return filter.string( id, NULL );
     }
 
     @Override
     protected void otherRecords( RecordAccess filter, long id )
     {
-        filter.node( id );
-        filter.relationship( id );
-        filter.property( id );
-        filter.array( id );
+        filter.node( id, NULL );
+        filter.relationship( id, NULL );
+        filter.property( id, NULL );
+        filter.array( id, NULL );
     }
 }

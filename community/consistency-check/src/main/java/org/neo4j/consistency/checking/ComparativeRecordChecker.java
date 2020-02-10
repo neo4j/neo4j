@@ -21,10 +21,11 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public interface ComparativeRecordChecker<RECORD extends AbstractBaseRecord,
         REFERRED extends AbstractBaseRecord, REPORT extends ConsistencyReport>
 {
-    void checkReference( RECORD record, REFERRED referred, CheckerEngine<RECORD,REPORT> engine, RecordAccess records );
+    void checkReference( RECORD record, REFERRED referred, CheckerEngine<RECORD,REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer );
 }

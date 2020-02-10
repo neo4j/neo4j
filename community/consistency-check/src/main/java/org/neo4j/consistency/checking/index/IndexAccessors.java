@@ -37,6 +37,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -45,10 +46,9 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 public class IndexAccessors implements Closeable
 {
+    private static final String CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG = "consistencyIndexAccessorBuilder";
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
@@ -56,56 +56,60 @@ public class IndexAccessors implements Closeable
     public IndexAccessors(
             IndexProviderMap providers,
             NeoStores neoStores,
-            IndexSamplingConfig samplingConfig )
+            IndexSamplingConfig samplingConfig, PageCacheTracer pageCacheTracer )
             throws IOException
     {
-        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/ );
+        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/, pageCacheTracer );
     }
 
     public IndexAccessors(
             IndexProviderMap providers,
             NeoStores neoStores,
             IndexSamplingConfig samplingConfig,
-            ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup )
+            ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup,
+            PageCacheTracer pageCacheTracer )
             throws IOException
     {
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, TRACER_SUPPLIER.get() );
-        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders )
-                .indexesGetAll( TRACER_SUPPLIER.get() );
-        while ( true )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) )
         {
-            try
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorTracer );
+            Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders )
+                    .indexesGetAll( cursorTracer );
+            while ( true )
             {
-                if ( indexes.hasNext() )
+                try
                 {
-                    // we intentionally only check indexes that are online since
-                    // - populating indexes will be rebuilt on next startup
-                    // - failed indexes have to be dropped by the user anyways
-                    IndexDescriptor indexDescriptor = indexes.next();
-                    if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
+                    if ( indexes.hasNext() )
                     {
-                        notOnlineIndexRules.add( indexDescriptor );
-                    }
-                    else
-                    {
-                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, TRACER_SUPPLIER.get() ) )
-                        {
-                            onlineIndexRules.add( indexDescriptor );
-                        }
-                        else
+                        // we intentionally only check indexes that are online since
+                        // - populating indexes will be rebuilt on next startup
+                        // - failed indexes have to be dropped by the user anyways
+                        IndexDescriptor indexDescriptor = indexes.next();
+                        if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
                         {
                             notOnlineIndexRules.add( indexDescriptor );
                         }
+                        else
+                        {
+                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
+                            {
+                                onlineIndexRules.add( indexDescriptor );
+                            }
+                            else
+                            {
+                                notOnlineIndexRules.add( indexDescriptor );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
-                else
+                catch ( Exception e )
                 {
-                    break;
+                    // ignore; inconsistencies of the schema store are specifically handled elsewhere.
                 }
-            }
-            catch ( Exception e )
-            {
-                // ignore; inconsistencies of the schema store are specifically handled elsewhere.
             }
         }
 
@@ -178,7 +182,7 @@ public class IndexAccessors implements Closeable
 
     public class IndexReaders implements AutoCloseable
     {
-        private MutableLongObjectMap<IndexReader> readers = new LongObjectHashMap<>();
+        private final MutableLongObjectMap<IndexReader> readers = new LongObjectHashMap<>();
 
         public IndexReader reader( IndexDescriptor index )
         {

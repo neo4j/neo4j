@@ -25,11 +25,11 @@ import org.neo4j.consistency.checking.full.StoreProcessor;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -37,14 +37,18 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  */
 public abstract class CacheTask extends ConsistencyCheckerTask
 {
+    private static final String CACHE_PROCESSOR_TAG = "consistencyCacheProcessor";
+
     protected final Stage stage;
     protected final CacheAccess cacheAccess;
+    protected final PageCacheTracer pageCacheTracer;
 
-    public CacheTask( Stage stage, CacheAccess cacheAccess )
+    public CacheTask( Stage stage, CacheAccess cacheAccess, PageCacheTracer pageCacheTracer )
     {
         super( "CacheTask-" + stage, Statistics.NONE, 1 );
         this.stage = stage;
         this.cacheAccess = cacheAccess;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -63,9 +67,9 @@ public abstract class CacheTask extends ConsistencyCheckerTask
     {
         private final ResourceIterable<NodeRecord> nodes;
 
-        public CacheNextRel( Stage stage, CacheAccess cacheAccess, ResourceIterable<NodeRecord> nodes )
+        public CacheNextRel( Stage stage, CacheAccess cacheAccess, ResourceIterable<NodeRecord> nodes, PageCacheTracer pageCacheTracer )
         {
-            super( stage, cacheAccess );
+            super( stage, cacheAccess, pageCacheTracer );
             this.nodes = nodes;
         }
 
@@ -96,9 +100,9 @@ public abstract class CacheTask extends ConsistencyCheckerTask
         private final StoreProcessor storeProcessor;
 
         public CheckNextRel( Stage stage, CacheAccess cacheAccess, StoreAccess storeAccess,
-                StoreProcessor storeProcessor )
+                StoreProcessor storeProcessor, PageCacheTracer pageCacheTracer )
         {
-            super( stage, cacheAccess );
+            super( stage, cacheAccess, pageCacheTracer );
             this.storeAccess = storeAccess;
             this.storeProcessor = storeProcessor;
         }
@@ -109,14 +113,17 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             RecordStore<NodeRecord> nodeStore = storeAccess.getNodeStore();
             CacheAccess.Client client = cacheAccess.client();
             long highId = nodeStore.getHighId();
-            for ( long nodeId = 0; nodeId < highId; nodeId++ )
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CACHE_PROCESSOR_TAG ) )
             {
-                if ( client.getFromCache( nodeId, CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET ) == 0 )
+                for ( long nodeId = 0; nodeId < highId; nodeId++ )
                 {
-                    NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE, TRACER_SUPPLIER.get() );
-                    if ( node.inUse() && !node.isDense() )
+                    if ( client.getFromCache( nodeId, CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET ) == 0 )
                     {
-                        storeProcessor.processNode( nodeStore, node );
+                        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE, cursorTracer );
+                        if ( node.inUse() && !node.isDense() )
+                        {
+                            storeProcessor.processNode( nodeStore, node, cursorTracer );
+                        }
                     }
                 }
             }

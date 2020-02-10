@@ -31,6 +31,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class CursorPropertyAccessorTest
@@ -46,7 +47,7 @@ class CursorPropertyAccessorTest
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( nodeCursor, new StubPropertyCursor(), new StubRead() );
 
         // when
-        Value readValue = accessor.getNodePropertyValue( nodeId, propertyKeyId );
+        Value readValue = accessor.getNodePropertyValue( nodeId, propertyKeyId, NULL );
 
         // then
         assertEquals( value, readValue );
@@ -61,7 +62,7 @@ class CursorPropertyAccessorTest
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( nodeCursor, new StubPropertyCursor(), new StubRead() );
 
         // when
-        Value readValue = accessor.getNodePropertyValue( nodeId, 0 );
+        Value readValue = accessor.getNodePropertyValue( nodeId, 0, NULL );
 
         // then
         assertEquals( NO_VALUE, readValue );
@@ -78,6 +79,6 @@ class CursorPropertyAccessorTest
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( nodeCursor, new StubPropertyCursor(), new StubRead() );
 
         // when
-        assertThrows( EntityNotFoundException.class, () -> accessor.getNodePropertyValue( nodeId + 1, propertyKeyId ) );
+        assertThrows( EntityNotFoundException.class, () -> accessor.getNodePropertyValue( nodeId + 1, propertyKeyId, NULL ) );
     }
 }

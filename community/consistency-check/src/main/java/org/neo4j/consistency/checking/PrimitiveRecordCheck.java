@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -32,8 +33,7 @@ public abstract class PrimitiveRecordCheck
         implements OwningRecordCheck<RECORD, REPORT>
 {
     private final RecordField<RECORD, REPORT>[] fields;
-    private final ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT> ownerCheck =
-            ( record, other, engine, records ) ->
+    private final ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT> ownerCheck = ( record, other, engine, records, cursorTracer ) ->
             {
                 if ( record.getId() == other.getId() && record.getClass() == other.getClass() )
                 {
@@ -58,7 +58,7 @@ public abstract class PrimitiveRecordCheck
     }
 
     @Override
-    public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
+    public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !record.inUse() )
         {
@@ -66,7 +66,7 @@ public abstract class PrimitiveRecordCheck
         }
         for ( RecordField<RECORD, REPORT> field : fields )
         {
-            field.checkConsistency( record, engine, records );
+            field.checkConsistency( record, engine, records, cursorTracer );
         }
     }
 

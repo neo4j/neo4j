@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
@@ -57,8 +58,8 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
 
     @Override
     public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor,
-            PropertyKeyTokenRecord record ) throws FAILURE
+            PropertyKeyTokenRecord record, PageCursorTracer cursorTracer ) throws FAILURE
     {
-        processor.processPropertyKeyToken( this, record );
+        processor.processPropertyKeyToken( this, record, cursorTracer );
     }
 }

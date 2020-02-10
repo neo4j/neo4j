@@ -59,7 +59,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.util.FeatureToggles.flag;
 
 /**
@@ -699,16 +698,16 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IdRangeKey> visitor )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IdRangeKey> visitor, PageCursorTracer cursorTracer )
     {
         try
         {
-            return tree.consistencyCheck( visitor, TRACER_SUPPLIER.get() );
+            return tree.consistencyCheck( visitor, cursorTracer );
         }
         catch ( IOException e )
         {

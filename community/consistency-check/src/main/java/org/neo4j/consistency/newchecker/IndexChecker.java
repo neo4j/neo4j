@@ -38,7 +38,6 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -51,11 +50,12 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeGetNodeLabels;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IndexChecker implements Checker
 {
     private static final String INDEX_CHECKER_TAG = "IndexChecker";
+    private static final String CONSISTENCY_INDEX_ENTITY_CHECK_TAG = "consistencyIndexEntityCheck";
+    private static final String CONSISTENCY_INDEX_CACHER_TAG = "consistencyIndexCacher";
     private static final int INDEX_CACHING_PROGRESS_FACTOR = 3;
     static final int NUM_INDEXES_IN_CACHE = 5;
 
@@ -91,7 +91,7 @@ public class IndexChecker implements Checker
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer cacheTracer ) throws Exception
+    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         // While more indexes
         //   Scan through one or more indexes (as sequentially as possible) and cache the node ids + hash of the indexed value in one bit-set for each index
@@ -99,7 +99,7 @@ public class IndexChecker implements Checker
 
         cacheAccess.setCacheSlotSizesAndClear( TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE ); //can hold up to 5 indexes
         List<IndexContext> indexesToCheck = new ArrayList<>();
-        try ( var indexChecker = cacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) )
+        try ( var indexChecker = context.pageCacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) )
         {
             for ( int i = 0; i < indexes.size() && !context.isCancelled(); i++ )
             {
@@ -145,56 +145,59 @@ public class IndexChecker implements Checker
                     int progressPart = 0;
                     ProgressListener localCacheProgress = cacheProgress.threadLocalReporter();
                     var client = cacheAccess.client();
-                    while ( partition.hasNext() && !context.isCancelled() )
+                    try ( var tracer = context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_CACHER_TAG ) )
                     {
-                        long entityId = partition.next();
-                        if ( !nodeIdRange.isWithinRangeExclusiveTo( entityId ) )
+                        while ( partition.hasNext() && !context.isCancelled() )
                         {
-                            if ( firstRange && entityId >= context.highNodeId )
+                            long entityId = partition.next();
+                            if ( !nodeIdRange.isWithinRangeExclusiveTo( entityId ) )
                             {
-                                reporter.forIndexEntry( new IndexEntry( index.descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                        context.recordLoader.node( entityId ) );
-                            }
-                            continue;
-                        }
-
-                        int data = IN_USE_MASK;
-                        if ( index.hasValues )
-                        {
-                            Value[] indexedValues = partition.values();
-                            int checksum = checksum( indexedValues );
-                            assert checksum <= CHECKSUM_MASK;
-                            data |= checksum;
-
-                            // Also take the opportunity to verify uniqueness, if the index is a uniqueness index
-                            if ( index.descriptor.isUnique() )
-                            {
-                                if ( firstValues[slot] == null )
+                                if ( firstRange && entityId >= context.highNodeId )
                                 {
-                                    firstValues[slot] = indexedValues;
-                                    firstEntityIds[slot] = entityId;
+                                    reporter.forIndexEntry( new IndexEntry( index.descriptor, context.tokenNameLookup, entityId ) )
+                                            .nodeNotInUse( context.recordLoader.node( entityId, tracer ) );
                                 }
-                                if ( lastValues[slot] != null )
+                                continue;
+                            }
+
+                            int data = IN_USE_MASK;
+                            if ( index.hasValues )
+                            {
+                                Value[] indexedValues = partition.values();
+                                int checksum = checksum( indexedValues );
+                                assert checksum <= CHECKSUM_MASK;
+                                data |= checksum;
+
+                                // Also take the opportunity to verify uniqueness, if the index is a uniqueness index
+                                if ( index.descriptor.isUnique() )
                                 {
-                                    if ( lastChecksum == checksum )
+                                    if ( firstValues[slot] == null )
                                     {
-                                        if ( Arrays.equals( lastValues[slot], indexedValues ) )
+                                        firstValues[slot] = indexedValues;
+                                        firstEntityIds[slot] = entityId;
+                                    }
+                                    if ( lastValues[slot] != null )
+                                    {
+                                        if ( lastChecksum == checksum )
                                         {
-                                            reporter.forNode( context.recordLoader.node( entityId ) ).uniqueIndexNotUnique( index.descriptor, indexedValues,
-                                                    lastEntityIds[slot] );
+                                            if ( Arrays.equals( lastValues[slot], indexedValues ) )
+                                            {
+                                                reporter.forNode( context.recordLoader.node( entityId, tracer ) )
+                                                        .uniqueIndexNotUnique( index.descriptor, indexedValues, lastEntityIds[slot] );
+                                            }
                                         }
                                     }
+                                    lastValues[slot] = indexedValues;
+                                    lastChecksum = checksum;
+                                    lastEntityIds[slot] = entityId;
                                 }
-                                lastValues[slot] = indexedValues;
-                                lastChecksum = checksum;
-                                lastEntityIds[slot] = entityId;
                             }
-                        }
-                        client.putToCacheSingle( entityId, index.cacheSlotOffset, data );
-                        if ( ++progressPart == INDEX_CACHING_PROGRESS_FACTOR )
-                        {
-                            localCacheProgress.add( 1 );
-                            progressPart = 0;
+                            client.putToCacheSingle( entityId, index.cacheSlotOffset, data );
+                            if ( ++progressPart == INDEX_CACHING_PROGRESS_FACTOR )
+                            {
+                                localCacheProgress.add( 1 );
+                                progressPart = 0;
+                            }
                         }
                     }
                     localCacheProgress.done();
@@ -215,7 +218,8 @@ public class IndexChecker implements Checker
                     {
                         long leftEntityId = lastEntityIds[i];
                         long rightEntityId = firstEntityIds[i + 1];
-                        reporter.forNode( context.recordLoader.node( leftEntityId ) ).uniqueIndexNotUnique( index.descriptor, left, rightEntityId );
+                        reporter.forNode( context.recordLoader.node( leftEntityId, cursorTracer ) ).uniqueIndexNotUnique( index.descriptor, left,
+                                rightEntityId );
                     }
                 }
             }
@@ -238,9 +242,10 @@ public class IndexChecker implements Checker
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-                RecordNodeCursor nodeCursor = reader.allocateNodeCursor( TRACER_SUPPLIER.get() );
-                RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore() );
-                SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext ) )
+              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG );
+              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
+              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
+              SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext, cursorTracer ) )
         {
             ProgressListener localScanProgress = scanProgress.threadLocalReporter();
             IntObjectHashMap<Value> allValues = new IntObjectHashMap<>();
@@ -251,9 +256,10 @@ public class IndexChecker implements Checker
                 nodeCursor.single( entityId );
                 if ( nodeCursor.next() )
                 {
-                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader );
+                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorTracer );
                     lightClear( allValues );
-                    boolean propertyChainRead = entityTokens != null && propertyReader.read( allValues, nodeCursor, noReportingContext.reporter::forNode );
+                    boolean propertyChainRead =
+                            entityTokens != null && propertyReader.read( allValues, nodeCursor, noReportingContext.reporter::forNode, cursorTracer );
                     if ( propertyChainRead )
                     {
                         for ( int i = 0; i < numberOfIndexes; i++ )
@@ -286,7 +292,7 @@ public class IndexChecker implements Checker
                                 if ( nodeIsInIndex )
                                 {
                                     reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                            context.recordLoader.node( entityId ) );
+                                            context.recordLoader.node( entityId, cursorTracer ) );
                                 }
                             }
                         }
@@ -301,7 +307,7 @@ public class IndexChecker implements Checker
                         if ( isInIndex )
                         {
                             reporter.forIndexEntry( new IndexEntry( indexes.get( i ).descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                    context.recordLoader.node( entityId ) );
+                                    context.recordLoader.node( entityId, cursorTracer ) );
                         }
                     }
                 }

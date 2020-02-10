@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -52,7 +53,7 @@ class CursorPropertyAccessor implements NodePropertyAccessor, AutoCloseable
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer ) throws EntityNotFoundException
     {
         read.singleNode( nodeId, nodeCursor );
         if ( !nodeCursor.next() )

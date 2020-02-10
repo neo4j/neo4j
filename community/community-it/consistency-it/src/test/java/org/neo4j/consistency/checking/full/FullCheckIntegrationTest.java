@@ -79,6 +79,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -2283,7 +2284,7 @@ public class FullCheckIntegrationTest
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true, true );
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
-        return checker.execute( pageCache, stores, counts, FormattedLog.toOutputStream( System.out ) );
+        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, FormattedLog.toOutputStream( System.out ) );
     }
 
     protected NodeBasedMemoryLimiter.Factory memoryLimit()

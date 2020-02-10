@@ -182,10 +182,10 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record, PageCursorTracer cursorTracer )
             throws FAILURE
     {
-        processor.processProperty( this, record );
+        processor.processProperty( this, record, cursorTracer );
     }
 
     public DynamicStringStore getStringStore()

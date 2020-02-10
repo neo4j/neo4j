@@ -32,16 +32,16 @@ import org.neo4j.consistency.newchecker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.values.storable.ValueCategory;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Calculates index sizes in parallel and caches the sizes
  */
 class IndexSizes
 {
+    private static final String SIZE_CALCULATOR_TAG = "sizeCalculator";
     private static final double SMALL_INDEX_FACTOR_THRESHOLD = 0.05;
 
     private final ParallelExecution execution;
@@ -49,28 +49,32 @@ class IndexSizes
     private final ConcurrentMap<IndexDescriptor,Long> nodeIndexSizes = new ConcurrentHashMap<>();
     private final ConcurrentMap<IndexDescriptor,Long> relationshipIndexSizes = new ConcurrentHashMap<>();
     private final long highNodeId;
+    private final PageCacheTracer pageCacheTracer;
 
-    IndexSizes( ParallelExecution execution, IndexAccessors indexAccessors, long highNodeId )
+    IndexSizes( ParallelExecution execution, IndexAccessors indexAccessors, long highNodeId, PageCacheTracer pageCacheTracer )
     {
         this.execution = execution;
         this.indexAccessors = indexAccessors;
         this.highNodeId = highNodeId;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     void initialize() throws Exception
     {
-        calculateSizes( execution, indexAccessors, EntityType.NODE, nodeIndexSizes );
-        calculateSizes( execution, indexAccessors, EntityType.RELATIONSHIP, relationshipIndexSizes );
+        calculateSizes( EntityType.NODE, nodeIndexSizes );
+        calculateSizes( EntityType.RELATIONSHIP, relationshipIndexSizes );
     }
 
-    private void calculateSizes( ParallelExecution execution, IndexAccessors indexAccessors, EntityType entityType,
-            ConcurrentMap<IndexDescriptor,Long> indexSizes ) throws Exception
+    private void calculateSizes( EntityType entityType, ConcurrentMap<IndexDescriptor,Long> indexSizes ) throws Exception
     {
         List<IndexDescriptor> indexes = indexAccessors.onlineRules( entityType );
         execution.run( "Estimate index sizes", indexes.stream().map( index -> (ThrowingRunnable) () ->
         {
-            IndexAccessor accessor = indexAccessors.accessorFor( index );
-            indexSizes.put( index, accessor.estimateNumberOfEntries( TRACER_SUPPLIER.get() ) );
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( SIZE_CALCULATOR_TAG ) )
+            {
+                IndexAccessor accessor = indexAccessors.accessorFor( index );
+                indexSizes.put( index, accessor.estimateNumberOfEntries( cursorTracer ) );
+            }
         } ).toArray( ThrowingRunnable[]::new ) );
     }
 

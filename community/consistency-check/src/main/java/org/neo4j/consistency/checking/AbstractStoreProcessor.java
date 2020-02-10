@@ -29,6 +29,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyRep
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -87,76 +88,76 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
 
     protected abstract void checkNode(
             RecordStore<NodeRecord> store, NodeRecord node,
-            RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker );
+            RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkRelationship(
             RecordStore<RelationshipRecord> store, RelationshipRecord rel,
-            RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
+            RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkProperty(
             RecordStore<PropertyRecord> store, PropertyRecord property,
-            RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
+            RecordCheck<PropertyRecord, PropertyConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkRelationshipTypeToken(
             RecordStore<RelationshipTypeTokenRecord> store,
             RelationshipTypeTokenRecord record,
-            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
+            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkLabelToken(
             RecordStore<LabelTokenRecord> store,
             LabelTokenRecord record,
-            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
+            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkPropertyKeyToken(
             RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
             RecordCheck<PropertyKeyTokenRecord,
-                    PropertyKeyTokenConsistencyReport> checker );
+                    PropertyKeyTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkDynamic(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
-            RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker );
+            RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkDynamicLabel(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
-            RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker );
+            RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     protected abstract void checkRelationshipGroup(
             RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
-            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker, PageCursorTracer cursorTracer );
 
     @Override
-    public void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema )
+    public void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema, PageCursorTracer cursorTracer )
     {
         // See StoreProcessor
     }
 
     @Override
-    public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+    public void processNode( RecordStore<NodeRecord> store, NodeRecord node, PageCursorTracer cursorTracer )
     {
         if ( node.isDense() )
         {
-            checkNode( store, node, denseNodeChecker );
+            checkNode( store, node, denseNodeChecker, cursorTracer );
         }
         else
         {
-            checkNode( store, node, sparseNodeChecker );
+            checkNode( store, node, sparseNodeChecker, cursorTracer );
         }
     }
 
     @Override
-    public final void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+    public final void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel, PageCursorTracer cursorTracer )
     {
-        checkRelationship( store, rel, relationshipChecker );
+        checkRelationship( store, rel, relationshipChecker, cursorTracer );
     }
 
     @Override
-    public final void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+    public final void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property, PageCursorTracer cursorTracer )
     {
-        checkProperty( store, property, propertyChecker );
+        checkProperty( store, property, propertyChecker, cursorTracer );
     }
 
     @Override
-    public final void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+    public final void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType, PageCursorTracer cursorTracer )
     {
         RecordType type;
         DynamicStore dereference;
@@ -181,47 +182,47 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
         default:
             throw new IllegalArgumentException( format( "The id type [%s] is not valid for String records.", idType ) );
         }
-        checkDynamic( type, store, string, new DynamicRecordCheck( store, dereference ) );
+        checkDynamic( type, store, string, new DynamicRecordCheck( store, dereference ), cursorTracer );
     }
 
     @Override
-    public final void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+    public final void processArray( RecordStore<DynamicRecord> store, DynamicRecord array, PageCursorTracer cursorTracer )
     {
-        checkDynamic( RecordType.ARRAY_PROPERTY, store, array, new DynamicRecordCheck( store, ARRAY ) );
+        checkDynamic( RecordType.ARRAY_PROPERTY, store, array, new DynamicRecordCheck( store, ARRAY ), cursorTracer );
     }
 
     @Override
-    public final void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array )
+    public final void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array, PageCursorTracer cursorTracer )
     {
-        checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, NODE_LABEL ) );
-        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanChainStartCheck() );
+        checkDynamic( RecordType.NODE_DYNAMIC_LABEL, store, array, new DynamicRecordCheck( store, NODE_LABEL ), cursorTracer );
+        checkDynamicLabel( RecordType.NODE_DYNAMIC_LABEL, store, array, new NodeDynamicLabelOrphanChainStartCheck(), cursorTracer );
     }
 
     @Override
     public final void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
-                                                    RelationshipTypeTokenRecord record )
+                                                    RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer )
     {
-        checkRelationshipTypeToken( store, record, relationshipTypeTokenChecker );
+        checkRelationshipTypeToken( store, record, relationshipTypeTokenChecker, cursorTracer );
     }
 
     @Override
     public final void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store,
-                                               PropertyKeyTokenRecord record )
+                                               PropertyKeyTokenRecord record, PageCursorTracer cursorTracer )
     {
-        checkPropertyKeyToken( store, record, propertyKeyTokenChecker );
+        checkPropertyKeyToken( store, record, propertyKeyTokenChecker, cursorTracer );
     }
 
     @Override
-    public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
+    public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record, PageCursorTracer cursorTracer )
     {
-        checkLabelToken( store, record, labelTokenChecker );
+        checkLabelToken( store, record, labelTokenChecker, cursorTracer );
     }
 
     @Override
-    public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record )
+    public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record, PageCursorTracer cursorTracer )
             throws RuntimeException
     {
-        checkRelationshipGroup( store, record, relationshipGroupChecker );
+        checkRelationshipGroup( store, record, relationshipGroupChecker, cursorTracer );
     }
 
 }

@@ -24,6 +24,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.sort;
 import static org.neo4j.internal.helpers.ArrayUtil.union;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
@@ -84,12 +84,12 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
         NEXT_GROUP
         {
             @Override
-            public void checkConsistency( NodeRecord node, CheckerEngine<NodeRecord, NodeConsistencyReport> engine,
-                    RecordAccess records )
+            public void checkConsistency( NodeRecord node, CheckerEngine<NodeRecord,NodeConsistencyReport> engine, RecordAccess records,
+                    PageCursorTracer cursorTracer )
             {
                 if ( !Record.NO_NEXT_RELATIONSHIP.is( node.getNextRel() ) )
                 {
-                    engine.comparativeCheck( records.relationshipGroup( node.getNextRel() ), this );
+                    engine.comparativeCheck( records.relationshipGroup( node.getNextRel(), cursorTracer ), this );
                 }
             }
 
@@ -100,8 +100,8 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
             }
 
             @Override
-            public void checkReference( NodeRecord record, RelationshipGroupRecord group,
-                    CheckerEngine<NodeRecord, NodeConsistencyReport> engine, RecordAccess records )
+            public void checkReference( NodeRecord record, RelationshipGroupRecord group, CheckerEngine<NodeRecord,NodeConsistencyReport> engine,
+                    RecordAccess records, PageCursorTracer cursorTracer )
             {
                 if ( !group.inUse() )
                 {
@@ -124,20 +124,18 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
         NEXT_REL
         {
             @Override
-            public void checkConsistency( NodeRecord node,
-                                          CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                          RecordAccess records )
+            public void checkConsistency( NodeRecord node, CheckerEngine<NodeRecord,NodeConsistencyReport> engine, RecordAccess records,
+                    PageCursorTracer cursorTracer )
             {
                 if ( !Record.NO_NEXT_RELATIONSHIP.is( node.getNextRel() ) )
                 {
-                    engine.comparativeCheck( records.relationship( node.getNextRel() ), this );
+                    engine.comparativeCheck( records.relationship( node.getNextRel(), cursorTracer ), this );
                 }
             }
 
             @Override
-            public void checkReference( NodeRecord node, RelationshipRecord relationship,
-                                        CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                        RecordAccess records )
+            public void checkReference( NodeRecord node, RelationshipRecord relationship, CheckerEngine<NodeRecord,NodeConsistencyReport> engine,
+                    RecordAccess records, PageCursorTracer cursorTracer )
             {
                 if ( !relationship.inUse() )
                 {
@@ -188,32 +186,31 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
         LABELS
         {
             @Override
-            public void checkConsistency( NodeRecord node,
-                                          CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                          RecordAccess records )
+            public void checkConsistency( NodeRecord node, CheckerEngine<NodeRecord,NodeConsistencyReport> engine, RecordAccess records,
+                    PageCursorTracer cursorTracer )
             {
                 NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
                 if ( nodeLabels instanceof DynamicNodeLabels )
                 {
                     DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
                     long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
-                    RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
+                    RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId, cursorTracer );
                     engine.comparativeCheck( firstRecordReference,
                             new LabelChainWalker<>( new NodeLabelsComparativeRecordChecker() ) );
                 }
                 else
                 {
-                    validateLabelIds( nodeLabels.get( null, TRACER_SUPPLIER.get() ), engine, records );
+                    validateLabelIds( nodeLabels.get( null, cursorTracer ), engine, records, cursorTracer );
                 }
             }
 
             private void validateLabelIds( long[] labelIds,
                                            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                           RecordAccess records )
+                                           RecordAccess records, PageCursorTracer cursorTracer )
             {
                 for ( long labelId : labelIds )
                 {
-                    engine.comparativeCheck( records.label( (int) labelId ), this );
+                    engine.comparativeCheck( records.label( (int) labelId, cursorTracer ), this );
                 }
                 // This first loop, before sorting happens, verifies that labels are ordered like they are supposed to
                 boolean outOfOrder = false;
@@ -239,9 +236,8 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
             }
 
             @Override
-            public void checkReference( NodeRecord node, LabelTokenRecord labelTokenRecord,
-                                        CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                        RecordAccess records )
+            public void checkReference( NodeRecord node, LabelTokenRecord labelTokenRecord, CheckerEngine<NodeRecord,NodeConsistencyReport> engine,
+                    RecordAccess records, PageCursorTracer cursorTracer )
             {
                 if ( !labelTokenRecord.inUse() )
                 {
@@ -274,9 +270,9 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
 
                 @Override
                 public void onWellFormedChain( long[] labelIds,
-                        CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
+                        CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
                 {
-                    validateLabelIds( labelIds, engine, records );
+                    validateLabelIds( labelIds, engine, records, cursorTracer );
                 }
             }
         }

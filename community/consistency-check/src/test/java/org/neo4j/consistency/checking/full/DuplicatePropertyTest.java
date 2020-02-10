@@ -32,8 +32,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class DuplicatePropertyTest
 {
@@ -70,7 +71,7 @@ class DuplicatePropertyTest
         ConsistencyReport.NodeConsistencyReport report = mock( ConsistencyReport.NodeConsistencyReport.class );
         CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> checkEngine = records.engine(
                 master, report );
-        check.checkReference( master, propertyRecord, checkEngine, records );
+        check.checkReference( master, propertyRecord, checkEngine, records, NULL );
 
         // then
         verify( report ).propertyKeyNotUniqueInChain();
@@ -121,7 +122,7 @@ class DuplicatePropertyTest
         ConsistencyReport.RelationshipConsistencyReport report = mock( ConsistencyReport.RelationshipConsistencyReport.class );
         CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checkEngine = records.engine(
                 master, report );
-        check.checkReference( master, firstRecord, checkEngine, records );
+        check.checkReference( master, firstRecord, checkEngine, records, NULL );
         records.checkDeferred();
 
         // then
@@ -173,10 +174,10 @@ class DuplicatePropertyTest
         ConsistencyReport.RelationshipConsistencyReport report = mock( ConsistencyReport.RelationshipConsistencyReport.class );
         CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checkEngine = records.engine(
                 master, report );
-        check.checkReference( master, firstRecord, checkEngine, records );
+        check.checkReference( master, firstRecord, checkEngine, records, NULL );
         records.checkDeferred();
 
         // then
-        verifyZeroInteractions( report );
+        verifyNoInteractions( report );
     }
 }

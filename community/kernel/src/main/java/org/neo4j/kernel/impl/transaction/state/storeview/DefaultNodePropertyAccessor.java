@@ -44,7 +44,7 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer )
     {
         nodeCursor.single( nodeId );
         if ( nodeCursor.next() && nodeCursor.hasProperties() )

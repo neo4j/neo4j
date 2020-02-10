@@ -26,6 +26,7 @@ import java.util.Arrays;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -38,8 +39,8 @@ public class ChainCheck<RECORD extends PrimitiveRecord, REPORT extends Consisten
     private final MutableIntSet keys = new IntHashSet();
 
     @Override
-    public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,
-                                RecordAccess records )
+    public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD,REPORT> engine, RecordAccess records,
+            PageCursorTracer cursorTracer )
     {
         for ( int key : keys( property ) )
         {
@@ -50,7 +51,7 @@ public class ChainCheck<RECORD extends PrimitiveRecord, REPORT extends Consisten
         }
         if ( !Record.NO_NEXT_PROPERTY.is( property.getNextProp() ) )
         {
-            engine.comparativeCheck( records.property( property.getNextProp() ), this );
+            engine.comparativeCheck( records.property( property.getNextProp(), cursorTracer ), this );
         }
     }
 

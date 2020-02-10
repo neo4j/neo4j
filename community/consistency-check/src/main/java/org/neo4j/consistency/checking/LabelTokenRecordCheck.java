@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
@@ -29,9 +30,9 @@ public class LabelTokenRecordCheck
     extends TokenRecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport>
 {
     @Override
-    protected RecordReference<DynamicRecord> name( RecordAccess records, int id )
+    protected RecordReference<DynamicRecord> name( RecordAccess records, int id, PageCursorTracer cursorTracer )
     {
-        return records.labelName( id );
+        return records.labelName( id, cursorTracer );
     }
 
     @Override

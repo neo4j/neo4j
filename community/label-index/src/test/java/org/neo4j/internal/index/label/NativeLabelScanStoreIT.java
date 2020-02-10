@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -46,6 +47,7 @@ import org.neo4j.test.rule.RandomRule;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.fs.FileUtils.blockSize;
@@ -98,6 +100,22 @@ class NativeLabelScanStoreIT
     }
 
     @Test
+    void tracePageCacheAccessOnConsistencyCheck()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        {
+            assertZeroCursor( cursorTracer );
+
+            store.consistencyCheck( noopReporterFactory(), cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
     void tracePageCacheAccessOnNodesWithLabelRead() throws IOException
     {
         try ( var scanWriter = store.newWriter() )
@@ -108,9 +126,7 @@ class NativeLabelScanStoreIT
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNdoesWithLabelRead" ) )
         {
-            assertThat( cursorTracer.pins() ).isZero();
-            assertThat( cursorTracer.unpins() ).isZero();
-            assertThat( cursorTracer.hits() ).isZero();
+            assertZeroCursor( cursorTracer );
 
             var resourceIterator = labelScanReader.nodesWithLabel( 0, cursorTracer );
             while ( resourceIterator.hasNext() )
@@ -135,9 +151,7 @@ class NativeLabelScanStoreIT
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodesWithAnyLabelRead" ) )
         {
-            assertThat( cursorTracer.pins() ).isZero();
-            assertThat( cursorTracer.unpins() ).isZero();
-            assertThat( cursorTracer.hits() ).isZero();
+            assertZeroCursor( cursorTracer );
 
             var resourceIterator = labelScanReader.nodesWithAnyOfLabels( new int[]{0, 1}, cursorTracer );
             while ( resourceIterator.hasNext() )
@@ -151,6 +165,13 @@ class NativeLabelScanStoreIT
         }
     }
 
+    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    {
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.hits() ).isZero();
+    }
+
     @Test
     void tracePageCacheAccessOnNodeLabelScan() throws IOException
     {
@@ -162,9 +183,7 @@ class NativeLabelScanStoreIT
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeLabelScan" ) )
         {
-            assertThat( cursorTracer.pins() ).isZero();
-            assertThat( cursorTracer.unpins() ).isZero();
-            assertThat( cursorTracer.hits() ).isZero();
+            assertZeroCursor( cursorTracer );
 
             labelScanReader.nodeLabelScan( 0, cursorTracer );
 

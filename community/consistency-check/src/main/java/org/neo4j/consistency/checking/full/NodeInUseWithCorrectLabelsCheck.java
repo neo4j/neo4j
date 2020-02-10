@@ -31,6 +31,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Arrays.sort;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class NodeInUseWithCorrectLabelsCheck
         <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.NodeInUseWithCorrectLabelsReport>
@@ -67,8 +67,7 @@ public class NodeInUseWithCorrectLabelsCheck
     }
 
     @Override
-    public void checkReference( RECORD record, NodeRecord nodeRecord,
-                                CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
+    public void checkReference( RECORD record, NodeRecord nodeRecord, CheckerEngine<RECORD,REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( nodeRecord.inUse() )
         {
@@ -77,7 +76,7 @@ public class NodeInUseWithCorrectLabelsCheck
             {
                 DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
                 long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
-                RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
+                RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId, cursorTracer );
                 ExpectedNodeLabelsChecker expectedNodeLabelsChecker = new ExpectedNodeLabelsChecker( nodeRecord );
                 LabelChainWalker<RECORD,REPORT> checker = new LabelChainWalker<>( expectedNodeLabelsChecker );
                 engine.comparativeCheck( firstRecordReference, checker );
@@ -85,7 +84,7 @@ public class NodeInUseWithCorrectLabelsCheck
             }
             else
             {
-                long[] storeLabels = nodeLabels.get( null, TRACER_SUPPLIER.get() );
+                long[] storeLabels = nodeLabels.get( null, cursorTracer );
                 REPORT report = engine.report();
                 validateLabelIds( nodeRecord, storeLabels, report );
             }
@@ -191,7 +190,7 @@ public class NodeInUseWithCorrectLabelsCheck
         }
 
         @Override
-        public void onWellFormedChain( long[] labelIds, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
+        public void onWellFormedChain( long[] labelIds, CheckerEngine<RECORD, REPORT> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             validateLabelIds( nodeRecord, labelIds, engine.report() );
         }

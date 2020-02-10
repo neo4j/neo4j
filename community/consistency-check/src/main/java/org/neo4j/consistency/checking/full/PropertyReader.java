@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -38,7 +39,6 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class PropertyReader implements NodePropertyAccessor
@@ -52,31 +52,18 @@ class PropertyReader implements NodePropertyAccessor
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
     }
 
-    Collection<PropertyRecord> getPropertyRecordChain( long firstPropertyRecordId ) throws CircularPropertyRecordChainException
+    Collection<PropertyRecord> getPropertyRecordChain( long firstPropertyRecordId, PageCursorTracer cursorTracer ) throws CircularPropertyRecordChainException
     {
         List<PropertyRecord> records = new ArrayList<>();
         visitPropertyRecordChain( firstPropertyRecordId, record ->
         {
             records.add( record );
             return false; // please continue
-        } );
+        }, cursorTracer );
         return records;
     }
 
-    List<PropertyBlock> propertyBlocks( Collection<PropertyRecord> records )
-    {
-        List<PropertyBlock> propertyBlocks = new ArrayList<>();
-        for ( PropertyRecord record : records )
-        {
-            for ( PropertyBlock block : record )
-            {
-                propertyBlocks.add( block );
-            }
-        }
-        return propertyBlocks;
-    }
-
-    private boolean visitPropertyRecordChain( long firstPropertyRecordId, Visitor<PropertyRecord,RuntimeException> visitor )
+    private boolean visitPropertyRecordChain( long firstPropertyRecordId, Visitor<PropertyRecord,RuntimeException> visitor, PageCursorTracer cursorTracer )
             throws CircularPropertyRecordChainException
     {
         if ( Record.NO_NEXT_PROPERTY.is( firstPropertyRecordId ) )
@@ -89,7 +76,7 @@ class PropertyReader implements NodePropertyAccessor
         long nextProp = firstPropertyRecordId;
         while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
         {
-            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE, TRACER_SUPPLIER.get() );
+            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE, cursorTracer );
             nextProp = propRecord.getNextProp();
             if ( !Record.NO_NEXT_PROPERTY.is( nextProp ) && !visitedPropertyRecordIds.add( nextProp ) )
             {
@@ -103,21 +90,21 @@ class PropertyReader implements NodePropertyAccessor
         return false;
     }
 
-    public Value propertyValue( PropertyBlock block )
+    public Value propertyValue( PropertyBlock block, PageCursorTracer cursorTracer )
     {
-        return block.getType().value( block, propertyStore, TRACER_SUPPLIER.get() );
+        return block.getType().value( block, propertyStore, cursorTracer );
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer )
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
-        if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE, TRACER_SUPPLIER.get() ).inUse() )
+        if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE, cursorTracer ).inUse() )
         {
-            SpecificValueVisitor visitor = new SpecificValueVisitor( propertyKeyId );
+            SpecificValueVisitor visitor = new SpecificValueVisitor( propertyKeyId, cursorTracer );
             try
             {
-                if ( visitPropertyRecordChain( nodeRecord.getNextProp(), visitor ) )
+                if ( visitPropertyRecordChain( nodeRecord.getNextProp(), visitor, cursorTracer ) )
                 {
                     return visitor.foundPropertyValue;
                 }
@@ -135,11 +122,13 @@ class PropertyReader implements NodePropertyAccessor
     private class SpecificValueVisitor implements Visitor<PropertyRecord,RuntimeException>
     {
         private final int propertyKeyId;
+        private final PageCursorTracer cursorTracer;
         private Value foundPropertyValue;
 
-        SpecificValueVisitor( int propertyKeyId )
+        SpecificValueVisitor( int propertyKeyId, PageCursorTracer cursorTracer )
         {
             this.propertyKeyId = propertyKeyId;
+            this.cursorTracer = cursorTracer;
         }
 
         @Override
@@ -149,7 +138,7 @@ class PropertyReader implements NodePropertyAccessor
             {
                 if ( block.getKeyIndexId() == propertyKeyId )
                 {
-                    foundPropertyValue = propertyValue( block );
+                    foundPropertyValue = propertyValue( block, cursorTracer );
                     return true;
                 }
             }

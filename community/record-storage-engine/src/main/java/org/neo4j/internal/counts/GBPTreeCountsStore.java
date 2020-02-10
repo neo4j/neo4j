@@ -67,7 +67,6 @@ import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -379,9 +378,9 @@ public class GBPTreeCountsStore implements CountsStore
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), TRACER_SUPPLIER.get() );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
     private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<CountsKey> visitor, PageCursorTracer cursorTracer )

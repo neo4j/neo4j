@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -41,41 +42,41 @@ public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
     }
 
     @Override
-    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id, PageCursorTracer cursorTracer )
     {
         if ( id < relationshipTypes.length )
         {
-            return new DirectRecordReference<>( relationshipTypes[id], this );
+            return new DirectRecordReference<>( relationshipTypes[id], this, cursorTracer );
         }
         else
         {
-            return super.relationshipType( id );
+            return super.relationshipType( id, cursorTracer );
         }
     }
 
     @Override
-    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id, PageCursorTracer cursorTracer )
     {
         if ( id < propertyKeys.length )
         {
-            return new DirectRecordReference<>( propertyKeys[id], this );
+            return new DirectRecordReference<>( propertyKeys[id], this, cursorTracer );
         }
         else
         {
-            return super.propertyKey( id );
+            return super.propertyKey( id, cursorTracer );
         }
     }
 
     @Override
-    public RecordReference<LabelTokenRecord> label( int id )
+    public RecordReference<LabelTokenRecord> label( int id, PageCursorTracer cursorTracer )
     {
         if ( id < labels.length )
         {
-            return new DirectRecordReference<>( labels[id], this );
+            return new DirectRecordReference<>( labels[id], this, cursorTracer );
         }
         else
         {
-            return super.label( id );
+            return super.label( id, cursorTracer );
         }
     }
 }

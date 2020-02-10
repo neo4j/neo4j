@@ -43,6 +43,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -68,6 +69,7 @@ import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -138,7 +140,8 @@ abstract class IndexPopulationStressTest
         descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
-        when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
+        when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( PageCursorTracer.class ) ) ).thenThrow(
+                UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
 

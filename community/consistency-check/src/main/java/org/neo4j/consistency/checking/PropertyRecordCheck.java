@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -29,15 +30,13 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 public class PropertyRecordCheck
         implements RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
     @Override
     public void check( PropertyRecord record,
                        CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                       RecordAccess records )
+                       RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !record.inUse() )
         {
@@ -45,17 +44,17 @@ public class PropertyRecordCheck
         }
         for ( PropertyField field : PropertyField.values() )
         {
-            field.checkConsistency( record, engine, records );
+            field.checkConsistency( record, engine, records, cursorTracer );
         }
         for ( PropertyBlock block : record )
         {
-            checkDataBlock( record.getId(), block, engine, records );
+            checkDataBlock( record.getId(), block, engine, records, cursorTracer );
         }
     }
 
     public static void checkDataBlock( long propertyRecordId, PropertyBlock block,
                                  CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                 RecordAccess records )
+                                 RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( block.getKeyIndexId() < 0 )
         {
@@ -63,7 +62,7 @@ public class PropertyRecordCheck
         }
         else
         {
-            engine.comparativeCheck( records.propertyKey( block.getKeyIndexId() ), propertyKey( block ) );
+            engine.comparativeCheck( records.propertyKey( block.getKeyIndexId(), cursorTracer ), propertyKey( block ) );
         }
         PropertyType type = block.forceGetType();
         if ( type == null )
@@ -75,16 +74,16 @@ public class PropertyRecordCheck
             switch ( type )
             {
             case STRING:
-                engine.comparativeCheck( records.string( block.getSingleValueLong() ),
+                engine.comparativeCheck( records.string( block.getSingleValueLong(), cursorTracer ),
                                          DynamicReference.string( block ) );
                 break;
             case ARRAY:
-                engine.comparativeCheck( records.array( block.getSingleValueLong() ), DynamicReference.array( block ) );
+                engine.comparativeCheck( records.array( block.getSingleValueLong(), cursorTracer ), DynamicReference.array( block ) );
                 break;
             default:
                 try
                 {
-                    type.value( block, null, TRACER_SUPPLIER.get() );
+                    type.value( block, null, cursorTracer );
                 }
                 catch ( Exception e )
                 {
@@ -161,28 +160,26 @@ public class PropertyRecordCheck
         public abstract long otherReference( PropertyRecord record );
 
         @Override
-        public void checkConsistency( PropertyRecord record,
-                                      CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                      RecordAccess records )
+        public void checkConsistency( PropertyRecord record, CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine,
+                RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !NONE.is( valueFrom( record ) ) )
             {
                 PropertyRecord prop = records.cacheAccess().client().getPropertyFromCache( valueFrom( record ) );
                 if ( prop == null )
                 {
-                    engine.comparativeCheck( records.property( valueFrom( record ) ), this );
+                    engine.comparativeCheck( records.property( valueFrom( record ), cursorTracer ), this );
                 }
                 else
                 {
-                    engine.comparativeCheck( new DirectRecordReference<>( prop, records ), this );
+                    engine.comparativeCheck( new DirectRecordReference<>( prop, records, cursorTracer ), this );
                 }
             }
         }
 
         @Override
         public void checkReference( PropertyRecord record, PropertyRecord referred,
-                                    CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                    RecordAccess records )
+                CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {
@@ -209,8 +206,7 @@ public class PropertyRecordCheck
         {
             @Override
             public void checkReference( PropertyRecord record, PropertyKeyTokenRecord referred,
-                                        CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine,
-                                        RecordAccess records )
+                    CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
             {
                 if ( !referred.inUse() )
                 {
@@ -274,8 +270,7 @@ public class PropertyRecordCheck
 
         @Override
         public void checkReference( PropertyRecord record, DynamicRecord referred,
-                                    CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                    RecordAccess records )
+                CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             if ( !referred.inUse() )
             {

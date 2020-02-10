@@ -20,6 +20,7 @@
 package org.neo4j.internal.index.label;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,13 +106,13 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     private final Monitors monitors;
 
     /**
-     * {@link PageCache} to {@link PageCache#map(File, int, java.nio.file.OpenOption...)}
+     * {@link PageCache} to {@link PageCache#map(File, int, ImmutableSet)}
      * store file backing this label scan store. Passed to {@link GBPTree}.
      */
     private final PageCache pageCache;
 
     /**
-     * Store file {@link PageCache#map(File, int, java.nio.file.OpenOption...)}.
+     * Store file {@link PageCache#map(File, int, ImmutableSet)}.
      */
     private final File storeFile;
 
@@ -410,12 +411,6 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         return fileSystem.fileExists( storeFile );
     }
 
-    @Override
-    public File getLabelScanStoreFile()
-    {
-        return storeFile;
-    }
-
     /**
      * @return true if instantiated tree needs to be rebuilt.
      */
@@ -538,16 +533,16 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<LabelScanKey> visitor )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<LabelScanKey> visitor, PageCursorTracer cursorTracer )
     {
         try
         {
-            return index.consistencyCheck( visitor, NULL );
+            return index.consistencyCheck( visitor, cursorTracer );
         }
         catch ( IOException e )
         {

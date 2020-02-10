@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -30,7 +31,7 @@ import static org.neo4j.consistency.store.RecordReference.SkippingReference.skip
 
 abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
 {
-    abstract RecordReference<RECORD> record( RecordAccess records );
+    abstract RecordReference<RECORD> record( RecordAccess records, PageCursorTracer cursorTracer );
 
     @Override
     public void checkOrphanage()
@@ -48,9 +49,9 @@ abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
         }
 
         @Override
-        RecordReference<NodeRecord> record( RecordAccess records )
+        RecordReference<NodeRecord> record( RecordAccess records, PageCursorTracer cursorTracer )
         {
-            return records.node( id );
+            return records.node( id, cursorTracer );
         }
     }
 
@@ -64,9 +65,9 @@ abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
         }
 
         @Override
-        RecordReference<RelationshipRecord> record( RecordAccess records )
+        RecordReference<RelationshipRecord> record( RecordAccess records, PageCursorTracer cursorTracer )
         {
-            return records.relationship( id );
+            return records.relationship( id, cursorTracer );
         }
     }
 
@@ -75,7 +76,7 @@ abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
         private PendingReferenceCheck<PrimitiveRecord> reporter;
 
         @Override
-        RecordReference<PrimitiveRecord> record( RecordAccess records )
+        RecordReference<PrimitiveRecord> record( RecordAccess records, PageCursorTracer cursorTracer )
         {
             // Getting the record for this owner means that some other owner replaced it
             // that means that it isn't an orphan, so we skip this orphan check
@@ -95,7 +96,7 @@ abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
             }
             if ( reporter != null )
             {
-                reporter.checkReference( null, null );
+                reporter.checkReference( null, null, null );
             }
         }
 

@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.consistency.checking.DynamicRecordCheckTest.configureDynamicStore;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.NONE;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.array;
@@ -92,8 +92,8 @@ class OwnerCheckTest
                 check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node2, records );
 
         // then
-        verifyZeroInteractions( report1 );
-        verifyZeroInteractions( report2 );
+        verifyNoInteractions( report1 );
+        verifyNoInteractions( report2 );
     }
 
     @Test
@@ -116,8 +116,8 @@ class OwnerCheckTest
                 check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node2, records );
 
         // then
-        verifyZeroInteractions( report1 );
-        verifyZeroInteractions( report2 );
+        verifyNoInteractions( report1 );
+        verifyNoInteractions( report2 );
     }
 
     @Test
@@ -144,8 +144,8 @@ class OwnerCheckTest
                        relationshipChecker, relationship2, records );
 
         // then
-        verifyZeroInteractions( report1 );
-        verifyZeroInteractions( report2 );
+        verifyNoInteractions( report1 );
+        verifyNoInteractions( report2 );
     }
 
     @Test
@@ -168,7 +168,7 @@ class OwnerCheckTest
                 check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node2, records );
 
         // then
-        verifyZeroInteractions( report1 );
+        verifyNoInteractions( report1 );
         verify( report2 ).multipleOwners( node1 );
     }
 
@@ -196,7 +196,7 @@ class OwnerCheckTest
                        relationshipChecker, relationship2, records );
 
         // then
-        verifyZeroInteractions( report1 );
+        verifyNoInteractions( report1 );
         verify( report2 ).multipleOwners( relationship1 );
     }
 
@@ -224,7 +224,7 @@ class OwnerCheckTest
                        relationshipChecker, relationship, records );
 
         // then
-        verifyZeroInteractions( nodeReport );
+        verifyNoInteractions( nodeReport );
         verify( relationshipReport ).multipleOwners( node );
     }
 
@@ -252,7 +252,7 @@ class OwnerCheckTest
                 check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node, records );
 
         // then
-        verifyZeroInteractions( relationshipReport );
+        verifyNoInteractions( relationshipReport );
         verify( nodeReport ).multipleOwners( relationship );
     }
 

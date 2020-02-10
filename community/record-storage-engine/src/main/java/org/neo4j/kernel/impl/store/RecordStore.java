@@ -32,6 +32,7 @@ import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -226,9 +227,10 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      *
      * @param processor {@link Processor} of records.
      * @param record to process.
+     * @param cursorTracer underlying page cache access tracer
      * @throws FAILURE if the processor fails.
      */
-    <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RECORD record ) throws FAILURE;
+    <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RECORD record, PageCursorTracer cursorTracer ) throws FAILURE;
 
     /**
      * @return number of bytes each record in this store occupies. All records in a store is of the same size.
@@ -409,9 +411,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE
+        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record, PageCursorTracer cursorTracer ) throws FAILURE
         {
-            actual.accept( processor, record );
+            actual.accept( processor, record, cursorTracer );
         }
 
         @Override
@@ -484,6 +486,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     @SuppressWarnings( "unchecked" )
     abstract class Processor<FAILURE extends Exception>
     {
+        private static final String RECORD_PROCESSOR_APPLIER_TAG = "recordProcessorApplier";
         // Have it volatile so that it can be stopped from a different thread.
         private volatile boolean shouldStop;
 
@@ -492,35 +495,35 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
             shouldStop = true;
         }
 
-        public abstract void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema ) throws FAILURE;
+        public abstract void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema, PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public abstract void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE;
+        public abstract void processNode( RecordStore<NodeRecord> store, NodeRecord node, PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public abstract void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+        public abstract void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel, PageCursorTracer cursorTracer )
                 throws FAILURE;
 
-        public abstract void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property ) throws
+        public abstract void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property, PageCursorTracer cursorTracer ) throws
                 FAILURE;
 
-        public abstract void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+        public abstract void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType, PageCursorTracer cursorTracer )
                 throws FAILURE;
 
-        public abstract void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE;
+        public abstract void processArray( RecordStore<DynamicRecord> store, DynamicRecord array, PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public abstract void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord labelArray )
+        public abstract void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord labelArray, PageCursorTracer cursorTracer )
                 throws FAILURE;
 
         public abstract void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
-                RelationshipTypeTokenRecord record ) throws FAILURE;
+                RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public abstract void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord
-                record ) throws FAILURE;
+        public abstract void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
+                PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public abstract void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws
+        public abstract void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record, PageCursorTracer cursorTracer ) throws
                 FAILURE;
 
         public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
-                RelationshipGroupRecord record ) throws FAILURE;
+                RelationshipGroupRecord record, PageCursorTracer cursorTracer ) throws FAILURE;
 
         protected <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, R into, PageCursorTracer cursorTracer )
         {
@@ -528,25 +531,26 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
             return into;
         }
 
-        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, PageCursorTracer cursorTracer,
+        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, PageCacheTracer pageCacheTracer,
                 Predicate<? super R>... filters ) throws FAILURE
         {
-            apply( store, ProgressListener.NONE, cursorTracer, filters );
+            apply( store, ProgressListener.NONE, pageCacheTracer, filters );
         }
 
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
-                ProgressListener progressListener, PageCursorTracer cursorTracer,
+                ProgressListener progressListener, PageCacheTracer pageCacheTracer,
                 Predicate<? super R>... filters ) throws FAILURE
         {
-            apply( store, progressListener, cursorTracer, filters );
+            apply( store, progressListener, pageCacheTracer, filters );
         }
 
-        private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener, PageCursorTracer cursorTracer,
+        private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener, PageCacheTracer pageCacheTracer,
                 Predicate<? super R>... filters ) throws FAILURE
         {
-            ResourceIterable<R> iterable = Scanner.scan( store, true, cursorTracer, filters );
+            ResourceIterable<R> iterable = Scanner.scan( store, true, pageCacheTracer, filters );
             long lastReported = -1;
-            try ( ResourceIterator<R> scan = iterable.iterator() )
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( RECORD_PROCESSOR_APPLIER_TAG );
+                  ResourceIterator<R> scan = iterable.iterator() )
             {
                 while ( scan.hasNext() )
                 {
@@ -556,7 +560,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                         break;
                     }
 
-                    store.accept( this, record );
+                    store.accept( this, record, cursorTracer );
                     long diff = record.getId() - lastReported;
                     progressListener.add( diff );
                     lastReported = record.getId();

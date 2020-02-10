@@ -169,9 +169,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory );
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory, cursorTracer );
     }
 
     @Override

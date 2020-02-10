@@ -171,9 +171,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
         {
-            return delegate.consistencyCheck( reporterFactory );
+            return delegate.consistencyCheck( reporterFactory, cursorTracer );
         }
     }
 

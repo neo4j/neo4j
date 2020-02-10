@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.BiConsumer;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -45,7 +46,7 @@ class RecordLoadingTest
         BiConsumer noopReporter = mock( BiConsumer.class );
 
         // when
-        boolean valid = RecordLoading.checkValidToken( entity, 0, tokenHolder, store, noopReporter, noopReporter );
+        boolean valid = RecordLoading.checkValidToken( entity, 0, tokenHolder, store, noopReporter, noopReporter, PageCursorTracer.NULL );
 
         // then
         assertFalse( valid );

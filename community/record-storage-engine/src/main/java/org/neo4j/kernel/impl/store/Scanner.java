@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -38,22 +39,24 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  */
 public class Scanner
 {
+    private static final String RECORD_STORE_SCANNER_TAG = "recordStoreScanner";
+
     private Scanner()
     {
     }
 
     @SafeVarargs
-    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store, PageCursorTracer cursorTracer,
+    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store, PageCacheTracer pageCacheTracer,
             final Predicate<? super R>... filters )
     {
-        return scan( store, true, cursorTracer, filters );
+        return scan( store, true, pageCacheTracer, filters );
     }
 
     @SafeVarargs
     public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
-            final boolean forward, PageCursorTracer cursorTracer, final Predicate<? super R>... filters )
+            final boolean forward, PageCacheTracer pageCacheTracer, final Predicate<? super R>... filters )
     {
-        return () -> new Scan<>( store, forward, cursorTracer, filters );
+        return () -> new Scan<>( store, forward, pageCacheTracer, filters );
     }
 
     private static class Scan<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
@@ -63,11 +66,13 @@ public class Scanner
         private final PageCursor cursor;
         private final R record;
         private final Predicate<? super R>[] filters;
+        private final PageCursorTracer cursorTracer;
 
         @SafeVarargs
-        Scan( RecordStore<R> store, boolean forward, PageCursorTracer cursorTracer, final Predicate<? super R>... filters )
+        Scan( RecordStore<R> store, boolean forward, PageCacheTracer pageCacheTracer, final Predicate<? super R>... filters )
         {
             this.filters = filters;
+            this.cursorTracer = pageCacheTracer.createPageCursorTracer( RECORD_STORE_SCANNER_TAG );
             this.ids = new StoreIdIterator( store, forward, cursorTracer );
             this.store = store;
             this.cursor = store.openPageCursorForReading( 0, cursorTracer );
@@ -107,6 +112,7 @@ public class Scanner
         public void close()
         {
             cursor.close();
+            cursorTracer.close();
         }
     }
 }

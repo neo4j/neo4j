@@ -45,6 +45,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -60,10 +61,10 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIP_GROUPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 import static org.neo4j.consistency.checking.full.QueueDistribution.ROUND_ROBIN;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 class ConsistencyCheckTasks
 {
+    private static final String CONSISTENCY_TOKEN_READER_CHECK_TAG = "consistencyTokenReaderCheeck";
     private final ProgressMonitorFactory.MultiPartBuilder multiPartBuilder;
     private final StoreProcessor defaultProcessor;
     private final StoreAccess nativeStores;
@@ -74,11 +75,11 @@ class ConsistencyCheckTasks
     private final IndexAccessors indexes;
     private final CacheAccess cacheAccess;
     private final int numberOfThreads;
+    private final PageCacheTracer pageCacheTracer;
 
-    ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder,
-            StoreProcessor defaultProcessor, StoreAccess nativeStores, Statistics statistics,
-            CacheAccess cacheAccess, LabelScanStore labelScanStore,
-            IndexAccessors indexes, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
+    ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder, StoreProcessor defaultProcessor, StoreAccess nativeStores,
+            Statistics statistics, CacheAccess cacheAccess, LabelScanStore labelScanStore, IndexAccessors indexes, MultiPassStore.Factory multiPass,
+            ConsistencyReporter reporter, int numberOfThreads, PageCacheTracer pageCacheTracer )
     {
         this.multiPartBuilder = multiPartBuilder;
         this.defaultProcessor = defaultProcessor;
@@ -90,6 +91,7 @@ class ConsistencyCheckTasks
         this.labelScanStore = labelScanStore;
         this.indexes = indexes;
         this.numberOfThreads = numberOfThreads;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes,
@@ -98,7 +100,7 @@ class ConsistencyCheckTasks
         List<ConsistencyCheckerTask> tasks = new ArrayList<>();
         if ( checkGraph )
         {
-            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores );
+            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores, pageCacheTracer );
             StoreProcessor processor =
                     multiPass.processor( CheckStage.Stage1_NS_PropsLabels, PROPERTIES );
             tasks.add( create( CheckStage.Stage1_NS_PropsLabels.name(), nativeStores.getNodeStore(),
@@ -110,7 +112,7 @@ class ConsistencyCheckTasks
                     processor, ROUND_ROBIN ) );
             //NodeStore pass - just cache nextRel and inUse
             tasks.add( new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
-                    Scanner.scan( nativeStores.getNodeStore(), TRACER_SUPPLIER.get() ) ) );
+                    Scanner.scan( nativeStores.getNodeStore(), pageCacheTracer ), pageCacheTracer ) );
             //RelationshipStore pass - check nodes inUse, FirstInFirst, FirstInSecond using cached info
             processor = multiPass.processor( CheckStage.Stage4_RS_NextRel, NODES );
             multiPass.reDecorateRelationship( processor, RelationshipRecordCheck.relationshipRecordCheckBackwardPass(
@@ -120,7 +122,7 @@ class ConsistencyCheckTasks
             //NodeStore pass - just cache nextRel and inUse
             multiPass.reDecorateNode( processor, NodeRecordCheck.toCheckNextRel(), true );
             multiPass.reDecorateNode( processor, NodeRecordCheck.toCheckNextRelationshipGroup(), false );
-            tasks.add( new CacheTask.CheckNextRel( CheckStage.Stage5_Check_NextRel, cacheAccess, nativeStores, processor ) );
+            tasks.add( new CacheTask.CheckNextRel( CheckStage.Stage5_Check_NextRel, cacheAccess, nativeStores, processor, pageCacheTracer ) );
             // source chain
             //RelationshipStore pass - forward scan of source chain using the cache.
             processor = multiPass.processor( CheckStage.Stage6_RS_Forward, RELATIONSHIPS );
@@ -142,11 +144,11 @@ class ConsistencyCheckTasks
 
             PropertyReader propertyReader = new PropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
-                    new IterableStore<>( nativeStores.getNodeStore(), true ),
+                    new IterableStore<>( nativeStores.getNodeStore(), true, pageCacheTracer ),
                     new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
                             propertyReader, cacheAccess, mandatoryProperties.forNodes( reporter ) ),
                     CheckStage.Stage8_PS_Props, ROUND_ROBIN,
-                    new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
+                    new IterableStore<>( nativeStores.getPropertyStore(), true, pageCacheTracer ) ) );
 
             // Checking that relationships are in their expected relationship indexes.
             List<IndexDescriptor> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
@@ -155,11 +157,11 @@ class ConsistencyCheckTasks
             if ( checkIndexes && !relationshipIndexes.isEmpty() )
             {
                 tasks.add( recordScanner( CheckStage.Stage9_RS_Indexes.name(),
-                        new IterableStore<>( nativeStores.getRelationshipStore(), true ),
+                        new IterableStore<>( nativeStores.getRelationshipStore(), true, pageCacheTracer ),
                         new RelationshipIndexProcessor( reporter, indexes, propertyReader, relationshipIndexes ),
                         CheckStage.Stage9_RS_Indexes,
                         ROUND_ROBIN,
-                        new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
+                        new IterableStore<>( nativeStores.getPropertyStore(), true, pageCacheTracer ) ) );
             }
 
             tasks.add( create( "StringStore-Str", nativeStores.getStringStore(),
@@ -172,17 +174,17 @@ class ConsistencyCheckTasks
         // PASS 1: Dynamic record chains
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( nativeStores.getRawNeoStores(), TRACER_SUPPLIER.get() );
+        TokenHolders tokenHolders = readTokens();
         final SchemaRecordCheck schemaCheck =
                 new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore(), tokenHolders ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
-                schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
+                schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN, pageCacheTracer ) );
         // PASS 3: Obligation verification and semantic rule uniqueness
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_obligations", statistics,
                     numberOfThreads, nativeStores.getSchemaStore(), nativeStores,
                 "check_obligations", schemaCheck.forObligationChecking(), multiPartBuilder, cacheAccess, defaultProcessor,
-                ROUND_ROBIN ) );
+                ROUND_ROBIN, pageCacheTracer ) );
         if ( checkGraph )
         {
             tasks.add( create( "RelationshipTypeTokenStore", nativeStores.getRelationshipTypeTokenStore(), ROUND_ROBIN ) );
@@ -209,12 +211,20 @@ class ConsistencyCheckTasks
             for ( IndexDescriptor indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
-                        new IndexIterator( indexes.accessorFor( indexRule ) ),
+                        new IndexIterator( indexes.accessorFor( indexRule ), pageCacheTracer ),
                         new IndexEntryProcessor( filteredReporter, new IndexCheck( indexRule ), indexRule, tokenNameLookup ),
                         Stage.SEQUENTIAL_FORWARD, ROUND_ROBIN ) );
             }
         }
         return tasks;
+    }
+
+    private TokenHolders readTokens()
+    {
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_CHECK_TAG ) )
+        {
+            return StoreTokens.readOnlyTokenHolders( nativeStores.getRawNeoStores(), cursorTracer );
+        }
     }
 
     private <RECORD> RecordScanner<RECORD> recordScanner( String name,
@@ -224,22 +234,21 @@ class ConsistencyCheckTasks
     {
         return stage.isParallel()
                 ? new ParallelRecordScanner<>( name, statistics, numberOfThreads, store, multiPartBuilder, processor,
-                        cacheAccess, distribution, warmupStores )
-                : new SequentialRecordScanner<>( name, statistics, numberOfThreads, store, multiPartBuilder, processor,
-                        warmupStores );
+                        cacheAccess, distribution, pageCacheTracer, warmupStores )
+                : new SequentialRecordScanner<>( name, statistics, numberOfThreads, store, multiPartBuilder, processor, pageCacheTracer, warmupStores );
     }
 
     private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( String name,
             RecordStore<RECORD> input, QueueDistribution distribution )
     {
         return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
-                cacheAccess, defaultProcessor, distribution );
+                cacheAccess, defaultProcessor, distribution, pageCacheTracer );
     }
 
     private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( String name,
             RecordStore<RECORD> input, StoreProcessor processor, QueueDistribution distribution )
     {
         return new StoreProcessorTask<>( name, statistics, numberOfThreads, input, nativeStores, name, multiPartBuilder,
-                cacheAccess, processor, distribution );
+                cacheAccess, processor, distribution, pageCacheTracer );
     }
 }

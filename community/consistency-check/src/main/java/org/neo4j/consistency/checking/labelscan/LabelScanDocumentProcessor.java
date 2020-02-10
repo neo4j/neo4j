@@ -23,6 +23,7 @@ import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class LabelScanDocumentProcessor extends RecordProcessor.Adapter<NodeLabelRange>
 {
@@ -36,8 +37,8 @@ public class LabelScanDocumentProcessor extends RecordProcessor.Adapter<NodeLabe
     }
 
     @Override
-    public void process( NodeLabelRange nodeLabelRange )
+    public void process( NodeLabelRange nodeLabelRange, PageCursorTracer cursorTracer )
     {
-        reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ), labelScanCheck );
+        reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ), labelScanCheck, cursorTracer );
     }
 }

@@ -42,9 +42,12 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.annotations.documented.ReporterFactories;
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.ArrayValue;
@@ -143,6 +146,20 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             ) );
 
         assertThat( query( range( 1, d4, true, d7, true ) ) ).containsExactly( 4L, 5L, 6L, 7L );
+    }
+
+    @Test
+    public void tracePageCacheAccessOnConsistencyCheck()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        {
+            accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.faults() ).isEqualTo( 2 );
+        }
     }
 
     @Test

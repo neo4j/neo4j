@@ -72,7 +72,7 @@ public class SchemaStore35 extends AbstractDynamicStore
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not needed for store migration." );
     }

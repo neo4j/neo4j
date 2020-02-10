@@ -42,6 +42,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -53,7 +54,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consist
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 import static org.neo4j.consistency.newchecker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * A consistency checker for a {@link RecordStorageEngine}, focused on keeping abstractions to a minimum and having clean and understandable
@@ -63,12 +63,16 @@ import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSuppl
  */
 public class RecordStorageConsistencyChecker implements AutoCloseable
 {
+    private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
+    private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
+    private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
     static final int[] DEFAULT_SLOT_SIZES = {ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1, 1};
 
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final CountsStore counts;
+    private final PageCacheTracer cacheTracer;
     private final CacheAccess cacheAccess;
     private final ConsistencyReporter reporter;
     private final CountsState observedCounts;
@@ -78,11 +82,12 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts, LabelScanStore labelScanStore,
             IndexAccessors indexAccessors, InconsistencyReport report, ProgressMonitorFactory progressFactory, Config config, int numberOfThreads,
-            boolean debug, ConsistencyFlags consistencyFlags, NodeBasedMemoryLimiter.Factory memoryLimit )
+            boolean debug, ConsistencyFlags consistencyFlags, NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer )
     {
         this.pageCache = pageCache;
         this.neoStores = neoStores;
         this.counts = counts;
+        this.cacheTracer = cacheTracer;
         int stopCountThreshold = config.get( experimental_consistency_checker_stop_threshold );
         AtomicInteger stopCount = new AtomicInteger( 0 );
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
@@ -99,7 +104,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         // TODO we pass in null RecordAccess here because this checker will only use methods that won't use it.
         //      As long as the old one exists the ConsistencyReporter will be a bit schizofrenic, but its connection to RecordAccess can be removed
         //      when the old checker goes.
-        this.reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), null ), report, monitor );
+        this.reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), null ), report, monitor, cacheTracer );
         this.tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
@@ -113,7 +118,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.observedCounts = new CountsState( neoStores, cacheAccess );
         this.progress = progressFactory.multipleParts( "Consistency check" );
         this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, reporter,
-                cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, debug, consistencyFlags );
+                cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, debug, consistencyFlags );
     }
 
     public void check() throws ConsistencyCheckIncompleteException
@@ -130,7 +135,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             SchemaChecker schemaChecker = new SchemaChecker( context );
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
-            schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties );
+            try ( var cursorTracer = cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) )
+            {
+                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorTracer );
+            }
 
             // Some pieces of check logic are extracted from this main class to reduce the size of this class. Instantiate those here first
             NodeChecker nodeChecker = new NodeChecker( context, mandatoryNodeProperties );
@@ -205,21 +213,25 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     private void checkCounts()
     {
-        if ( counts != CountsStore.nullInstance )
+        if ( counts != CountsStore.NULL_INSTANCE )
         {
             // Report unexpected counts from existing counts store --> counts collected in this consistency check
-            try ( CountsState.CountsChecker checker = observedCounts.checker( reporter ) )
+            try ( CountsState.CountsChecker checker = observedCounts.checker( reporter );
+                  var cursorTracer = cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) )
             {
-                counts.accept( checker, TRACER_SUPPLIER.get() );
+                counts.accept( checker, cursorTracer );
             } // Here when closing we report counts that we've seen, but the counts store doesn't have
         }
     }
 
     private void safeLoadTokens( NeoStores neoStores )
     {
-        tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore() ) );
-        tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore() ) );
-        tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore() ) );
+        try ( var cursorTracer = cacheTracer.createPageCursorTracer( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) )
+        {
+            tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore(), cursorTracer ) );
+            tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore(), cursorTracer ) );
+            tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore(), cursorTracer ) );
+        }
     }
 
     private void cancel( String message )

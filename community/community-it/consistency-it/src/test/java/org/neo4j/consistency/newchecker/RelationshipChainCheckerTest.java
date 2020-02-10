@@ -244,6 +244,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipChainChecker( context( numberOfThreads() ) ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
+        new RelationshipChainChecker( context( numberOfThreads() ) ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }

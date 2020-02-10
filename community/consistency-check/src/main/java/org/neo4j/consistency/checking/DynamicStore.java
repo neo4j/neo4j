@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public enum DynamicStore
@@ -29,49 +30,49 @@ public enum DynamicStore
     STRING( RecordType.STRING_PROPERTY )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.string( block );
+            return records.string( block, cursorTracer );
         }
     },
     ARRAY( RecordType.ARRAY_PROPERTY )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.array( block );
+            return records.array( block, cursorTracer );
         }
     },
     PROPERTY_KEY( RecordType.PROPERTY_KEY_NAME )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.propertyKeyName( (int) block );
+            return records.propertyKeyName( (int) block, cursorTracer );
         }
     },
     RELATIONSHIP_TYPE( RecordType.RELATIONSHIP_TYPE_NAME )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.relationshipTypeName( (int) block );
+            return records.relationshipTypeName( (int) block, cursorTracer );
         }
     },
     LABEL( RecordType.LABEL_NAME )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.labelName( (int) block );
+            return records.labelName( (int) block, cursorTracer );
         }
     },
     NODE_LABEL( RecordType.NODE_DYNAMIC_LABEL )
     {
         @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer )
         {
-            return records.nodeLabels( block );
+            return records.nodeLabels( block, cursorTracer );
         }
     };
 
@@ -82,5 +83,5 @@ public enum DynamicStore
         this.type = type;
     }
 
-    abstract RecordReference<DynamicRecord> lookup( RecordAccess records, long block );
+    abstract RecordReference<DynamicRecord> lookup( RecordAccess records, long block, PageCursorTracer cursorTracer );
 }

@@ -850,7 +850,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, MetaDataRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, MetaDataRecord record, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException();
     }

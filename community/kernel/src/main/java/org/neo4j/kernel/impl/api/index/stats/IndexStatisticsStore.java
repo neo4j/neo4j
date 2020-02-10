@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
 /**
@@ -174,9 +173,9 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), TRACER_SUPPLIER.get() );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
     private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, PageCursorTracer cursorTracer )

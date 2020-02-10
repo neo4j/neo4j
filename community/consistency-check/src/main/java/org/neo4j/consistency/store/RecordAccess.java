@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,37 +36,37 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public interface RecordAccess
 {
-    RecordReference<SchemaRecord> schema( long id );
+    RecordReference<SchemaRecord> schema( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<NodeRecord> node( long id );
+    RecordReference<NodeRecord> node( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<RelationshipRecord> relationship( long id );
+    RecordReference<RelationshipRecord> relationship( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<PropertyRecord> property( long id );
+    RecordReference<PropertyRecord> property( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<RelationshipTypeTokenRecord> relationshipType( int id );
+    RecordReference<RelationshipTypeTokenRecord> relationshipType( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<PropertyKeyTokenRecord> propertyKey( int id );
+    RecordReference<PropertyKeyTokenRecord> propertyKey( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> string( long id );
+    RecordReference<DynamicRecord> string( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> array( long id );
+    RecordReference<DynamicRecord> array( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> relationshipTypeName( int id );
+    RecordReference<DynamicRecord> relationshipTypeName( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> nodeLabels( long id );
+    RecordReference<DynamicRecord> nodeLabels( long id, PageCursorTracer cursorTracer );
 
-    RecordReference<LabelTokenRecord> label( int id );
+    RecordReference<LabelTokenRecord> label( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> labelName( int id );
+    RecordReference<DynamicRecord> labelName( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<DynamicRecord> propertyKeyName( int id );
+    RecordReference<DynamicRecord> propertyKeyName( int id, PageCursorTracer cursorTracer );
 
-    RecordReference<RelationshipGroupRecord> relationshipGroup( long id );
+    RecordReference<RelationshipGroupRecord> relationshipGroup( long id, PageCursorTracer cursorTracer );
 
     // The following methods doesn't belong here, but makes code in the rest of the CC immensely easier
 
-    Iterator<PropertyRecord> rawPropertyChain( long firstId );
+    Iterator<PropertyRecord> rawPropertyChain( long firstId, PageCursorTracer cursorTracer );
 
     boolean shouldCheck( long id, MultiPassStore store );
 

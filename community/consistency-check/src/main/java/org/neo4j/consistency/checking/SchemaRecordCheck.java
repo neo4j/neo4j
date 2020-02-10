@@ -36,12 +36,11 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
@@ -107,7 +106,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     @Override
     public void check( SchemaRecord record,
                        CheckerEngine<SchemaRecord, ConsistencyReport.SchemaConsistencyReport> engine,
-                       RecordAccess records )
+                       RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( record.inUse() )
         {
@@ -115,7 +114,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             SchemaRule rule;
             try
             {
-                rule = ruleAccess.loadSingleSchemaRule( record.getId(), TRACER_SUPPLIER.get() );
+                rule = ruleAccess.loadSingleSchemaRule( record.getId(), cursorTracer );
             }
             catch ( MalformedSchemaRuleException e )
             {
@@ -125,11 +124,11 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
             if ( rule instanceof IndexDescriptor )
             {
-                strategy.checkIndexRule( (IndexDescriptor)rule, record, records, engine );
+                strategy.checkIndexRule( (IndexDescriptor)rule, record, records, engine, cursorTracer );
             }
             else if ( rule instanceof ConstraintDescriptor )
             {
-                strategy.checkConstraintRule( (ConstraintDescriptor) rule, record, records, engine );
+                strategy.checkConstraintRule( (ConstraintDescriptor) rule, record, records, engine, cursorTracer );
             }
             else
             {
@@ -141,10 +140,10 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private interface CheckStrategy
     {
         void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
-                             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
+                             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer );
 
         void checkConstraintRule( ConstraintDescriptor rule, SchemaRecord record,
-                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
+                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer );
 
         void reportMalformedSchemaRule( ConsistencyReport.SchemaConsistencyReport report );
     }
@@ -157,9 +156,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     {
         @Override
         public void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
-                                    CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+                                    CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer )
         {
-            checkSchema( rule, record, records, engine );
+            checkSchema( rule, record, records, engine, cursorTracer );
 
             if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
             {
@@ -173,9 +172,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
         @Override
         public void checkConstraintRule( ConstraintDescriptor constraint, SchemaRecord record,
-                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer )
         {
-            checkSchema( constraint, record, records, engine );
+            checkSchema( constraint, record, records, engine, cursorTracer );
 
             if ( constraint.isIndexBackedConstraint() )
             {
@@ -203,7 +202,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     {
         @Override
         public void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
-                                    CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+                                    CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer )
         {
             if ( rule.isUnique() )
             {
@@ -238,7 +237,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
         @Override
         public void checkConstraintRule( ConstraintDescriptor constraint, SchemaRecord record,
-                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+                RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer )
         {
             if ( constraint.isIndexBackedConstraint() )
             {
@@ -265,9 +264,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     }
 
     private void checkSchema( SchemaRule rule, SchemaRecord record,
-            RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+            RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, PageCursorTracer cursorTracer )
     {
-        rule.schema().processWith( new CheckSchema( engine, records ) );
+        rule.schema().processWith( new CheckSchema( engine, records, cursorTracer ) );
         checkNamesAndDuplicates( rule, record, engine );
     }
 
@@ -275,26 +274,27 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     {
         private final CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine;
         private final RecordAccess records;
+        private final PageCursorTracer cursorTracer;
 
-        CheckSchema( CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine,
-                RecordAccess records )
+        CheckSchema( CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
         {
             this.engine = engine;
             this.records = records;
+            this.cursorTracer = cursorTracer;
         }
 
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
         {
-            engine.comparativeCheck( records.label( schema.getLabelId() ), VALID_LABEL );
-            checkProperties( schema.getPropertyIds() );
+            engine.comparativeCheck( records.label( schema.getLabelId(), cursorTracer ), VALID_LABEL );
+            checkProperties( schema.getPropertyIds(), cursorTracer );
         }
 
         @Override
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
-            engine.comparativeCheck( records.relationshipType( schema.getRelTypeId() ), VALID_RELATIONSHIP_TYPE );
-            checkProperties( schema.getPropertyIds() );
+            engine.comparativeCheck( records.relationshipType( schema.getRelTypeId(), cursorTracer ), VALID_RELATIONSHIP_TYPE );
+            checkProperties( schema.getPropertyIds(), cursorTracer );
         }
 
         @Override
@@ -305,27 +305,27 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             case NODE:
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
-                    engine.comparativeCheck( records.label( entityTokenId ), VALID_LABEL );
+                    engine.comparativeCheck( records.label( entityTokenId, cursorTracer ), VALID_LABEL );
                 }
                 break;
             case RELATIONSHIP:
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
-                    engine.comparativeCheck( records.relationshipType( entityTokenId ), VALID_RELATIONSHIP_TYPE );
+                    engine.comparativeCheck( records.relationshipType( entityTokenId, cursorTracer ), VALID_RELATIONSHIP_TYPE );
                 }
                 break;
             default:
                 throw new IllegalArgumentException( "Schema with given entity type is not supported: " + schema.entityType() );
             }
 
-            checkProperties( schema.getPropertyIds() );
+            checkProperties( schema.getPropertyIds(), cursorTracer );
         }
 
-        private void checkProperties( int[] propertyIds )
+        private void checkProperties( int[] propertyIds, PageCursorTracer cursorTracer )
         {
             for ( int propertyId : propertyIds )
             {
-                engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );
+                engine.comparativeCheck( records.propertyKey( propertyId, cursorTracer ), VALID_PROPERTY_KEY );
             }
         }
     }
@@ -394,7 +394,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private static final ComparativeRecordChecker<SchemaRecord,LabelTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_LABEL =
-            ( record, labelTokenRecord, engine, records ) ->
+            ( record, labelTokenRecord, engine, records, cursorTracer ) ->
             {
                 if ( !labelTokenRecord.inUse() )
                 {
@@ -404,7 +404,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private static final ComparativeRecordChecker<SchemaRecord,RelationshipTypeTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_RELATIONSHIP_TYPE =
-            ( record, relTypeTokenRecord, engine, records ) ->
+            ( record, relTypeTokenRecord, engine, records, cursorTracer ) ->
             {
                 if ( !relTypeTokenRecord.inUse() )
                 {
@@ -414,7 +414,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private static final ComparativeRecordChecker<SchemaRecord, PropertyKeyTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_PROPERTY_KEY =
-            ( record, propertyKeyTokenRecord, engine, records ) ->
+            ( record, propertyKeyTokenRecord, engine, records, cursorTracer ) ->
             {
                 if ( !propertyKeyTokenRecord.inUse() )
                 {

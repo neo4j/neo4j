@@ -22,24 +22,30 @@ package org.neo4j.consistency.checking.index;
 import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IndexIterator implements BoundedIterable<Long>
 {
+    private static final String CONSISTENCY_INDEX_ITERATOR_TAG = "consistencyIndexIterator";
+    private static final String CONSISTENCY_INDEX_COUNTER_TAG = "consistencyIndexCounter";
     private final IndexAccessor indexAccessor;
+    private final PageCacheTracer pageCacheTracer;
     private BoundedIterable<Long> indexReader;
+    private PageCursorTracer readerTracer;
 
-    public IndexIterator( IndexAccessor indexAccessor )
+    public IndexIterator( IndexAccessor indexAccessor, PageCacheTracer pageCacheTracer )
     {
         this.indexAccessor = indexAccessor;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
     public long maxCount()
     {
-        try ( BoundedIterable<Long> reader = indexAccessor.newAllEntriesReader( TRACER_SUPPLIER.get() ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_COUNTER_TAG );
+              var reader = indexAccessor.newAllEntriesReader( cursorTracer ) )
         {
             return reader.maxCount();
         }
@@ -55,6 +61,7 @@ public class IndexIterator implements BoundedIterable<Long>
         if ( indexReader != null )
         {
             indexReader.close();
+            readerTracer.close();
         }
     }
 
@@ -63,7 +70,8 @@ public class IndexIterator implements BoundedIterable<Long>
     {
         if ( indexReader == null )
         {
-            indexReader = indexAccessor.newAllEntriesReader( TRACER_SUPPLIER.get() );
+            readerTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ITERATOR_TAG );
+            indexReader = indexAccessor.newAllEntriesReader( readerTracer );
         }
 
         return indexReader.iterator();

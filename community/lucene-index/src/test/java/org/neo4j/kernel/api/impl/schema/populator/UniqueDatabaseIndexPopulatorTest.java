@@ -40,7 +40,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -69,6 +68,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
@@ -232,8 +232,8 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
         addUpdate( populator, 3, value );
 
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
-        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID, NULL ) ).thenReturn( Values.of( value ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID, NULL ) ).thenReturn( Values.of( value ) );
 
         var conflict = assertThrows( IndexEntryConflictException.class, () -> populator.verifyDeferredConstraints( nodePropertyAccessor ) );
         assertEquals( 1, conflict.getExistingNodeId() );
@@ -251,8 +251,8 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
 
         Value value = Values.of( "value1" );
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID, NULL ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID, NULL ) ).thenReturn( value );
 
         // when
         var conflict = assertThrows( IndexEntryConflictException.class, () ->
@@ -278,8 +278,8 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, valueString );
 
         Value value = Values.of( valueString );
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( nodePropertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID, NULL ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID, NULL ) ).thenReturn( value );
 
         // when
         var conflict = assertThrows( IndexEntryConflictException.class, () -> populator.verifyDeferredConstraints( nodePropertyAccessor ) );
@@ -294,7 +294,7 @@ class UniqueDatabaseIndexPopulatorTest
         // given
         populator = newPopulator();
 
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                 Values.of( "value1" ) );
 
         IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
@@ -326,13 +326,13 @@ class UniqueDatabaseIndexPopulatorTest
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             updater.process( add( nodeId, schemaDescriptor, "1" ) );
-            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         updater.process( add( iterations, schemaDescriptor, "1" ) );
-        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
@@ -353,13 +353,13 @@ class UniqueDatabaseIndexPopulatorTest
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             addUpdate( populator, nodeId, "1" );
-            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         addUpdate( populator, iterations, "1" );
-        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
@@ -461,7 +461,7 @@ class UniqueDatabaseIndexPopulatorTest
         try ( IndexReader reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, allEntities, unconstrained(), PageCursorTracer.NULL, IndexQuery.exists( 1 ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), NULL, IndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

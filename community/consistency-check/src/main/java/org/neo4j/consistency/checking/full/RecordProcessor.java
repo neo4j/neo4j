@@ -19,14 +19,16 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
 public interface RecordProcessor<RECORD>
 {
     /**
-     * Must be called by the thread executing {@link #process(Object)}.
+     * Must be called by the thread executing {@link #process(Object, PageCursorTracer)}.
      */
     void init( int id );
 
-    void process( RECORD record );
+    void process( RECORD record, PageCursorTracer cursorTracer );
 
     void close();
 

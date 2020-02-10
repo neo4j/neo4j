@@ -22,7 +22,6 @@ package org.neo4j.counts;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
@@ -33,6 +32,8 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
  */
 public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyCheckable
 {
+    CountsStore NULL_INSTANCE = new NullCountsStore();
+
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
      * @param cursorTracer underlying page cursor tracer
@@ -52,8 +53,6 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
      * @throws IOException any type of error happening when transitioning to started state.
      */
     void start( PageCursorTracer cursorTracer ) throws IOException;
-
-    CountsStore nullInstance = new NullCountsStore();
 
     class NullCountsStore implements CountsStore
     {
@@ -91,7 +90,7 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
         {
             return true;
         }

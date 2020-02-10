@@ -36,12 +36,12 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Format.duration;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class CheckerContext
 {
@@ -60,6 +60,7 @@ class CheckerContext
     final ProgressMonitorFactory.MultiPartBuilder progress;
     final TokenNameLookup tokenNameLookup;
     final PageCache pageCache;
+    final PageCacheTracer pageCacheTracer;
     final long highNodeId;
     private final boolean debug;
     private final AtomicBoolean cancelled;
@@ -77,11 +78,12 @@ class CheckerContext
             NodeBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             boolean debug,
             ConsistencyFlags consistencyFlags )
     {
         this( neoStores, indexAccessors, labelScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader, observedCounts, limiter, progress,
-                pageCache, debug, new AtomicBoolean(), consistencyFlags );
+                pageCache, pageCacheTracer, debug, new AtomicBoolean(), consistencyFlags );
     }
 
     private CheckerContext(
@@ -97,6 +99,7 @@ class CheckerContext
             NodeBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
             boolean debug,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags )
@@ -106,7 +109,7 @@ class CheckerContext
         this.indexAccessors = indexAccessors;
         this.debug = debug;
         this.consistencyFlags = consistencyFlags;
-        this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId() );
+        this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
         this.labelScanStore = labelScanStore;
         this.execution = execution;
         this.reporter = reporter;
@@ -119,12 +122,13 @@ class CheckerContext
         this.cancelled = cancelled;
         this.tokenNameLookup = tokenHolders.lookupWithIds();
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess, tokenHolders,
-                recordLoader, observedCounts, limiter, progress, pageCache, debug, cancelled, consistencyFlags );
+                recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception
@@ -183,7 +187,7 @@ class CheckerContext
     {
         if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
         {
-            timeOperation( checker.toString(), () -> checker.check( range, limiter.isFirst( range ), limiter.isLast( range ), NULL ), true );
+            timeOperation( checker.toString(), () -> checker.check( range, limiter.isFirst( range ), limiter.isLast( range ) ), true );
         }
     }
 

@@ -22,23 +22,31 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class SequentialRecordScanner<RECORD> extends RecordScanner<RECORD>
 {
+    private static final String CONSISTENCY_SEQUENTIAL_SCANNER_TAG = "consistencySequentialScanner";
+    private final PageCacheTracer pageCacheTracer;
+
     public SequentialRecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
-            MultiPartBuilder builder, RecordProcessor<RECORD> processor,
+            MultiPartBuilder builder, RecordProcessor<RECORD> processor, PageCacheTracer pageCacheTracer,
             IterableStore... warmUpStores )
     {
         super( name, statistics, threads, store, builder, processor, warmUpStores );
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
     protected void scan()
     {
-        for ( RECORD record : store )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_SEQUENTIAL_SCANNER_TAG ) )
         {
-            processor.process( record );
-            progress.add( 1 );
+            for ( RECORD record : store )
+            {
+                processor.process( record, cursorTracer );
+                progress.add( 1 );
+            }
         }
     }
 }

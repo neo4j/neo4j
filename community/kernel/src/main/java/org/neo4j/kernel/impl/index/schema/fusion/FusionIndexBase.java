@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -97,12 +98,13 @@ public abstract class FusionIndexBase<T>
         forAll( consumer, Arrays.asList( subjects ) );
     }
 
-    public static <T extends ConsistencyCheckable> boolean consistencyCheck( Iterable<T> checkables, ReporterFactory reporterFactory )
+    public static <T extends ConsistencyCheckable> boolean consistencyCheck( Iterable<T> checkables, ReporterFactory reporterFactory,
+            PageCursorTracer cursorTracer )
     {
         boolean result = true;
         for ( ConsistencyCheckable part : checkables )
         {
-            result &= part.consistencyCheck( reporterFactory );
+            result &= part.consistencyCheck( reporterFactory, cursorTracer );
         }
         return result;
     }

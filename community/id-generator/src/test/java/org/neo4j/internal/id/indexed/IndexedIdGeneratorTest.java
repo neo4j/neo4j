@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
+import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
@@ -50,6 +51,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -70,6 +72,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
@@ -582,6 +585,20 @@ class IndexedIdGeneratorTest
 
         idGenerator.close();
         idGenerator = null;
+    }
+
+    @Test
+    void tracePageCacheAccessOnConsistencyCheck()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        {
+            idGenerator.consistencyCheck( noopReporterFactory(), cursorTracer );
+
+            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+        }
     }
 
     @Test

@@ -60,7 +60,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         NodeRecord node = notInUse( new NodeRecord( nodeId, false, 0, 0 ) );
 
         // when
-        checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null );
+        checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null, NULL );
 
         // then
         verify( report ).nodeNotInUse( node );
@@ -80,7 +80,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        checker( indexLabelIds, true ).checkReference( null, node, engineFor( report ), null );
+        checker( indexLabelIds, true ).checkReference( null, node, engineFor( report ), null, NULL );
 
         // then
         verify( report ).nodeDoesNotHaveExpectedLabel( node, 10 );
@@ -100,7 +100,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        checker( indexLabelIds, false ).checkReference( null, node, engineFor( report ), null );
+        checker( indexLabelIds, false ).checkReference( null, node, engineFor( report ), null, NULL );
 
         // then
         verify( report ).nodeDoesNotHaveExpectedLabel( node, 10 );
@@ -122,7 +122,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
         // when
         CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
-        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
         // then
@@ -147,7 +147,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
         // when
         CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
-        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
         // then
@@ -169,7 +169,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
         // when
         CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
-        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
         // then
@@ -192,7 +192,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
         // when
         CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
-        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
         // then
@@ -215,7 +215,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null );
+        checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null, NULL );
 
         // then
         verifyNoMoreInteractions( report );

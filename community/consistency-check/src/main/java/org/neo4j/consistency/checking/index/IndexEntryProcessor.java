@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class IndexEntryProcessor extends RecordProcessor.Adapter<Long>
 {
@@ -42,8 +43,8 @@ public class IndexEntryProcessor extends RecordProcessor.Adapter<Long>
     }
 
     @Override
-    public void process( Long nodeId )
+    public void process( Long nodeId, PageCursorTracer cursorTracer )
     {
-        reporter.forIndexEntry( new IndexEntry( indexDescriptor, tokenNameLookup, nodeId ), indexCheck );
+        reporter.forIndexEntry( new IndexEntry( indexDescriptor, tokenNameLookup, nodeId ), indexCheck, cursorTracer );
     }
 }

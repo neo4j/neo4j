@@ -248,6 +248,6 @@ class RelationshipCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new RelationshipChecker( context(), noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true, PageCacheTracer.NULL );
+        new RelationshipChecker( context(), noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }

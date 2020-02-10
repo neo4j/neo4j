@@ -33,6 +33,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -50,43 +51,43 @@ public interface ConsistencyReport
     interface Reporter
     {
         void forSchema( SchemaRecord schema,
-                        RecordCheck<SchemaRecord, SchemaConsistencyReport> checker );
+                        RecordCheck<SchemaRecord, SchemaConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forNode( NodeRecord node,
-                      RecordCheck<NodeRecord, NodeConsistencyReport> checker );
+                      RecordCheck<NodeRecord, NodeConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forRelationship( RelationshipRecord relationship,
-                              RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
+                              RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forProperty( PropertyRecord property,
-                          RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
+                          RecordCheck<PropertyRecord, PropertyConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
-                                      RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
+                                      RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forLabelName( LabelTokenRecord label,
-                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
+                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forPropertyKey( PropertyKeyTokenRecord key,
-                             RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
+                             RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forDynamicBlock( RecordType type, DynamicRecord record,
-                              RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
+                              RecordCheck<DynamicRecord, DynamicConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forDynamicLabelBlock( RecordType type, DynamicRecord record,
-                                   RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
+                                   RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forNodeLabelScan( LabelScanDocument document,
-                               RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker );
+                               RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forIndexEntry( IndexEntry entry,
-                            RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker );
+                            RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forRelationshipGroup( RelationshipGroupRecord record,
-                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
+                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forCounts( CountsEntry countsEntry,
-                        RecordCheck<CountsEntry, ConsistencyReport.CountsConsistencyReport> checker );
+                        RecordCheck<CountsEntry, ConsistencyReport.CountsConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         SchemaConsistencyReport forSchema( SchemaRecord schema );
 
@@ -631,79 +632,85 @@ public interface ConsistencyReport
         }
 
         @Override
-        public void forSchema( SchemaRecord schema, RecordCheck<SchemaRecord,SchemaConsistencyReport> checker )
+        public void forSchema( SchemaRecord schema, RecordCheck<SchemaRecord,SchemaConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
         }
 
         @Override
-        public void forNode( NodeRecord node, RecordCheck<NodeRecord,NodeConsistencyReport> checker )
-        {
-
-        }
-
-        @Override
-        public void forRelationship( RelationshipRecord relationship, RecordCheck<RelationshipRecord,RelationshipConsistencyReport> checker )
+        public void forNode( NodeRecord node, RecordCheck<NodeRecord,NodeConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord,PropertyConsistencyReport> checker )
+        public void forRelationship( RelationshipRecord relationship, RecordCheck<RelationshipRecord,RelationshipConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
+        {
+
+        }
+
+        @Override
+        public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord,PropertyConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
         public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
-                RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker )
+                RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> checker )
+        public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forPropertyKey( PropertyKeyTokenRecord key, RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> checker )
+        public void forPropertyKey( PropertyKeyTokenRecord key, RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forDynamicBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicConsistencyReport> checker )
+        public void forDynamicBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker )
+        public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker )
+        public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry,IndexConsistencyReport> checker )
+        public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry,IndexConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forRelationshipGroup( RelationshipGroupRecord record, RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker )
+        public void forRelationshipGroup( RelationshipGroupRecord record, RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forCounts( CountsEntry countsEntry, RecordCheck<CountsEntry,CountsConsistencyReport> checker )
+        public void forCounts( CountsEntry countsEntry, RecordCheck<CountsEntry,CountsConsistencyReport> checker, PageCursorTracer cursorTracer )
         {
 
         }

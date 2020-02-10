@@ -27,6 +27,7 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -54,7 +55,7 @@ class StoreProcessorTaskTest
                 store, null, "nodes", ProgressMonitorFactory.NONE.multipleParts( "check" ),
                 CacheAccess.EMPTY,
                 singlePassProcessor,
-                QueueDistribution.ROUND_ROBIN );
+                QueueDistribution.ROUND_ROBIN, PageCacheTracer.NULL );
 
         // when
         task.run();

@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class RelationshipIndexProcessor extends RecordProcessor.Adapter<RelationshipRecord>
@@ -31,16 +32,15 @@ public class RelationshipIndexProcessor extends RecordProcessor.Adapter<Relation
     private final ConsistencyReporter reporter;
     private final RelationshipToIndexCheck checker;
 
-    RelationshipIndexProcessor( ConsistencyReporter reporter, IndexAccessors indexes, PropertyReader propertyReader,
-            List<IndexDescriptor> relationshipIndexes )
+    RelationshipIndexProcessor( ConsistencyReporter reporter, IndexAccessors indexes, PropertyReader propertyReader, List<IndexDescriptor> relationshipIndexes )
     {
         this.reporter = reporter;
         checker = new RelationshipToIndexCheck( relationshipIndexes, indexes, propertyReader );
     }
 
     @Override
-    public void process( RelationshipRecord relationshipRecord )
+    public void process( RelationshipRecord relationshipRecord, PageCursorTracer cursorTracer )
     {
-        reporter.forRelationship( relationshipRecord, checker );
+        reporter.forRelationship( relationshipRecord, checker, cursorTracer );
     }
 }

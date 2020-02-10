@@ -60,7 +60,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 {
     IndexAccessor accessor;
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
-    private Map<Long,Value[]> committedValues = new HashMap<>();
+    private final Map<Long,Value[]> committedValues = new HashMap<>();
 
     IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
@@ -82,7 +82,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         try
         {
-            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory() );
+            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
         }
         finally
         {

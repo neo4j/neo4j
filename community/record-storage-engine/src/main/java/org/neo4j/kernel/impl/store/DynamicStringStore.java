@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
@@ -58,9 +59,9 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record, PageCursorTracer cursorTracer )
             throws FAILURE
     {
-        processor.processString( this, record, idType );
+        processor.processString( this, record, idType, cursorTracer );
     }
 }

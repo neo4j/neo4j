@@ -24,10 +24,13 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
@@ -47,7 +50,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
         Value[] values = new Value[propertyKeyIds.length];
         for ( int i = 0; i < values.length; i++ )
         {
-            values[i] = accessor.getNodePropertyValue( nodeId, propertyKeyIds[i] );
+            values[i] = accessor.getNodePropertyValue( nodeId, propertyKeyIds[i], NULL );
         }
         duplicateCheckStrategy.checkForDuplicate( values, nodeId );
     }

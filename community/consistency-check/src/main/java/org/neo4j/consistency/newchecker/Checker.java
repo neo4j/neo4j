@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 interface Checker
 {
-    void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange, PageCacheTracer pageCacheTracer ) throws Exception;
+    void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception;
 
     boolean shouldBeChecked( ConsistencyFlags flags );
 }

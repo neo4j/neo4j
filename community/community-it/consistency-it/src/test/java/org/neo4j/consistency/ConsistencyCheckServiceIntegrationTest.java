@@ -40,6 +40,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,6 +56,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -74,6 +76,7 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -150,6 +153,22 @@ public class ConsistencyCheckServiceIntegrationTest
         assertThat( Files.readString( reportFile.toPath() ) ).as(
                 "Expected to see report about not deleted relationship record present as part of a chain" ).contains(
                 "The relationship record is not in use, but referenced from relationships chain." );
+    }
+
+    @Test
+    void tracePageCacheAccessOnConsistencyCheck() throws ConsistencyCheckIncompleteException
+    {
+        prepareDbWithDeletedRelationshipPartOfTheChain();
+        ConsistencyCheckService service = new ConsistencyCheckService( new Date() );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), ProgressMonitorFactory.NONE,
+                NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT, pageCacheTracer );
+
+        assertFalse( result.isSuccessful() );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 74 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 74 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 35 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 39 );
     }
 
     @Test

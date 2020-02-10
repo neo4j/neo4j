@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -41,7 +42,7 @@ public class DynamicRecordCheck
     @Override
     public void check( DynamicRecord record,
                        CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                       RecordAccess records )
+                       RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !record.inUse() )
         {
@@ -59,7 +60,7 @@ public class DynamicRecordCheck
             }
             else
             {
-                engine.comparativeCheck( dereference.lookup( records, record.getNextBlock() ), this );
+                engine.comparativeCheck( dereference.lookup( records, record.getNextBlock(), cursorTracer ), this );
             }
             if ( record.getLength() < blockSize )
             {
@@ -69,9 +70,8 @@ public class DynamicRecordCheck
     }
 
     @Override
-    public void checkReference( DynamicRecord record, DynamicRecord next,
-                                CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                                RecordAccess records )
+    public void checkReference( DynamicRecord record, DynamicRecord next, CheckerEngine<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> engine,
+            RecordAccess records, PageCursorTracer cursorTracer )
     {
         if ( !next.inUse() )
         {

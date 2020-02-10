@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface ConsistencyCheckable
 {
-    boolean consistencyCheck( ReporterFactory reporterFactory );
+    boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer );
 }

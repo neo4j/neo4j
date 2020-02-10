@@ -121,7 +121,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
         return true;
     }

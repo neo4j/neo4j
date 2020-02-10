@@ -46,6 +46,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -141,8 +142,8 @@ public class DetectAllRelationshipInconsistenciesIT
                     new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), false,
                             NodeBasedMemoryLimiter.DEFAULT );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
-            ConsistencySummaryStatistics summary =
-                    checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts, logProvider.getLog( FullCheck.class ) );
+            ConsistencySummaryStatistics summary = checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts,
+                    PageCacheTracer.NULL, logProvider.getLog( FullCheck.class ) );
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
 
             assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );

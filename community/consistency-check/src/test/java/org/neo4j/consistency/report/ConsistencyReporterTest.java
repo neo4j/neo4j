@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,6 +53,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -80,6 +83,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class ConsistencyReporterTest
 {
@@ -95,7 +99,7 @@ class ConsistencyReporterTest
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
                     mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records,
-                    new PropertyRecord( 0 ), NO_MONITOR );
+                    new PropertyRecord( 0 ), NO_MONITOR, PageCacheTracer.NULL );
 
             // then
             verifyNoMoreInteractions( summary );
@@ -111,7 +115,7 @@ class ConsistencyReporterTest
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
                     mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records,
-                    new PropertyRecord( 0 ), NO_MONITOR );
+                    new PropertyRecord( 0 ), NO_MONITOR, PageCacheTracer.NULL );
 
             RecordReference<PropertyRecord> reference = mock( RecordReference.class );
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
@@ -178,15 +182,15 @@ class ConsistencyReporterTest
                 }
             };
             InconsistencyReport inconsistencyReport = new InconsistencyReport( logger, summary );
-            ConsistencyReporter reporter = new ConsistencyReporter( records, inconsistencyReport );
+            ConsistencyReporter reporter = new ConsistencyReporter( records, inconsistencyReport, PageCacheTracer.NULL );
             NodeRecord node = new NodeRecord( 10 );
             RecordCheck<NodeRecord,NodeConsistencyReport> checker = mock( RecordCheck.class );
             RuntimeException exception = new RuntimeException( "My specific exception" );
             doThrow( exception ).when( checker )
-                    .check( any( NodeRecord.class ), any( CheckerEngine.class ), any( RecordAccess.class ) );
+                    .check( any( NodeRecord.class ), any( CheckerEngine.class ), any( RecordAccess.class ), any( PageCursorTracer.class ) );
 
             // WHEN
-            reporter.forNode( node, checker );
+            reporter.forNode( node, checker, NULL );
 
             // THEN
             String error = loggedError.get();
@@ -207,7 +211,7 @@ class ConsistencyReporterTest
             Method method = methods.method;
             InconsistencyReport report = mock( InconsistencyReport.class );
             ConsistencyReport.Reporter reporter = new ConsistencyReporter(
-                    mock( RecordAccess.class ), report );
+                    mock( RecordAccess.class ), report, PageCacheTracer.NULL );
 
             // when
             reportMethod.invoke( reporter, parameters( reportMethod ) );
@@ -335,6 +339,10 @@ class ConsistencyReporterTest
             {
                 return 12L;
             }
+            if ( type == PageCursorTracer.class )
+            {
+                return NULL;
+            }
             if ( type == Object.class )
             {
                 return "object";
@@ -398,7 +406,7 @@ class ConsistencyReporterTest
                 }
             } ).when( checker ).check( any( AbstractBaseRecord.class ),
                                                     any( CheckerEngine.class ),
-                                                    any( RecordAccess.class ) );
+                                                    any( RecordAccess.class ), any( PageCursorTracer.class ) );
             return checker;
         }
     }
@@ -416,7 +424,7 @@ class ConsistencyReporterTest
             if ( reporterMethod.getReturnType() == Void.TYPE )
             {
                 Type[] parameterTypes = reporterMethod.getGenericParameterTypes();
-                ParameterizedType checkerParameter = (ParameterizedType) parameterTypes[parameterTypes.length - 1];
+                ParameterizedType checkerParameter = findParametrizedType( parameterTypes );
                 Class reportType = (Class) checkerParameter.getActualTypeArguments()[1];
                 for ( Method method : reportType.getMethods() )
                 {
@@ -425,6 +433,18 @@ class ConsistencyReporterTest
             }
         }
         return methods;
+    }
+
+    private static ParameterizedType findParametrizedType( Type[] types )
+    {
+        for ( Type type : types )
+        {
+            if ( type instanceof ParameterizedType )
+            {
+                return (ParameterizedType) type;
+            }
+        }
+        throw new IllegalStateException( "Parametrized type expected but not found. Actual types: " + Arrays.toString( types ) );
     }
 
     public static class ReportMethods

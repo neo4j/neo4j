@@ -20,12 +20,11 @@
 package org.neo4j.consistency.newchecker;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageReader;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Essentially a convenience for store+record+cursor. The reason why a {@link StorageReader} isn't quite enough is that they typically
@@ -37,11 +36,11 @@ class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable
     private final RECORD record;
     private final PageCursor cursor;
 
-    RecordReader( CommonAbstractStore<RECORD,?> store )
+    RecordReader( CommonAbstractStore<RECORD,?> store, PageCursorTracer cursorTracer )
     {
         this.store = store;
         this.record = store.newRecord();
-        this.cursor = store.openPageCursorForReading( 0, TRACER_SUPPLIER.get() );
+        this.cursor = store.openPageCursorForReading( 0, cursorTracer );
     }
 
     RECORD read( long id )

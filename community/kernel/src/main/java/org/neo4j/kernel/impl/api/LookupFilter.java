@@ -27,6 +27,7 @@ import java.util.function.LongPredicate;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -50,7 +51,7 @@ public class LookupFilter
      * used by the consistency checker
      */
     public static LongIterator exactIndexMatches( NodePropertyAccessor accessor,
-            LongIterator indexedNodeIds, IndexQuery... predicates )
+            LongIterator indexedNodeIds, PageCursorTracer cursorTracer, IndexQuery... predicates )
     {
         if ( !indexedNodeIds.hasNext() )
         {
@@ -71,7 +72,7 @@ public class LookupFilter
                     for ( IndexQuery predicate : filteredPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
-                        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId );
+                        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId, cursorTracer );
                         if ( !predicate.acceptsValue( value ) )
                         {
                             return false;

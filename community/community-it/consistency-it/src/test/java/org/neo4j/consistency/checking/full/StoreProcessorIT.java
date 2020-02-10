@@ -27,6 +27,8 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -62,10 +64,10 @@ class StoreProcessorIT
         nodeStore.setHighestPossibleIdInUse( 2 );
 
         // when
-        processor.applyFiltered( nodeStore, NULL );
+        processor.applyFiltered( nodeStore, PageCacheTracer.NULL );
 
         // then
-        verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );
+        verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -95,10 +97,10 @@ class StoreProcessorIT
         nodeStore.setHighestPossibleIdInUse( 4 );
 
         // when
-        processor.applyFiltered( nodeStore, NULL );
+        processor.applyFiltered( nodeStore, PageCacheTracer.NULL );
 
         // then
-        verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );
+        verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ), any( PageCursorTracer.class ) );
     }
 
     private NeoStores getNeoStores()

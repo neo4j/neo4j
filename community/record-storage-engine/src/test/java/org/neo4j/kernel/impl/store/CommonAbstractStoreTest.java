@@ -246,7 +246,7 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, TheRecord record )
+        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, TheRecord record, PageCursorTracer cursorTracer )
         {
         }
     }

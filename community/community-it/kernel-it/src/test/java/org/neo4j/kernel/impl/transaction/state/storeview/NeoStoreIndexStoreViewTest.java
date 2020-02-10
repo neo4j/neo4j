@@ -261,7 +261,7 @@ class NeoStoreIndexStoreViewTest
     @Test
     void shouldReadProperties() throws EntityNotFoundException
     {
-        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId );
+        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, NULL );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 

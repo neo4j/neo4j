@@ -24,6 +24,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 class PropertiesTest extends MultiPassStoreAbstractTest
 {
     @Override
@@ -35,15 +37,15 @@ class PropertiesTest extends MultiPassStoreAbstractTest
     @Override
     protected RecordReference<PropertyRecord> record( RecordAccess filter, long id )
     {
-        return filter.property( id );
+        return filter.property( id, NULL );
     }
 
     @Override
     protected void otherRecords( RecordAccess filter, long id )
     {
-        filter.node( id );
-        filter.relationship( id );
-        filter.string( id );
-        filter.array( id );
+        filter.node( id, NULL );
+        filter.relationship( id, NULL );
+        filter.string( id, NULL );
+        filter.array( id, NULL );
     }
 }

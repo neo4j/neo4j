@@ -19,21 +19,45 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RecordCheckWorkerTest
 {
+    private ExecutorService executorService;
+
+    @BeforeEach
+    void setUp()
+    {
+        executorService = Executors.newSingleThreadExecutor();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        executorService.shutdownNow();
+    }
+
     @Test
     void shouldDoProcessingInitializationInOrder() throws Throwable
     {
@@ -44,10 +68,10 @@ class RecordCheckWorkerTest
         final int threads = 30;
         @SuppressWarnings( "unchecked" )
         final RecordCheckWorker<Integer>[] workers = new RecordCheckWorker[threads];
-        final RecordProcessor<Integer> processor = new RecordProcessor.Adapter<Integer>()
+        final RecordProcessor<Integer> processor = new RecordProcessor.Adapter<>()
         {
             @Override
-            public void process( Integer record )
+            public void process( Integer record, PageCursorTracer cursorTracer )
             {
                 // We're testing init() here, not really process()
             }
@@ -61,7 +85,7 @@ class RecordCheckWorkerTest
         for ( int id = 0; id < threads; id++ )
         {
             ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>( 10 );
-            race.addContestant( workers[id] = new RecordCheckWorker<>( id, coordination, queue, processor ) );
+            race.addContestant( workers[id] = new RecordCheckWorker<>( id, coordination, queue, processor, PageCacheTracer.NULL ) );
         }
         race.addContestant( () ->
         {
@@ -85,5 +109,33 @@ class RecordCheckWorkerTest
 
         // WHEN
         race.go();
+    }
+
+    @Test
+    void propagateCursorTracerToProcessor() throws InterruptedException, ExecutionException
+    {
+        CountDownLatch processDoneLatch = new CountDownLatch( 1 );
+        var processor = new RecordProcessor.Adapter<Integer>()
+        {
+            @Override
+            public void process( Integer o, PageCursorTracer cursorTracer )
+            {
+                cursorTracer.beginPin( false, 1, null ).done();
+                processDoneLatch.countDown();
+            }
+        };
+        final AtomicInteger coordination = new AtomicInteger( -1 );
+        ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>( 10 );
+        queue.add( 1 );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+
+        final RecordCheckWorker<Integer> worker = new RecordCheckWorker<>( 0, coordination, queue, processor, pageCacheTracer );
+        var workerFuture = executorService.submit( worker );
+
+        processDoneLatch.await();
+        worker.done();
+        workerFuture.get();
+
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 1 );
     }
 }

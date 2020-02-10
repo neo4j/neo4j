@@ -264,7 +264,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
         {
             return true;
         }
@@ -364,9 +364,9 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
         {
-            return delegate.consistencyCheck( reporterFactory );
+            return delegate.consistencyCheck( reporterFactory, cursorTracer );
         }
 
         @Override

@@ -23,6 +23,7 @@ import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -38,10 +39,10 @@ public class SchemaStoreProcessorTask<R extends AbstractBaseRecord> extends Stor
             ProgressMonitorFactory.MultiPartBuilder builder,
             CacheAccess cacheAccess,
             StoreProcessor processor,
-            QueueDistribution distribution )
+            QueueDistribution distribution, PageCacheTracer pageCacheTracer )
     {
         super( name, statistics, threads, store, storeAccess, builderPrefix,
-                builder, cacheAccess, processor, distribution );
+                builder, cacheAccess, processor, distribution, pageCacheTracer );
         this.schemaRecordCheck = schemaRecordCheck;
     }
 
