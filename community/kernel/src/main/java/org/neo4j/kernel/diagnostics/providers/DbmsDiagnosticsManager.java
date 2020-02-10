@@ -52,7 +52,7 @@ public class DbmsDiagnosticsManager
         this.diagnosticsManager = new DiagnosticsManager( log );
     }
 
-    public void dumpSystemDiagnostics()
+    public synchronized void dumpSystemDiagnostics()
     {
         dumpSystemDiagnostics( log );
     }
@@ -62,26 +62,15 @@ public class DbmsDiagnosticsManager
         dumpDatabaseDiagnostics( database, log, false );
     }
 
-    public void dumpAll()
+    public synchronized void dumpAll()
     {
         dumpAll( log );
     }
 
-    public void dumpAll( Log log )
+    public synchronized void dumpAll( Log log )
     {
         dumpSystemDiagnostics( log );
         dumpAllDatabases( log );
-    }
-
-    public void dump( NamedDatabaseId namedDatabaseId )
-    {
-        dump( namedDatabaseId, log );
-    }
-
-    private void dump( NamedDatabaseId namedDatabaseId, Log log )
-    {
-        getDatabaseManager().getDatabaseContext( namedDatabaseId ).map( DatabaseContext::database )
-                .ifPresent( database -> dumpDatabaseDiagnostics( database, log, true ) );
     }
 
     private void dumpAllDatabases( Log log )
