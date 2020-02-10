@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -429,6 +430,34 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
+  test("expand into with dense nodes without the queried REL_TYPE") {
+    val relsToCreate = edition.getSetting(dense_node_threshold).getOrElse(dense_node_threshold.defaultValue()) + 1
+
+    // given
+    given {
+      // Two A nodes, and one dense B node.
+      val a1 = tx.createNode(Label.label("A"))
+      tx.createNode(Label.label("A"))
+      val b = tx.createNode(Label.label("B"))
+      // b has to be a dense node, but not have any REL relationships
+      for(_ <- 1 to relsToCreate) a1.createRelationshipTo(b, RelationshipType.withName("ANOTHER_REL"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[:REL]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withNoRows()
   }
 }
 

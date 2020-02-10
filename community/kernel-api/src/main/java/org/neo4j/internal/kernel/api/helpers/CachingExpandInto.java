@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
@@ -82,7 +83,8 @@ public class CachingExpandInto
             int[] types,
             long toNode )
     {
-        assert this.fromNode < 0L && this.toNode < 0L;
+        Preconditions.requireNegative( this.fromNode );
+        Preconditions.requireNegative( this.toNode );
         List<Relationship> connections = relationshipCache.get( fromNode, toNode, direction );
 
         this.fromNode = fromNode;
@@ -97,6 +99,7 @@ public class CachingExpandInto
         int toDegree = calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types );
         if ( toDegree == 0 )
         {
+            done();
             return RelationshipTraversalCursor.EMPTY;
         }
         boolean toNodeHasCheapDegrees = toDegree != EXPENSIVE_DEGREE;

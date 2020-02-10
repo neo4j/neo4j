@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Pred
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -601,6 +602,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def apply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)(_)))
+
+  def antiSemiApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiSemiApply(lhs, rhs)(_)))
 
   def crossApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CrossApply(lhs, rhs)(_)))

@@ -203,6 +203,14 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .allNodeScan("x")
       .build())
 
+  testPlan("antiSemiApply",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .antiSemiApply()
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build())
+
   testPlan("optional",
     new TestPlanBuilder()
       .produceResults("x", "y")

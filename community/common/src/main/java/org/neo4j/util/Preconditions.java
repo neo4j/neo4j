@@ -51,6 +51,22 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code value} is smaller than or equal to {@code -1} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's smaller than or equal to {@code -1}
+     * @throws IllegalArgumentException if {@code value} is greater than -1
+     */
+    public static long requireNegative( long value )
+    {
+        if ( value > -1 )
+        {
+            throw new IllegalArgumentException( "Expected negative long value, got " + value );
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code value} is a power of 2 or throws {@link IllegalArgumentException} otherwise.
      *
      * @param value a value for check
@@ -78,6 +94,22 @@ public final class Preconditions
         if ( value < 1 )
         {
             throw new IllegalArgumentException( "Expected positive int value, got " + value );
+        }
+        return value;
+    }
+
+    /**
+     * Ensures that {@code value} is smaller than or equal to {@code -1} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's smaller than or equal to {@code -1}
+     * @throws IllegalArgumentException if {@code value} is greater than -1
+     */
+    public static int requireNegative( int value )
+    {
+        if ( value > -1 )
+        {
+            throw new IllegalArgumentException( "Expected negative int value, got " + value );
         }
         return value;
     }

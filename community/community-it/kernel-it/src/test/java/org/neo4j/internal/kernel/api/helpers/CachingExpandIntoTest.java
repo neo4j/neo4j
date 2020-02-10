@@ -460,12 +460,21 @@ class CachingExpandIntoTest
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 
             CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction );
-            return toSet( expandInto.connectingRelationships(
+            RelationshipTraversalCursor cursor = expandInto.connectingRelationships(
                     nodeCursor,
                     traversalCursor,
                     start,
                     typeIds,
-                    end ) );
+                    end );
+            LongSet result = toSet( cursor );
+            // After exhausting the cursor, it should be OK to reuse the CachingExpandInto object without triggering any assertion errors
+            expandInto.connectingRelationships(
+                    nodeCursor,
+                    traversalCursor,
+                    start,
+                    typeIds,
+                    end ).close();
+            return result;
         }
     }
 
