@@ -494,14 +494,14 @@ trait Statement extends Parser
       keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
       group(keyword("CREATE") ~~ IndexKeyword) ~~~> (_ => ast.CreateIndexAction) |
       group(keyword("DROP") ~~ IndexKeyword) ~~~> (_ => ast.DropIndexAction) |
-      group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.IndexManagementAction) |
+      group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllIndexActions) |
       group(keyword("CREATE") ~~ ConstraintKeyword) ~~~> (_ => ast.CreateConstraintAction) |
       group(keyword("DROP") ~~ ConstraintKeyword) ~~~> (_ => ast.DropConstraintAction) |
-      group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.ConstraintManagementAction) |
+      group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllConstraintActions) |
       group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ LabelKeyword) ~~~> (_ => ast.CreateNodeLabelAction) |
       group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ TypeKeyword) ~~~> (_ => ast.CreateRelationshipTypeAction) |
       group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ NameKeyword) ~~~> (_ => ast.CreatePropertyKeyAction) |
-      group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.TokenManagementAction) |
+      group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllTokenActions) |
       group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
 
@@ -510,8 +510,8 @@ trait Statement extends Parser
     group(keyword("SHOW") ~~ TransactionKeyword) ~~~> (pos => (ast.ShowTransactionAction, ast.UserAllQualifier()(pos))) |
     group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier) ~~> ((ast.TerminateTransactionAction, _)) |
     group(keyword("TERMINATE") ~~ TransactionKeyword) ~~~> (pos => (ast.TerminateTransactionAction, ast.UserAllQualifier()(pos))) |
-    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier) ~~> ((ast.TransactionManagementAction, _)) |
-    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT"))) ~~~> (pos => (ast.TransactionManagementAction, ast.UserAllQualifier()(pos)))
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier) ~~> ((ast.AllTransactionActions, _)) |
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT"))) ~~~> (pos => (ast.AllTransactionActions, ast.UserAllQualifier()(pos)))
   )
 
   private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {

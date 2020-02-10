@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALL_DATABASE_PRIVILEGES;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
@@ -94,6 +95,7 @@ class PrivilegeActionTest
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( SCHEMA, Set.of( INDEX, CREATE_INDEX, DROP_INDEX, CONSTRAINT, CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
+        expected.put( ALL_DATABASE_PRIVILEGES, Set.of( SCHEMA, TOKEN, ACCESS, START_DATABASE, STOP_DATABASE ) );
     }
 
     @Test

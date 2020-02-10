@@ -38,18 +38,18 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
         ("CREATE INDEXES", ast.CreateIndexAction),
         ("DROP INDEX", ast.DropIndexAction),
         ("DROP INDEXES", ast.DropIndexAction),
-        ("INDEX", ast.IndexManagementAction),
-        ("INDEXES", ast.IndexManagementAction),
-        ("INDEX MANAGEMENT", ast.IndexManagementAction),
-        ("INDEXES MANAGEMENT", ast.IndexManagementAction),
+        ("INDEX", ast.AllIndexActions),
+        ("INDEXES", ast.AllIndexActions),
+        ("INDEX MANAGEMENT", ast.AllIndexActions),
+        ("INDEXES MANAGEMENT", ast.AllIndexActions),
         ("CREATE CONSTRAINT", ast.CreateConstraintAction),
         ("CREATE CONSTRAINTS", ast.CreateConstraintAction),
         ("DROP CONSTRAINT", ast.DropConstraintAction),
         ("DROP CONSTRAINTS", ast.DropConstraintAction),
-        ("CONSTRAINT", ast.ConstraintManagementAction),
-        ("CONSTRAINTS", ast.ConstraintManagementAction),
-        ("CONSTRAINT MANAGEMENT", ast.ConstraintManagementAction),
-        ("CONSTRAINTS MANAGEMENT", ast.ConstraintManagementAction),
+        ("CONSTRAINT", ast.AllConstraintActions),
+        ("CONSTRAINTS", ast.AllConstraintActions),
+        ("CONSTRAINT MANAGEMENT", ast.AllConstraintActions),
+        ("CONSTRAINTS MANAGEMENT", ast.AllConstraintActions),
         ("CREATE NEW LABEL", ast.CreateNodeLabelAction),
         ("CREATE NEW LABELS", ast.CreateNodeLabelAction),
         ("CREATE NEW NODE LABEL", ast.CreateNodeLabelAction),
@@ -62,8 +62,8 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
         ("CREATE NEW NAMES", ast.CreatePropertyKeyAction),
         ("CREATE NEW PROPERTY NAME", ast.CreatePropertyKeyAction),
         ("CREATE NEW PROPERTY NAMES", ast.CreatePropertyKeyAction),
-        ("NAME", ast.TokenManagementAction),
-        ("NAME MANAGEMENT", ast.TokenManagementAction),
+        ("NAME", ast.AllTokenActions),
+        ("NAME MANAGEMENT", ast.AllTokenActions),
         ("ALL", ast.AllDatabaseAction),
         ("ALL PRIVILEGES", ast.AllDatabaseAction),
         ("ALL DATABASE PRIVILEGES", ast.AllDatabaseAction)
@@ -247,15 +247,15 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TRANSACTION ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role1", "role2")))
       }
 
       test(s"$command TRANSACTION (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.NamedGraphScope("foo") _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.NamedGraphScope("foo") _, ast.UserAllQualifier() _, Seq("role1", "role2")))
       }
 
       test(s"$command TRANSACTION (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
       }
 
       test(s"$command TRANSACTIONS ON DATABASES * $preposition role") {
@@ -267,15 +267,15 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TRANSACTION MANAGEMENT ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.DefaultDatabaseScope() _, ast.UserAllQualifier() _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.DefaultDatabaseScope() _, ast.UserAllQualifier() _, Seq("role")))
       }
 
       test(s"$command TRANSACTION MANAGEMENT (*) ON DATABASE * $preposition role") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role")))
       }
 
       test(s"$command TRANSACTION MANAGEMENT (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.TransactionManagementAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
       }
 
       test(s"$command TRANSACTIONS MANAGEMENT ON DATABASES * $preposition role") {

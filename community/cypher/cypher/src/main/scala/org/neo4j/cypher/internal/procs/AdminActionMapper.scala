@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
-import org.neo4j.cypher.internal.ast.ConstraintManagementAction
+import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateIndexAction
@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
-import org.neo4j.cypher.internal.ast.IndexManagementAction
+import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
 import org.neo4j.cypher.internal.ast.SchemaManagementAction
@@ -54,8 +54,8 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
-import org.neo4j.cypher.internal.ast.TokenManagementAction
-import org.neo4j.cypher.internal.ast.TransactionManagementAction
+import org.neo4j.cypher.internal.ast.AllTokenActions
+import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.internal.kernel.api.security
 
 object AdminActionMapper {
@@ -67,15 +67,15 @@ object AdminActionMapper {
     case CreateDatabaseAction => security.PrivilegeAction.CREATE_DATABASE
     case DropDatabaseAction => security.PrivilegeAction.DROP_DATABASE
 
-    case IndexManagementAction => security.PrivilegeAction.INDEX
+    case AllIndexActions => security.PrivilegeAction.INDEX
     case CreateIndexAction => security.PrivilegeAction.CREATE_INDEX
     case DropIndexAction => security.PrivilegeAction.DROP_INDEX
-    case ConstraintManagementAction => security.PrivilegeAction.CONSTRAINT
+    case AllConstraintActions => security.PrivilegeAction.CONSTRAINT
     case SchemaManagementAction => security.PrivilegeAction.SCHEMA
     case CreateConstraintAction => security.PrivilegeAction.CREATE_CONSTRAINT
     case DropConstraintAction => security.PrivilegeAction.DROP_CONSTRAINT
 
-    case TokenManagementAction => security.PrivilegeAction.TOKEN
+    case AllTokenActions => security.PrivilegeAction.TOKEN
     case CreateNodeLabelAction => security.PrivilegeAction.CREATE_LABEL
     case CreateRelationshipTypeAction => security.PrivilegeAction.CREATE_RELTYPE
     case CreatePropertyKeyAction => security.PrivilegeAction.CREATE_PROPERTYKEY
@@ -87,7 +87,7 @@ object AdminActionMapper {
 
     case TerminateTransactionAction => security.PrivilegeAction.TERMINATE_TRANSACTION
     case ShowTransactionAction => security.PrivilegeAction.SHOW_TRANSACTION
-    case TransactionManagementAction => security.PrivilegeAction.TRANSACTION_MANAGEMENT
+    case AllTransactionActions => security.PrivilegeAction.TRANSACTION_MANAGEMENT
 
     case AllRoleActions => security.PrivilegeAction.ROLE_MANAGEMENT
     case ShowRoleAction => security.PrivilegeAction.SHOW_ROLE
@@ -102,7 +102,7 @@ object AdminActionMapper {
     case RevokePrivilegeAction => security.PrivilegeAction.REVOKE_PRIVILEGE
     case DenyPrivilegeAction => security.PrivilegeAction.DENY_PRIVILEGE
 
-    case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
+    case AllDatabaseAction => security.PrivilegeAction.ALL_DATABASE_PRIVILEGES
 
     case AllAdminAction => security.PrivilegeAction.ADMIN
   }
@@ -113,15 +113,15 @@ object AdminActionMapper {
     case security.PrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
     case security.PrivilegeAction.DROP_DATABASE => DropDatabaseAction
 
-    case security.PrivilegeAction.INDEX => IndexManagementAction
+    case security.PrivilegeAction.INDEX => AllIndexActions
     case security.PrivilegeAction.CREATE_INDEX => CreateIndexAction
     case security.PrivilegeAction.DROP_INDEX => DropIndexAction
-    case security.PrivilegeAction.CONSTRAINT => ConstraintManagementAction
+    case security.PrivilegeAction.CONSTRAINT => AllConstraintActions
     case security.PrivilegeAction.SCHEMA => SchemaManagementAction
     case security.PrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
     case security.PrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
 
-    case security.PrivilegeAction.TOKEN => TokenManagementAction
+    case security.PrivilegeAction.TOKEN => AllTokenActions
     case security.PrivilegeAction.CREATE_LABEL => CreateNodeLabelAction
     case security.PrivilegeAction.CREATE_RELTYPE => CreateRelationshipTypeAction
     case security.PrivilegeAction.CREATE_PROPERTYKEY => CreatePropertyKeyAction
@@ -133,7 +133,7 @@ object AdminActionMapper {
 
     case security.PrivilegeAction.TERMINATE_TRANSACTION => TerminateTransactionAction
     case security.PrivilegeAction.SHOW_TRANSACTION => ShowTransactionAction
-    case security.PrivilegeAction.TRANSACTION_MANAGEMENT => TransactionManagementAction
+    case security.PrivilegeAction.TRANSACTION_MANAGEMENT => AllTransactionActions
 
     case security.PrivilegeAction.ROLE_MANAGEMENT => AllRoleActions
     case security.PrivilegeAction.SHOW_ROLE => ShowRoleAction
@@ -148,7 +148,7 @@ object AdminActionMapper {
     case security.PrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
     case security.PrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
 
-    case security.PrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
+    case security.PrivilegeAction.ALL_DATABASE_PRIVILEGES => AllDatabaseAction
 
     case security.PrivilegeAction.ADMIN => AllAdminAction
   }

@@ -271,6 +271,25 @@ public enum PrivilegeAction
                                this == action;
                     }
                 }
+            },
+
+    ALL_DATABASE_PRIVILEGES
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case ACCESS:
+                    case START_DATABASE:
+                    case STOP_DATABASE:
+                        return true;
+                    default:
+                        return SCHEMA.satisfies( action ) ||
+                               TOKEN.satisfies( action ) ||
+                               this == action;
+                    }
+                }
             };
 
     /**
