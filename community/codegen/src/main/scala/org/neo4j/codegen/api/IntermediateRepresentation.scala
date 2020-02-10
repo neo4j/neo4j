@@ -23,7 +23,10 @@ import java.io.PrintStream
 
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
-import org.neo4j.values.storable._
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.FloatingPointValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 
 /**
   * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression

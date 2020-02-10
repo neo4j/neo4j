@@ -20,12 +20,15 @@
 package org.neo4j.internal.collector
 
 import java.util
-import java.util.stream.{Stream, StreamSupport}
-import java.util.{Spliterator, Spliterators}
+import java.util.Spliterator
+import java.util.Spliterators
+import java.util.stream.Stream
+import java.util.stream.StreamSupport
 
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.JavaConverters.asJavaIteratorConverter
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -143,7 +146,6 @@ object QueriesSection {
   }
 
   private def asRetrieveStream(iterator: Iterator[RetrieveResult]): Stream[RetrieveResult] = {
-    import scala.collection.JavaConverters._
     StreamSupport.stream(Spliterators.spliterator(iterator.asJava, 0L, Spliterator.NONNULL), false)
   }
 

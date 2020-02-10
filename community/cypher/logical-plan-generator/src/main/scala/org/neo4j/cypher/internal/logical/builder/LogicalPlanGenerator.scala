@@ -19,27 +19,50 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ast.generator.AstGenerator._
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
 import org.neo4j.cypher.internal.ast.generator.SemanticAwareAstGenerator
-import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
+import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext.Results
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.builder.LogicalPlanGenerator.WithState
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.scalacheck.Gen
-import org.scalacheck.Gen._
+import org.scalacheck.Gen.choose
+import org.scalacheck.Gen.chooseNum
+import org.scalacheck.Gen.const
+import org.scalacheck.Gen.lzy
+import org.scalacheck.Gen.oneOf
+import org.scalacheck.Gen.sized
 
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)

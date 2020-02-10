@@ -114,7 +114,7 @@
 	<amazon-sdk.version>1.11.524</amazon-sdk.version>
     <guava.version>28.2-jre</guava.version>
     <awaitility.version>4.0.2</awaitility.version>
-    <skip-scalastyle>true</skip-scalastyle>
+    <skip-scalastyle>false</skip-scalastyle>
   </properties>
 
   <modules>

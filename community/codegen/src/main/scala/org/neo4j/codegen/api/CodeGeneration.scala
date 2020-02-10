@@ -20,21 +20,30 @@
 package org.neo4j.codegen.api
 
 import org.neo4j.codegen
+import org.neo4j.codegen.ClassHandle
+import org.neo4j.codegen.CodeGenerator
 import org.neo4j.codegen.CodeGenerator.generateCode
-import org.neo4j.codegen.Expression._
-import org.neo4j.codegen.FieldReference.{field, staticField}
+import org.neo4j.codegen.CodeGeneratorOption
+import org.neo4j.codegen.DisassemblyVisitor
+import org.neo4j.codegen.Expression
+import org.neo4j.codegen.Expression.constant
+import org.neo4j.codegen.Expression.getStatic
+import org.neo4j.codegen.Expression.invoke
+import org.neo4j.codegen.Expression.invokeSuper
+import org.neo4j.codegen.Expression.newInitializedArray
+import org.neo4j.codegen.FieldReference
+import org.neo4j.codegen.FieldReference.field
+import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.Parameter.param
+import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.TypeReference.OBJECT
-import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
-import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
+import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceVisitor
-import org.neo4j.codegen.{CodeGenerator, CodeGeneratorOption, DisassemblyVisitor, TypeReference}
 
 import scala.collection.mutable.ArrayBuffer
-import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
 
 /**
   * Produces runnable code from an IntermediateRepresentation
