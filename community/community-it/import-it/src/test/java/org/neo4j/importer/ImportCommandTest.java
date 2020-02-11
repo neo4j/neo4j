@@ -823,7 +823,7 @@ class ImportCommandTest
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--database", "__incorrect_db__") );
-        assertThat( e ).hasMessageContaining( "Invalid database name '__incorrect_db__'." );
+        assertThat( e.getMessage(),  containsString( "Invalid database name '__incorrect_db__'." ) );
     }
 
     @Test
