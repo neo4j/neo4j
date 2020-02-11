@@ -157,5 +157,11 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
         {
             return NO_ID;
         }
+
+        @Override
+        public String toString()
+        {
+            return "I AM EMPTY";
+        }
     };
 }

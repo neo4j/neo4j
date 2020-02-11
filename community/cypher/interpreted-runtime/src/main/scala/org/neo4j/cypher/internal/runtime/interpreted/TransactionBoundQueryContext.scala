@@ -156,7 +156,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val cursor = allocateNodeCursor()
     val cursors = transactionalContext.cursors
-    var cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
+    val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
 
     try {
       val read = reads()
@@ -170,7 +170,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         }
         resources.trace(selectionCursor)
         new CursorIterator[RelationshipValue] {
-          override protected def close(): Unit = {}
+          override protected def close(): Unit = {
+            selectionCursor.close()
+          }
 
           override protected def fetchNext(): RelationshipValue =
             if (selectionCursor.next())
@@ -1003,8 +1005,8 @@ object TransactionBoundQueryContext {
 
   class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends RelationshipIterator with AutoCloseable {
 
-    import RelationshipCursorIterator.NOT_INITIALIZED
-    import RelationshipCursorIterator.NO_ID
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NOT_INITIALIZED
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID
 
     private var _next = NOT_INITIALIZED
     private var typeId: Int = NO_ID
@@ -1017,7 +1019,12 @@ object TransactionBoundQueryContext {
       true
     }
 
-    private def fetchNext(): Long = if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L
+    private def fetchNext(): Long =
+      if (selectionCursor.next()) selectionCursor.relationshipReference()
+      else {
+        selectionCursor.close()
+        -1L
+      }
 
     override def hasNext: Boolean = {
       if (_next == NOT_INITIALIZED) {
