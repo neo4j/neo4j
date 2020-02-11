@@ -33,7 +33,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.fs.FileUtils;
 
-import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateExternalDatabaseName;
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
 /**
