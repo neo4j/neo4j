@@ -98,7 +98,7 @@ public class DumpCommand extends AbstractCommand
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             checkDbState( databaseLayout, config );
-            dump( databaseName, databaseLayout, archive );
+            dump( databaseLayout, archive );
         }
         catch ( FileLockException e )
         {
@@ -133,7 +133,7 @@ public class DumpCommand extends AbstractCommand
         return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
     }
 
-    private void dump( String database, DatabaseLayout databaseLayout, Path archive )
+    private void dump( DatabaseLayout databaseLayout, Path archive )
     {
         Path databasePath = databaseLayout.databaseDirectory().toPath();
         try
@@ -151,7 +151,7 @@ public class DumpCommand extends AbstractCommand
         {
             if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( databasePath ) )
             {
-                throw new CommandFailedException( "Database does not exist: " + database, e );
+                throw new CommandFailedException( "Database does not exist: " + databaseLayout.getDatabaseName(), e );
             }
             wrapIOException( e );
         }
