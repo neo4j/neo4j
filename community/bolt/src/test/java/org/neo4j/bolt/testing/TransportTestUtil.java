@@ -21,6 +21,7 @@ package org.neo4j.bolt.testing;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.Condition;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,6 +39,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
@@ -295,10 +297,13 @@ public class TransportTestUtil
                         connection.send( new byte[]{0, 0} );
                         connection.recv( 1 );
                     }
+                    catch ( IOException | WebSocketException e )
+                    {
+                        return true;
+                    }
                     catch ( Exception e )
                     {
-                        // take an IOException on send/receive as evidence of disconnection
-                        return e instanceof IOException;
+                        return false;
                     }
                     return false;
                 };
