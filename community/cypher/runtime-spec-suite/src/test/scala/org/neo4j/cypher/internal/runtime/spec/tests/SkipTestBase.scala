@@ -65,6 +65,22 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     exception.getMessage should include("Must be a non-negative integer")
   }
 
+  test("skip Long.MaxValue") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .skip(Long.MaxValue)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(sizeHint, 3, identity)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
   test("skip -1 on an empty input") {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

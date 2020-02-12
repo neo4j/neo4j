@@ -42,18 +42,4 @@ class SkipPipeTest extends CypherFunSuite {
     // Then
     verify(inputIterator, never()).next()
   }
-
-  test("skip should accept longs") {
-    // Given
-    val inputIterator = Iterator.empty
-
-    val src: Pipe = new DummyPipe(inputIterator)
-    val skipPipe = SkipPipe(src, Literal(Long.MaxValue))()
-
-    // When
-    val result = skipPipe.createResults(QueryStateHelper.empty)
-
-    // Then
-    result should be(empty)
-  }
 }
