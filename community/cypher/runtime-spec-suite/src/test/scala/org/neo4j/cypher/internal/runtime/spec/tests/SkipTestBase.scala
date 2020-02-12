@@ -287,4 +287,32 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("a1").withRows(rowCount(12))
   }
+
+  test("should support chained skip and limits") {
+    // given
+    val nodesPerLabel = 10
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a2")
+      .skip(80)
+      .limit(90)
+      .expandAll("(b2)<--(a2)")
+      .limit(10)
+      .skip(10)
+      .expandAll("(a1)-->(b2)")
+      .skip(80)
+      .limit(90)
+      .expandAll("(b1)<--(a1)")
+      .limit(10)
+      .skip(10)
+      .expandAll("(x)-->(b1)")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a2").withRows(rowCount(10))
+  }
 }
