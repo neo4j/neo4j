@@ -157,7 +157,9 @@ object LogicalPlanToPlanBuilderString {
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
       case Limit(_, count, _) =>
-        limitStr(count)
+        integerString(count)
+      case Skip(_, count) =>
+        integerString(count)
       case NodeByLabelScan(idName, label, argumentIds) =>
         wrapInQuotationsAndMkString(idName +: label.name +: argumentIds.toSeq)
       case Optional(_, protectedSymbols) =>
@@ -187,7 +189,7 @@ object LogicalPlanToPlanBuilderString {
         sortItemsStr(sortItems)
       case Top(_, sortItems, limit) =>
         val siStr = sortItemsStr(sortItems)
-        val lStr = limitStr(limit)
+        val lStr = integerString(limit)
         s""" $siStr, $lStr """.trim
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
         val asStr = sortItemsStr(alreadySortedPrefix)
@@ -196,7 +198,7 @@ object LogicalPlanToPlanBuilderString {
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
         val asStr = sortItemsStr(alreadySortedPrefix)
         val stsStr = sortItemsStr(stillToSortSuffix)
-        val lStr = limitStr(limit)
+        val lStr = integerString(limit)
         s""" $asStr, $stsStr, $lStr """.trim
       case ErrorPlan(_, exception) =>
         // This is by no means complete, but the best we can do.
@@ -363,7 +365,7 @@ object LogicalPlanToPlanBuilderString {
     idsStr
   }
 
-  private def limitStr(count: Expression) = {
+  private def integerString(count: Expression) = {
     count match {
       case SignedDecimalIntegerLiteral(i) => i
       case _ => "/* " + count + "*/"

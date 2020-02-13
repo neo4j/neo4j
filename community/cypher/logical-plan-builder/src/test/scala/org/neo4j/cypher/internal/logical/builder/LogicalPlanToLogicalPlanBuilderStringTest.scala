@@ -173,6 +173,13 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .argument()
       .build())
 
+  testPlan("skip",
+           new TestPlanBuilder()
+             .produceResults("x", "y")
+             .skip(5)
+             .argument()
+             .build())
+
   testPlan("aggregation",
     new TestPlanBuilder()
       .produceResults("x", "y")
