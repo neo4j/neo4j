@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.storable.Values.utf8Value
 import org.neo4j.values.virtual.MapValue
 
 class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator {
@@ -71,7 +73,7 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
 }
 
 object CypherQueryObfuscator {
-  private val OBFUSCATED = stringValue("******")
+  private val OBFUSCATED = utf8Value("******")
   private val OBFUSCATED_LITERAL = "'******'"
 
   def apply(obfuscationMetadata: ObfuscationMetadata): QueryObfuscator =

@@ -137,8 +137,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           VirtualValues.map(
             Array("name", "credentials", "passwordChangeRequired"),
             Array(
-              Values.stringValue(userName),
-              Values.stringValue(SystemGraphCredential.createCredentialForPassword(initialPassword, secureHasher).serialize()),
+              Values.utf8Value(userName),
+              Values.utf8Value(SystemGraphCredential.createCredentialForPassword(initialPassword, secureHasher).serialize()),
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
             .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
@@ -168,7 +168,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
         """MATCH (user:User {name: $name}) DETACH DELETE user
           |RETURN 1 AS ignore""".stripMargin,
-        VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
+        VirtualValues.map(Array("name"), Array(Values.utf8Value(userName))),
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
@@ -190,7 +190,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
-          Array(Values.stringValue(currentUser), Values.stringValue(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), secureHasher).serialize()))),
+          Array(Values.utf8Value(currentUser), Values.utf8Value(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), secureHasher).serialize()))),
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
@@ -244,14 +244,14 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case ShowDatabase(normalizedName) => (_, _, _) =>
       val query = makeShowDatabasesQuery(nameSpecified = true)
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query,
-        VirtualValues.map(Array("name"), Array(Values.stringValue(normalizedName.name))))
+        VirtualValues.map(Array("name"), Array(Values.utf8Value(normalizedName.name))))
 
     case DoNothingIfNotExists(source, label, name) => (context, parameterMapping, securityContext) =>
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.utf8Value(name))),
         QueryHandler
           .ignoreNoResult()
           .handleError {
@@ -267,7 +267,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         s"""
            |MATCH (node:$label {name: $$name})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.utf8Value(name))),
         QueryHandler
           .ignoreOnResult()
           .handleError {
@@ -283,7 +283,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
         s"""MATCH (node:$label {name: $$name})
            |RETURN node""".stripMargin,
-        VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        VirtualValues.map(Array("name"), Array(Values.utf8Value(name))),
         QueryHandler
           .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '$name': $label does not exist.")))
           .handleError {
@@ -328,8 +328,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 object DatabaseStatus extends Enumeration {
   type Status = TextValue
 
-  val Online: TextValue = Values.stringValue("online")
-  val Offline: TextValue = Values.stringValue("offline")
+  val Online: TextValue = Values.utf8Value("online")
+  val Offline: TextValue = Values.utf8Value("offline")
 }
 
 object CommunityAdministrationCommandRuntime {

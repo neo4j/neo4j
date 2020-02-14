@@ -152,7 +152,7 @@ class SafePropertyChainReader implements AutoCloseable
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).invalidLength() ) )
                                 {
-                                    value = Values.stringValue( propertyStore.getStringFor( dynamicRecords, TRACER_SUPPLIER.get() ) );
+                                    value = propertyStore.getTextValueFor( dynamicRecords, TRACER_SUPPLIER.get() );
                                 }
                                 break;
                             case ARRAY:

@@ -74,7 +74,7 @@ object ValueConversion {
       case CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
       case CTInteger => l => Values.longValue(l.asInstanceOf[Long])
       case CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
-      case CTString => l => Values.stringValue(l.asInstanceOf[String])
+      case CTString => l => Values.utf8Value(l.asInstanceOf[String])
       case CTPath => p => ValueUtils.fromPath(p.asInstanceOf[Path])
       case CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
       case ListType(_)  => {
@@ -105,7 +105,7 @@ object ValueConversion {
 
   def asValue(value: Any): AnyValue = value match {
     case null => Values.NO_VALUE
-    case s: String => Values.stringValue(s)
+    case s: String => Values.utf8Value(s)
     case c: Char => Values.charValue(c)
     case d: Double => Values.doubleValue(d)
     case f: Float => Values.doubleValue(f)

@@ -33,6 +33,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /** Takes execution plans and converts them to the subset of types used in the Neo4j type system */
 class ExecutionPlanConverter
@@ -46,7 +47,7 @@ class ExecutionPlanConverter
         boolean hasProfilerStatistics = plan.hasProfilerStatistics();
         int size = hasProfilerStatistics ? 10 : 4;
         MapValueBuilder out = new MapValueBuilder( size );
-        out.add( "operatorType", stringValue( plan.getName() ) );
+        out.add( "operatorType", utf8Value( plan.getName() ) );
         out.add( "args", ValueUtils.asMapValue( plan.getArguments() ) );
         out.add( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
         out.add( "children", children( plan ) );

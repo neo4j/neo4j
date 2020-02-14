@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 public class BookmarkResult implements BoltResult
 {
@@ -39,7 +39,7 @@ public class BookmarkResult implements BoltResult
     @Override
     public boolean handleRecords( RecordConsumer recordConsumer, long size )
     {
-        recordConsumer.addMetadata( "bookmark", stringValue( bookmark.toString() ) );
+        recordConsumer.addMetadata( "bookmark", utf8Value( bookmark.toString() ) );
         return false;
     }
 

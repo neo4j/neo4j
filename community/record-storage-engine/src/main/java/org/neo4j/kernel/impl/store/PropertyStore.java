@@ -52,6 +52,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
@@ -663,6 +664,19 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, cursorTracer );
         // A string doesn't have a header in the data array
         return decodeString( source.other() );
+    }
+
+    TextValue getTextValueFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
+    {
+        ensureHeavy( propertyBlock, cursorTracer );
+        return getTextValueFor( propertyBlock.getValueRecords(), cursorTracer );
+    }
+
+    public TextValue getTextValueFor( Collection<DynamicRecord> dynamicRecords, PageCursorTracer cursorTracer )
+    {
+        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, cursorTracer );
+        // A string doesn't have a header in the data array
+        return Values.utf8Value( source.other() );
     }
 
     Value getArrayFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )

@@ -43,6 +43,7 @@ import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 public abstract class AbstractCypherAdapterStream implements BoltResult
 {
@@ -251,10 +252,10 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
                 int size = includePosition ? 5 : 4;
                 MapValueBuilder builder = new MapValueBuilder( size );
 
-                builder.add( "code", stringValue( notification.getCode() ) );
-                builder.add( "title", stringValue( notification.getTitle() ) );
-                builder.add( "description", stringValue( notification.getDescription() ) );
-                builder.add( "severity", stringValue( notification.getSeverity().toString() ) );
+                builder.add( "code", utf8Value( notification.getCode() ) );
+                builder.add( "title", utf8Value( notification.getTitle() ) );
+                builder.add( "description", utf8Value( notification.getDescription() ) );
+                builder.add( "severity", utf8Value( notification.getSeverity().toString() ) );
 
                 if ( includePosition )
                 {

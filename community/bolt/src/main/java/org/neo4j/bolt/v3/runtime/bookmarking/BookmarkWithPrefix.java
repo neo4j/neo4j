@@ -27,6 +27,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * This is the bookmark used in Bolt V1-V3. It is prefixed to identify this string is a bookmark.
@@ -58,7 +59,7 @@ public class BookmarkWithPrefix implements Bookmark
     @Override
     public void attachTo( BoltResponseHandler state )
     {
-        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
+        state.onMetadata( BOOKMARK_KEY, utf8Value( toString() ) );
     }
 
     @Override

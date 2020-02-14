@@ -45,7 +45,7 @@ case class Linenumber() extends Expression {
 
 case class File() extends Expression {
   override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getLinenumber match {
-    case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
+    case Some(ResourceLinenumber(name, _, _)) =>Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }
 

@@ -36,6 +36,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * This procedure lists "components" and their version.
@@ -53,7 +54,7 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
 {
-    private static final TextValue NEO4J_KERNEL = stringValue( "Neo4j Kernel" );
+    private static final TextValue NEO4J_KERNEL = utf8Value( "Neo4j Kernel" );
     private final TextValue neo4jVersion;
     private final TextValue neo4jEdition;
 

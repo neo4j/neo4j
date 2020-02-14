@@ -44,7 +44,7 @@ public class BoltAuthenticationHelper
             {
                 context.connectionState().onMetadata( "credentials_expired", Values.TRUE );
             }
-            context.connectionState().onMetadata( "server", Values.stringValue( boltSpi.version() ) );
+            context.connectionState().onMetadata( "server", Values.utf8Value( boltSpi.version() ) );
 
             return true;
         }

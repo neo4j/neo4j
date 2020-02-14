@@ -71,6 +71,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * In this schema store implementation, each schema record is really just a pointer to a property chain in the property store.
@@ -578,7 +579,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     private static void putStringProperty( Map<String,Value> map, String property, String value )
     {
-        map.put( property, Values.stringValue( value ) );
+        map.put( property, Values.utf8Value( value ) );
     }
 
     private static void putIndexConfigProperty( Map<String,Value> map, String key, Value value )

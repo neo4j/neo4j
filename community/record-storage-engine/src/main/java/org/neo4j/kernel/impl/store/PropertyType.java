@@ -126,7 +126,7 @@ public enum PropertyType
         @Override
         public Value value( PropertyBlock block, PropertyStore store, PageCursorTracer cursorTracer )
         {
-            return Values.stringValue( store.getStringFor( block, cursorTracer ) );
+            return store.getTextValueFor( block, cursorTracer );
         }
 
         @Override

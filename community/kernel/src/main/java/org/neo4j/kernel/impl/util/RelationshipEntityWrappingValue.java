@@ -208,7 +208,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 t = type;
                 if ( t == null )
                 {
-                    t = type = Values.stringValue( relationship.getType().name() );
+                    t = type = Values.utf8Value( relationship.getType().name() );
                 }
             }
         }

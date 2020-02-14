@@ -42,6 +42,7 @@ import static org.neo4j.procedure.builtin.routing.Role.ROUTE;
 import static org.neo4j.procedure.builtin.routing.Role.WRITE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * The result format of GetServersV1 and GetServersV2 procedures.
@@ -50,6 +51,9 @@ public class RoutingResultFormat
 {
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";
+    private static final TextValue READ_NAME = utf8Value( READ.name() );
+    private static final TextValue WRTE_NAME = utf8Value( WRITE.name() );
+    private static final TextValue ROUTE_NAME = utf8Value( ROUTE.name() );
 
     private RoutingResultFormat()
     {
@@ -67,7 +71,7 @@ public class RoutingResultFormat
         {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, stringValue( WRITE.name() ) );
+            builder.add( ROLE_KEY, WRTE_NAME );
             builder.add( ADDRESSES_KEY, VirtualValues.list( writers ) );
 
             servers.add( builder.build() );
@@ -77,7 +81,7 @@ public class RoutingResultFormat
         {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, stringValue( READ.name() ) );
+            builder.add( ROLE_KEY, READ_NAME );
             builder.add( ADDRESSES_KEY, VirtualValues.list( readers ) );
 
             servers.add( builder.build() );
@@ -87,7 +91,7 @@ public class RoutingResultFormat
         {
             MapValueBuilder builder = new MapValueBuilder();
 
-            builder.add( ROLE_KEY, stringValue( ROUTE.name() ) );
+            builder.add( ROLE_KEY, ROUTE_NAME );
             builder.add( ADDRESSES_KEY, VirtualValues.list( routers ) );
 
             servers.add( builder.build() );
@@ -155,7 +159,7 @@ public class RoutingResultFormat
     {
         return addresses.stream()
                 .map( SocketAddress::toString )
-                .map( Values::stringValue )
+                .map( Values::utf8Value )
                 .toArray( AnyValue[]::new );
     }
 }

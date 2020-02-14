@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -154,6 +155,11 @@ public final class Values
     }
 
     // DIRECT FACTORY METHODS
+
+    public static TextValue utf8Value( String value )
+    {
+        return utf8Value( value.getBytes( StandardCharsets.UTF_8 ) );
+    }
 
     public static TextValue utf8Value( byte[] bytes )
     {
@@ -559,7 +565,7 @@ public final class Values
     {
         if ( value instanceof String )
         {
-            return stringValue( (String) value );
+            return utf8Value( ((String) value).getBytes( StandardCharsets.UTF_8 ) );
         }
         if ( value instanceof Object[] )
         {

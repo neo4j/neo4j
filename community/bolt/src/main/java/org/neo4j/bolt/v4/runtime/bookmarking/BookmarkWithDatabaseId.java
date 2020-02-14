@@ -27,6 +27,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * This bookmark is introduced in bolt v4 with multi-databases support.
@@ -57,7 +58,7 @@ public class BookmarkWithDatabaseId implements Bookmark
     @Override
     public void attachTo( BoltResponseHandler state )
     {
-        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
+        state.onMetadata( BOOKMARK_KEY, utf8Value( toString() ) );
     }
 
     @Override

@@ -386,7 +386,7 @@ public final class ValueUtils
         }
         if ( object instanceof String )
         {
-            return Values.stringValue( (String) object );
+            return Values.utf8Value( (String) object );
         }
         throw new IllegalArgumentException(
                 "Cannot produce a string from " + object.getClass().getName() );

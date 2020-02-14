@@ -56,7 +56,7 @@ public class ConnectedState implements BoltStateMachineState
 
             if ( processAuthentication( userAgent, authToken, context ) )
             {
-                context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
+                context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
                 return readyState;
             }
             else
