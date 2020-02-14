@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.test.conditions.Conditions;
 
 import static java.time.Duration.ZERO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
