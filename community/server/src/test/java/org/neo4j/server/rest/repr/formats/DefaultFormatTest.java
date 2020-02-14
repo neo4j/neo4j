@@ -29,10 +29,7 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,8 +61,8 @@ public class DefaultFormatTest
     {
         Map<String, Object> map = input.readMap( "{\"key1\":\"value1\",     \"key2\":\"value11\"}" );
         assertNotNull( map );
-        assertThat( map, hasEntry( "key1", "value1" ) );
-        assertThat( map, hasEntry( "key2", "value11" ) );
+        assertThat( map ).containsEntry( "key1", "value1" );
+        assertThat( map ).containsEntry( "key2", "value11" );
         assertEquals( 2, map.size(), "map contained extra values" );
     }
 
@@ -74,13 +71,13 @@ public class DefaultFormatTest
     {
         Map<String, Object> map = input.readMap( "{\"nested\": {\"key\": \"valuable\"}}" );
         assertNotNull( map );
-        assertThat( map, hasKey( "nested" ) );
+        assertThat( map ).containsKey( "nested" );
         assertEquals( 1, map.size(), "map contained extra values" );
         Object nested = map.get( "nested" );
-        assertThat( nested, instanceOf( Map.class ) );
+        assertThat( nested ).isInstanceOf( Map.class );
         @SuppressWarnings( "unchecked" )
         Map<String, String> nestedMap = (Map<String, String>) nested;
-        assertThat( nestedMap, hasEntry( "key", "valuable" ) );
+        assertThat( nestedMap ).containsEntry( "key", "valuable" );
     }
 
     @Test

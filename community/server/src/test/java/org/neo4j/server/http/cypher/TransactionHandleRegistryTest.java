@@ -28,8 +28,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -135,7 +134,7 @@ class TransactionHandleRegistryTest
         registry.rollbackSuspendedTransactionsIdleSince( clock.millis() - 1000 );
 
         // Then
-        assertThat( registry.acquire( txId2 ), equalTo( newTx ) );
+        assertThat( registry.acquire( txId2 ) ).isEqualTo( newTx );
 
         // And then the other should have been evicted
         assertThrows( InvalidTransactionId.class, () -> registry.acquire( txId1 ) );
@@ -162,7 +161,7 @@ class TransactionHandleRegistryTest
         long timesOutAt = registry.release( id, handle );
 
         // Then
-        assertThat( timesOutAt, equalTo( clock.millis() + timeoutLength ) );
+        assertThat( timesOutAt ).isEqualTo( clock.millis() + timeoutLength );
 
         // And when
         clock.forward( 1337, TimeUnit.MILLISECONDS );
@@ -170,7 +169,7 @@ class TransactionHandleRegistryTest
         timesOutAt = registry.release( id, handle );
 
         // Then
-        assertThat( timesOutAt, equalTo( clock.millis() + timeoutLength ) );
+        assertThat( timesOutAt ).isEqualTo( clock.millis() + timeoutLength );
     }
 
     @Test

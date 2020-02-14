@@ -76,8 +76,7 @@ import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -518,12 +517,12 @@ class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( UTF_8.name() );
-        assertThat( result, startsWith(
+        assertThat( result ).startsWith(
                 "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" + "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
                         "{\"srid\":7203,\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
                         "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}]," +
                         "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
-                        "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"" ) );
+                        "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"" );
     }
 
     @Test

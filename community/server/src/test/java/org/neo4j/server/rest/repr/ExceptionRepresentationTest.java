@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -32,9 +31,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 
 class ExceptionRepresentationTest
@@ -50,8 +47,8 @@ class ExceptionRepresentationTest
         JsonNode out = serialize( rep );
 
         // Then
-        assertThat( out.get("cause").get("message").asText(), is( "Haha" ) );
-        assertThat( out.get( "cause" ).get("cause").get("message").asText(), is( "HAHA!") );
+        assertThat( out.get( "cause" ).get( "message" ).asText() ).isEqualTo( "Haha" );
+        assertThat( out.get( "cause" ).get( "cause" ).get( "message" ).asText() ).isEqualTo( "HAHA!" );
     }
 
     @Test
@@ -66,8 +63,8 @@ class ExceptionRepresentationTest
         JsonNode out = serialize( rep );
 
         // Then
-        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( "Neo.DatabaseError.General.UnknownError" ) );
-        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Hello" ) );
+        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( "Neo.DatabaseError.General.UnknownError" );
+        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Hello" );
     }
 
     @Test
@@ -82,9 +79,9 @@ class ExceptionRepresentationTest
         JsonNode out = serialize( rep );
 
         // Then
-        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( "Neo.DatabaseError.General.UnknownError" ) );
-        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Hello" ) );
-        assertThat( out.has( "message" ), equalTo( false ) );
+        assertThat( out.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( "Neo.DatabaseError.General.UnknownError" );
+        assertThat( out.get( "errors" ).get( 0 ).get( "message" ).asText() ).isEqualTo( "Hello" );
+        assertThat( out.has( "message" ) ).isEqualTo( false );
     }
 
     private JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException

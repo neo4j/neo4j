@@ -29,9 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -55,6 +53,6 @@ public class DatabaseModuleTest
         // Then
         ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
         verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), any() );
-        assertThat( captor.getValue(), not( empty() ) );
+        assertThat( captor.getValue() ).isNotEmpty();
     }
 }

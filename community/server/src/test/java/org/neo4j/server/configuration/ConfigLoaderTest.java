@@ -42,8 +42,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -249,8 +248,8 @@ class ConfigLoaderTest
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
-        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
-                is( new File( testDirectory.homeDir(), "data/dbms" ).getAbsoluteFile().toPath() ) );
+        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
+                new File( testDirectory.homeDir(), "data/dbms" ).getAbsoluteFile().toPath() );
     }
 
     @Test
@@ -260,8 +259,8 @@ class ConfigLoaderTest
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
-        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
-                is( new File( testDirectory.homeDir(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() ) );
+        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
+                new File( testDirectory.homeDir(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() );
     }
 
     @Test
@@ -272,6 +271,7 @@ class ConfigLoaderTest
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
-        assertThat( config.get( GraphDatabaseSettings.auth_store ), is( new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() ) );
+        assertThat( config.get( GraphDatabaseSettings.auth_store ) ).isEqualTo(
+                new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() );
     }
 }

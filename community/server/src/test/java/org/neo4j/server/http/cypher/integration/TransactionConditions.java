@@ -38,8 +38,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -90,7 +89,7 @@ public class TransactionConditions
                 while ( expected.hasNext() )
                 {
                     assertTrue( errors.hasNext() );
-                    assertThat( errors.next().get( "code" ).asText(), equalTo( expected.next().code().serialize() ) );
+                    assertThat( errors.next().get( "code" ).asText() ).isEqualTo( expected.next().code().serialize() );
                 }
                 if ( errors.hasNext() )
                 {
@@ -124,7 +123,7 @@ public class TransactionConditions
                 {
                     assertTrue( meta.hasNext() );
                     JsonNode node = meta.next();
-                    assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    assertThat( node.get( "deleted" ).asBoolean() ).isEqualTo( Boolean.TRUE );
                     String type = node.get( "type" ).asText();
                     switch ( type )
                     {
@@ -144,7 +143,7 @@ public class TransactionConditions
                 while ( meta.hasNext() )
                 {
                     JsonNode node = meta.next();
-                    assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.FALSE ) );
+                    assertThat( node.get( "deleted" ).asBoolean() ).isEqualTo( Boolean.FALSE );
                 }
             }
             catch ( JsonParseException e )
@@ -280,7 +279,7 @@ public class TransactionConditions
                 {
                     assertTrue( entities.hasNext() );
                     JsonNode node = entities.next();
-                    assertThat( node.get( "metadata" ).get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    assertThat( node.get( "metadata" ).get( "deleted" ).asBoolean() ).isEqualTo( Boolean.TRUE );
                 }
                 if ( entities.hasNext() )
                 {
@@ -390,7 +389,7 @@ public class TransactionConditions
                 {
                     assertTrue( relationships.hasNext() );
                     JsonNode node = relationships.next();
-                    assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    assertThat( node.get( "deleted" ).asBoolean() ).isEqualTo( Boolean.TRUE );
                 }
                 if ( relationships.hasNext() )
                 {

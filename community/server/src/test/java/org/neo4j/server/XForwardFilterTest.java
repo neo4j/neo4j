@@ -30,8 +30,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.neo4j.server.web.XForwardFilter;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -60,7 +59,7 @@ class XForwardFilterTest
         filter.filter( request );
 
         // then
-        assertThat( request.getBaseUri().toString(), containsString( xForwardHostAndPort ) );
+        assertThat( request.getBaseUri().toString() ).contains( xForwardHostAndPort );
     }
 
     @Test
@@ -106,7 +105,7 @@ class XForwardFilterTest
         filter.filter( request );
 
         // then
-        assertThat( request.getBaseUri().getScheme(), containsString( theProtocol ) );
+        assertThat( request.getBaseUri().getScheme() ).contains( theProtocol );
     }
 
     @Test
@@ -129,6 +128,6 @@ class XForwardFilterTest
         filter.filter( request );
 
         // then
-        assertThat( request.getBaseUri().getScheme(), containsString( theProtocol ) );
+        assertThat( request.getBaseUri().getScheme() ).contains( theProtocol );
     }
 }

@@ -31,8 +31,7 @@ import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -54,8 +53,8 @@ class StatementDeserializerTest
         InputStatement stmt = de.read();
         assertNotNull( stmt );
 
-        assertThat( stmt.statement(), equalTo( "Blah blah" ) );
-        assertThat( stmt.parameters(), equalTo( map( "one", 12 ) ) );
+        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
+        assertThat( stmt.parameters() ).isEqualTo( map( "one", 12 ) );
 
         assertNull( de.read() );
     }
@@ -88,7 +87,7 @@ class StatementDeserializerTest
         InputStatement stmt = de.read();
         assertNotNull( stmt );
 
-        assertThat( stmt.statement(), equalTo( "Blah blah" ) );
+        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
 
         assertNull( de.read() );
     }
@@ -106,7 +105,7 @@ class StatementDeserializerTest
         InputStatement stmt = de.read();
         assertNotNull( stmt );
 
-        assertThat( stmt.statement(), equalTo( "blah" ) );
+        assertThat( stmt.statement() ).isEqualTo( "blah" );
 
         assertNull( de.read() );
     }
@@ -123,8 +122,8 @@ class StatementDeserializerTest
         // Then
         InputStatement stmt = de.read();
         assertNotNull( stmt );
-        assertThat( stmt.statement(), equalTo( "blah" ) );
-        assertThat( stmt.parameters(), equalTo( map("k", 1) ) );
+        assertThat( stmt.statement() ).isEqualTo( "blah" );
+        assertThat( stmt.parameters() ).isEqualTo( map( "k", 1 ) );
 
         assertNull( de.read() );
     }
@@ -157,14 +156,14 @@ class StatementDeserializerTest
         InputStatement stmt = de.read();
         assertNotNull( stmt );
 
-        assertThat( stmt.statement(), equalTo( "Blah blah" ) );
-        assertThat( stmt.parameters(), equalTo( map( "one", 12 ) ) );
+        assertThat( stmt.statement() ).isEqualTo( "Blah blah" );
+        assertThat( stmt.parameters() ).isEqualTo( map( "one", 12 ) );
 
         InputStatement stmt2 = de.read();
         assertNotNull( stmt2 );
 
-        assertThat( stmt2.statement(), equalTo( "Blah bluh" ) );
-        assertThat( stmt2.parameters(), equalTo( map( "asd", singletonList( "one, two" ) ) ) );
+        assertThat( stmt2.statement() ).isEqualTo( "Blah bluh" );
+        assertThat( stmt2.parameters() ).isEqualTo( map( "asd", singletonList( "one, two" ) ) );
 
         assertNull( de.read() );
     }
@@ -232,7 +231,7 @@ class StatementDeserializerTest
                 errorMessages.add( t.getMessage() );
             }
 
-            assertThat( errorMessages, equalTo( Arrays.asList( expectedErrorMessages ) ) );
+            assertThat( errorMessages ).isEqualTo( Arrays.asList( expectedErrorMessages ) );
         }
     }
 }

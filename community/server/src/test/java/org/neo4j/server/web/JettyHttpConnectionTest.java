@@ -26,8 +26,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
@@ -49,7 +48,7 @@ class JettyHttpConnectionTest
     {
         JettyHttpConnection connection = newConnection( connectorMock( "http" ) );
 
-        assertThat( connection.connectTime(), greaterThan( 0L ) );
+        assertThat( connection.connectTime() ).isGreaterThan( 0L );
     }
 
     @Test

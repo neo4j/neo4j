@@ -44,12 +44,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
@@ -188,9 +184,9 @@ public class DiscoveryServiceTest
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
-        assertThat( json.length(), is( greaterThan( 0 ) ) );
-        assertThat( json, is( not( "\"\"" ) ) );
-        assertThat( json, is( not( "null" ) ) );
+        assertThat( json.length() ).isGreaterThan( 0 );
+        assertThat( json ).isNotEqualTo( "\"\"" );
+        assertThat( json ).isNotEqualTo( "null" );
     }
 
     private UriInfo uriInfo( URI baseUri )
@@ -205,7 +201,7 @@ public class DiscoveryServiceTest
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
-        assertThat( json, containsString( "\"bolt_direct\" : \"" + expectedBoltUri ) );
+        assertThat( json ).contains( "\"bolt_direct\" : \"" + expectedBoltUri );
     }
 
     @Test
@@ -213,7 +209,7 @@ public class DiscoveryServiceTest
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
-        assertThat( json, containsString( "\"transaction\" : \"" + expectedDatabaseUri + "/" ) );
+        assertThat( json ).contains( "\"transaction\" : \"" + expectedDatabaseUri + "/" );
     }
 
     @Test
@@ -221,7 +217,7 @@ public class DiscoveryServiceTest
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
-        assertThat( json, not( containsString( "\"management\"" ) ) );
+        assertThat( json ).doesNotContain( "\"management\"" );
     }
 
     @Test
@@ -235,7 +231,7 @@ public class DiscoveryServiceTest
 
         Response response = ds.redirectToBrowser();
 
-        assertThat( response.getMetadata().getFirst( "Location" ), is( new URI( "http://www.example" + ".com:5435/browser/" ) ) );
+        assertThat( response.getMetadata().getFirst( "Location" ) ).isEqualTo( new URI( "http://www.example.com:5435/browser/" ) );
     }
 
     private static Consumer<ConnectorPortRegister> register( String connector, String host, int port )

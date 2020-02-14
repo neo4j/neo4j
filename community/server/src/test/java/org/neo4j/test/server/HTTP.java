@@ -48,11 +48,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.LOCATION;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -264,11 +260,8 @@ public final class HTTP
         {
             // Specifically, this is never used for character encoding.
             contentEncoding = contentEncoding.toLowerCase();
-            assertThat( contentEncoding, anyOf(
-                    containsString( "gzip" ),
-                    containsString( "deflate" ) ) );
-            assertThat( contentEncoding, allOf(
-                    not( containsString( "utf-8" ) ) ) );
+            assertThat( contentEncoding ).satisfiesAnyOf( s -> assertThat( s ).startsWith( "gzip" ), s -> assertThat( s ).startsWith( "defalte" ) );
+            assertThat( contentEncoding ).doesNotContain( "utf-8" );
         }
         return response;
     }
