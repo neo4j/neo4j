@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
@@ -43,7 +42,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
     ReadOnlyIndexPartition( File partitionFolder, Directory directory ) throws IOException
     {
         super( partitionFolder, directory );
-        this.searcherManager = new SearcherManager( directory, new SearcherFactory() );
+        this.searcherManager = new SearcherManager( directory, new Neo4jSearcherFactory() );
     }
 
     @Override

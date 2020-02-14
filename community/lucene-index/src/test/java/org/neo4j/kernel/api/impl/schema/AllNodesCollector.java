@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
@@ -33,13 +32,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.kernel.api.impl.index.partition.Neo4jSearcherFactory;
 import org.neo4j.values.storable.Value;
 
 public class AllNodesCollector extends SimpleCollector
 {
     public static List<Long> getAllNodes( Directory directory, Value propertyValue ) throws IOException
     {
-        try ( SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ) )
+        try ( SearcherManager manager = new SearcherManager( directory, new Neo4jSearcherFactory() ) )
         {
             IndexSearcher searcher = manager.acquire();
             Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );

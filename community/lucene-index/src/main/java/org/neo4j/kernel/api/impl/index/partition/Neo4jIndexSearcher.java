@@ -17,34 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index.partition;
 
-import java.io.Closeable;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Weight;
+
 import java.io.IOException;
 
-import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
-
-class DirectSearcherReference implements SearcherReference
+public class Neo4jIndexSearcher extends IndexSearcher
 {
-    private final Neo4jIndexSearcher searcher;
-    private final Closeable resource;
-
-    DirectSearcherReference( Neo4jIndexSearcher searcher, Closeable resource )
+    public Neo4jIndexSearcher( IndexReader reader )
     {
-        this.searcher = searcher;
-        this.resource = resource;
+        super( reader );
     }
 
-    @Override
-    public void close() throws IOException
+    public void search( Weight weight, Collector results ) throws IOException
     {
-        resource.close();
-    }
-
-    @Override
-    public Neo4jIndexSearcher getIndexSearcher()
-    {
-        return searcher;
+        search( leafContexts, weight, results );
     }
 }

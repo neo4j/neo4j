@@ -2730,9 +2730,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                 Node top = tx.createNode( LABEL );
                 Node middle = tx.createNode( LABEL );
                 Node bottom = tx.createNode( LABEL );
-                top.setProperty( PROP, "zebra zebra zebra" );
-                middle.setProperty( PROP, "zebra zebra" );
-                bottom.setProperty( PROP, "zebra" );
+                top.setProperty( PROP, "zebra zebra zebra zebra donkey" );
+                middle.setProperty( PROP, "zebra zebra zebra donkey" );
+                bottom.setProperty( PROP, "zebra donkey" );
                 topNode = top.getId();
                 middleNode = middle.getId();
                 bottomNode = bottom.getId();
@@ -2803,7 +2803,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             }
         }
 
-        @Disabled( "Disabled until the bug in scoring across partitions has been fixed." )
         @Test
         void queryNodesWithSkipAndLimitMustIncludeNodesAddedInTransaction()
         {
@@ -2819,7 +2818,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                     assertTrue( iterator.hasNext() );
                     assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
                     assertFalse( iterator.hasNext() );
-                    tx.commit();
                 }
                 tx.commit();
             }
@@ -2849,9 +2847,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                 Relationship top = node.createRelationshipTo( node, REL );
                 Relationship middle = node.createRelationshipTo( node, REL );
                 Relationship bottom = node.createRelationshipTo( node, REL );
-                top.setProperty( PROP, "zebra zebra zebra" );
-                middle.setProperty( PROP, "zebra zebra" );
-                bottom.setProperty( PROP, "zebra" );
+                top.setProperty( PROP, "zebra zebra zebra zebra donkey" );
+                middle.setProperty( PROP, "zebra zebra zebra donkey" );
+                bottom.setProperty( PROP, "zebra donkey" );
                 topRel = top.getId();
                 middleRel = middle.getId();
                 bottomRel = bottom.getId();
@@ -2922,7 +2920,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             }
         }
 
-        @Disabled( "Disabled until the bug in scoring across partitions has been fixed." )
         @Test
         void queryRelationshipsWithSkipAndLimitMustIncludeRelationshipsAddedInTransaction()
         {
@@ -2939,11 +2936,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                     assertTrue( iterator.hasNext() );
                     assertThat( ((Relationship) iterator.next()).getId() ).isEqualTo( relId );
                     assertFalse( iterator.hasNext() );
-                    tx.commit();
                 }
                 tx.commit();
             }
         }
     }
-    // todo fix doc scoring across partitions and transaction state
 }

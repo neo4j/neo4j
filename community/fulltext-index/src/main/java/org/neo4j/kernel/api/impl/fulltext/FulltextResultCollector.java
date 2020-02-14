@@ -132,8 +132,8 @@ class FulltextResultCollector implements Collector
             assert scorer.docID() == doc;
             if ( values.advanceExact( doc ) )
             {
-                float score = scorer.score();
                 long entityId = values.longValue();
+                float score = scorer.score();
                 if ( exclusionFilter.test( entityId ) )
                 {
                     return;

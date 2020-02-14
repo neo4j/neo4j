@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
@@ -46,7 +45,7 @@ public class WritableIndexPartition extends AbstractIndexPartition
     {
         super( partitionFolder, directory );
         this.indexWriter = new IndexWriter( directory, writerConfig );
-        this.searcherManager = new SearcherManager( indexWriter, new SearcherFactory() );
+        this.searcherManager = new SearcherManager( indexWriter, new Neo4jSearcherFactory() );
     }
 
     /**

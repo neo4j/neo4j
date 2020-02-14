@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -30,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,10 +91,10 @@ class LuceneAllDocumentsReaderTest
             throws IOException
     {
         PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-        IndexSearcher indexSearcher = mock( IndexSearcher.class );
+        Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
         IndexReader indexReader = mock( IndexReader.class );
 
-        when(partitionSearcher.getIndexSearcher()).thenReturn( indexSearcher );
+        when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
         when( indexReader.maxDoc() ).thenReturn( maxDoc );
 

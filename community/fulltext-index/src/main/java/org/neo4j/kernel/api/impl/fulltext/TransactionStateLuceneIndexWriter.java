@@ -35,6 +35,7 @@ import java.io.IOException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 
 class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
@@ -97,7 +98,7 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
     SearcherReference getNearRealTimeSearcher() throws IOException
     {
         DirectoryReader directoryReader = DirectoryReader.open( writer );
-        IndexSearcher searcher = new IndexSearcher( directoryReader );
+        Neo4jIndexSearcher searcher = new Neo4jIndexSearcher( directoryReader );
         return new DirectSearcherReference( searcher, directoryReader );
     }
 

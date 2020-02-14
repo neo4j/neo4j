@@ -32,18 +32,18 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
  */
 public class PartitionSearcher implements SearcherReference
 {
-    private IndexSearcher indexSearcher;
+    private Neo4jIndexSearcher indexSearcher;
     private ReferenceManager<IndexSearcher> referenceManager;
 
     public PartitionSearcher( ReferenceManager<IndexSearcher> referenceManager ) throws IOException
     {
         this.referenceManager = referenceManager;
-        this.indexSearcher = referenceManager.acquire();
+        this.indexSearcher = (Neo4jIndexSearcher) referenceManager.acquire();
         this.indexSearcher.setQueryCache( null );
     }
 
     @Override
-    public IndexSearcher getIndexSearcher()
+    public Neo4jIndexSearcher getIndexSearcher()
     {
         return indexSearcher;
     }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.search.IndexSearcher;
-
 import java.io.Closeable;
+
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 
 public interface SearcherReference extends Closeable
 {
-    IndexSearcher getIndexSearcher();
+    Neo4jIndexSearcher getIndexSearcher();
 }

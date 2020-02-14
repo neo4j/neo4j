@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.search.BooleanQuery;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
@@ -32,7 +31,6 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -42,12 +40,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-
-import static java.util.Arrays.asList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexReader.ALWAYS_FALSE;
-import static org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.mergeIterators;
 
 /**
  * Manages the transaction state of a specific individual fulltext index, in a given transaction.
@@ -80,7 +73,7 @@ class FulltextIndexTransactionState implements Closeable
         txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, propertyNames, modifiedEntityIdsInThisTransaction, writer );
     }
 
-    void maybeUpdate( QueryContext context, PageCursorTracer cursorTracer )
+    SearcherReference maybeUpdate( QueryContext context, PageCursorTracer cursorTracer )
     {
         if ( currentSearcher == null || lastUpdateRevision != context.getTransactionStateOrNull().getDataRevision() )
         {
@@ -93,6 +86,7 @@ class FulltextIndexTransactionState implements Closeable
                 throw new RuntimeException( "Could not update fulltext schema index transaction state.", e );
             }
         }
+        return currentSearcher;
     }
 
     private void updateSearcher( QueryContext context, PageCursorTracer cursorTracer ) throws Exception
@@ -124,12 +118,5 @@ class FulltextIndexTransactionState implements Closeable
     public LongPredicate isModifiedInTransactionPredicate()
     {
         return modifiedEntityIdsInThisTransaction::contains;
-    }
-
-    public ValuesIterator filter( ValuesIterator iterator, BooleanQuery query, IndexQueryConstraints constraints )
-    {
-        ValuesIterator transactionStateIterator = FulltextIndexReader.searchLucene( currentSearcher, query, constraints, ALWAYS_FALSE );
-        iterator = mergeIterators( asList( iterator, transactionStateIterator ) );
-        return iterator;
     }
 }

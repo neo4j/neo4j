@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -38,6 +37,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
@@ -63,7 +63,7 @@ class SimpleIndexReaderTest
 {
     private static final SchemaDescriptor SCHEMA = SchemaDescriptor.forLabel( 0, 0 );
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-    private final IndexSearcher indexSearcher = mock( IndexSearcher.class );
+    private final Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 

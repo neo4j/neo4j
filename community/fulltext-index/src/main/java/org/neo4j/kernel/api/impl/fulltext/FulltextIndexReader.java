@@ -30,9 +30,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 
 import java.io.IOException;
@@ -50,13 +52,13 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.TextValue;
@@ -84,38 +86,6 @@ public class FulltextIndexReader implements IndexReader
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.transactionState = new FulltextIndexTransactionState( descriptor, analyzer, propertyNames );
-    }
-
-    private Query parseFulltextQuery( String query ) throws ParseException
-    {
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( propertyNames, analyzer );
-        multiFieldQueryParser.setAllowLeadingWildcard( true );
-        return multiFieldQueryParser.parse( query );
-    }
-
-    private ValuesIterator indexQuery( Query query, IndexQueryConstraints constraints, LongPredicate modifiedInTransactionPredicate )
-    {
-        List<ValuesIterator> results = new ArrayList<>();
-        for ( SearcherReference searcher : searchers )
-        {
-            ValuesIterator iterator = searchLucene( searcher, query, constraints, modifiedInTransactionPredicate );
-            results.add( iterator );
-        }
-        return ScoreEntityIterator.mergeIterators( results );
-    }
-
-    static ValuesIterator searchLucene( SearcherReference searcher, Query query, IndexQueryConstraints constraints, LongPredicate exclusionFilter )
-    {
-        try
-        {
-            FulltextResultCollector collector = new FulltextResultCollector( constraints, exclusionFilter );
-            searcher.getIndexSearcher().search( query, collector );
-            return collector.iterator();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     @Override
@@ -190,19 +160,8 @@ public class FulltextIndexReader implements IndexReader
                 queryBuilder.add( query, BooleanClause.Occur.MUST );
             }
         }
-        BooleanQuery query = queryBuilder.build();
-        ReadableTransactionState state = context.getTransactionStateOrNull();
-        ValuesIterator itr;
-        if ( state != null && !isEventuallyConsistent( index ) )
-        {
-            transactionState.maybeUpdate( context, cursorTracer );
-            itr = indexQuery( query, constraints, transactionState.isModifiedInTransactionPredicate() );
-            itr = transactionState.filter( itr, query, constraints );
-        }
-        else
-        {
-            itr = indexQuery( query, constraints, ALWAYS_FALSE );
-        }
+        Query query = queryBuilder.build();
+        ValuesIterator itr = searchLucene( query, constraints, context, cursorTracer );
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );
     }
@@ -253,6 +212,53 @@ public class FulltextIndexReader implements IndexReader
         resources.addAll( searchers );
         resources.add( transactionState );
         IOUtils.close( IndexReaderCloseException::new, resources );
+    }
+
+    private Query parseFulltextQuery( String query ) throws ParseException
+    {
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( propertyNames, analyzer );
+        multiFieldQueryParser.setAllowLeadingWildcard( true );
+        return multiFieldQueryParser.parse( query );
+    }
+
+    private ValuesIterator searchLucene( Query query, IndexQueryConstraints constraints, QueryContext context, PageCursorTracer cursorTracer )
+    {
+        try
+        {
+            query = searchers.get( 0 ).getIndexSearcher().rewrite( query );
+            boolean includeTransactionState = context.getTransactionStateOrNull() != null && !isEventuallyConsistent( index );
+            LongPredicate filter = includeTransactionState ? transactionState.isModifiedInTransactionPredicate() : ALWAYS_FALSE;
+            List<PreparedSearch> searches = new ArrayList<>( searchers.size() + 1 );
+            for ( SearcherReference searcher : searchers )
+            {
+                Neo4jIndexSearcher indexSearcher = searcher.getIndexSearcher();
+                searches.add( new PreparedSearch( indexSearcher, filter ) );
+            }
+            if ( includeTransactionState )
+            {
+                SearcherReference reference = transactionState.maybeUpdate( context, cursorTracer );
+                searches.add( new PreparedSearch( reference.getIndexSearcher(), ALWAYS_FALSE ) );
+            }
+
+            StatsCollector statsCollector = new StatsCollector( searches );
+            List<ValuesIterator> results = new ArrayList<>();
+
+            for ( PreparedSearch search : searches )
+            {
+                // Weights are bonded with the top IndexReaderContext of the index searcher that they are created for.
+                // That's why we have to create a new StatsCachingIndexSearcher, and a new weight, for every index partition.
+                // However, the important thing is that we re-use the statsCollector.
+                StatsCachingIndexSearcher statsCachingIndexSearcher = new StatsCachingIndexSearcher( search, statsCollector );
+                Weight weight = statsCachingIndexSearcher.createWeight( query, ScoreMode.COMPLETE, 1 );
+                results.add( search.search( weight, constraints ) );
+            }
+
+            return ScoreEntityIterator.mergeIterators( results );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException

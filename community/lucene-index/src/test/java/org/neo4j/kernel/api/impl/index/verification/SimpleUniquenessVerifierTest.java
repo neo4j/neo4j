@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.verification;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +35,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.TestPropertyAccessor;
+import org.neo4j.kernel.api.impl.index.partition.Neo4jSearcherFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
@@ -72,7 +72,7 @@ class SimpleUniquenessVerifierTest
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         Directory dir = dirFactory.open( testDir.directory( "test" ) );
         writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
-        searcherManager = new SearcherManager( writer, new SearcherFactory() );
+        searcherManager = new SearcherManager( writer, new Neo4jSearcherFactory() );
     }
 
     @AfterEach

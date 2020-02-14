@@ -19,32 +19,35 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.io.Closeable;
-import java.io.IOException;
+import org.apache.lucene.search.Weight;
 
-import org.neo4j.kernel.api.impl.index.SearcherReference;
+import java.io.IOException;
+import java.util.function.LongPredicate;
+
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 
-class DirectSearcherReference implements SearcherReference
+class PreparedSearch
 {
     private final Neo4jIndexSearcher searcher;
-    private final Closeable resource;
+    private final LongPredicate filter;
 
-    DirectSearcherReference( Neo4jIndexSearcher searcher, Closeable resource )
+    PreparedSearch( Neo4jIndexSearcher searcher, LongPredicate filter )
     {
         this.searcher = searcher;
-        this.resource = resource;
+        this.filter = filter;
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        resource.close();
-    }
-
-    @Override
-    public Neo4jIndexSearcher getIndexSearcher()
+    Neo4jIndexSearcher searcher()
     {
         return searcher;
+    }
+
+    ValuesIterator search( Weight weight, IndexQueryConstraints constraints ) throws IOException
+    {
+        FulltextResultCollector collector = new FulltextResultCollector( constraints, filter );
+        searcher.search( weight, collector );
+        return collector.iterator();
     }
 }
