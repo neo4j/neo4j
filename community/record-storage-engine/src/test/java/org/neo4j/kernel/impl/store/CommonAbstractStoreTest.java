@@ -142,7 +142,7 @@ class CommonAbstractStoreTest
         PageCursor pageCursor = mock( PageCursor.class );
 
         when( pageCache.map( eq( storeFile ), anyInt(), any() ) ).thenReturn( pagedFile );
-        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK, TRACER_SUPPLIER.get() ) ).thenReturn( pageCursor );
+        when( pagedFile.io( eq( 0L ), eq( PagedFile.PF_SHARED_READ_LOCK ), any() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
