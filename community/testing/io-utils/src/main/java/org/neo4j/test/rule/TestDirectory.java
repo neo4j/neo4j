@@ -244,7 +244,7 @@ public class TestDirectory extends ExternalResource
 
     public File prepareDirectoryForTest( String test ) throws IOException
     {
-        String dir = DigestUtils.md5Hex( JVM_EXECUTION_HASH + test );
+        String dir = "test" + DigestUtils.md5Hex( JVM_EXECUTION_HASH + test );
         evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
