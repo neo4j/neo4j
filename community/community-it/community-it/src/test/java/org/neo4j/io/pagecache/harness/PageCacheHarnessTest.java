@@ -42,9 +42,7 @@ import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
@@ -67,139 +65,124 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     private Profiler profiler;
 
     @RepeatedTest( 10 )
-    void readsAndWritesMustBeMutuallyConsistent()
+    void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        int filePageCount = 100;
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
-            int filePageCount = 100;
-            try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
-            {
-                harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile );
-                harness.setCommandProbabilityFactor( ReadRecord, 0.5 );
-                harness.setCommandProbabilityFactor( WriteRecord, 0.5 );
-                harness.setConcurrencyLevel( 8 );
-                harness.setFilePageCount( filePageCount );
-                harness.setInitialMappedFiles( 1 );
-                harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
-                harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
-            }
-        } );
+            harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile );
+            harness.setCommandProbabilityFactor( ReadRecord, 0.5 );
+            harness.setCommandProbabilityFactor( WriteRecord, 0.5 );
+            harness.setConcurrencyLevel( 8 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 1 );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
+            harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
+        }
     }
 
     @Test
-    void concurrentPageFaultingMustNotPutInterleavedDataIntoPages()
+    void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        int filePageCount = 11;
+        RecordFormat recordFormat = new PageCountRecordFormat();
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
-            final int filePageCount = 11;
-            final RecordFormat recordFormat = new PageCountRecordFormat();
-            try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
+            harness.setConcurrencyLevel( 11 );
+            harness.setUseAdversarialIO( false );
+            harness.setCachePageCount( 3 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 1 );
+            harness.setCommandCount( 10000 );
+            harness.setRecordFormat( recordFormat );
+            harness.setFileSystem( fs );
+            harness.useProfiler( profiler );
+            harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
+            harness.setPreparation( ( cache, fs, filesTouched ) ->
             {
-                harness.setConcurrencyLevel( 11 );
-                harness.setUseAdversarialIO( false );
-                harness.setCachePageCount( 3 );
-                harness.setFilePageCount( filePageCount );
-                harness.setInitialMappedFiles( 1 );
-                harness.setCommandCount( 10000 );
-                harness.setRecordFormat( recordFormat );
-                harness.setFileSystem( fs );
-                harness.useProfiler( profiler );
-                harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
-                harness.setPreparation( ( cache, fs, filesTouched ) ->
+                File file = filesTouched.iterator().next();
+                try ( PagedFile pf = cache.map( file, cache.pageSize() );
+                      PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
-                    File file = filesTouched.iterator().next();
-                    try ( PagedFile pf = cache.map( file, cache.pageSize() );
-                          PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                    for ( int pageId = 0; pageId < filePageCount; pageId++ )
                     {
-                        for ( int pageId = 0; pageId < filePageCount; pageId++ )
-                        {
-                            cursor.next();
-                            recordFormat.fillWithRecords( cursor );
-                        }
+                        cursor.next();
+                        recordFormat.fillWithRecords( cursor );
                     }
-                } );
+                }
+            } );
 
-                harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
-            }
-        } );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test
-    void concurrentFlushingMustNotPutInterleavedDataIntoFile()
+    void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        RecordFormat recordFormat = new StandardRecordFormat();
+        int filePageCount = 2_000;
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
-            final RecordFormat recordFormat = new StandardRecordFormat();
-            final int filePageCount = 2_000;
-            try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
-            {
-                harness.setConcurrencyLevel( 16 );
-                harness.setUseAdversarialIO( false );
-                harness.setCachePageCount( filePageCount / 2 );
-                harness.setFilePageCount( filePageCount );
-                harness.setInitialMappedFiles( 3 );
-                harness.setCommandCount( 15_000 );
-                harness.setFileSystem( fs );
-                harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-                harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( false );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 15_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-                harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
-            }
-        } );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test
-    void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile()
+    void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        RecordFormat recordFormat = new StandardRecordFormat();
+        int filePageCount = 2_000;
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
-            final RecordFormat recordFormat = new StandardRecordFormat();
-            final int filePageCount = 2_000;
-            try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
-            {
-                harness.setConcurrencyLevel( 16 );
-                harness.setUseAdversarialIO( true );
-                harness.setMischiefRate( 0.5 );
-                harness.setFailureRate( 0.0 );
-                harness.setErrorRate( 0.0 );
-                harness.setCachePageCount( filePageCount / 2 );
-                harness.setFilePageCount( filePageCount );
-                harness.setInitialMappedFiles( 3 );
-                harness.setCommandCount( 15_000 );
-                harness.setFileSystem( fs );
-                harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-                harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( true );
+            harness.setMischiefRate( 0.5 );
+            harness.setFailureRate( 0.0 );
+            harness.setErrorRate( 0.0 );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 15_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-                harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
-            }
-        } );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     @Test
-    void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile()
+    void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        RecordFormat recordFormat = new StandardRecordFormat();
+        int filePageCount = 2_000;
+        try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
-            final RecordFormat recordFormat = new StandardRecordFormat();
-            final int filePageCount = 2_000;
-            try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
-            {
-                harness.setConcurrencyLevel( 16 );
-                harness.setUseAdversarialIO( true );
-                harness.setMischiefRate( 0.0 );
-                harness.setFailureRate( 0.5 );
-                harness.setErrorRate( 0.0 );
-                harness.setCachePageCount( filePageCount / 2 );
-                harness.setFilePageCount( filePageCount );
-                harness.setInitialMappedFiles( 3 );
-                harness.setCommandCount( 15_000 );
-                harness.setFileSystem( fs );
-                harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
-                harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
+            harness.setConcurrencyLevel( 16 );
+            harness.setUseAdversarialIO( true );
+            harness.setMischiefRate( 0.0 );
+            harness.setFailureRate( 0.5 );
+            harness.setErrorRate( 0.0 );
+            harness.setCachePageCount( filePageCount / 2 );
+            harness.setFilePageCount( filePageCount );
+            harness.setInitialMappedFiles( 3 );
+            harness.setCommandCount( 15_000 );
+            harness.setFileSystem( fs );
+            harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
+            harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-                harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
-            }
-        } );
+            harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        }
     }
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
