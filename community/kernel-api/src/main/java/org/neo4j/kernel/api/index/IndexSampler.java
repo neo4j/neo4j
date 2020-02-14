@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  */
 public interface IndexSampler extends Closeable
 {
-    IndexSampler EMPTY = cursorTracer -> null;
+    IndexSampler EMPTY = cursorTracer -> new IndexSample();
 
     /**
      * Sample this index (on the current thread)
