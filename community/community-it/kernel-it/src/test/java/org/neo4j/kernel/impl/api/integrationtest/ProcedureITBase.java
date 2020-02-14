@@ -130,7 +130,8 @@ public interface ProcedureITBase
                 proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?, description :: STRING?, stopwords :: LIST? OF STRING?)",
                         "List the available analyzers that the full-text indexes can be configured with.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.index.fulltext.queryNodes", "(indexName :: STRING?, queryString :: STRING?, options = {} :: MAP?) :: (node :: NODE?, score :: FLOAT?)",
+                proc( "db.index.fulltext.queryNodes",
+                        "(indexName :: STRING?, queryString :: STRING?, options = {} :: MAP?) :: (node :: NODE?, score :: FLOAT?)",
                         "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. " +
                                 "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ), proc( "db.index.fulltext.queryRelationships",
