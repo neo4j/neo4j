@@ -64,7 +64,7 @@ class DbmsExtensionTest
                         message( message -> message.contains( "must take one parameter that is assignable from" ) ) ) ) );
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
-                        message( message -> message.contains( "can not be found." ) ) ) ) );
+                        message( message -> message.contains( "cannot be found." ) ) ) ) );
     }
 
     @Test
