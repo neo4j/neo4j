@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
@@ -46,7 +45,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,8 +109,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var exception = assertThrows( ProcedureException.class, () -> proc.invoke( ID, MapValue.EMPTY ) );
 
         assertEquals( Status.Procedure.ProcedureCallFailed, exception.status() );
-        assertThat( exception.getLocalizedMessage(),
-                    Matchers.endsWith( " Please update your configuration for '" + BoltConnector.enabled.name() + "'" ) );
+        assertThat( exception ).hasMessageEndingWith( " Please update your configuration for '" + BoltConnector.enabled.name() + "'" );
     }
 
     @Test
