@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -44,7 +45,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 import static org.neo4j.scheduler.Group.LOG_ROTATION;
 
-@ExtendWith( TestDirectoryExtension.class )
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class PlatformModuleTest
 {
     @Inject
