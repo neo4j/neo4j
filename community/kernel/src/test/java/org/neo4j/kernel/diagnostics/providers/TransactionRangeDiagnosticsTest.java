@@ -121,7 +121,7 @@ class TransactionRangeDiagnosticsTest
         when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( files.versionExists( logVersion ) ).thenReturn( true );
         when( files.extractHeader( logVersion ) )
-                .thenReturn( new LogHeader( LogEntryVersion.LATEST_VERSION.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+                .thenReturn( new LogHeader( LogEntryVersion.LATEST.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
         return files;
     }
 

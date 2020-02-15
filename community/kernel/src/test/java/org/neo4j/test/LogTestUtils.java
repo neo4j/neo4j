@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -109,7 +110,7 @@ public class LogTestUtils
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file, channelNativeAccessor );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
-            LogEntryReader entryReader = new VersionAwareLogEntryReader();
+            LogEntryReader entryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

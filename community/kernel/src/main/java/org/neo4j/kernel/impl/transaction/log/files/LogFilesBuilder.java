@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -68,6 +69,7 @@ public class LogFilesBuilder
 
     private boolean readOnly;
     private PageCache pageCache;
+    private CommandReaderFactory commandReaderFactory = CommandReaderFactory.NO_COMMANDS;
     private DatabaseLayout databaseLayout;
     private File logsDirectory;
     private Config config;
@@ -108,11 +110,13 @@ public class LogFilesBuilder
      * Build log files that can access and operate only on active set of log files without ability to
      * rotate and create any new one. Appending to current log file still possible.
      * Store and external components access available in read only mode.
+     *
      * @param databaseLayout store directory
      * @param fileSystem log file system
      * @param pageCache page cache for read only store info access
      */
-    public static LogFilesBuilder activeFilesBuilder( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache )
+    public static LogFilesBuilder activeFilesBuilder( DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem, PageCache pageCache )
     {
         LogFilesBuilder builder = builder( databaseLayout, fileSystem );
         builder.pageCache = pageCache;
@@ -214,6 +218,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withCommandReaderFactory( CommandReaderFactory commandReaderFactory )
+    {
+        this.commandReaderFactory = commandReaderFactory;
+        return this;
+    }
+
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
@@ -235,7 +245,8 @@ public class LogFilesBuilder
     {
         if ( logEntryReader == null )
         {
-            logEntryReader = new VersionAwareLogEntryReader();
+            requireNonNull( commandReaderFactory );
+            logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
         }
         if ( config == null )
         {

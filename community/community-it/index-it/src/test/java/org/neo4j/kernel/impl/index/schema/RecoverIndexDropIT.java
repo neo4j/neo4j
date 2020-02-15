@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -91,8 +92,9 @@ class RecoverIndexDropIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
+        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         managementService.shutdown();
-        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction );
+        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction, storageEngineFactory );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
@@ -129,14 +131,17 @@ class RecoverIndexDropIT
         }
     }
 
-    private void appendDropTransactionToTransactionLog( File transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction ) throws IOException
+    private void appendDropTransactionToTransactionLog( File transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction,
+            StorageEngineFactory storageEngineFactory ) throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs )
+                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                .build();
         LogFile logFile = logFiles.getLogFile();
 
         try ( ReadableLogChannel reader = logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
             while ( logEntryReader.readLogEntry( reader ) != null )
             {
             }

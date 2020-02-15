@@ -25,7 +25,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
 
 public class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
 {

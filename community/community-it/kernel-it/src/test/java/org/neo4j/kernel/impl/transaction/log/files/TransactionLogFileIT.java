@@ -28,7 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockTracer;
@@ -63,7 +62,6 @@ class TransactionLogFileIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( new VersionAwareLogEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withDatabaseTracers( new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, cacheTracer ) )
                 .build();

@@ -65,6 +65,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -192,6 +193,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             throw new UncheckedIOException( e );
         }
         return createMigrationTargetSchemaRuleAccess( stores, cursorTracer );
+    }
+
+    @Override
+    public CommandReaderFactory commandReaderFactory()
+    {
+        return RecordStorageCommandReaderFactory.INSTANCE;
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer )

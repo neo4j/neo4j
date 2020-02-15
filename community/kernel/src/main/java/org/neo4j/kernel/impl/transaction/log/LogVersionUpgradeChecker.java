@@ -45,8 +45,8 @@ public class LogVersionUpgradeChecker
         if ( !config.get( GraphDatabaseSettings.allow_upgrade ) )
         {
             // The user doesn't want us to upgrade the store.
-            LogEntryVersion latestLogEntryVersion = tailScanner.getTailInformation().latestLogEntryVersion;
-            if ( latestLogEntryVersion != null && LogEntryVersion.moreRecentVersionExists( latestLogEntryVersion ) )
+            byte latestLogEntryVersion = tailScanner.getTailInformation().latestLogEntryVersion;
+            if ( latestLogEntryVersion != 0 && LogEntryVersion.moreRecentVersionExists( latestLogEntryVersion ) )
             {
                 String message = "The version you're upgrading to is using a new transaction log format. This is a " +
                         "non-reversible upgrade and you wont be able to downgrade after starting";

@@ -85,7 +85,7 @@ class LogTailScannerTest
 
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
-    private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.LATEST_VERSION;
+    private final byte latestLogEntryVersion = LogEntryVersion.LATEST.version();
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
 

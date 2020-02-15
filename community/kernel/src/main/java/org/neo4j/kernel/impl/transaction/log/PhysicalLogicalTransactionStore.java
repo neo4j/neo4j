@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactio
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
 import org.neo4j.monitoring.Monitors;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {

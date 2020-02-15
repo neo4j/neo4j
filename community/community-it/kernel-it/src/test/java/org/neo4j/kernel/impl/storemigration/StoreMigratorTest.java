@@ -50,6 +50,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -257,6 +258,7 @@ class StoreMigratorTest
                         .setConfig( transaction_logs_root_path, customLogsLocation )
                         .build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        StorageEngineFactory storageEngineFactory = database.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -275,7 +277,10 @@ class StoreMigratorTest
                 batchImporterFactory );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL );
 
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withConfig( config ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
+                .withConfig( config )
+                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                .build();
         assertEquals( 0, logPosition.getLogVersion() );
         assertEquals( logFiles.getHighestLogFile().length(), logPosition.getByteOffset() );
     }

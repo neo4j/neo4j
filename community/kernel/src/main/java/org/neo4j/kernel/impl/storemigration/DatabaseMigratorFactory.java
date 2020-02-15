@@ -73,7 +73,7 @@ public class DatabaseMigratorFactory
         final DatabaseConfig dbConfig = new DatabaseConfig( config, namedDatabaseId );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
-        final LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+        final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
         final LogFiles logFiles;
         try

@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -78,6 +79,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -93,8 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -121,6 +122,7 @@ class RecoveryCorruptedTransactionLogIT
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
     private TestDatabaseManagementServiceBuilder databaseFactory;
+    private StorageEngineFactory storageEngineFactory;
 
     @BeforeEach
     void setUp()
@@ -662,7 +664,7 @@ class RecoveryCorruptedTransactionLogIT
         LogPosition checkpointPosition = null;
 
         LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
@@ -732,7 +734,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private LogPosition getLastReadablePosition( File logFile ) throws IOException
     {
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         long logVersion = logFiles.getLogVersion( logFile );
         LogPosition startPosition = logFiles.extractHeader( logVersion ).getStartPosition();
         try ( ReadableLogChannel reader = openTransactionFileChannel( logVersion, startPosition ) )
@@ -758,7 +760,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private LogPosition getLastReadablePosition( LogFile logFile ) throws IOException
     {
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = logFile.getReader( startPosition ) )
         {
@@ -787,7 +789,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private byte randomInvalidVersionsBytes()
     {
-        return (byte) random.nextInt( LATEST_VERSION.version() + 1, Byte.MAX_VALUE );
+        return (byte) random.nextInt( LogEntryVersion.LATEST.version() + 1, Byte.MAX_VALUE );
     }
 
     private byte randomBytes()
@@ -802,6 +804,7 @@ class RecoveryCorruptedTransactionLogIT
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
+                .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
                 .build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
         {
@@ -824,12 +827,12 @@ class RecoveryCorruptedTransactionLogIT
         return metaDataStore.getLastClosedTransaction()[2];
     }
 
-    private static ObjectLongMap<Class<?>> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
+    private ObjectLongMap<Class<?>> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
     {
         LogFile transactionLogFile = logFiles.getLogFile();
 
         LogPosition fileStartPosition = logFiles.extractHeader( 0 ).getStartPosition();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
         MutableObjectLongMap<Class<?>> multiset = new ObjectLongHashMap<>();
         try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )
@@ -850,6 +853,7 @@ class RecoveryCorruptedTransactionLogIT
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( storeId )
+                .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
                 .build();
     }
 
@@ -904,6 +908,8 @@ class RecoveryCorruptedTransactionLogIT
     private void startStopDatabase()
     {
         DatabaseManagementService managementService = databaseFactory.build();
+        storageEngineFactory = ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency(
+                StorageEngineFactory.class );
         managementService.shutdown();
     }
 

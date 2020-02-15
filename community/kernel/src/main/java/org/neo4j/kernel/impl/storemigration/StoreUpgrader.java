@@ -42,6 +42,7 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -90,12 +91,13 @@ public class StoreUpgrader
     private final Log log;
     private final LogTailScanner logTailScanner;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
-
     private final String configuredFormat;
+    private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
 
-    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config config, FileSystemAbstraction fileSystem,
-            LogProvider logProvider, LogTailScanner logTailScanner, LegacyTransactionLogsLocator legacyLogsLocator, PageCacheTracer pageCacheTracer )
+    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config
+            config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
+            LegacyTransactionLogsLocator legacyLogsLocator, StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
@@ -105,6 +107,7 @@ public class StoreUpgrader
         this.log = logProvider.getLog( getClass() );
         this.logTailScanner = logTailScanner;
         this.configuredFormat = storeVersionCheck.configuredVersion();
+        this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
     }
 
@@ -233,7 +236,10 @@ public class StoreUpgrader
                 // directories are the same - no need to move log files
                 return;
             }
-            File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem ).build().logFiles();
+            File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem )
+                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                    .build()
+                    .logFiles();
             if ( legacyFiles != null )
             {
                 for ( File legacyFile : legacyFiles )

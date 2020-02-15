@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
  * Used for reading transactions off of file.
@@ -42,10 +43,10 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     private final LogicalTransactionStore physicalStore;
 
     public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout fromDatabaseLayout, Config config,
-            Monitors monitors ) throws IOException
+            Monitors monitors, CommandReaderFactory commandReaderFactory ) throws IOException
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+        LogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
         LogFiles logFiles = LogFilesBuilder
                 .activeFilesBuilder( fromDatabaseLayout, fs, pageCache ).withLogEntryReader( logEntryReader )
                 .withConfig( config )

@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.monitoring.Monitors;
@@ -90,7 +89,7 @@ public class LogTailScanner
         LogEntryStart latestStartEntry = null;
         long oldestStartEntryTransaction = NO_TRANSACTION_ID;
         long oldestVersionFound = -1;
-        LogEntryVersion latestLogEntryVersion = null;
+        byte latestLogEntryVersion = 0;
         boolean startRecordAfterCheckpoint = false;
         boolean corruptedTransactionLogs = false;
 
@@ -133,7 +132,7 @@ public class LogTailScanner
                     }
 
                     // Collect data about latest entry version, only in first log file
-                    if ( version == versionToSearchForCommits || latestLogEntryVersion == null )
+                    if ( version == versionToSearchForCommits || latestLogEntryVersion == 0 )
                     {
                         latestLogEntryVersion = entry.getVersion();
                     }
@@ -240,7 +239,7 @@ public class LogTailScanner
     }
 
     LogTailInformation checkpointTailInformation( long highestLogVersion, LogEntryStart latestStartEntry,
-            long oldestVersionFound, LogEntryVersion latestLogEntryVersion, CheckPoint latestCheckPoint,
+            long oldestVersionFound, byte latestLogEntryVersion, CheckPoint latestCheckPoint,
             boolean corruptedTransactionLogs, StoreId storeId ) throws IOException
     {
         LogPosition checkPointLogPosition = latestCheckPoint.getLogPosition();
@@ -410,20 +409,20 @@ public class LogTailScanner
         public final long firstTxIdAfterLastCheckPoint;
         public final long oldestLogVersionFound;
         public final long currentLogVersion;
-        public final LogEntryVersion latestLogEntryVersion;
+        public final byte latestLogEntryVersion;
         private final boolean recordAfterCheckpoint;
         public final StoreId lastStoreId; // StoreId of the transaction log that contains the checkpoint entry
 
         public LogTailInformation( boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint,
                 long oldestLogVersionFound, long currentLogVersion,
-                LogEntryVersion latestLogEntryVersion )
+                byte latestLogEntryVersion )
         {
             this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, oldestLogVersionFound, currentLogVersion,
                     latestLogEntryVersion, StoreId.UNKNOWN );
         }
 
         LogTailInformation( CheckPoint lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint,
-                long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion, StoreId lastStoreId )
+                long oldestLogVersionFound, long currentLogVersion, byte latestLogEntryVersion, StoreId lastStoreId )
         {
             this.lastCheckPoint = lastCheckPoint;
             this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;

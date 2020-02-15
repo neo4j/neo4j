@@ -27,16 +27,16 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
- * Reads and parses the next {@link LogEntry} from {@link ReadableChecksumChannel}, given the {@link LogEntryVersion}.
+ * Reads and parses the next {@link LogEntry} from {@link ReadableChecksumChannel}, given the version.
  *
- * {@link #parse(LogEntryVersion, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
+ * {@link #parse(byte, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
  */
 public interface LogEntryParser
 {
     /**
      * Parses the next {@link LogEntry} read from the {@code channel}.
      *
-     * @param version {@link LogEntryVersion} this log entry is determined to be of.
+     * @param version version this log entry is determined to be of.
      * @param channel {@link ReadableChecksumChannel} to read the data from.
      * @param marker {@link LogPositionMarker} marking the position in the {@code channel} that is the
      * start of this entry.
@@ -45,11 +45,27 @@ public interface LogEntryParser
      * @return the next {@link LogEntry} read and parsed from the {@code channel}.
      * @throws IOException I/O error from channel or if data was read past the end of the channel.
      */
-    LogEntry parse( LogEntryVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+    LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
             throws IOException;
 
     /**
-     * @return code representing the type of log entry.
+     * @return code representing the type of log entry. See {@link LogEntryTypeCodes}.
      */
-    byte byteCode();
+    byte type();
+
+    abstract class Adapter implements LogEntryParser
+    {
+        private final byte byteCode;
+
+        Adapter( byte byteCode )
+        {
+            this.byteCode = byteCode;
+        }
+
+        @Override
+        public byte type()
+        {
+            return byteCode;
+        }
+    }
 }

@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,6 +51,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -130,10 +133,11 @@ class CheckPointerIntegrationTest
             assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
         }
 
+        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         managementService.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs, storageEngineFactory.commandReaderFactory() ).find( 0 );
 
         assertTrue( checkPoints.size() >= 2, "Expected at least two (at least one for time interval and one for shutdown), was " +
                 checkPoints.toString() );
@@ -141,11 +145,13 @@ class CheckPointerIntegrationTest
 
     private static int checkPointInTxLog( GraphDatabaseService db ) throws IOException
     {
-        LogFiles logFiles = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( LogFiles.class );
+        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
+        StorageEngineFactory storageEngineFactory = dependencyResolver.resolveDependency( StorageEngineFactory.class );
+        LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
         LogFile logFile = logFiles.getLogFile();
         try ( ReadableLogChannel reader = logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
             LogEntry entry;
             int counter = 0;
             while ( (entry = logEntryReader.readLogEntry( reader )) != null )
@@ -181,11 +187,12 @@ class CheckPointerIntegrationTest
 
         int counter = checkPointInTxLog( db );
         assertThat( counter ).isGreaterThan( 0 );
+        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
 
         managementService.shutdown();
 
         // then - checkpoints + shutdown checkpoint have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs, storageEngineFactory.commandReaderFactory() ).find( 0 );
 
         // Use greater-than-or-equal-to in order to accommodate the following data-race:
         // Since the `threshold.isCheckPointingNeeded()` call in CheckPointerImpl is done outside of the `mutex.checkPoint()` lock,
@@ -213,11 +220,12 @@ class CheckPointerIntegrationTest
 
         triggerCheckPointAttempt( db );
         assertThat( checkPointInTxLog( db ) ).isEqualTo( 0 );
+        StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
 
         managementService.shutdown();
 
         // then - 1 check point has been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs, storageEngineFactory.commandReaderFactory() ).find( 0 );
 
         assertEquals( 1, checkPoints.size() );
     }
@@ -232,12 +240,15 @@ class CheckPointerIntegrationTest
 
         // when
         DatabaseManagementService managementService1 = databaseManagementServiceBuilder.build();
+        StorageEngineFactory storageEngineFactory =
+                ((GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency(
+                        StorageEngineFactory.class );
         managementService1.shutdown();
         DatabaseManagementService managementService = databaseManagementServiceBuilder.build();
         managementService.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs, storageEngineFactory.commandReaderFactory() ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
@@ -292,9 +303,9 @@ class CheckPointerIntegrationTest
         private final LogFiles logFiles;
         private final LogEntryReader logEntryReader;
 
-        CheckPointCollector( File directory, FileSystemAbstraction fileSystem ) throws IOException
+        CheckPointCollector( File directory, FileSystemAbstraction fileSystem, CommandReaderFactory commandReaderFactory ) throws IOException
         {
-            this.logEntryReader = new VersionAwareLogEntryReader();
+            this.logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
             this.logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
                     .withLogEntryReader( logEntryReader ).build();
         }

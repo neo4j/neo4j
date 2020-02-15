@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -108,7 +109,7 @@ class TransactionLogChannelAllocatorIT
     private TransactionLogFilesContext createLogFileContext()
     {
         return new TransactionLogFilesContext( new AtomicLong( ROTATION_THRESHOLD ), new AtomicBoolean( true ),
-                new VersionAwareLogEntryReader(), () -> 1L,
+                new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
                 NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN, NativeAccessProvider.getNativeAccess() );

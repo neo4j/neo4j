@@ -40,6 +40,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -457,12 +458,16 @@ public class StoreUpgraderTest
 
     private File[] getLogFiles( File directory ) throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem ).build().logFiles();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .build()
+                .logFiles();
     }
 
     private Set<String> getLogFileNames( File directory ) throws IOException
     {
         return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build()
                 .logFiles() )
                 .map( File::getName ).collect( Collectors.toSet() );
@@ -554,10 +559,11 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem )
-                .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();
-        LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
+                .withLogEntryReader( new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ) ).build();
+        LogTailScanner logTailScanner =
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(),
-                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), pageCacheTracer );
+                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), storageEngineFactory, pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );
@@ -588,8 +594,11 @@ public class StoreUpgraderTest
     public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File databaseDirectory )
             throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .build();
+        LogTailScanner tailScanner =
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
         LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         if ( logTailInformation.commitsAfterLastCheckpoint() )

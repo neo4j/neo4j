@@ -23,7 +23,7 @@ import java.util.TimeZone;
 
 public interface LogEntry
 {
-    LogEntryVersion getVersion();
+    byte getVersion();
 
     byte getType();
 

@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -422,7 +423,9 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build().logFiles();
+        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .build().logFiles();
         for ( File file : txLogs )
         {
             fs.copyToDirectory( file, tmpLogDir );

@@ -65,6 +65,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -110,6 +111,7 @@ class RecoveryIT
     @Inject
     private DatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
+    private StorageEngineFactory storageEngineFactory;
 
     @ParameterizedTest
     @ValueSource( booleans = {true, false} )
@@ -117,7 +119,7 @@ class RecoveryIT
     {
         withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            GraphDatabaseService database = createDatabase();
+            GraphDatabaseAPI database = createDatabase();
             generateSomeData( database );
             managementService.shutdown();
             removeLastCheckpointRecordFromLastLogFile();
@@ -512,11 +514,7 @@ class RecoveryIT
     {
         withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                            .build();
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseService database = createDatabase( ByteUnit.mebiBytes( 1 ) );
             while ( countTransactionLogFiles() < 5 )
             {
                 generateSomeData( database );
@@ -539,11 +537,7 @@ class RecoveryIT
     {
         withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                            .build();
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseService database = createDatabase( ByteUnit.mebiBytes( 1 ) );
             while ( countTransactionLogFiles() < 5 )
             {
                 generateSomeData( database );
@@ -577,11 +571,7 @@ class RecoveryIT
     {
         withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                            .build();
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseAPI database = createDatabase( ByteUnit.mebiBytes( 1 ) );
             while ( countTransactionLogFiles() < 5 )
             {
                 generateSomeData( database );
@@ -613,11 +603,7 @@ class RecoveryIT
     {
         withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                            .build();
-            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseService database = createDatabase( ByteUnit.mebiBytes( 1 ) );
             while ( countTransactionLogFiles() < 5 )
             {
                 generateSomeData( database );
@@ -783,7 +769,7 @@ class RecoveryIT
 
         LogFiles logFiles = buildLogFiles();
         LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
@@ -803,7 +789,10 @@ class RecoveryIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem ).build();
+        return LogFilesBuilder
+                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+                .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
+                .build();
     }
 
     private void removeTransactionLogs() throws IOException
@@ -842,7 +831,7 @@ class RecoveryIT
 
         LogFiles logFiles = buildLogFiles();
         LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
@@ -883,11 +872,18 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
+        return createDatabase( logical_log_rotation_threshold.defaultValue() );
+    }
+
+    private GraphDatabaseAPI createDatabase( long logThreshold )
+    {
         managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                 .setConfig( preallocate_logical_logs, false )
-                .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
+                .setConfig( logical_log_rotation_threshold, logThreshold )
                 .build();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        storageEngineFactory = database.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
+        return database;
     }
 
     private void startStopDatabaseWithForcedRecovery()

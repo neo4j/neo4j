@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.batchimport.LogFilesInitializer;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -48,7 +49,9 @@ public class TransactionLogsInitializer implements LogFilesInitializer
                     .withTransactionIdStore( neoStores.getMetaDataStore() )
                     .withLogVersionRepository( neoStores.getMetaDataStore() )
                     .withStoreId( neoStores.getMetaDataStore().getStoreId() )
-                    .withConfig( config ).build();
+                    .withConfig( config )
+                    .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                    .build();
             new Lifespan( logFiles ).close();
         }
         catch ( IOException e )

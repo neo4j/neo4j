@@ -39,6 +39,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -265,10 +267,13 @@ public class StoreUpgraderInterruptionTestIT
     {
         Config allowUpgrade = Config.defaults( allow_upgrade, true );
 
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
-        LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .build();
+        LogTailScanner logTailScanner =
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner,
-                legacyTransactionLogsLocator, NULL );
+                legacyTransactionLogsLocator, new RecordStorageEngineFactory(), NULL );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

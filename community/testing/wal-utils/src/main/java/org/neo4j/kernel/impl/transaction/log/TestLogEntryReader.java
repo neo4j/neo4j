@@ -31,6 +31,6 @@ public final class TestLogEntryReader
 
     public static LogEntryReader logEntryReader()
     {
-        return new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
+        return new VersionAwareLogEntryReader( new TestCommandReaderFactory(), false );
     }
 }

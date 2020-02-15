@@ -25,41 +25,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.INSTANCE;
 
 class LogEntryVersionTest
 {
     @Test
     void shouldBeAbleToSelectAnyVersion()
     {
-        for ( LogEntryVersion version : LogEntryVersion.values() )
-        {
-            // GIVEN
-            byte code = version.version();
-
-            // WHEN
-            LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code );
-
-            // THEN
-            assertEquals( version, selectedVersion );
-        }
+        assertEquals( V2_3, INSTANCE.select( V2_3.version() ) );
+        assertEquals( V4_0, INSTANCE.select( V4_0.version() ) );
     }
 
     @Test
     void shouldWarnAboutOldLogVersion()
     {
-        assertThrows( UnsupportedLogVersionException.class, () -> LogEntryVersion.byVersion( (byte) -4 ) );
+        assertThrows( UnsupportedLogVersionException.class, () -> INSTANCE.select( (byte) -4 ) );
     }
 
     @Test
     void shouldWarnAboutNewerLogVersion()
     {
-        assertThrows( UnsupportedLogVersionException.class, () -> LogEntryVersion.byVersion( (byte) -42 ) ); // unused for now
+        assertThrows( UnsupportedLogVersionException.class, () -> INSTANCE.select( (byte) -42 ) ); // unused for now
     }
 
     @Test
     void moreRecent()
     {
-        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_10 ) );
-        assertFalse( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V4_0 ) );
+        assertTrue( LogEntryVersion.moreRecentVersionExists( V2_3.version() ) );
+        assertFalse( LogEntryVersion.moreRecentVersionExists( V4_0.version() ) );
     }
 }

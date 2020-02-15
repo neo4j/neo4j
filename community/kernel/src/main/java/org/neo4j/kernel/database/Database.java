@@ -346,13 +346,14 @@ public class Database extends LifecycleAdapter
             upgradeStore( databaseConfig, databasePageCache );
 
             // Check the tail of transaction logs and validate version
-            final LogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+            final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
                     .withConfig( databaseConfig )
                     .withDependencies( databaseDependencies )
                     .withLogProvider( internalLogProvider )
                     .withDatabaseTracers( tracers )
+                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                     .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
@@ -936,6 +937,11 @@ public class Database extends LifecycleAdapter
     public VersionContextSupplier getVersionContextSupplier()
     {
         return versionContextSupplier;
+    }
+
+    public StorageEngineFactory getStorageEngineFactory()
+    {
+        return storageEngineFactory;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

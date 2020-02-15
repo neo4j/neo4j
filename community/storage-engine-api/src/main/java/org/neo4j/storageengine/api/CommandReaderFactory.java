@@ -20,17 +20,26 @@
 package org.neo4j.storageengine.api;
 
 /**
- * Provides {@link CommandReader} instances for specific entry versions.
+ * Provides {@link CommandReader} instances for specific versions.
  */
 public interface CommandReaderFactory
 {
     /**
-     * Given {@code version} give back a {@link CommandReader} capable of reading such commands.
-     * Command writers/readers may choose to use log entry version for command versioning or could
-     * introduce its own scheme.
+     * Returns a {@link CommandReader} able to read commands of {@code logEntryVersion}. Previously the log entry version was coupled
+     * with the command version, and to keep backwards compatibility this log entry version is still passed in here.
+     * Command writers/readers may choose to use log entry version for command versioning or (should) introduce its own versioning.
      *
-     * @param formatId log entry version. Versions are typically 0 or negative numbers.
+     * In the future when there's no longer any storage engine and version that makes use of this logEntryVersion for reading its
+     * commands then this {@link CommandReaderFactory} interface could be removed entirely.
+     *
+     * @param logEntryVersion log entry version.
      * @return {@link CommandReader} for reading commands of that version.
+     * @throws IllegalArgumentException on invalid or unrecognized version.
      */
-    CommandReader get( int formatId );
+    CommandReader get( int logEntryVersion );
+
+    CommandReaderFactory NO_COMMANDS = logEntryVersion ->
+    {
+        throw new IllegalArgumentException( "No commands supported" );
+    };
 }

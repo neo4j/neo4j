@@ -56,7 +56,7 @@ class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
-        LogEntryReader reader = new VersionAwareLogEntryReader();
+        LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
         LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors(), true );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
@@ -71,7 +71,7 @@ class RecoveryRequiredChecker
 
     boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner ) throws IOException
     {
-        LogEntryReader reader = new VersionAwareLogEntryReader();
+        LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }

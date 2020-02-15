@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-public class LogEntryByteCodes
+public class LogEntryTypeCodes
 {
-    private LogEntryByteCodes()
+    private LogEntryTypeCodes()
     {
         throw new AssertionError(); // no instances are allowed
     }

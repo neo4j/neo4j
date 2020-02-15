@@ -26,40 +26,25 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
-import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 /**
- * Version aware implementation of LogEntryReader
- * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
- * different versions to exchange transaction data, either directly or via logical logs.
- *
- * Read all about it at {@link LogEntryVersion}.
+ * Reads {@link LogEntry log entries} off of a channel. Supported versions can be read intermixed.
  */
 public class VersionAwareLogEntryReader implements LogEntryReader
 {
     private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
+    private final LogEntryVersion selector;
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
-    private LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
+    private LogEntryParserSet parsetSet = LogEntryVersion.LATEST;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
-
-    public VersionAwareLogEntryReader()
-    {
-        this( new ServiceLoadingCommandReaderFactory() );
-    }
-
-    public VersionAwareLogEntryReader( boolean verifyChecksumChain )
-    {
-        this( new ServiceLoadingCommandReaderFactory(), verifyChecksumChain );
-    }
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
@@ -68,6 +53,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
     {
+        this.selector = LogEntryVersion.INSTANCE;
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
@@ -98,9 +84,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     return null;
                 }
-                if ( version.version() != versionCode )
+                if ( parsetSet == null || parsetSet.version() != versionCode )
                 {
-                    version = byVersion( versionCode );
+                    parsetSet = selector.select( versionCode );
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.
                     resetChannelPosition( channel );
@@ -114,8 +100,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 LogEntry entry;
                 try
                 {
-                    entryReader = version.entryParser( typeCode );
-                    entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
+                    entryReader = parsetSet.select( typeCode );
+                    entry = entryReader.parse( versionCode, channel, positionMarker, commandReaderFactory );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
@@ -124,7 +110,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 catch ( Exception e )
                 {   // Tag all other exceptions with log position and other useful information
                     LogPosition position = positionMarker.newPosition();
-                    withMessage( e, e.getMessage() + ". At position " + position + " and entry version " + version );
+                    withMessage( e, e.getMessage() + ". At position " + position + " and entry version " + versionCode );
                     throwIfInstanceOf( e, UnsupportedLogVersionException.class );
                     throw new IOException( e );
                 }

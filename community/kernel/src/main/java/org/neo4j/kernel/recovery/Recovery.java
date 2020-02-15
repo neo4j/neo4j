@@ -284,7 +284,7 @@ public final class Recovery
         Monitors monitors = new Monitors( globalMonitors );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
         SimpleLogService logService = new SimpleLogService( logProvider );
-        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();

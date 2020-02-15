@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class VersionAwareLogEntryReaderTest
@@ -45,7 +45,7 @@ class VersionAwareLogEntryReaderTest
     void shouldReadAStartLogEntry() throws IOException
     {
         // given
-        final LogEntryStart start = new LogEntryStart( LATEST_VERSION, 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, new LogPosition( 0, 27 ) );
+        final LogEntryStart start = new LogEntryStart( 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, new LogPosition( 0, 27 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         writeStartEntry( channel, start );
@@ -61,7 +61,7 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new LogEntryCommit( LATEST_VERSION, 42, 21, 2039335142 );
+        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 2039335142 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         writeCommitEntry( channel, commit );
@@ -77,13 +77,13 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommandLogEntry() throws IOException
     {
         // given
-        LogEntryVersion version = LATEST_VERSION;
+        byte version = LATEST.version();
         TestCommand testCommand = new TestCommand( new byte[] {100, 101, 102} );
         final LogEntryCommand command = new LogEntryCommand( version, testCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.version() );
-        channel.put( LogEntryByteCodes.COMMAND );
+        channel.put( version );
+        channel.put( LogEntryTypeCodes.COMMAND );
         testCommand.serialize( channel );
 
         // when
@@ -97,11 +97,11 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACheckPointLogEntry() throws IOException
     {
         // given
-        final CheckPoint checkPoint = new CheckPoint( LATEST_VERSION, new LogPosition( 42, 43 ) );
+        final CheckPoint checkPoint = new CheckPoint( new LogPosition( 42, 43 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( checkPoint.getVersion().version() );
-        channel.put( LogEntryByteCodes.CHECK_POINT );
+        channel.put( checkPoint.getVersion() );
+        channel.put( LogEntryTypeCodes.CHECK_POINT );
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
         channel.putLong( checkPoint.getLogPosition().getByteOffset() );
         channel.putChecksum();
@@ -119,8 +119,8 @@ class VersionAwareLogEntryReaderTest
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( LATEST_VERSION.version() );
-        channel.put( LogEntryByteCodes.COMMAND );
+        channel.put( LATEST.version() );
+        channel.put( LogEntryTypeCodes.COMMAND );
         channel.put( CommandReader.NONE );
 
         // when
@@ -152,19 +152,19 @@ class VersionAwareLogEntryReaderTest
         LogPosition startPosition = new LogPosition( 0, 174 );
 
         int checksum1 = 1021763356;
-        final LogEntryStart start1 = new LogEntryStart( LATEST_VERSION, 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, startPosition );
-        final LogEntryCommit commit1 = new LogEntryCommit( LATEST_VERSION, 42, 21, checksum1 );
+        final LogEntryStart start1 = new LogEntryStart( 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, startPosition );
+        final LogEntryCommit commit1 = new LogEntryCommit( 42, 21, checksum1 );
 
         int checksum2 = 2120750830;
-        final LogEntryStart start2 = new LogEntryStart( LATEST_VERSION, 35,  30, checksum1, new byte[]{5}, startPosition );
-        final LogEntryCommit commit2 = new LogEntryCommit( LATEST_VERSION, 76, 35, checksum2 );
+        final LogEntryStart start2 = new LogEntryStart( 35,  30, checksum1, new byte[]{5}, startPosition );
+        final LogEntryCommit commit2 = new LogEntryCommit( 76, 35, checksum2 );
 
         int checksum3 = -1462443939;
-        final LogEntryStart start3 = new LogEntryStart( LATEST_VERSION, 58,  80, checksum2, new byte[]{6}, startPosition );
-        final LogEntryCommit commit3 = new LogEntryCommit( LATEST_VERSION, 83, 47, checksum3 );
+        final LogEntryStart start3 = new LogEntryStart( 58,  80, checksum2, new byte[]{6}, startPosition );
+        final LogEntryCommit commit3 = new LogEntryCommit( 83, 47, checksum3 );
 
         int notChecksum3 = checksum3 + 1;
-        final LogEntryStart start4 = new LogEntryStart( LATEST_VERSION, 68,  83, notChecksum3, new byte[]{7}, startPosition );
+        final LogEntryStart start4 = new LogEntryStart( 68,  83, notChecksum3, new byte[]{7}, startPosition );
 
         writeStartEntry( channel, start1 );
         writeCommitEntry( channel, commit1 );
@@ -187,8 +187,8 @@ class VersionAwareLogEntryReaderTest
     private static void writeStartEntry( InMemoryClosableChannel channel, LogEntryStart start )
     {
         channel.beginChecksum();
-        channel.put( start.getVersion().version() ); // version
-        channel.put( LogEntryByteCodes.TX_START ); // type
+        channel.put( start.getVersion() ); // version
+        channel.put( LogEntryTypeCodes.TX_START ); // type
         channel.putLong( start.getTimeWritten() );
         channel.putLong( start.getLastCommittedTxWhenTransactionStarted() );
         channel.putInt( start.getPreviousChecksum() );
@@ -198,8 +198,8 @@ class VersionAwareLogEntryReaderTest
 
     private static void writeCommitEntry( InMemoryClosableChannel channel, LogEntryCommit commit )
     {
-        channel.put( commit.getVersion().version() );
-        channel.put( LogEntryByteCodes.TX_COMMIT );
+        channel.put( commit.getVersion() );
+        channel.put( LogEntryTypeCodes.TX_COMMIT );
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
         channel.putChecksum();

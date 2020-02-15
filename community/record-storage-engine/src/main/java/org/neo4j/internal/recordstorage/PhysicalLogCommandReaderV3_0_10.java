@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.CommandReading.DynamicRecordAdder;
@@ -56,7 +55,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.storageengine.api.CommandReader;
 
 import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
@@ -68,14 +67,10 @@ import static org.neo4j.io.fs.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.io.fs.IoPrimitiveUtils.read3bLengthAndString;
 import static org.neo4j.util.Bits.bitFlag;
 
-@ServiceProvider
 public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
 {
-    @Override
-    public int getFormatId()
-    {
-        return LogEntryVersion.V3_0_10.version();
-    }
+    public static final CommandReader INSTANCE = new PhysicalLogCommandReaderV3_0_10();
+    static final byte FORMAT_ID = -10;
 
     @Override
     protected Command read( byte commandType, ReadableChannel channel ) throws IOException

@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -64,6 +65,7 @@ class LogPruningIT
         LogFiles logFiles = LogFilesBuilder.builder( db.databaseLayout(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
+                .withCommandReaderFactory( db.getDependencyResolver().resolveDependency( StorageEngineFactory.class ).commandReaderFactory() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
 
         // Force transaction log rotation

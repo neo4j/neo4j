@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -68,14 +69,16 @@ class VersionAwareLogEntryReaderIT
     @Inject
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
-    private final VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+    private VersionAwareLogEntryReader entryReader;
 
     @BeforeEach
     void setUp()
     {
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         createNode( database );
-        databaseLayout = ((GraphDatabaseAPI) database).databaseLayout();
+        GraphDatabaseAPI dbApi = (GraphDatabaseAPI) database;
+        databaseLayout = dbApi.databaseLayout();
+        entryReader = new VersionAwareLogEntryReader( dbApi.getDependencyResolver().resolveDependency( StorageEngineFactory.class ).commandReaderFactory() );
         managementService.shutdown();
     }
 

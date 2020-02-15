@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension

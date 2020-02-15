@@ -28,12 +28,10 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class TestCommandReaderFactory implements CommandReaderFactory
 {
-    public static final int FORMAT_ID = 99;
-
     private static final TestCommandReader READER = new TestCommandReader();
 
     @Override
-    public CommandReader get( int formatId )
+    public CommandReader get( int logEntryVersion )
     {
         // At the time of writing this the act of plugging in and selecting commands and readers from different storages
         // doesn't work and it's always going to be the latest record-storage format version which LogEntryWriter
@@ -44,12 +42,6 @@ public class TestCommandReaderFactory implements CommandReaderFactory
 
     private static class TestCommandReader implements CommandReader
     {
-        @Override
-        public int getFormatId()
-        {
-            return FORMAT_ID;
-        }
-
         @Override
         public StorageCommand read( ReadableChannel channel ) throws IOException
         {

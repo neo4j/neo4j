@@ -78,7 +78,7 @@ public class DatabaseMigrator
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
                 new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
-                tailScanner, legacyLogsLocator, pageCacheTracer );
+                tailScanner, legacyLogsLocator, storageEngineFactory, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer );

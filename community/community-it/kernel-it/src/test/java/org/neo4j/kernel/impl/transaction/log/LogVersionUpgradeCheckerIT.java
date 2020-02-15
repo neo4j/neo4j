@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -49,7 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHECK_POINT;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -80,7 +81,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void failToStartFromOlderTransactionLogsIfNotAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
+        createStoreWithLogEntryVersion( V2_3.version() );
 
         // Try to start with upgrading disabled
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
@@ -106,7 +107,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void startFromOlderTransactionLogsIfAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
+        createStoreWithLogEntryVersion( V2_3.version() );
 
         // Try to start with upgrading enabled
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
@@ -136,15 +137,15 @@ class LogVersionUpgradeCheckerIT
         managementService.shutdown();
     }
 
-    private void createStoreWithLogEntryVersion( LogEntryVersion logEntryVersion ) throws Exception
+    private void createStoreWithLogEntryVersion( byte logEntryVersion ) throws Exception
     {
         createGraphDbAndKillIt();
         appendCheckpoint( logEntryVersion );
     }
 
-    private void appendCheckpoint( LogEntryVersion logVersion ) throws IOException
+    private void appendCheckpoint( byte logEntryVersion ) throws IOException
     {
-        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.selectStorageEngine().commandReaderFactory() );
         LogFiles logFiles =
                 LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withLogEntryReader( logEntryReader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
@@ -157,7 +158,7 @@ class LogVersionUpgradeCheckerIT
             LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
 
             // Fake record
-            channel.put( logVersion.version() )
+            channel.put( logEntryVersion )
                     .put( CHECK_POINT )
                     .putLong( logPosition.getLogVersion() )
                     .putLong( logPosition.getByteOffset() );

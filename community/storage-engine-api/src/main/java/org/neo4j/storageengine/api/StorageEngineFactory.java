@@ -129,6 +129,27 @@ public interface StorageEngineFactory
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer );
 
     /**
+     * @return a {@link CommandReaderFactory} capable of handing out {@link CommandReader} for specific versions. Generally kernel will take care
+     * of most of the log entry parsing, i.e. the START, COMMIT, CHECKPOINT commands and their contents (they may be versioned). For COMMAND log entries
+     * this returned factory will be used to parse the actual command contents, which are storage-specific. For maximum flexibility the structure should
+     * be something like this:
+     * <ol>
+     *     <li>1B log entry version - managed by kernel</li>
+     *     <li>1B log entry type - managed by kernel</li>
+     *     <li>For COMMAND log entries: 1B command version - managed by storage</li>
+     *     <li>For COMMAND log entries: 1B command type - managed by storage</li>
+     *     <li>For COMMAND log entries: command data... - managed by storage</li>
+     * </ol>
+     *
+     * Although currently it's more like this:
+     *
+     * <ol>
+     *     <li></li>
+     * </ol>
+     */
+    CommandReaderFactory commandReaderFactory();
+
+    /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
      * @return the selected {@link StorageEngineFactory}.
      * @throws IllegalStateException if there were no candidates.

@@ -19,102 +19,87 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.eclipse.collections.api.set.primitive.MutableByteSet;
 import org.eclipse.collections.impl.map.mutable.primitive.ByteObjectHashMap;
 
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.util.Preconditions;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
 
 /**
- * Main entry point into log entry versions and parsers. A {@link LogEntryVersion} can be retrieved
- * by using {@link #byVersion(byte)} and from there get a hold of
- * {@link LogEntryParser} using {@link #entryParser(byte)}.
- * <p/>
- * Transactions are written into a log. Each transaction consists of one or more log entries. Log entries
- * can be of one or more types, such as denoting start of a transaction, commands and committing the transaction.
- * Neo4j supports writing the latest/current log entry and reading log entries for all currently supported versions.
- * Current versioning scheme uses one-byte log version field in every single log entry.
- * <p/>
- * As of 2.2.4 the log-global format version is gone, although still just a token value written to adhere to
- * the 16 bytes header size of a log for backwards compatibility. The log entry version controls everything
- * about versioning of log entries and commands, such that if either log entry format (such as log entry types,
- * such as START, COMMIT and the likes, or data within them) change, or one or more command format change
- * the log entry version will be bumped.
- * <p/>
- * The process of making an update to log entry or command format is to:
- * <ol>
- * <li>Copy the latest {@link CommandReader} or similar and modify the new copy</li>
- * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
- * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes</li>
- * <li>Modify {@link StorageCommand#serialize(WritableChannel)}.
- * Also LogEntryWriter (if log entry layout has changed) with required changes</li>
- * </ol>
+ * Sitting at the top of the log entry chain it's about time to explain the general architecture around log entry reading and justify its complications.
+ * Guided by how the format itself looks in the log, we use this as the basis for the reasoning:
+ * <pre>
+ *     ONE LOG ENTRY: [VERSION][TYPE][DATA]
+ *     VERSION: 1B version of the log entry
+ *     TYPE: 1B log entry type, specifying one of START, COMMAND, COMMIT, CHECKPOINT a.s.o.
+ *     DATA: For everything except COMMAND this contains data relevant to the log entry, e.g. COMMIT contains timestamp and transaction id etc.
+ * </pre>
+ * If TYPE==COMMAND then DATA is storage-specific command data, resulting in one {@link StorageCommand} upon loading it.
+ * Historically the version of the log entry has been used to describe even this command version, and so the log entry version had to be bumped
+ * for every new version of the, at the time, single storage engine command set. This coupling made it hard to introduce other command sets,
+ * i.e. for other storage engines.
+ *
+ * The change to support this, with breaking backwards compatibility is to fixate the current log entry VERSION as _just_ the log entry version,
+ * not the command version. Also since the single storage engine didn't have versioning for its commands that particular implementation needs to
+ * accommodate detecting if the first byte read as part of the command, which is the type of command, holds additional version information
+ * (either version marker so that the next byte would hold more information) or the version itself somehow. And later versions would have to write
+ * this information as part of the type byte for every command. New storage engines can simply start by writing both version and type information
+ * first in each command, which ever way they like. New structure for COMMAND:
+ * <pre>
+ *     ONE COMMAND LOG ENTRY: [VERSION][TYPE][COMMAND_VERSION][COMMAND_TYPE][COMMAND_DATA]
+ *                               ▲       ▲     ◄──────────┬────────────────────────────►
+ *                               │       │                │
+ *                               │       │                │
+ *                               │       │                └──── {@link CommandReaderFactory}/{@link CommandReader}
+ *                               │       └───────────────────── {@link LogEntryParserSet}
+ *                               └───────────────────────────── {@link LogEntryVersion}
+ * </pre>
  */
-public enum LogEntryVersion
+public class LogEntryVersion
 {
-    // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
-    // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
-    // log version to prevent mixed-version clusters from forming.
-    V3_0_10( (byte) -10, LogEntryParsersV2_3.class ),
-    // Version 4.0
-    // * New schema store format, where the schema store payload is stored in the property store.
-    // * Removed master and author id from transactions
-    // * Added checksum to transactions
-    V4_0( (byte) 1, LogEntryParsersV4_0.class );
+    public static final LogEntryVersion INSTANCE = new LogEntryVersion();
+    public static final LogEntryParserSet LATEST = V4_0;
 
-    public static final LogEntryVersion LATEST_VERSION;
-    private static final byte LOWEST_VERSION;
-    private static final LogEntryVersion[] ALL = values();
-    private static final ByteObjectHashMap<LogEntryVersion> LOOKUP_BY_VERSION;
+    private final ByteObjectHashMap<LogEntryParserSet> sets;
 
-    static
+    private LogEntryVersion()
     {
-        LOOKUP_BY_VERSION = new ByteObjectHashMap<>();
-        for ( LogEntryVersion version : ALL )
-        {
-            LOOKUP_BY_VERSION.put( version.version(), version );
-        }
-        MutableByteSet keys = LOOKUP_BY_VERSION.keySet();
-        LOWEST_VERSION = keys.min();
-        LATEST_VERSION = LOOKUP_BY_VERSION.get( keys.max() );
+        sets = new ByteObjectHashMap<>();
+        register( V2_3 );
+        register( V4_0 );
     }
 
-    private final byte version;
-    private final LogEntryParser[] entryTypes;
-
-    LogEntryVersion( byte version, Class<? extends Enum<? extends LogEntryParser>> cls )
+    private void register( LogEntryParserSet set )
     {
-        this.entryTypes = new LogEntryParser[highestCode( cls ) + 1];
-        for ( Enum<? extends LogEntryParser> parser : cls.getEnumConstants() )
-        {
-            LogEntryParser candidate = (LogEntryParser) parser;
-            this.entryTypes[candidate.byteCode()] = candidate;
-        }
-        this.version = version;
+        byte version = set.version();
+        Preconditions.checkState( !sets.containsKey( version ), "Conflicting version %d", version );
+        sets.put( version, set );
     }
 
-    /**
-     * @return byte value representing this log entry version.
-     */
-    public byte version()
+    public LogEntryParserSet select( byte version )
     {
-        return version;
-    }
-
-    /**
-     * @param type type of entry.
-     * @return a {@link LogEntryParser} capable of reading a {@link LogEntry} of the given type for this
-     * log entry version.
-     */
-    public LogEntryParser entryParser( byte type )
-    {
-        LogEntryParser candidate = (type >= 0 && type < entryTypes.length) ? entryTypes[type] : null;
-        if ( candidate == null )
+        LogEntryParserSet set = sets.get( version );
+        if ( set != null )
         {
-            throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version );
+            return set;
         }
-        return candidate;
+
+        if ( version > LATEST.version() )
+        {
+            throw new UnsupportedLogVersionException( String.format(
+                    "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
+                            "indicates that the log files originates from a newer version of neo4j.",
+                    version, LATEST.version() ) );
+        }
+        throw new UnsupportedLogVersionException( String.format(
+                "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
+                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                        "migrations from.",
+                version, sets.keySet().min() ) );
     }
 
     /**
@@ -123,46 +108,8 @@ public enum LogEntryVersion
      * @param version to compare against latest version
      * @return {@code true} if a more recent log entry version exists
      */
-    public static boolean moreRecentVersionExists( LogEntryVersion version )
+    public static boolean moreRecentVersionExists( byte version )
     {
-        return version.version < LATEST_VERSION.version;
-    }
-
-    /**
-     * Return the correct {@link LogEntryVersion} for the given {@code version} code read from e.g. a log entry.
-     *
-     * @param version log entry version
-     */
-    public static LogEntryVersion byVersion( byte version )
-    {
-        LogEntryVersion logEntryVersion = LOOKUP_BY_VERSION.get( version );
-        if ( logEntryVersion != null )
-        {
-            return logEntryVersion;
-        }
-        byte latestVersion = LATEST_VERSION.version();
-        if ( version > latestVersion )
-        {
-            throw new UnsupportedLogVersionException( String.format(
-                    "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
-                            "indicates that the log files originates from a newer version of neo4j.",
-                    version, latestVersion ) );
-        }
-        throw new UnsupportedLogVersionException( String.format(
-                "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
-                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
-                        "migrations from.",
-                version, LOWEST_VERSION ) );
-    }
-
-    private static int highestCode( Class<? extends Enum<? extends LogEntryParser>> cls )
-    {
-        int highestCode = 0;
-        for ( Enum<? extends LogEntryParser> parser : cls.getEnumConstants() )
-        {
-            LogEntryParser candidate = (LogEntryParser) parser;
-            highestCode = Math.max( highestCode, candidate.byteCode() );
-        }
-        return highestCode;
+        return version < LATEST.version();
     }
 }

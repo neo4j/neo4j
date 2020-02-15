@@ -32,10 +32,11 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST;
 
 class LogEntryParserDispatcherV6Test
 {
-    private final LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
+    private final byte version = LATEST.version();
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 25 );
@@ -56,7 +57,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_START );
+        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.TX_START );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -77,7 +78,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_COMMIT );
+        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.TX_COMMIT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -96,7 +97,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.COMMAND );
+        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.COMMAND );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -117,7 +118,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.CHECK_POINT );
+        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.CHECK_POINT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -127,6 +128,6 @@ class LogEntryParserDispatcherV6Test
     @Test
     void shouldThrowWhenParsingUnknownEntry()
     {
-        assertThrows( IllegalArgumentException.class, () -> version.entryParser( (byte) 42 ) ); // unused, at lest for now
+        assertThrows( IllegalArgumentException.class, () -> LATEST.select( (byte) 42 ) ); // unused, at lest for now
     }
 }

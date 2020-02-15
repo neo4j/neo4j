@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -254,7 +255,9 @@ class TestLogPruning
             LogVersionedStoreChannel versionedStoreChannel = files.openForVersion( version );
             try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
             {
-                try ( PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() ) )
+                try ( PhysicalTransactionCursor physicalTransactionCursor =
+                        new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader( db.getDependencyResolver().resolveDependency(
+                                StorageEngineFactory.class ).commandReaderFactory() ) ) )
                 {
                     while ( physicalTransactionCursor.next() )
                     {

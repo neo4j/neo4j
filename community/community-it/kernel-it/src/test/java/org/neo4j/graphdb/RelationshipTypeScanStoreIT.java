@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -77,6 +78,8 @@ class RelationshipTypeScanStoreIT
     FileSystemAbstraction fs;
     @Inject
     DatabaseLayout databaseLayout;
+    @Inject
+    StorageEngineFactory storageEngineFactory;
 
     @BeforeAll
     static void toggleOn()
@@ -314,7 +317,7 @@ class RelationshipTypeScanStoreIT
 
             LogFiles logFiles = buildLogFiles();
             LogFile transactionLogFile = logFiles.getLogFile();
-            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
+            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
             LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
             try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
             {

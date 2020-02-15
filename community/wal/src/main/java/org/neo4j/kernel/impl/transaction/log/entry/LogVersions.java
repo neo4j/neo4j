@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.storageengine.api.StoreId;
 
-/**
- * Since from 2.2.4 and onwards there's only one version in town, namely {@link LogEntryVersion}.
- */
 public class LogVersions
 {
     private LogVersions()

@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
@@ -44,7 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -56,14 +55,10 @@ import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_D
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.util.Bits.bitFlag;
 
-@ServiceProvider
 public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 {
-    @Override
-    public int getFormatId()
-    {
-        return LogEntryVersion.V4_0.version();
-    }
+    public static final CommandReader INSTANCE = new PhysicalLogCommandReaderV4_0();
+    static final byte FORMAT_ID = 1;
 
     @Override
     protected Command read( byte commandType, ReadableChannel channel ) throws IOException
