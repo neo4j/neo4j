@@ -49,6 +49,8 @@ public interface SchemaRuleAccess
 
     Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer );
 
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( PageCursorTracer cursorTracer );
+
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *

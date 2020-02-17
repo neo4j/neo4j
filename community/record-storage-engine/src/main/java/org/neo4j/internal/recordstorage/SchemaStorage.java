@@ -89,6 +89,12 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
+    public Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( PageCursorTracer cursorTracer )
+    {
+        return indexRules( streamAllSchemaRules( true, cursorTracer ) ).iterator();
+    }
+
+    @Override
     public IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier, PageCursorTracer cursorTracer )
     {
         SchemaDescriptor schema = supplier.schema();
