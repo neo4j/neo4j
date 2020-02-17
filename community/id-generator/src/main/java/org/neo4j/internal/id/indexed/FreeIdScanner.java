@@ -40,7 +40,13 @@ import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
  */
 class FreeIdScanner implements Closeable
 {
+    /**
+     * Used as low bound of a new scan. Continuing a scan makes use of {@link #ongoingScanRangeIndex}.
+     */
     private static final IdRangeKey LOW_KEY = new IdRangeKey( 0 );
+    /**
+     * Used as high bound for all scans.
+     */
     private static final IdRangeKey HIGH_KEY = new IdRangeKey( Long.MAX_VALUE );
 
     private final int idsPerEntry;
@@ -50,10 +56,14 @@ class FreeIdScanner implements Closeable
     private final MarkerProvider markerProvider;
     private final long generation;
     private final ScanLock lock;
-    private volatile Seeker<IdRangeKey, IdRange> scanner;
     private final long[] pendingItemsToCache;
     private int pendingItemsToCacheCursor;
-    private int nextPosInRange;
+    /**
+     * State for whether or not there's an ongoing scan, and if so where it should begin from. This is used in
+     * {@link #findSomeIdsToCache(int, PageCursorTracer)} both to know where to initiate a scan from and to set it, if the cache got full before scan completed,
+     * or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
+     */
+    private Long ongoingScanRangeIndex;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
             MarkerProvider markerProvider, long generation, boolean strictlyPrioritizeFreelistOverHighId )
@@ -74,7 +84,7 @@ class FreeIdScanner implements Closeable
      */
     boolean tryLoadFreeIdsIntoCache( PageCursorTracer cursorTracer )
     {
-        if ( scanner == null && !atLeastOneIdOnFreelist.get() )
+        if ( ongoingScanRangeIndex == null && !atLeastOneIdOnFreelist.get() )
         {
             // If no scan is in progress (SeekCursor now sitting and waiting at some leaf in the free-list)
             // and if we have no reason to expect finding any free id from a scan then don't do it.
@@ -121,18 +131,8 @@ class FreeIdScanner implements Closeable
         lock.lock();
         try
         {
-            // Abort any ongoing scan
-            if ( scanner != null )
-            {
-                try
-                {
-                    endCurrentScan();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            }
+            // Restart scan from the beginning after cache is cleared
+            ongoingScanRangeIndex = null;
 
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
             try ( ReservedMarker marker = markerProvider.getMarker( cursorTracer ) )
@@ -181,36 +181,28 @@ class FreeIdScanner implements Closeable
 
     private boolean findSomeIdsToCache( int maxItemsToCache, PageCursorTracer cursorTracer ) throws IOException
     {
-        boolean startedNow = false;
-        if ( scanner == null )
-        {
-            scanner = tree.seek( LOW_KEY, HIGH_KEY, cursorTracer );
-            startedNow = true;
-        }
-
-        // Continue scanning a bit forward...
+        boolean startedNow = ongoingScanRangeIndex == null;
+        IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey( ongoingScanRangeIndex );
         boolean seekerExhausted = false;
-
-        // First check if the previous scan was aborted in the middle of the entry
-        if ( !startedNow && nextPosInRange > 0 && nextPosInRange < idsPerEntry )
+        try ( Seeker<IdRangeKey,IdRange> scanner = tree.seek( from, HIGH_KEY, cursorTracer ) )
         {
-            queueIdsFromTreeItem( scanner.key(), scanner.value(), nextPosInRange, maxItemsToCache );
-        }
-
-        // Then continue looking at additional entries
-        while ( pendingItemsToCacheCursor < maxItemsToCache )
-        {
-            if ( !scanner.next() )
+            // Continue scanning until the cache is full or there's nothing more to scan
+            while ( pendingItemsToCacheCursor < maxItemsToCache )
             {
-                seekerExhausted = true;
-                break;
+                if ( !scanner.next() )
+                {
+                    seekerExhausted = true;
+                    break;
+                }
+                queueIdsFromTreeItem( scanner.key(), scanner.value(), maxItemsToCache );
             }
-            queueIdsFromTreeItem( scanner.key(), scanner.value(), 0, maxItemsToCache );
+            // If there's more left to scan "this round" then make a note of it so that we start from this place the next time
+            ongoingScanRangeIndex = seekerExhausted ? null : scanner.key().getIdRangeIdx();
         }
+
         boolean somethingWasCached = pendingItemsToCacheCursor > 0;
         if ( seekerExhausted )
         {
-            endCurrentScan();
             if ( !somethingWasCached && startedNow )
             {
                 // chill a bit until at least one id gets freed
@@ -220,20 +212,13 @@ class FreeIdScanner implements Closeable
         return somethingWasCached;
     }
 
-    private void endCurrentScan() throws IOException
-    {
-        scanner.close();
-        scanner = null;
-    }
-
-    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, int startPosInRange, int maxItemsToCache )
+    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, int maxItemsToCache )
     {
         final long baseId = key.getIdRangeIdx() * idsPerEntry;
         final boolean differentGeneration = generation != range.getGeneration();
 
-        for ( int i = startPosInRange; i < idsPerEntry && pendingItemsToCacheCursor < maxItemsToCache; i++ )
+        for ( int i = 0; i < idsPerEntry && pendingItemsToCacheCursor < maxItemsToCache; i++ )
         {
-            nextPosInRange = i + 1;
             final IdState state = range.getState( i );
             if ( state == FREE || (differentGeneration && state == DELETED) )
             {
@@ -244,10 +229,6 @@ class FreeIdScanner implements Closeable
 
     @Override
     public void close() throws IOException
-    {
-        if ( scanner != null )
-        {
-            scanner.close();
-        }
+    {   // nothing to close
     }
 }

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -82,7 +83,7 @@ class FreeIdScannerTest
     // instantiated in tests
     private AtomicBoolean atLeastOneFreeId;
     private ConcurrentLongQueue cache;
-    private FoundIdMarker reuser;
+    private RecordingReservedMarker reuser;
 
     @BeforeEach
     void beforeEach()
@@ -533,11 +534,18 @@ class FreeIdScannerTest
             marker.markDeleted( id );
             marker.markFree( id );
         } );
-        scanner.tryLoadFreeIdsIntoCache( NULL );
-        assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) );
+        scanner.tryLoadFreeIdsIntoCache( NULL ); // loads 0 - cacheSize
+        assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) ); // takes out 0 - cacheSize/2, which means cacheSize/2 - cacheSize is still in cache
+        // simulate marking these ids as used and then delete and free them again so that they can be picked up by the scanner after clearCache
+        forEachId( generation, range( 0, halfCacheSize ) ).accept( ( marker, id ) ->
+        {
+            marker.markUsed( id );
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
 
         // when
-        scanner.clearCache( NULL );
+        scanner.clearCache( NULL ); // should clear cacheSize/2 - cacheSize
         scanner.tryLoadFreeIdsIntoCache( NULL );
         assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) );
         assertCacheHasIdsNonExhaustive( range( halfCacheSize, cacheSize ) );
@@ -593,7 +601,7 @@ class FreeIdScannerTest
     private FreeIdScanner scanner( int idsPerEntry, ConcurrentLongQueue cache, long generation )
     {
         this.cache = cache;
-        this.reuser = new FoundIdMarker();
+        this.reuser = new RecordingReservedMarker( tree, generation, new AtomicLong() );
         this.atLeastOneFreeId = new AtomicBoolean();
         return new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneFreeId, reuser, generation, false );
     }
@@ -642,34 +650,63 @@ class FreeIdScannerTest
         };
     }
 
-    private static class FoundIdMarker implements MarkerProvider, ReservedMarker
+    private class RecordingReservedMarker implements MarkerProvider
     {
         private final MutableLongList reservedIds = LongLists.mutable.empty();
         private final MutableLongList unreservedIds = LongLists.mutable.empty();
+        private final GBPTree<IdRangeKey,IdRange> tree;
+        private final long generation;
+        private final AtomicLong highestWrittenId;
 
-        @Override
-        public void markReserved( long id )
+        RecordingReservedMarker( GBPTree<IdRangeKey,IdRange> tree, long generation, AtomicLong highestWrittenId )
         {
-            reservedIds.add( id );
-        }
-
-        @Override
-        public void markUnreserved( long id )
-        {
-            unreservedIds.add( id );
-        }
-
-        @Override
-        public void close()
-        {
-            // nothing to close
+            this.tree = tree;
+            this.generation = generation;
+            this.highestWrittenId = highestWrittenId;
         }
 
         @Override
         public ReservedMarker getMarker( PageCursorTracer cursorTracer )
         {
+            ReservedMarker actual = instantiateRealMarker();
             cursorTracer.beginPin( false, 1, null ).done();
-            return this;
+            return new ReservedMarker()
+            {
+                @Override
+                public void markReserved( long id )
+                {
+                    actual.markReserved( id );
+                    reservedIds.add( id );
+                }
+
+                @Override
+                public void markUnreserved( long id )
+                {
+                    actual.markUnreserved( id );
+                    unreservedIds.add( id );
+                }
+
+                @Override
+                public void close()
+                {
+                    actual.close();
+                }
+            };
+        }
+
+        private ReservedMarker instantiateRealMarker()
+        {
+            try
+            {
+                Lock lock = new ReentrantLock();
+                lock.lock();
+                return new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer( NULL ), lock, new IdRangeMerger( false, NO_MONITOR ), true, atLeastOneFreeId,
+                        generation, highestWrittenId, false, NO_MONITOR );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 
