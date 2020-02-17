@@ -54,13 +54,13 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 
 // Security administration commands
 case class ShowUsers(source: PrivilegePlan)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
+case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: String, initialPassword: Either[Array[Byte], Parameter],
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class AlterUser(source: PrivilegePlan, userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
+case class AlterUser(source: PrivilegePlan, userName: String, initialPassword: Option[Either[Array[Byte], Parameter]],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class SetOwnPassword(newStringPassword: Option[Array[Byte]], newParameterPassword: Option[Parameter],
-                          currentStringPassword: Option[Array[Byte]], currentParameterPassword: Option[Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class SetOwnPassword(newPassword: Either[Array[Byte], Parameter], currentPassword: Either[Array[Byte], Parameter])
+                         (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class ShowRoles(source: PrivilegePlan, withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))

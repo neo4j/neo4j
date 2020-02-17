@@ -130,7 +130,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password
-    case CreateUser(source, userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
+    case CreateUser(source, userName, Left(initialPassword), requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
       if (suspendedOptional.isDefined) // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
@@ -161,11 +161,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD $password
-    case CreateUser(_, userName, _, Some(_), _, _) =>
+    case CreateUser(_, userName, Right(_), _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD
-    case CreateUser(_, userName, _, _, _, _) =>
+    case CreateUser(_, userName, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER foo [IF EXISTS]
@@ -185,7 +185,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
-    case SetOwnPassword(Some(newPassword), None, Some(currentPassword), None) => (_, _, securityContext) =>
+    case SetOwnPassword(Left(newPassword), Left(currentPassword)) => (_, _, securityContext) =>
       val query =
         """MATCH (user:User {name: $name})
           |WITH user, user.credentials AS oldCredentials
@@ -222,17 +222,17 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
-    case SetOwnPassword(_, Some(_), _, _) => (_, _, securityContext) =>
+    case SetOwnPassword(Right(_), _) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
       throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
-    case SetOwnPassword(_, _, _, Some(_)) => (_, _, securityContext) =>
+    case SetOwnPassword( _, Right(_)) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
       throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-    case SetOwnPassword(_, _, _, _) => (_, _, securityContext) =>
+    case SetOwnPassword(_, _) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
       throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Password not correctly supplied.")
 

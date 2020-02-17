@@ -407,7 +407,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val constraintName = ConstraintName(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
-      case SetOwnPassword(_, _, _, _) =>
+      case SetOwnPassword(_, _) =>
         PlanDescriptionImpl(id, "AlterCurrentUserSetPassword", NoChildren, Seq.empty, variables)
 
       case ShowDatabase(normalizedName) =>
@@ -617,7 +617,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowUsers(_) =>
         PlanDescriptionImpl(id, "ShowUsers", children, Seq.empty, variables)
 
-      case CreateUser(_, name, _, _, _, _) =>
+      case CreateUser(_, name, _, _, _) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", children, Seq(userName), variables)
 
@@ -625,7 +625,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropUser", children, Seq(userName), variables)
 
-      case AlterUser(_, name, _, _, _, _) =>
+      case AlterUser(_, name, _, _, _) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "AlterUser", children, Seq(userName), variables)
 

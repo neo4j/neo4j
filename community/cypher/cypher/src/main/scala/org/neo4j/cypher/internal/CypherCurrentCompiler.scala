@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planning.CypherPlanner
@@ -130,19 +129,25 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         }
       }
 
+      // TODO move this into a tree rewriter that traverses the tree evaluating all passwords
+      // TODO move this to runtime phase, not planner
       logicalPlan match {
         case l@LogSystemCommand(source: AdministrationCommandLogicalPlan, _) =>
           LogSystemCommand(resolveParameterForManagementCommands(source).asInstanceOf[AdministrationCommandLogicalPlan], l.command)(new SequentialIdGen(l.id.x + 1))
-        case c@CreateUser(_, _, _, Some(paramPassword), _, _) =>
-          CreateUser(c.source, c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
-        case a@AlterUser(_, _, _, Some(paramPassword), _, _) =>
-          AlterUser(a.source, a.userName, Some(getParamValue(paramPassword)), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
-        case p@SetOwnPassword(_, Some(newParamPassword), _, None) =>
-          SetOwnPassword(Some(getParamValue(newParamPassword)), None, p.currentStringPassword, None)(new SequentialIdGen(p.id.x + 1))
-        case p@SetOwnPassword(_, None, _, Some(currentParamPassword)) =>
-          SetOwnPassword(p.newStringPassword, None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
-        case p@SetOwnPassword(_, Some(newParamPassword), _, Some(currentParamPassword)) =>
-          SetOwnPassword(Some(getParamValue(newParamPassword)), None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
+        case c@CreateUser(_, _, Right(paramPassword), _, _) =>
+          CreateUser(c.source, c.userName, Left(getParamValue(paramPassword)), c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
+        case a@AlterUser(_, _, Some(Right(paramPassword)), _, _) =>
+          AlterUser(a.source, a.userName, Some(Left(getParamValue(paramPassword))), a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
+        case p@SetOwnPassword(Right(newParamPassword), Left(currentPassword)) =>
+          SetOwnPassword(Left(getParamValue(newParamPassword)), Left(currentPassword))(new SequentialIdGen(p.id.x + 1))
+        case p@SetOwnPassword(Left(newPassword), Right(currentParamPassword)) =>
+          SetOwnPassword(Left(newPassword), Left(getParamValue(currentParamPassword)))(new SequentialIdGen(p.id.x + 1))
+        case p@SetOwnPassword(newPassword, currentPassword) =>
+          def resolveParameterPassword(expr: Either[Array[Byte], Parameter]): Either[Array[Byte], Parameter] = expr match {
+            case Right(p) => Left(getParamValue(p))
+            case v => v
+          }
+          SetOwnPassword(resolveParameterPassword(newPassword), resolveParameterPassword(currentPassword))(new SequentialIdGen(p.id.x + 1))
         case _ => // Not an administration command that needs resolving, do nothing
           logicalPlan
       }

@@ -219,15 +219,16 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
+    case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
       val userNameString = Prettifier.escapeName(userName)
       val ifNotExists = ifExistsDo match {
         case _: IfExistsDoNothing => " IF NOT EXISTS"
         case _                    => ""
       }
-      val password = if (initialParameterPassword.isDefined)
-        s"$$${initialParameterPassword.get.name}"
-      else "'******'"
+      val password = initialPassword match {
+        case Left(_) => "'******'"
+        case Right(name) => s"$$$name"
+      }
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
       else ""
@@ -237,12 +238,13 @@ case class Prettifier(expr: ExpressionStringifier) {
       if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
       else s"${x.name} ${Prettifier.escapeName(userName)}"
 
-    case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+    case x @ AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
       val userNameString = Prettifier.escapeName(userName)
-      val passwordString = if (initialStringPassword.isDefined) s" '******'"
-      else if (initialParameterPassword.isDefined)
-        s" $$${initialParameterPassword.get.name}"
-      else ""
+      val passwordString = initialPassword match {
+        case None => ""
+        case Some(Left(_)) => s" '******'"
+        case Some(Right(param)) => s" $$${param.name}"
+      }
       val passwordModeString = if (requirePasswordChange.isDefined)
         s" CHANGE ${if (!requirePasswordChange.get) "NOT " else ""}REQUIRED"
       else
@@ -251,14 +253,12 @@ case class Prettifier(expr: ExpressionStringifier) {
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
       s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
-    case x @ SetOwnPassword(_, newParameterPassword, _, currentParameterPassword) =>
-      val newPassword = if (newParameterPassword.isDefined)
-        s"$$${newParameterPassword.get.name}"
-      else "'******'"
-      val currentPassword = if (currentParameterPassword.isDefined)
-        s"$$${currentParameterPassword.get.name}"
-      else "'******'"
-      s"${x.name} FROM $currentPassword TO $newPassword"
+    case x @ SetOwnPassword(newPassword, currentPassword) =>
+      def evalPassword(pw: Either[PasswordString, Parameter]): String = pw match {
+        case Right(param) => s"$$${param.name}"
+        case _ => s" '******'"
+      }
+      s"${x.name} FROM ${evalPassword(currentPassword)} TO ${evalPassword(newPassword)}"
 
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
