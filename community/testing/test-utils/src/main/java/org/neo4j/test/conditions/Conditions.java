@@ -21,6 +21,7 @@ package org.neo4j.test.conditions;
 
 import org.assertj.core.api.Condition;
 
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public final class Conditions
@@ -42,8 +43,8 @@ public final class Conditions
         return new Condition<>( v -> v.equals( value ), "Should be equal to " + value );
     }
 
-    public static <T> Condition<T> sizeCondition( T expectedSize )
+    public static <T extends Collection<?>> Condition<T> sizeCondition( int expectedSize )
     {
-        return new Condition<>( v -> v.equals( expectedSize ), "Size should be equal to " + expectedSize );
+        return new Condition<>( v -> v.size() == expectedSize, "Size should be equal to " + expectedSize );
     }
 }
