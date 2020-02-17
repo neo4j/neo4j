@@ -48,6 +48,8 @@ public interface SchemaRuleAccess
 
     Iterator<IndexDescriptor> indexesGetAll();
 
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed();
+
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
