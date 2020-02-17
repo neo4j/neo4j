@@ -749,7 +749,7 @@ public class IndexStatisticsTest
     {
         double expected = UNIQUE_NAMES / numberOfEntries;
         double actual = indexSelectivity( index );
-        double maxDelta = (double) indexOnlineMonitor.indexSampleOnCompletion.updates() / numberOfEntries;
+        double maxDelta = Double.max( 0.0001, (double) indexOnlineMonitor.indexSampleOnCompletion.updates() / numberOfEntries );
 
         String message = format(
                 "Expected number of entries to not differ (expected: %f actual: %f)",
