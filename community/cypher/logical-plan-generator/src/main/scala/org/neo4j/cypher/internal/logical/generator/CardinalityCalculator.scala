@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
@@ -100,10 +101,7 @@ object CardinalityCalculator {
   implicit val aggregationCardinality: CardinalityCalculator[Aggregation] = {
     (plan, state, _, _) =>
       val in = state.cardinalities.get(plan.source.id)
-      if (plan.groupingExpressions.isEmpty)
-        Cardinality.min(in, Cardinality.SINGLE)
-      else
-        Cardinality.min(in, Cardinality.sqrt(in))
+      StatisticsBackedCardinalityModel.aggregateCardinalityBeforeSelection(in, plan.groupingExpressions)
   }
 
   implicit val applyCardinality: CardinalityCalculator[Apply] =

@@ -155,7 +155,6 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   private val labels = labelsWithIds.keys.toVector
   private val relTypes = relTypesWithIds.keys.toVector
-  private val costModel = CardinalityCostModel(null)
 
   /**
    * A convenience conversion that allows us to mix LogicalPlan Gens with State mutators in the same for comprehension.
@@ -200,7 +199,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(cartesianProduct(state)),
     Gen.lzy(apply(state))
   ).suchThat {
-    case WithState(plan, state) => costModel.apply(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
+    case WithState(plan, state) => CardinalityCostModel(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
   }
 
   // Leaf Plans

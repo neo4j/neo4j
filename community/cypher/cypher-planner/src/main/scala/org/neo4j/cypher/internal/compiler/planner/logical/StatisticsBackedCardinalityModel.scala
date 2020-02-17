@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
+import org.neo4j.cypher.internal.expressions.Expression
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 
@@ -111,15 +112,9 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       val cardinalityBeforeSelection = in * DEFAULT_DISTINCT_SELECTIVITY
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
-    // Aggregates with no grouping
-    case projection: AggregatingQueryProjection if projection.groupingExpressions.isEmpty =>
-      val cardinalityBeforeSelection = Cardinality.min(in, Cardinality.SINGLE)
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
-
     // Aggregates
     case projection: AggregatingQueryProjection =>
-      // if input cardinality is < 1 the sqrt is bigger than the original value which makes no sense for aggregations
-      val cardinalityBeforeSelection = Cardinality.min(in, Cardinality.sqrt(in))
+      val cardinalityBeforeSelection = StatisticsBackedCardinalityModel.aggregateCardinalityBeforeSelection(in, projection.groupingExpressions)
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
     // Unwind
@@ -161,4 +156,13 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     val newCardinality = queryGraphCardinalityModel(graph, input, semanticTable)
     QueryGraphSolverInput(newLabels, newCardinality, input.strictness)
   }
+}
+
+object StatisticsBackedCardinalityModel {
+  def aggregateCardinalityBeforeSelection(in: Cardinality, groupingExpressions: Map[String, Expression]): Cardinality =
+    if (groupingExpressions.isEmpty)
+      Cardinality.min(in, Cardinality.SINGLE)
+    else
+      // if input cardinality is < 1 the sqrt is bigger than the original value which makes no sense for aggregations
+      Cardinality.min(in, Cardinality.sqrt(in))
 }
