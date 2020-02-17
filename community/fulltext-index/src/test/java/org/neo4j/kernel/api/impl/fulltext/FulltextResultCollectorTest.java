@@ -31,8 +31,8 @@ import java.util.PriorityQueue;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsArrayIterator;
-import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsQueueIterator;
+import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsMinQueueIterator;
+import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityResultsMaxQueueIterator;
 import org.neo4j.kernel.api.impl.fulltext.FulltextResultCollector.EntityScorePriorityQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -234,7 +234,7 @@ class FulltextResultCollectorTest
     }
 
     @Nested
-    class EntityResultsQueueIteratorTest
+    class EntityResultsMaxQueueIteratorTest
     {
         @RepeatedTest( 200 )
         void randomizedPriorityQueueTest()
@@ -253,7 +253,7 @@ class FulltextResultCollectorTest
                     expectedQueue.add( new EntityScore( i, score ) );
                     actualQueue.insert( i, score );
                 }
-                EntityResultsQueueIterator iterator = new EntityResultsQueueIterator( actualQueue );
+                EntityResultsMaxQueueIterator iterator = new EntityResultsMaxQueueIterator( actualQueue );
 
                 EntityScore entityScore = new EntityScore( 0, 0.0f );
                 int i = 0;
@@ -273,7 +273,7 @@ class FulltextResultCollectorTest
     }
 
     @Nested
-    class EntityResultsArrayIteratorTest
+    class EntityResultsMinQueueIteratorTest
     {
         @Test
         void mustReturnEntriesFromMinQueueInDescendingOrder()
@@ -283,7 +283,7 @@ class FulltextResultCollectorTest
             pq.insert( 2, 3.0f );
             pq.insert( 3, 1.0f );
 
-            EntityResultsArrayIterator iterator = new EntityResultsArrayIterator( pq );
+            EntityResultsMinQueueIterator iterator = new EntityResultsMinQueueIterator( pq );
             assertTrue( iterator.hasNext() );
             assertThat( iterator.next() ).isEqualTo( 2 );
             assertThat( iterator.current() ).isEqualTo( 2 );

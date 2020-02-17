@@ -85,10 +85,10 @@ class FulltextResultCollector implements Collector
         if ( limit == NO_LIMIT )
         {
             // The 'pq' will pop entries in their correctly sorted order.
-            return new EntityResultsQueueIterator( pq );
+            return new EntityResultsMaxQueueIterator( pq );
         }
         // Otherwise, we need to reverse the result collected in the 'pq'.
-        return new EntityResultsArrayIterator( pq );
+        return new EntityResultsMinQueueIterator( pq );
     }
 
     @Override
@@ -274,13 +274,16 @@ class FulltextResultCollector implements Collector
         }
     }
 
-    static class EntityResultsQueueIterator implements ValuesIterator, LongFloatProcedure
+    /**
+     * Produce entity/score results from the given priority queue, assuming it's a max-queue that itself delivers entries in descending order.
+     */
+    static class EntityResultsMaxQueueIterator implements ValuesIterator, LongFloatProcedure
     {
         private final EntityScorePriorityQueue pq;
         private long currentEntity;
         private float currentScore;
 
-        EntityResultsQueueIterator( EntityScorePriorityQueue pq )
+        EntityResultsMaxQueueIterator( EntityScorePriorityQueue pq )
         {
             this.pq = pq;
         }
@@ -331,13 +334,17 @@ class FulltextResultCollector implements Collector
         }
     }
 
-    static class EntityResultsArrayIterator implements ValuesIterator, LongFloatProcedure
+    /**
+     * Produce entity/score results from the given priority queue, assuming it's a min-queue which delivers entries in ascending order, so that they have
+     * to be reversed before we can iterate them.
+     */
+    static class EntityResultsMinQueueIterator implements ValuesIterator, LongFloatProcedure
     {
         private final long[] entityIds;
         private final float[] scores;
         private int index;
 
-        EntityResultsArrayIterator( EntityScorePriorityQueue pq )
+        EntityResultsMinQueueIterator( EntityScorePriorityQueue pq )
         {
             int size = pq.size();
             this.entityIds = new long[size];
