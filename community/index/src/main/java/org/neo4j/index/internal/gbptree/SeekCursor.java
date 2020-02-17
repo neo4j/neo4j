@@ -1128,6 +1128,27 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         {
             layout.copyKey( prevKey, fromInclusive );
         }
+
+        // Reset mutable state
+        cachedIndex = 0;
+        cachedLength = 0;
+        resultOnTrack = false;
+        pos = 0;
+        keyCount = 0;
+        concurrentWriteHappened = false;
+        verifyExpectedFirstAfterGoToNext = false;
+        currentNodeGeneration = 0;
+        expectedCurrentNodeGeneration = 0;
+        nodeType = 0;
+        successor = 0;
+        successorGeneration = 0;
+        isInternal = false;
+        pointerId = 0;
+        pointerGeneration = 0;
+        searchResult = 0;
+        prevSiblingId = 0;
+        prevSiblingGeneration = 0;
+        forceReadHeader = false;
     }
 
     /**
