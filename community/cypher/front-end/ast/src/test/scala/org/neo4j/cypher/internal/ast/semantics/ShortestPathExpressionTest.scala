@@ -16,9 +16,19 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.util.symbols.{TypeSpec, _}
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 class ShortestPathExpressionTest extends SemanticFunSuite {
 

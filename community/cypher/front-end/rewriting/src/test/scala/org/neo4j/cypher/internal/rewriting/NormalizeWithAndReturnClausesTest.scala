@@ -16,13 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter}
 
 class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest {
   val exceptionFactory = OpenCypherExceptionFactory(None)

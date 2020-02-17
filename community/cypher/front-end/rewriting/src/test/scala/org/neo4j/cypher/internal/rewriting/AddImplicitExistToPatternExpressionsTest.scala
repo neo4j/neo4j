@@ -16,15 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.addImplicitExistToPatternExpressions
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AddImplicitExistToPatternExpressionsTest extends CypherFunSuite with AstConstructionTestSupport {
-
-  import org.neo4j.cypher.internal.parser.ParserFixture.parser
 
   testRewrite(
     "MATCH (n) WHERE (n)--(m) RETURN n",

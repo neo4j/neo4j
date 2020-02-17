@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.{expressions => exp}
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
-
 
 class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
 
@@ -28,30 +27,30 @@ class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
   test("testIdentifierCanContainASCII") {
     implicit val parserToTest = MapProjection
 
-    parsing("abc{}") shouldGive exp.MapProjection(exp.Variable("abc")(t), Seq.empty)(t, None)
+    parsing("abc{}") shouldGive expressions.MapProjection(expressions.Variable("abc")(t), Seq.empty)(t, None)
 
     parsing("abc{.id}") shouldGive
-      exp.MapProjection(exp.Variable("abc")(t),
-        Seq(exp.PropertySelector(exp.Variable("id")(t))(t)))(t, None)
+      expressions.MapProjection(expressions.Variable("abc")(t),
+        Seq(expressions.PropertySelector(expressions.Variable("id")(t))(t)))(t, None)
 
     parsing("abc{id}") shouldGive
-      exp.MapProjection(exp.Variable("abc")(t),
-        Seq(exp.VariableSelector(exp.Variable("id")(t))(t)))(t, None)
+      expressions.MapProjection(expressions.Variable("abc")(t),
+        Seq(expressions.VariableSelector(expressions.Variable("id")(t))(t)))(t, None)
 
     parsing("abc { id : 42 }") shouldGive
-      exp.MapProjection(exp.Variable("abc")(t),
-        Seq(exp.LiteralEntry(exp.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t, None)
+      expressions.MapProjection(expressions.Variable("abc")(t),
+        Seq(expressions.LiteralEntry(expressions.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t, None)
 
     parsing("abc { `a p a` : 42 }") shouldGive
-      exp.MapProjection(exp.Variable("abc")(t),
-        Seq(exp.LiteralEntry(exp.PropertyKeyName("a p a")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t, None)
+      expressions.MapProjection(expressions.Variable("abc")(t),
+        Seq(expressions.LiteralEntry(expressions.PropertyKeyName("a p a")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t, None)
 
     parsing("abc { id : 42, .foo, bar }") shouldGive
-      exp.MapProjection(exp.Variable("abc")(t),
+      expressions.MapProjection(expressions.Variable("abc")(t),
         Seq(
-          exp.LiteralEntry(exp.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t),
-          exp.PropertySelector(exp.Variable("foo")(t))(t),
-          exp.VariableSelector(exp.Variable("bar")(t))(t)
+          expressions.LiteralEntry(expressions.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t),
+          expressions.PropertySelector(expressions.Variable("foo")(t))(t),
+          expressions.VariableSelector(expressions.Variable("bar")(t))(t)
         )
       )(t, None)
   }

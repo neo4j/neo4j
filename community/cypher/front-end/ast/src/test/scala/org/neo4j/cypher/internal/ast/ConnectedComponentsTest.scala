@@ -16,12 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.connectedComponents.ComponentPart
+import org.neo4j.cypher.internal.ast.connectedComponents.ConnectedComponent
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ConnectedComponentsTest extends CypherFunSuite {
-  import connectedComponents._
 
   test("(a)->(b), (c)->(d) has two connected components") {
     val disconnected = connectedComponents(Vector(

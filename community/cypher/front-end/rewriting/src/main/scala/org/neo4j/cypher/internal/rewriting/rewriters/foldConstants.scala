@@ -16,8 +16,29 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{CypherExceptionFactory, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.Modulo
+import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NumberLiteral
+import org.neo4j.cypher.internal.expressions.Pow
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Subtract
+import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.UnaryAdd
+import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
   def apply(that: AnyRef): AnyRef =

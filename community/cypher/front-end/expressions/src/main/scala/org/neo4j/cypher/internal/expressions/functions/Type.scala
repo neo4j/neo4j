@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.TypeSignatures
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object Type extends Function with TypeSignatures {
   override def name = "type"

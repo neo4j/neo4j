@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.expressions.{DummyExpression, ListComprehension}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class FilteringExpressionTest extends SemanticFunSuite {
 

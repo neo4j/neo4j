@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.TypeSignatures
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 case object Avg extends AggregatingFunction with TypeSignatures {
   def name = "avg"

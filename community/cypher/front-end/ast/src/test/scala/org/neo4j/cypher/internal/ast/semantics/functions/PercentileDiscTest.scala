@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.ast.semantics.functions
 
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 class PercentileDiscTest extends FunctionTestBase("percentileDisc") {
 

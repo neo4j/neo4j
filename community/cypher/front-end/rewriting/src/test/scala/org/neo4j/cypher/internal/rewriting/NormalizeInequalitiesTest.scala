@@ -17,7 +17,13 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeInequalities
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

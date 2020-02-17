@@ -17,9 +17,10 @@
 package org.neo4j.cypher.internal.frontend.helpers
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.semantics.{SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -63,6 +64,3 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
 
   override def initialFields: Map[String, CypherType] = Map.empty
 }
-
-
-

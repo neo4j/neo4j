@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern

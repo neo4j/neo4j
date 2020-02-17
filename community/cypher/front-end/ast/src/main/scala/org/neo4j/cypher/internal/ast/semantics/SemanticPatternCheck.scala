@@ -17,11 +17,40 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ReturnItemsDef
-import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.{Construct, Match, name}
-import org.neo4j.cypher.internal.expressions.Pattern.{SemanticContext, findDuplicateRelationships}
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{InputPosition, UnboundedShortestPathNotification}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.InvalidNodePattern
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
+import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Construct
+import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
+import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
+import org.neo4j.cypher.internal.expressions.Pattern.findDuplicateRelationships
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Range
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 

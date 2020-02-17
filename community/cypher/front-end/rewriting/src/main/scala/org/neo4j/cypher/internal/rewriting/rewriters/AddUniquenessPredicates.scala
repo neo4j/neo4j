@@ -16,10 +16,29 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.{Clause, Match, Merge, Where}
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.{Expression, _}
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends Rewriter {
 

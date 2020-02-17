@@ -16,9 +16,15 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.expressions.{In, Variable}
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 /*
 TODO: This should implement Rewriter instead

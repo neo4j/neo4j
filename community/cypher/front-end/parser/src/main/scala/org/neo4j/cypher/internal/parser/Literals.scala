@@ -16,19 +16,20 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.{expressions => ast}
-import org.neo4j.cypher.internal.util.symbols._
-import org.parboiled.scala.{Parser, _}
-
-import scala.language.postfixOps
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.parboiled.scala.Parser
+import org.parboiled.scala.Rule0
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.group
 
 trait Literals extends Parser
   with Base with Strings {
 
-  def Expression: Rule1[ast.Expression]
+  def Expression: Rule1[expressions.Expression]
 
-  def Variable: Rule1[ast.Variable] =
-    rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
+  def Variable: Rule1[expressions.Variable] =
+    rule("a variable") { SymbolicNameString ~~>> (expressions.Variable(_) ) }.memoMismatches
 
   def ReservedClauseStartKeyword: Rule0 =
     keyword("CALL") |
@@ -60,112 +61,112 @@ trait Literals extends Parser
     keyword("WITH") |
     keyword("COPY")
 
-  def ProcedureName: Rule1[ast.ProcedureName] =
-    rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_) ) }.memoMismatches
+  def ProcedureName: Rule1[expressions.ProcedureName] =
+    rule("a procedure name") { SymbolicNameString ~~>> (expressions.ProcedureName(_) ) }.memoMismatches
 
-  def FunctionName: Rule1[ast.FunctionName] =
-    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
+  def FunctionName: Rule1[expressions.FunctionName] =
+    rule("a function name") { SymbolicNameString ~~>> (expressions.FunctionName(_) ) }.memoMismatches
 
-  def PropertyKeyName: Rule1[ast.PropertyKeyName] =
-    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
+  def PropertyKeyName: Rule1[expressions.PropertyKeyName] =
+    rule("a property key name") { SymbolicNameString ~~>> (expressions.PropertyKeyName(_) ) }.memoMismatches
 
-  def PropertyKeyNames: Rule1[List[ast.PropertyKeyName]] =
+  def PropertyKeyNames: Rule1[List[expressions.PropertyKeyName]] =
     rule("a list of property key names") {
-      (oneOrMore(WS ~~ SymbolicNameString ~~ WS ~~>> (ast.PropertyKeyName(_) ), separator = ",") memoMismatches).suppressSubnodes
+      (oneOrMore(WS ~~ SymbolicNameString ~~ WS ~~>> (expressions.PropertyKeyName(_) ), separator = ",") memoMismatches).suppressSubnodes
     }
 
-  def LabelName: Rule1[ast.LabelName] =
-    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_) ) }.memoMismatches
+  def LabelName: Rule1[expressions.LabelName] =
+    rule("a label name") { SymbolicNameString ~~>> (expressions.LabelName(_) ) }.memoMismatches
 
-  def RelTypeName: Rule1[ast.RelTypeName] =
-    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
+  def RelTypeName: Rule1[expressions.RelTypeName] =
+    rule("a rel type name") { SymbolicNameString ~~>> (expressions.RelTypeName(_) ) }.memoMismatches
 
-  def Operator: Rule1[ast.Variable] = rule {
-    OpChar ~ zeroOrMore(OpCharTail) ~>>> (ast.Variable(_: String)) ~ !OpCharTail
+  def Operator: Rule1[expressions.Variable] = rule {
+    OpChar ~ zeroOrMore(OpCharTail) ~>>> (expressions.Variable(_: String)) ~ !OpCharTail
   }
 
-  def MapLiteral: Rule1[ast.MapExpression] = rule {
+  def MapLiteral: Rule1[expressions.MapExpression] = rule {
     group(
       ch('{') ~~ zeroOrMore(PropertyKeyName ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
-    ) ~~>> (ast.MapExpression(_))
+    ) ~~>> (expressions.MapExpression(_))
   }
 
-  def LiteralEntry: Rule1[ast.MapProjectionElement] = rule("literal entry")(
-    PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (ast.LiteralEntry(_, _)))
+  def LiteralEntry: Rule1[expressions.MapProjectionElement] = rule("literal entry")(
+    PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (expressions.LiteralEntry(_, _)))
 
-  def PropertySelector: Rule1[ast.MapProjectionElement] = rule("property selector")(
-    ch('.') ~~ Variable ~~>> (ast.PropertySelector(_)))
+  def PropertySelector: Rule1[expressions.MapProjectionElement] = rule("property selector")(
+    ch('.') ~~ Variable ~~>> (expressions.PropertySelector(_)))
 
-  def VariableSelector: Rule1[ast.MapProjectionElement] = rule("variable selector")(
-    Variable ~~>> (ast.VariableSelector(_)))
+  def VariableSelector: Rule1[expressions.MapProjectionElement] = rule("variable selector")(
+    Variable ~~>> (expressions.VariableSelector(_)))
 
-  def AllPropertiesSelector: Rule1[ast.MapProjectionElement] = rule("all properties selector")(
-    ch('.') ~~ ch('*') ~ push(ast.AllPropertiesSelector()(_)))
+  def AllPropertiesSelector: Rule1[expressions.MapProjectionElement] = rule("all properties selector")(
+    ch('.') ~~ ch('*') ~ push(expressions.AllPropertiesSelector()(_)))
 
-  def MapProjection: Rule1[ast.MapProjection] = rule {
+  def MapProjection: Rule1[expressions.MapProjection] = rule {
     group(
       Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
-    ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
+    ) ~~>> ((a, b) => pos => expressions.MapProjection(a, b)(pos, None))
   }
 
-  def Parameter: Rule1[ast.Parameter] =
-    parameterName ~~>> (ast.Parameter(_, CTAny))
+  def Parameter: Rule1[expressions.Parameter] =
+    parameterName ~~>> (expressions.Parameter(_, CTAny))
 
-  def SensitiveParameter: Rule1[ast.Parameter] =
-    parameterName ~~>> (name => pos => new ast.Parameter(name, CTAny)(pos) with ast.SensitiveParameter)
+  def SensitiveParameter: Rule1[expressions.Parameter] =
+    parameterName ~~>> (name => pos => new expressions.Parameter(name, CTAny)(pos) with expressions.SensitiveParameter)
 
   private def parameterName: Rule1[String] = rule("a parameter") {
     (ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches
   }
-  def OldParameter: Rule1[ast.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
-    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.ParameterWithOldSyntax(_, CTAny))
+  def OldParameter: Rule1[expressions.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (expressions.ParameterWithOldSyntax(_, CTAny))
   }
 
-  def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
+  def NumberLiteral: Rule1[expressions.Literal] = rule("a number") (
       DoubleLiteral
     | SignedIntegerLiteral
   ).memoMismatches
 
-  def DoubleLiteral: Rule1[ast.DecimalDoubleLiteral] = rule("a floating point number") (
-      ExponentDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
-    | RegularDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
+  def DoubleLiteral: Rule1[expressions.DecimalDoubleLiteral] = rule("a floating point number") (
+      ExponentDecimalReal ~>>> (expressions.DecimalDoubleLiteral(_))
+    | RegularDecimalReal ~>>> (expressions.DecimalDoubleLiteral(_))
   )
 
-  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") (
-      HexInteger ~>>> (ast.SignedHexIntegerLiteral(_))
-    | OctalInteger ~>>> (ast.SignedOctalIntegerLiteral(_))
-    | DecimalInteger ~>>> (ast.SignedDecimalIntegerLiteral(_))
+  def SignedIntegerLiteral: Rule1[expressions.SignedIntegerLiteral] = rule("an integer") (
+      HexInteger ~>>> (expressions.SignedHexIntegerLiteral(_))
+    | OctalInteger ~>>> (expressions.SignedOctalIntegerLiteral(_))
+    | DecimalInteger ~>>> (expressions.SignedDecimalIntegerLiteral(_))
   )
 
-  def UnsignedIntegerLiteral: Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
-    UnsignedDecimalInteger ~>>> (ast.UnsignedDecimalIntegerLiteral(_))
+  def UnsignedIntegerLiteral: Rule1[expressions.UnsignedIntegerLiteral] = rule("an unsigned integer") {
+    UnsignedDecimalInteger ~>>> (expressions.UnsignedDecimalIntegerLiteral(_))
   }
 
-  def RangeLiteral: Rule1[ast.Range] = rule (
+  def RangeLiteral: Rule1[expressions.Range] = rule (
       group(
         optional(UnsignedIntegerLiteral ~ WS) ~
         ".." ~
         optional(WS ~ UnsignedIntegerLiteral)
-      ) ~~>> (ast.Range(_, _))
-    | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
+      ) ~~>> (expressions.Range(_, _))
+    | UnsignedIntegerLiteral ~~>> (l => expressions.Range(Some(l), Some(l)))
   )
 
-  def NodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") {
+  def NodeLabels: Rule1[Seq[expressions.LabelName]] = rule("node labels") {
     (oneOrMore(NodeLabel, separator = WS) memoMismatches).suppressSubnodes
   }
 
-  def NodeLabel: Rule1[ast.LabelName] = rule {
+  def NodeLabel: Rule1[expressions.LabelName] = rule {
     ((operator(":") ~~ LabelName) memoMismatches).suppressSubnodes
   }
 
-  def RelType: Rule1[ast.RelTypeName] = rule {
+  def RelType: Rule1[expressions.RelTypeName] = rule {
     ((operator(":") ~~ RelTypeName) memoMismatches).suppressSubnodes
   }
 
-  def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {
+  def StringLiteral: Rule1[expressions.StringLiteral] = rule("\"...string...\"") {
     (((
        ch('\'') ~ StringCharacters('\'') ~ ch('\'')
      | ch('"') ~ StringCharacters('"') ~ ch('"')
-    ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
+    ) memoMismatches) suppressSubnodes) ~~>> (expressions.StringLiteral(_))
   }
 }

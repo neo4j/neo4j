@@ -16,9 +16,26 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.{Where, _}
-import org.neo4j.cypher.internal.expressions.{Expression, LogicalVariable, Variable}
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ProjectionClause
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItem
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.SortItem
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.topDown
 
 /**
   * This rewriter normalizes the scoping structure of a query, ensuring it is able to

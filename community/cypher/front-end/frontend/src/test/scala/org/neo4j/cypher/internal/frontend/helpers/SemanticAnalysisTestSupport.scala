@@ -18,9 +18,14 @@ package org.neo4j.cypher.internal.frontend.helpers
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.PlannerName
-import org.neo4j.cypher.internal.frontend.phases.{BaseContext, CompilationPhaseTracer, Monitors, devNullLogger}
-import org.neo4j.cypher.internal.util.{CypherExceptionFactory, OpenCypherExceptionFactory}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class ErrorCollectingContext extends BaseContext {
 

@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.expressions.{Parameter, SensitiveParameter, SensitiveStringLiteral}
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 

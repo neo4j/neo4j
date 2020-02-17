@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter}
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

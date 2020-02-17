@@ -17,14 +17,35 @@
 package org.neo4j.cypher.internal.frontend.helpers
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.semantics.{SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.CommaSep
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.FromGraph
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.Variable
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.WS
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.ch
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.keyword
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.oneOrMore
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.optional
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.rule
+import org.neo4j.cypher.internal.frontend.phases.BaseContains
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.phases._
-import org.neo4j.cypher.internal.parser.{Expressions, Statement}
+import org.neo4j.cypher.internal.frontend.phases.Condition
+import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.parser.Expressions
+import org.neo4j.cypher.internal.parser.Statement
+import org.neo4j.cypher.internal.util.CypherException
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition, ObfuscationMetadata}
-import org.parboiled.scala.{EOI, Parser, Rule1, group}
+import org.parboiled.scala.EOI
+import org.parboiled.scala.Parser
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.group
 
 case object InputDataStreamTestParsing extends Phase[BaseContext, BaseState, BaseState] {
   private val parser = new InputDataStreamTestCypherParser

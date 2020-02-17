@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.expressions.{Expression, IsAggregate, containsAggregate}
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsAggregate
+import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 case object aggregationsAreIsolated extends Condition {
 

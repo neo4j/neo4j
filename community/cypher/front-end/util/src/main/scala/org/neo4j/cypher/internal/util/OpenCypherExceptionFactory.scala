@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory._
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.ArithmeticException
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 
 object OpenCypherExceptionFactory {
 

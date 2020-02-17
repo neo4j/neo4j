@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.frontend.FoldableTest.Add
+import org.neo4j.cypher.internal.frontend.FoldableTest.Val
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -27,7 +29,6 @@ object FoldableTest {
 }
 
 class FoldableTest extends CypherFunSuite {
-  import FoldableTest._
 
   test("should fold value depth first over object tree") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))

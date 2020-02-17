@@ -16,9 +16,19 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{FreshIdNameGenerator, InputPosition}
-import org.neo4j.cypher.internal.expressions.{And, Equals, Parameter, Variable}
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 
 object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {

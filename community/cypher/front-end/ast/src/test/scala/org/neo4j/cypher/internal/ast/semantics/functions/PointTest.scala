@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.functions
 
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class PointTest extends FunctionTestBase("point")  {
 

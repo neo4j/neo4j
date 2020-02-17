@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck}
-import org.neo4j.cypher.internal.expressions.{Expression, LogicalVariable, Property}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -43,4 +47,3 @@ case class AscSortItem(expression: Expression)(val position: InputPosition) exte
 case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
   override def mapExpression(f: Expression => Expression) = copy(expression = f(expression))(position)
 }
-

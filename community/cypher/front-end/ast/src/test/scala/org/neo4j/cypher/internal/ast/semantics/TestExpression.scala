@@ -18,8 +18,9 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
 
 case class ErrorExpression(
                             error: SemanticError,

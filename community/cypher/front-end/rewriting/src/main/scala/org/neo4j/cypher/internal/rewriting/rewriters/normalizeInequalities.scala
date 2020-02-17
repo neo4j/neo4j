@@ -16,8 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 case object normalizeInequalities extends Rewriter {
 

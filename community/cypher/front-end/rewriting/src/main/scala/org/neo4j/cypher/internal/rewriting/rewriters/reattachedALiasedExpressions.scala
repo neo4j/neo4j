@@ -16,9 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.{Return, ReturnItem, With}
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItem
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 case object reattachAliasedExpressions extends Rewriter {
   override def apply(in: AnyRef): AnyRef = findingRewriter.apply(in)

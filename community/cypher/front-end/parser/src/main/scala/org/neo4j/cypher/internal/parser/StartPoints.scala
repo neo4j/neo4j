@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.parboiled.scala.{Parser, ReductionRule2, Rule1, _}
+import org.parboiled.scala.Parser
+import org.parboiled.scala.ReductionRule2
+import org.parboiled.scala.Rule1
 
 trait StartPoints extends Parser
   with Literals

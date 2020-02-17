@@ -19,8 +19,15 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.conditions._
-import org.neo4j.cypher.internal.rewriting.rewriters.{InnerVariableNamer, LiteralExtraction}
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer,
                         literalExtraction: LiteralExtraction,

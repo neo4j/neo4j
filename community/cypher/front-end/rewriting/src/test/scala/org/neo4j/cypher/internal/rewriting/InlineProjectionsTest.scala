@@ -16,12 +16,21 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.rewriters.{expandStar, inlineProjections, normalizeWithAndReturnClauses}
+import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
+import org.neo4j.cypher.internal.rewriting.rewriters.inlineProjections
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, inSequence}
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -406,4 +415,3 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }
 }
-

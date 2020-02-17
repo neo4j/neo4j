@@ -17,8 +17,14 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
-import org.neo4j.cypher.internal.rewriting.rewriters._
-import org.neo4j.cypher.internal.util.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.rewriting.rewriters.deMorganRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.distributeLawsRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeInequalities
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.inSequence
 
 case object CNFNormalizer extends StatementRewriter {
 

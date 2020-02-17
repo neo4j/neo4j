@@ -16,8 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.topDown
 
 class ASTNodeTest extends CypherFunSuite {
 

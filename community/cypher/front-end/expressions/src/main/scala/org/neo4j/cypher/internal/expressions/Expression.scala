@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.Expression.TreeAcc
 import org.neo4j.cypher.internal.expressions.functions.Rand
-import org.neo4j.cypher.internal.util.{ASTNode, Ref, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.immutable.Stack
 
@@ -66,8 +70,6 @@ abstract class Expression extends ASTNode {
 
   self =>
 
-  import Expression.TreeAcc
-
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => (acc :+ e, None)
@@ -82,7 +84,7 @@ abstract class Expression extends ASTNode {
   // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
   def dependencies: Set[LogicalVariable] =
-    this.treeFold(TreeAcc[Set[LogicalVariable]](Set.empty)) {
+    this.treeFold(Expression.TreeAcc[Set[LogicalVariable]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -96,7 +98,7 @@ abstract class Expression extends ASTNode {
   // All (free) occurrences of variable in this expression or any of its children
   // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
   def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
-    this.treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
+    this.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)

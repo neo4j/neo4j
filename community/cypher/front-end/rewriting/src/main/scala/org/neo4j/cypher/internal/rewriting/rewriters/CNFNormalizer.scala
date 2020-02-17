@@ -16,12 +16,22 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp, inSequence, topDown}
-
+import org.neo4j.cypher.internal.util.inSequence
+import org.neo4j.cypher.internal.util.topDown
 
 case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 

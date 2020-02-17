@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

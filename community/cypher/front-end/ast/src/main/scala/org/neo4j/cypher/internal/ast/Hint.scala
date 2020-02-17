@@ -16,10 +16,20 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticAnalysisTooling, SemanticCheckable, _}
-import org.neo4j.cypher.internal.expressions.{LabelName, PropertyKeyName, Variable, _}
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition, NonEmptyList}
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Param
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.UnsignedIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
+import org.neo4j.cypher.internal.util.NonEmptyList.canBuildFrom
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variables: NonEmptyList[Variable]
@@ -73,8 +83,6 @@ case class UsingScanHint(variable: Variable, label: LabelName)(val position: Inp
 }
 
 object UsingJoinHint {
-  import NonEmptyList._
-
   def apply(elts: Seq[Variable])(pos: InputPosition): UsingJoinHint =
     UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new IllegalStateException("Expected non-empty sequence of variables")))(pos)
 }
@@ -111,4 +119,3 @@ case class AllRelationships(variable: Variable)(val position: InputPosition) ext
 // no longer supported non-hint legacy start items
 
 case class NodeByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
-

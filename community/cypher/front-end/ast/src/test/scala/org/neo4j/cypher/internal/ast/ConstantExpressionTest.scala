@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.expressions.ConstantExpression
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ConstantExpressionTest extends CypherFunSuite {
   test("tests") {

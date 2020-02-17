@@ -16,11 +16,28 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.{Variable, _}
-import org.neo4j.cypher.internal.rewriting.conditions.{aggregationsAreIsolated, hasAggregateButIsNotAggregate}
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ProjectionClause
+import org.neo4j.cypher.internal.ast.ReturnItem
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsAggregate
+import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.ReduceExpression
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
+import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
+import org.neo4j.cypher.internal.util.AggregationNameGenerator
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.util.{AggregationNameGenerator, Rewriter, bottomUp, _}
+import org.neo4j.cypher.internal.util.topDown
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

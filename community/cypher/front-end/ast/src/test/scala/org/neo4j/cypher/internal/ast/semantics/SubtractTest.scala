@@ -18,7 +18,15 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
+import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTTime
 
 class SubtractTest extends InfixExpressionTestBase(Subtract(_, _)(DummyPosition(0))) {
 

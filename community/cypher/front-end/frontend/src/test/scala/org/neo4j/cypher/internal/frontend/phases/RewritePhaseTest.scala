@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.StatementHelper._
+import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -26,8 +26,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.rewriters.{Never, SameNameNamer, normalizeWithAndReturnClauses}
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, inSequence}
+import org.neo4j.cypher.internal.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 trait RewritePhaseTest {

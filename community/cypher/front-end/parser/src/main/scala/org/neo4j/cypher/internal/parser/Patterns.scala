@@ -16,6 +16,17 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.util.InputPosition
+import org.parboiled.scala.EMPTY
+import org.parboiled.scala.Parser
+import org.parboiled.scala.ReductionRule1
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.Rule2
+import org.parboiled.scala.Rule5
+import org.parboiled.scala.group
+
 /*
  *|                                            NamedPatternPart                                            |
  *|Variable |                                      AnonymousPatternPart                                     |
@@ -26,63 +37,58 @@ package org.neo4j.cypher.internal.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.{expressions => ast}
-import org.parboiled.scala._
-
 trait Patterns extends Parser
   with Literals
   with Base {
 
-  def Pattern: Rule1[ast.Pattern] = rule("a pattern") {
-    oneOrMore(PatternPart, separator = CommaSep) ~~>> (ast.Pattern(_))
+  def Pattern: Rule1[expressions.Pattern] = rule("a pattern") {
+    oneOrMore(PatternPart, separator = CommaSep) ~~>> (expressions.Pattern(_))
   }
 
-  def PatternPart: Rule1[ast.PatternPart] = rule("a pattern") (
-      group(Variable ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
+  def PatternPart: Rule1[expressions.PatternPart] = rule("a pattern") (
+      group(Variable ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (expressions.NamedPatternPart(_, _))
     | AnonymousPatternPart
   )
 
-  private def AnonymousPatternPart: Rule1[ast.AnonymousPatternPart] = rule (
+  private def AnonymousPatternPart: Rule1[expressions.AnonymousPatternPart] = rule (
       ShortestPathPattern
-    | PatternElement ~~> ast.EveryPath
+    | PatternElement ~~> expressions.EveryPath
   )
 
-  def ShortestPathPattern: Rule1[ast.ShortestPaths] = rule (
-      (group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (ast.ShortestPaths(_, single = true))
-    | (group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (ast.ShortestPaths(_, single = false))
+  def ShortestPathPattern: Rule1[expressions.ShortestPaths] = rule (
+      (group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (expressions.ShortestPaths(_, single = true))
+    | (group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (expressions.ShortestPaths(_, single = false))
   ).memoMismatches
 
-  def RelationshipsPattern: Rule1[ast.RelationshipsPattern] = rule {
-    group(NodePattern ~ oneOrMore(WS ~ PatternElementChain)) ~~>> (ast.RelationshipsPattern(_))
+  def RelationshipsPattern: Rule1[expressions.RelationshipsPattern] = rule {
+    group(NodePattern ~ oneOrMore(WS ~ PatternElementChain)) ~~>> (expressions.RelationshipsPattern(_))
   }.memoMismatches
 
-  private def PatternElement: Rule1[ast.PatternElement] = rule (
+  private def PatternElement: Rule1[expressions.PatternElement] = rule (
       NodePattern ~ zeroOrMore(WS ~ PatternElementChain)
     | "(" ~~ PatternElement ~~ ")"
   )
 
-  private def PatternElementChain: ReductionRule1[ast.PatternElement, ast.RelationshipChain] = rule("a relationship pattern") {
-    group(RelationshipPattern ~~ NodePattern) ~~>> (ast.RelationshipChain(_, _, _))
+  private def PatternElementChain: ReductionRule1[expressions.PatternElement, expressions.RelationshipChain] = rule("a relationship pattern") {
+    group(RelationshipPattern ~~ NodePattern) ~~>> (expressions.RelationshipChain(_, _, _))
   }
 
-  private def RelationshipPattern: Rule1[ast.RelationshipPattern] = rule {
+  private def RelationshipPattern: Rule1[expressions.RelationshipPattern] = rule {
     (
         LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.BOTH)
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> ((variable, base, relTypes, range, props, dir) => ast.RelationshipPattern(variable, relTypes.types, range,
+    ) ~~>> ((variable, base, relTypes, range, props, dir) => expressions.RelationshipPattern(variable, relTypes.types, range,
       props, dir, relTypes.legacySeparator, base))
   }
 
   private def RelationshipDetail: Rule5[
-      Option[ast.Variable],
-      Option[ast.Variable],
+      Option[expressions.Variable],
+      Option[expressions.Variable],
       MaybeLegacyRelTypes,
-      Option[Option[ast.Range]],
-      Option[ast.Expression]] = rule("[") {
+      Option[Option[expressions.Range]],
+      Option[expressions.Expression]] = rule("[") {
     (
         "[" ~~
           MaybeVariableWithBase ~~
@@ -95,17 +101,17 @@ trait Patterns extends Parser
 
   private def RelationshipTypes: Rule1[MaybeLegacyRelTypes] = rule("relationship types") (
     (":" ~~ RelTypeName ~~ zeroOrMore(WS ~ "|" ~~ LegacyCompatibleRelTypeName)) ~~>> (
-      (first: ast.RelTypeName, more: List[(Boolean, ast.RelTypeName)]) => (pos: InputPosition) => {
+      (first: expressions.RelTypeName, more: List[(Boolean, expressions.RelTypeName)]) => (pos: InputPosition) => {
         MaybeLegacyRelTypes(first +: more.map(_._2), more.exists(_._1))
       })
     | EMPTY ~ push(MaybeLegacyRelTypes())
   )
 
-  private def LegacyCompatibleRelTypeName: Rule1[(Boolean, ast.RelTypeName)] =
+  private def LegacyCompatibleRelTypeName: Rule1[(Boolean, expressions.RelTypeName)] =
     ((":" ~ push(true)) | EMPTY ~ push(false)) ~~ RelTypeName ~~>> (
-      (legacy: Boolean, name: ast.RelTypeName) => (pos: InputPosition) => (legacy,name))
+      (legacy: Boolean, name: expressions.RelTypeName) => (pos: InputPosition) => (legacy,name))
 
-  private def MaybeVariableLength: Rule1[Option[Option[ast.Range]]] = rule("a length specification") (
+  private def MaybeVariableLength: Rule1[Option[Option[expressions.Range]]] = rule("a length specification") (
       "*" ~~ (
           RangeLiteral ~~> (r => Some(Some(r)))
         | EMPTY ~ push(Some(None))
@@ -113,22 +119,22 @@ trait Patterns extends Parser
     | EMPTY ~ push(None)
   )
 
-  private def NodePattern: Rule1[ast.NodePattern] = rule("a node pattern") (
-    group("(" ~~ MaybeVariableWithBase ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> { (v, base, labels, props) => ast.NodePattern(v, labels, props, base)}
-    | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
+  private def NodePattern: Rule1[expressions.NodePattern] = rule("a node pattern") (
+    group("(" ~~ MaybeVariableWithBase ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> { (v, base, labels, props) => expressions.NodePattern(v, labels, props, base)}
+    | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (expressions.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
-  private def MaybeVariableWithBase: Rule2[Option[ast.Variable], Option[ast.Variable]] = rule("a variable") {
+  private def MaybeVariableWithBase: Rule2[Option[expressions.Variable], Option[expressions.Variable]] = rule("a variable") {
     optional(!keyword("COPY OF") ~ Variable) ~~ optional(keyword("COPY OF") ~~ Variable)
   }
 
-  private def MaybeNodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") (
+  private def MaybeNodeLabels: Rule1[Seq[expressions.LabelName]] = rule("node labels") (
     WS ~ NodeLabels | EMPTY ~ push(Seq())
   )
 
-  private def MaybeProperties: Rule1[Option[ast.Expression]] = rule("a property map") (
+  private def MaybeProperties: Rule1[Option[expressions.Expression]] = rule("a property map") (
     optional(WS ~ (MapLiteral | Parameter | OldParameter))
   )
 }
 
-case class MaybeLegacyRelTypes(types: Seq[ast.RelTypeName] = Seq.empty, legacySeparator: Boolean = false)
+case class MaybeLegacyRelTypes(types: Seq[expressions.RelTypeName] = Seq.empty, legacySeparator: Boolean = false)

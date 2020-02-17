@@ -17,8 +17,13 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.expressions.{LabelName, Property, Variable}
-import org.parboiled.scala._
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.Variable
+import org.parboiled.scala.Parser
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.Rule3
+import org.parboiled.scala.group
 
 trait Command extends Parser
   with Expressions

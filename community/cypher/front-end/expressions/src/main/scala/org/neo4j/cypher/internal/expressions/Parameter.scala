@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait Param {
 

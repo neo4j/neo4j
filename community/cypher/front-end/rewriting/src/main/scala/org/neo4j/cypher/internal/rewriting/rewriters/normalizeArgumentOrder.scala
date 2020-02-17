@@ -16,9 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 case object normalizeArgumentOrder extends Rewriter {
 

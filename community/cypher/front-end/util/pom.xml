@@ -20,6 +20,7 @@
     <properties>
         <license-text.header>headers/ASL-2-header.txt</license-text.header>
         <moduleName>org.neo4j.cypher.internal.util</moduleName>
+        <skip-scalastyle>false</skip-scalastyle>
     </properties>
 
     <scm>

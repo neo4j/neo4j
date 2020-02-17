@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable
 
 object Eagerly {
 

@@ -17,10 +17,12 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter}
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 trait RewriteTest {

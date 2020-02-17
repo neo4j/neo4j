@@ -16,11 +16,17 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticAnalysisTooling, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.expressions.{LabelName, PropertyKeyName, RelTypeName, Variable, _}
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.symbols.{CypherType, _}
-
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait Command extends Statement {
   override def returnColumns = List.empty

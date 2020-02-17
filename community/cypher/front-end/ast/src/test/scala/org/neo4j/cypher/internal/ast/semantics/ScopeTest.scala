@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper._
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.stringSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.symUse
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ScopeTest extends CypherFunSuite {
@@ -89,5 +93,3 @@ class ScopeTest extends CypherFunSuite {
     ))
   }
 }
-
-

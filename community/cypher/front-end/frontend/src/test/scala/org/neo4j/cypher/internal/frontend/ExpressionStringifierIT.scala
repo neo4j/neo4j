@@ -20,7 +20,8 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.parboiled.scala.{Parser, ReportingParseRunner}
+import org.parboiled.scala.Parser
+import org.parboiled.scala.ReportingParseRunner
 
 class ExpressionStringifierIT extends CypherFunSuite with Parser with Expressions {
   val stringifier = ExpressionStringifier()

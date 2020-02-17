@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.{Scope, SemanticCheckResult, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.ast.StatementHelper.fail
+import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.scalatest.Assertions
 
 object StatementHelper extends Assertions {

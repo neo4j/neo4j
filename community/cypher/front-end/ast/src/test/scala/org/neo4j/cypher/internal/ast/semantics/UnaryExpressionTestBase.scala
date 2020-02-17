@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.expressions.{DummyExpression, Expression}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.scalatest.Assertion
 
 abstract class UnaryExpressionTestBase(ctr: Expression => Expression) extends SemanticFunSuite {

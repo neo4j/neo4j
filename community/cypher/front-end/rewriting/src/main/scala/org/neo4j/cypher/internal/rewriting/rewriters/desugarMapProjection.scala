@@ -17,8 +17,18 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.{PropertyKeyName, Variable, _}
-import org.neo4j.cypher.internal.util.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableSelector
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user

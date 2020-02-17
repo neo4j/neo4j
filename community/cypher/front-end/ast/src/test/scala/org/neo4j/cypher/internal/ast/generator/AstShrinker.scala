@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.ast.generator
 
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.util.{ASTNode, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.scalacheck.Shrink
 
 import scala.util.Random
@@ -91,6 +93,5 @@ object AstShrinker {
         case o: Option[_] if o.isDefined => optCase(o)
       }))
   }
-
 
 }

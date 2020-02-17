@@ -16,33 +16,33 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.{expressions => ast}
-import org.parboiled.scala._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.parboiled.scala.Rule1
 
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
 
-  def Expression: Rule1[ast.Expression] = ???
+  def Expression: Rule1[expressions.Expression] = ???
   val t = DummyPosition(0)
 
   test("test variable can contain ascii") {
     implicit val parserToTest = Variable
 
-    parsing("abc") shouldGive ast.Variable("abc")(t)
-    parsing("a123") shouldGive ast.Variable("a123")(t)
-    parsing("ABC") shouldGive ast.Variable("ABC")(t)
-    parsing("_abc") shouldGive ast.Variable("_abc")(t)
-    parsing("abc_de") shouldGive ast.Variable("abc_de")(t)
+    parsing("abc") shouldGive expressions.Variable("abc")(t)
+    parsing("a123") shouldGive expressions.Variable("a123")(t)
+    parsing("ABC") shouldGive expressions.Variable("ABC")(t)
+    parsing("_abc") shouldGive expressions.Variable("_abc")(t)
+    parsing("abc_de") shouldGive expressions.Variable("abc_de")(t)
   }
 
   test("test variable can contain utf8") {
     implicit val parserToTest = Variable
 
-    parsing("aé") shouldGive ast.Variable("aé")(t)
-    parsing("⁔") shouldGive ast.Variable("⁔")(t)
-    parsing("＿test") shouldGive ast.Variable("＿test")(t)
-    parsing("a＿test") shouldGive ast.Variable("a＿test")(t)
+    parsing("aé") shouldGive expressions.Variable("aé")(t)
+    parsing("⁔") shouldGive expressions.Variable("⁔")(t)
+    parsing("＿test") shouldGive expressions.Variable("＿test")(t)
+    parsing("a＿test") shouldGive expressions.Variable("a＿test")(t)
   }
 
   test("test variable name can not start with number") {
@@ -54,44 +54,44 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   test("can parse numbers") {
     implicit val parserToTest = NumberLiteral
 
-    parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)
-    parsing("0") shouldGive ast.SignedDecimalIntegerLiteral("0")(t)
-    parsing("-23") shouldGive ast.SignedDecimalIntegerLiteral("-23")(t)
-    parsing("-0") shouldGive ast.SignedDecimalIntegerLiteral("-0")(t)
+    parsing("123") shouldGive expressions.SignedDecimalIntegerLiteral("123")(t)
+    parsing("0") shouldGive expressions.SignedDecimalIntegerLiteral("0")(t)
+    parsing("-23") shouldGive expressions.SignedDecimalIntegerLiteral("-23")(t)
+    parsing("-0") shouldGive expressions.SignedDecimalIntegerLiteral("-0")(t)
 
-    parsing("0234") shouldGive ast.SignedOctalIntegerLiteral("0234")(t)
-    parsing("-0234") shouldGive ast.SignedOctalIntegerLiteral("-0234")(t)
+    parsing("0234") shouldGive expressions.SignedOctalIntegerLiteral("0234")(t)
+    parsing("-0234") shouldGive expressions.SignedOctalIntegerLiteral("-0234")(t)
 
-    parsing("0x1") shouldGive ast.SignedHexIntegerLiteral("0x1")(t)
-    parsing("0xffff") shouldGive ast.SignedHexIntegerLiteral("0xffff")(t)
-    parsing("-0x45FG") shouldGive ast.SignedHexIntegerLiteral("-0x45FG")(t)
+    parsing("0x1") shouldGive expressions.SignedHexIntegerLiteral("0x1")(t)
+    parsing("0xffff") shouldGive expressions.SignedHexIntegerLiteral("0xffff")(t)
+    parsing("-0x45FG") shouldGive expressions.SignedHexIntegerLiteral("-0x45FG")(t)
 
-    parsing("1.23") shouldGive ast.DecimalDoubleLiteral("1.23")(t)
-    parsing("13434.23399") shouldGive ast.DecimalDoubleLiteral("13434.23399")(t)
-    parsing(".3454") shouldGive ast.DecimalDoubleLiteral(".3454")(t)
-    parsing("-0.0") shouldGive ast.DecimalDoubleLiteral("-0.0")(t)
-    parsing("-54366.4") shouldGive ast.DecimalDoubleLiteral("-54366.4")(t)
-    parsing("-0.3454") shouldGive ast.DecimalDoubleLiteral("-0.3454")(t)
+    parsing("1.23") shouldGive expressions.DecimalDoubleLiteral("1.23")(t)
+    parsing("13434.23399") shouldGive expressions.DecimalDoubleLiteral("13434.23399")(t)
+    parsing(".3454") shouldGive expressions.DecimalDoubleLiteral(".3454")(t)
+    parsing("-0.0") shouldGive expressions.DecimalDoubleLiteral("-0.0")(t)
+    parsing("-54366.4") shouldGive expressions.DecimalDoubleLiteral("-54366.4")(t)
+    parsing("-0.3454") shouldGive expressions.DecimalDoubleLiteral("-0.3454")(t)
 
-    parsing("1E23") shouldGive ast.DecimalDoubleLiteral("1E23")(t)
-    parsing("1.34E99") shouldGive ast.DecimalDoubleLiteral("1.34E99")(t)
-    parsing("9E-443") shouldGive ast.DecimalDoubleLiteral("9E-443")(t)
+    parsing("1E23") shouldGive expressions.DecimalDoubleLiteral("1E23")(t)
+    parsing("1.34E99") shouldGive expressions.DecimalDoubleLiteral("1.34E99")(t)
+    parsing("9E-443") shouldGive expressions.DecimalDoubleLiteral("9E-443")(t)
   }
 
   test("can parse parameter syntax") {
     implicit val parserToTest = Parameter
 
-    parsing("$p") shouldGive ast.Parameter("p", CTAny)(t)
-    parsing("$`the funny horse`") shouldGive ast.Parameter("the funny horse", CTAny)(t)
-    parsing("$0") shouldGive ast.Parameter("0", CTAny)(t)
+    parsing("$p") shouldGive expressions.Parameter("p", CTAny)(t)
+    parsing("$`the funny horse`") shouldGive expressions.Parameter("the funny horse", CTAny)(t)
+    parsing("$0") shouldGive expressions.Parameter("0", CTAny)(t)
   }
 
   test("can parse legacy parameter syntax") {
     implicit val parserToTest = OldParameter
 
-    parsing("{p}") shouldGive ast.ParameterWithOldSyntax("p", CTAny)(t)
-    parsing("{`the funny horse`}") shouldGive ast.ParameterWithOldSyntax("the funny horse", CTAny)(t)
-    parsing("{0}") shouldGive ast.ParameterWithOldSyntax("0", CTAny)(t)
+    parsing("{p}") shouldGive expressions.ParameterWithOldSyntax("p", CTAny)(t)
+    parsing("{`the funny horse`}") shouldGive expressions.ParameterWithOldSyntax("the funny horse", CTAny)(t)
+    parsing("{0}") shouldGive expressions.ParameterWithOldSyntax("0", CTAny)(t)
   }
 
   test("variables are not allowed to start with currency symbols") {

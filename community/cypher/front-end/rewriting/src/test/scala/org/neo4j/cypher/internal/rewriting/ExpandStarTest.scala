@@ -16,15 +16,16 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.rewriters.{expandStar, normalizeWithAndReturnClauses}
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, inSequence}
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
-
-  import org.neo4j.cypher.internal.parser.ParserFixture.parser
 
   test("rewrites * in return") {
     assertRewrite(

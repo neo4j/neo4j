@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 
 /*
  * Calculates how to transform a pattern (a)-[:R1:R2...]->() to getDegree call

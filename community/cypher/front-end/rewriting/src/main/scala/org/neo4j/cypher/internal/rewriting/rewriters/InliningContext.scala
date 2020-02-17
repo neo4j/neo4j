@@ -16,10 +16,17 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.rewriting.rewriters.InliningContext.INLINING_THRESHOLD
-import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.expressions.{PathExpression, Variable}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.TypedRewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.empty,
                            seenVariables: Set[LogicalVariable] = Set.empty,

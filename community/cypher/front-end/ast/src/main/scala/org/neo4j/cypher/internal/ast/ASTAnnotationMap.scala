@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.util.{ASTNode, Eagerly, InputPosition}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Eagerly
+import org.neo4j.cypher.internal.util.InputPosition
 
 object ASTAnnotationMap {
   def empty[K <: ASTNode, V]: ASTAnnotationMap[K, V] = new ASTAnnotationMap(Map.empty[(K, InputPosition), V])

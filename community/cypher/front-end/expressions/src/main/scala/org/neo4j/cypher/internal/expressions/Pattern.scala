@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
-
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
 
 object Pattern {
   sealed trait SemanticContext

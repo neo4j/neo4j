@@ -17,10 +17,20 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
-import org.neo4j.cypher.internal.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState, _}
-import org.neo4j.cypher.internal.expressions.{LogicalVariable, Variable}
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.annotation.tailrec
 

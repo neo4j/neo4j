@@ -16,12 +16,15 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.expressions.{ProcedureOutput, Variable}
+import org.neo4j.cypher.internal.expressions.ProcedureOutput
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object ProcedureResultItem {
   def apply(output: ProcedureOutput, variable: Variable)(position: InputPosition): ProcedureResultItem =

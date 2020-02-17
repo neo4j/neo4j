@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.{FunctionTypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.expressions.TypeSignatures
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object Substring extends Function with TypeSignatures {
   def name = "substring"

@@ -16,8 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.ast.ProcedureResult
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
 case object expandCallWhere extends Rewriter {

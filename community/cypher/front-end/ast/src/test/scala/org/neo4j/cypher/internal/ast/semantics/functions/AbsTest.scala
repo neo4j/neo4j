@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.functions
 
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTNode
 
 class AbsTest extends FunctionTestBase("abs") {
 

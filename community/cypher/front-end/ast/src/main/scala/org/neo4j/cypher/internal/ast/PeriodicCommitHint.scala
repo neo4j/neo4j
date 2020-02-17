@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheck, SemanticError}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckResult, SemanticCheckable}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def name = s"USING PERIODIC COMMIT $size"

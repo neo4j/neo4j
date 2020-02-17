@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.reflect.ClassTag
 

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.parboiled.scala._
+import org.parboiled.scala.Rule1
 
 class BaseRulesTest extends ParserTest[Any, Any] with Base {
 

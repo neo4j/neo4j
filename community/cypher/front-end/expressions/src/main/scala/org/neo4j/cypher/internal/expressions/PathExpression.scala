@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.util.Rewritable._
-import org.neo4j.cypher.internal.util.{Foldable, InputPosition, Rewritable}
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
 sealed trait PathStep extends Product with Foldable with Rewritable {
 

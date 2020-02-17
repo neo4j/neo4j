@@ -16,9 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.functions
 
-import org.neo4j.cypher.internal.util.symbols._
-
-import scala.languageFeature.existentials
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class SplitTest extends FunctionTestBase("split")  {
 

@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.util.Foldable._
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends (Any => Seq[String]) {
 

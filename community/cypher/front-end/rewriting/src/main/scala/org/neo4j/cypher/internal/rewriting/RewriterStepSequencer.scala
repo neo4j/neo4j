@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.util.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.inSequence
 
 import scala.collection.mutable
 

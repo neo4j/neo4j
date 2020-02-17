@@ -16,15 +16,23 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.rewriting.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.rewriting.rewriters.Forced
+import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LiteralReplacementTest extends CypherFunSuite  {
-
-  import org.neo4j.cypher.internal.parser.ParserFixture.parser
 
   test("should extract starts with patterns") {
     assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH $`  AUTOSTRING0` as X", Map("  AUTOSTRING0" -> "Pattern"))

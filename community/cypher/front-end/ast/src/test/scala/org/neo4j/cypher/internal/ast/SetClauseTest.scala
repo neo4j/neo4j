@@ -16,11 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.{DummyExpression, Property}
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.ast.semantics.{SemanticFunSuite, SemanticState}
+import org.neo4j.cypher.internal.ast.semantics.SemanticFunSuite
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class SetClauseTest extends SemanticFunSuite {
 

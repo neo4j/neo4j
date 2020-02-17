@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.util.AssertionUtils.ifAssertionsEnabled
 
 trait Transformer[-C <: BaseContext, -FROM, TO] {

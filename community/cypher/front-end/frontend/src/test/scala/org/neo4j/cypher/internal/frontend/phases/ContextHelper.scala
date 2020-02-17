@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.util.{CypherExceptionFactory, OpenCypherExceptionFactory}
+import org.neo4j.cypher.internal.frontend.phases.ContextHelper.mock
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {

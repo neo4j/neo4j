@@ -16,12 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.helpers
 
+import org.neo4j.cypher.internal.util.Fby
+import org.neo4j.cypher.internal.util.Last
+import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
+import org.neo4j.cypher.internal.util.NonEmptyList.canBuildFrom
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{Fby, Last, NonEmptyList}
 
 class NonEmptyListTest extends CypherFunSuite {
-
-  import NonEmptyList._
 
   test("Should construct NonEmptyLists") {
     NonEmptyList(1) should equal(Last(1))

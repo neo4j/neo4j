@@ -16,11 +16,47 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFunctionCheck.possibleTypes
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.expressions.functions._
-import org.neo4j.cypher.internal.expressions.{Expression, FunctionInvocation, PatternExpression, Property, PropertyKeyName, TypeSignatures, _}
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.TypeSignatures
+import org.neo4j.cypher.internal.expressions.functions.AggregatingFunction
+import org.neo4j.cypher.internal.expressions.functions.Coalesce
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.Distance
+import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Function
+import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.Last
+import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.Max
+import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.Point
+import org.neo4j.cypher.internal.expressions.functions.Reduce
+import org.neo4j.cypher.internal.expressions.functions.Reverse
+import org.neo4j.cypher.internal.expressions.functions.Tail
+import org.neo4j.cypher.internal.expressions.functions.ToBoolean
+import org.neo4j.cypher.internal.expressions.functions.ToString
+import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
@@ -255,4 +291,3 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       }
     }
 }
-

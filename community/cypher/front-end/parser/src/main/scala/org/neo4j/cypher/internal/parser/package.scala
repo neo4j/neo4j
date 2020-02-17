@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.parser.matchers._
+import org.neo4j.cypher.internal.parser.matchers.IdentifierPartMatcher
+import org.neo4j.cypher.internal.parser.matchers.IdentifierStartMatcher
+import org.neo4j.cypher.internal.parser.matchers.WhitespaceCharMatcher
 import org.parboiled.scala.Rule0
 
 package object parser {

@@ -16,9 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions.{ExistsSubClause, MapProjection, PatternComprehension}
-import org.neo4j.cypher.internal.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 case class recordScopes(semanticState: SemanticState) extends Rewriter {
 

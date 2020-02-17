@@ -17,8 +17,12 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Unwind
-import org.neo4j.cypher.internal.frontend.helpers.{ErrorCollectingContext, NoPlannerName}
-import org.neo4j.cypher.internal.frontend.phases.{InitialState, Parsing, PreparatoryRewriting, SemanticAnalysis}
+import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
+import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
+import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.Parsing
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

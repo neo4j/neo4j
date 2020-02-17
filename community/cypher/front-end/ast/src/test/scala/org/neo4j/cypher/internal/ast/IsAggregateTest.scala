@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.{CountStar, IsAggregate}
+import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {

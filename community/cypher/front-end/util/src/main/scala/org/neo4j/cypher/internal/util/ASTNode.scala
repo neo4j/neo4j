@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.util
 
-import org.neo4j.cypher.internal.util.Rewritable._
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
 trait ASTNode extends Product with Foldable with Rewritable {
 

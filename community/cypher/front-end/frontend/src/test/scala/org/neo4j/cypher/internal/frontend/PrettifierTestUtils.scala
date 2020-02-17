@@ -16,11 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.util.{ASTNode, OpenCypherExceptionFactory, Rewriter, bottomUp}
-import org.scalatest.{Assertion, Matchers}
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.scalatest.Assertion
+import org.scalatest.Matchers
 
 trait PrettifierTestUtils extends Matchers {
 

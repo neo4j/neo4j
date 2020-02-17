@@ -16,6 +16,12 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.Foldable.TreeAny
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
+import org.neo4j.cypher.internal.util.RewritableTest.Add
+import org.neo4j.cypher.internal.util.RewritableTest.Options
+import org.neo4j.cypher.internal.util.RewritableTest.Pos
+import org.neo4j.cypher.internal.util.RewritableTest.Val
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.ListBuffer
@@ -45,7 +51,6 @@ object RewritableTest {
 }
 
 class RewritableTest extends CypherFunSuite {
-  import RewritableTest._
 
   test("topDown should be identical when no rule matches") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
@@ -102,7 +107,7 @@ class RewritableTest extends CypherFunSuite {
   }
 
   test("topDown should duplicate terms with pair parameters") {
-    val ast = Add(Val(1), Pos((Val(2), Val(3))))
+    val ast = Add(Val(1), RewritableTest.Pos((Val(2), Val(3))))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
       case Val(_) => Val(99)
@@ -200,9 +205,6 @@ class RewritableTest extends CypherFunSuite {
   }
 
   test("should not create unnecessary copies of objects that have Seq's as Children (when using ListBuffer)") {
-    import Foldable._
-    import Rewritable._
-
     case class Thing(texts: Seq[String]) extends Rewritable {
       def dup(children: Seq[AnyRef]): this.type =
         if (children.iterator eqElements this.children)

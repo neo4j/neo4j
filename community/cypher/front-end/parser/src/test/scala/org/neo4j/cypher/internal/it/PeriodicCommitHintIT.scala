@@ -22,7 +22,8 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.parser.ParserTest
 import org.neo4j.cypher.internal.parser.Query
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.parboiled.scala._
+import org.parboiled.scala.Rule1
+import org.parboiled.scala.EOI
 
 class PeriodicCommitHintIT extends ParserTest[ast.PeriodicCommitHint, Any] with Query {
 

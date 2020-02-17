@@ -16,11 +16,36 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.{ASTNode, IdentityMap, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.expressions.{NodePattern, Parameter, RelationshipPattern}
+import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.IdentityMap
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 object literalReplacement {
 

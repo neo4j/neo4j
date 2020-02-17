@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.util
 
 import java.util
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.immutable.Map
 
 object IdentityMap {

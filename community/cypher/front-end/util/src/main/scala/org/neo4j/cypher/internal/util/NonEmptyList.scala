@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.NonEmptyList.IteratorConverter
+import org.neo4j.cypher.internal.util.NonEmptyList.newBuilder
+
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
@@ -104,8 +107,6 @@ object NonEmptyList {
 sealed trait NonEmptyList[+T] {
 
   self =>
-
-  import NonEmptyList._
 
   def head: T
 

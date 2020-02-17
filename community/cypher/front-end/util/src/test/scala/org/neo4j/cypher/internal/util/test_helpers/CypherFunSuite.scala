@@ -18,7 +18,13 @@ package org.neo4j.cypher.internal.util.test_helpers
 
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
-import org.scalatest._
+import org.scalatest.Args
+import org.scalatest.Assertions
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.FunSuiteLike
+import org.scalatest.Matchers
+import org.scalatest.Status
+import org.scalatest.Suite
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 

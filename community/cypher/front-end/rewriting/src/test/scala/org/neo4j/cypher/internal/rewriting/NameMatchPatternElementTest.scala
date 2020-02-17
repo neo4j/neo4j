@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.rewriting.rewriters.{nameMatchPatternElements, nameUpdatingClauses}
+import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.rewriting.rewriters.nameMatchPatternElements
+import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-
 class NameMatchPatternElementTest extends CypherFunSuite {
-
-  import org.neo4j.cypher.internal.parser.ParserFixture._
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 

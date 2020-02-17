@@ -16,7 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.helpers.rewriting
 
-import org.neo4j.cypher.internal.rewriting._
+import org.neo4j.cypher.internal.rewriting.ApplyRewriter
+import org.neo4j.cypher.internal.rewriting.DisableRewriterCondition
+import org.neo4j.cypher.internal.rewriting.EnableRewriterCondition
+import org.neo4j.cypher.internal.rewriting.RewriterCondition
+import org.neo4j.cypher.internal.rewriting.RewriterContract
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.rewriting.RunConditionRewriter
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

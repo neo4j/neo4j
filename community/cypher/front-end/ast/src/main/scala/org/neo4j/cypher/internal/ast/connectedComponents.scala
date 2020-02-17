@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.{LogicalVariable, NodePattern}
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 
 import scala.annotation.tailrec

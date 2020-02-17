@@ -17,7 +17,15 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 class ExistsTest extends SemanticFunSuite {

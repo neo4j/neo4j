@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.expressions.{NodePattern, RelationshipPattern}
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.rewriting.Condition
 
 case object noUnnamedPatternElementsInMatch extends Condition {

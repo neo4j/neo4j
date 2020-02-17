@@ -16,11 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.{ASTNode, Rewriter}
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Rewriter
 
 import scala.annotation.tailrec
+
 /*
 This rewriter tries to limit rewriters that grow the product AST too much
  */

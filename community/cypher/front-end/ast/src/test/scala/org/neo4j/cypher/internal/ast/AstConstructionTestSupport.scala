@@ -16,14 +16,92 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.CoerceTo
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Modulo
+import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.NumberLiteral
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Pow
+import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.ReduceExpression
+import org.neo4j.cypher.internal.expressions.ReduceScope
+import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.expressions.functions._
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
+import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Subtract
+import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.UnaryAdd
+import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Avg
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Id
+import org.neo4j.cypher.internal.expressions.functions.Max
+import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.Sum
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.util.{DummyPosition, InputPosition}
-
-import scala.language.implicitConversions
 
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)
@@ -343,6 +421,5 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   implicit class UnionLiteralOps(u: UnionDistinct) {
     def all: UnionAll = UnionAll(u.part, u.query)(pos)
   }
-
 
 }

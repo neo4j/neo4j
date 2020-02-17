@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.{AstConstructionTestSupport, SubQuery}
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SubQuery
 import org.parboiled.scala.Rule1
 
 class SubQueriesTest

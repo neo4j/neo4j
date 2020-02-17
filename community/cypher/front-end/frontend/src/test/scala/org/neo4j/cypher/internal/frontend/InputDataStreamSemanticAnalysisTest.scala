@@ -16,10 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
-import org.neo4j.cypher.internal.frontend.helpers.{ErrorCollectingContext, InputDataStreamTestInitialState, InputDataStreamTestParsing, NoPlannerName}
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestInitialState
+import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestParsing
+import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InputDataStreamSemanticAnalysisTest extends CypherFunSuite {

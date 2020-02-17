@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.{Create, Merge}
+import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 case object nameUpdatingClauses extends Rewriter {
 

@@ -17,12 +17,13 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.frontend.helpers.{TestContext, TestState}
+import org.neo4j.cypher.internal.frontend.helpers.TestContext
+import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.Deprecations.V1
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SyntaxDeprecationWarningsTest extends CypherFunSuite {
 

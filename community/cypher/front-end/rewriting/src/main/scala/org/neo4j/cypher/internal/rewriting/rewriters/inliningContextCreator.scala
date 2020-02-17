@@ -17,8 +17,11 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.expressions.{Variable, _}
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {
 

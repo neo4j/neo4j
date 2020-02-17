@@ -16,9 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
-import org.neo4j.cypher.internal.ast.{AstConstructionTestSupport, ProjectingUnionDistinct, Query, Statement, Where}
-import org.neo4j.cypher.internal.expressions.{Expression, HasLabels, LabelName, NodePattern}
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
@@ -180,5 +187,3 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       }
   }
 }
-
-

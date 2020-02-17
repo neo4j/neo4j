@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper._
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

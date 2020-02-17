@@ -17,10 +17,16 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.expressions.{And, Equals, Or, _}
-import org.neo4j.cypher.internal.util.Foldable._
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp}
 
 /**
   * TODO: This should instead implement Rewriter

@@ -17,7 +17,10 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.ExtractExpression
+import org.neo4j.cypher.internal.expressions.FilterExpression
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceAliasedFunctionInvocations
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

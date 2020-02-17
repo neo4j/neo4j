@@ -17,10 +17,22 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.expressions.{LabelName, PropertyKeyName, RelTypeName, Variable}
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.collection.mutable
 
@@ -113,4 +125,3 @@ class SemanticTable(
   ) =
     new SemanticTable(types, recordedScopes, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
 }
-

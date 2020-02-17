@@ -16,12 +16,11 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.ast.{AstConstructionTestSupport}
-import org.neo4j.cypher.internal.util.{symbols => sym}
-import org.neo4j.cypher.internal.{ast, expressions => exp}
-import org.parboiled.scala._
-
-import scala.language.implicitConversions
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.util.symbols
+import org.parboiled.scala.Rule1
 
 class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
@@ -31,8 +30,8 @@ class MultipleGraphClausesParsingTest
 
   implicit val parser: Rule1[ast.Clause] = Clause
 
-  val fooBarGraph = exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("bar")(pos))(pos)
-  val fooDiffGraph = exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("diff")(pos))(pos)
+  val fooBarGraph = expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("bar")(pos))(pos)
+  val fooDiffGraph = expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("diff")(pos))(pos)
 
   test("CONSTRUCT CREATE ()") {
     val pattern = nodePattern(None, List(), None)
@@ -131,26 +130,26 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT CREATE ()-[r2 COPY OF r:REL]->()") {
-    val relChain = exp.RelationshipChain(
-      exp.NodePattern(None, List.empty, None, None)(pos),
-      exp.RelationshipPattern(Some(varFor("r2")), Seq(exp.RelTypeName("REL")(pos)), None, None,
-        exp.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
-      exp.NodePattern(None, List.empty, None, None)(pos)
+    val relChain = expressions.RelationshipChain(
+      expressions.NodePattern(None, List.empty, None, None)(pos),
+      expressions.RelationshipPattern(Some(varFor("r2")), Seq(expressions.RelTypeName("REL")(pos)), None, None,
+        expressions.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
+      expressions.NodePattern(None, List.empty, None, None)(pos)
     )(pos)
-    val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
+    val pattern = expressions.Pattern(List(expressions.EveryPath(relChain)))(pos)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))
   }
 
   test("CONSTRUCT CREATE ()-[COPY OF r:REL]->()") {
-    val relChain = exp.RelationshipChain(
-      exp.NodePattern(None, List.empty, None, None)(pos),
-      exp.RelationshipPattern(None, Seq(exp.RelTypeName("REL")(pos)), None, None,
-        exp.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
-      exp.NodePattern(None, List.empty, None, None)(pos)
+    val relChain = expressions.RelationshipChain(
+      expressions.NodePattern(None, List.empty, None, None)(pos),
+      expressions.RelationshipPattern(None, Seq(expressions.RelTypeName("REL")(pos)), None, None,
+        expressions.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
+      expressions.NodePattern(None, List.empty, None, None)(pos)
     )(pos)
-    val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
+    val pattern = expressions.Pattern(List(expressions.EveryPath(relChain)))(pos)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))
@@ -162,10 +161,10 @@ class MultipleGraphClausesParsingTest
     val pattern1 = nodePattern(Some(varFor("a")), Seq(labelName("A")), None)
     val new1: ast.CreateInConstruct = ast.CreateInConstruct(pattern1)(pos)
 
-    val pattern2 = exp.Pattern(List(exp.EveryPath(exp.RelationshipChain(
-      exp.NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
-      exp.RelationshipPattern(None, Seq(exp.RelTypeName("T")(pos)), None, None, exp.SemanticDirection.OUTGOING)(pos),
-      exp.NodePattern(Some(varFor("y")), Seq.empty, None)(pos))(pos)
+    val pattern2 = expressions.Pattern(List(expressions.EveryPath(expressions.RelationshipChain(
+      expressions.NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
+      expressions.RelationshipPattern(None, Seq(expressions.RelTypeName("T")(pos)), None, None, expressions.SemanticDirection.OUTGOING)(pos),
+      expressions.NodePattern(Some(varFor("y")), Seq.empty, None)(pos))(pos)
     )))(pos)
     val new2: ast.CreateInConstruct = ast.CreateInConstruct(pattern2)(pos)
 
@@ -202,7 +201,7 @@ class MultipleGraphClausesParsingTest
 
   // TODO: Causes parser to fail with its unhelpful error message
   ignore("FROM graph") {
-    yields(ast.FromGraph(exp.Variable("graph")(pos)))
+    yields(ast.FromGraph(expressions.Variable("graph")(pos)))
   }
 
 
@@ -222,80 +221,80 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo.bar", "baz.baz")))))
   }
 
-  val keywords: Seq[(String, exp.Expression => ast.GraphSelection)] = Seq(
+  val keywords: Seq[(String, expressions.Expression => ast.GraphSelection)] = Seq(
     "FROM" -> (ast.FromGraph(_)(pos)),
     "USE" -> (ast.UseGraph(_)(pos))
   )
 
-  val graphSelection: Seq[(String, exp.Expression)] = Seq(
+  val graphSelection: Seq[(String, expressions.Expression)] = Seq(
     "GRAPH foo.bar" ->
       fooBarGraph,
 
     "GRAPH foo()" ->
-      exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), false, IndexedSeq())(pos),
+      expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("foo")(pos), false, IndexedSeq())(pos),
 
     "GRAPH foo   (    )" ->
-      exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), false, IndexedSeq())(pos),
+      expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("foo")(pos), false, IndexedSeq())(pos),
 
     "GRAPH foo.bar(baz(grok))" ->
-      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
-        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
-          exp.Variable("grok")(pos)
+      expressions.FunctionInvocation(expressions.Namespace(List("foo"))(pos), expressions.FunctionName("bar")(pos), false, IndexedSeq(
+        expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("baz")(pos), false, IndexedSeq(
+          expressions.Variable("grok")(pos)
         ))(pos)
       ))(pos),
 
     "GRAPH foo. bar   (baz  (grok   )  )" ->
-      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
-        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
-          exp.Variable("grok")(pos)
+      expressions.FunctionInvocation(expressions.Namespace(List("foo"))(pos), expressions.FunctionName("bar")(pos), false, IndexedSeq(
+        expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("baz")(pos), false, IndexedSeq(
+          expressions.Variable("grok")(pos)
         ))(pos)
       ))(pos),
 
     "GRAPH foo.bar(baz(grok), another.name)" ->
-      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
-        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
-          exp.Variable("grok")(pos)
+      expressions.FunctionInvocation(expressions.Namespace(List("foo"))(pos), expressions.FunctionName("bar")(pos), false, IndexedSeq(
+        expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("baz")(pos), false, IndexedSeq(
+          expressions.Variable("grok")(pos)
         ))(pos),
-        exp.Property(exp.Variable("another")(pos), exp.PropertyKeyName("name")(pos))(pos)
+        expressions.Property(expressions.Variable("another")(pos), expressions.PropertyKeyName("name")(pos))(pos)
       ))(pos),
 
     "foo.bar(baz(grok), another.name)" ->
-      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
-        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
-          exp.Variable("grok")(pos)
+      expressions.FunctionInvocation(expressions.Namespace(List("foo"))(pos), expressions.FunctionName("bar")(pos), false, IndexedSeq(
+        expressions.FunctionInvocation(expressions.Namespace()(pos), expressions.FunctionName("baz")(pos), false, IndexedSeq(
+          expressions.Variable("grok")(pos)
         ))(pos),
-        exp.Property(exp.Variable("another")(pos), exp.PropertyKeyName("name")(pos))(pos)
+        expressions.Property(expressions.Variable("another")(pos), expressions.PropertyKeyName("name")(pos))(pos)
       ))(pos),
 
     "foo.bar(1, $par)" ->
-      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
-        exp.SignedDecimalIntegerLiteral("1")(pos),
-        exp.Parameter("par", sym.CTAny)(pos)
+      expressions.FunctionInvocation(expressions.Namespace(List("foo"))(pos), expressions.FunctionName("bar")(pos), false, IndexedSeq(
+        expressions.SignedDecimalIntegerLiteral("1")(pos),
+        expressions.Parameter("par", symbols.CTAny)(pos)
       ))(pos),
 
     "a + b" ->
-      exp.Add(exp.Variable("a")(pos), exp.Variable("b")(pos))(pos),
+      expressions.Add(expressions.Variable("a")(pos), expressions.Variable("b")(pos))(pos),
 
     "GRAPH graph" ->
-      exp.Variable("graph")(pos),
+      expressions.Variable("graph")(pos),
 
     "`graph`" ->
-      exp.Variable("graph")(pos),
+      expressions.Variable("graph")(pos),
 
     "graph1" ->
-      exp.Variable("graph1")(pos),
+      expressions.Variable("graph1")(pos),
 
     "`foo.bar.baz.baz`" ->
-      exp.Variable("foo.bar.baz.baz")(pos),
+      expressions.Variable("foo.bar.baz.baz")(pos),
 
     "GRAPH `foo.bar`.baz" ->
-      exp.Property(exp.Variable("foo.bar")(pos), exp.PropertyKeyName("baz")(pos))(pos),
+      expressions.Property(expressions.Variable("foo.bar")(pos), expressions.PropertyKeyName("baz")(pos))(pos),
 
     "GRAPH foo.`bar.baz`" ->
-      exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("bar.baz")(pos))(pos),
+      expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("bar.baz")(pos))(pos),
 
     "GRAPH `foo.bar`.`baz.baz`" ->
-      exp.Property(exp.Variable("foo.bar")(pos), exp.PropertyKeyName("baz.baz")(pos))(pos),
+      expressions.Property(expressions.Variable("foo.bar")(pos), expressions.PropertyKeyName("baz.baz")(pos))(pos),
   )
 
   for {
@@ -307,9 +306,9 @@ class MultipleGraphClausesParsingTest
     }
   }
 
-  private def nodePattern(variable: Option[exp.Variable],
-                          labels: Seq[exp.LabelName],
-                          properties: Option[exp.Expression],
-                          baseNode: Option[exp.LogicalVariable] = None) =
-    exp.Pattern(List(exp.EveryPath(exp.NodePattern(variable, labels, properties, baseNode)(pos))))(pos)
+  private def nodePattern(variable: Option[expressions.Variable],
+                          labels: Seq[expressions.LabelName],
+                          properties: Option[expressions.Expression],
+                          baseNode: Option[expressions.LogicalVariable] = None) =
+    expressions.Pattern(List(expressions.EveryPath(expressions.NodePattern(variable, labels, properties, baseNode)(pos))))(pos)
 }

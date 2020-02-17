@@ -16,11 +16,16 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.StatementHelper._
-import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper._
+import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.allSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionCollectionSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.pathCollectionSymbol
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.parser.ParserFixture.parse
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
 
 /*
 ScopeTree is tested here because we want to be able to use the parser for the testing
@@ -234,4 +239,3 @@ class ScopeTreeTest extends CypherFunSuite {
     actual should equal(expected)
   }
 }
-

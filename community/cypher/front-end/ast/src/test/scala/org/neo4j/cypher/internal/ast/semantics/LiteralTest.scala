@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.expressions.{Literal, StringLiteral, UnsignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class LiteralTest extends SemanticFunSuite {
   test("has type CTString") {

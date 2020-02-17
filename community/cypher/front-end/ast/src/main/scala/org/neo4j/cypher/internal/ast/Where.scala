@@ -16,10 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.{Expression, Property}
-import org.neo4j.cypher.internal.util.symbols._
-import org.neo4j.cypher.internal.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
 case class Where(expression: Expression)(val position: InputPosition)
   extends ASTNode with SemanticCheckable {

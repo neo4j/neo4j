@@ -17,8 +17,12 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.util.{CypherException, CypherExceptionFactory, InputPosition}
-import org.parboiled.scala._
+import org.neo4j.cypher.internal.util.CypherException
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
+import org.parboiled.scala.EOI
+import org.parboiled.scala.Parser
+import org.parboiled.scala.Rule1
 
 /**
   * Parser for Cypher queries.

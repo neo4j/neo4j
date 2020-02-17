@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.symbols._
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTNode
 
 class AndTest extends InfixExpressionTestBase(expressions.And(_, _)(DummyPosition(0))) {
 

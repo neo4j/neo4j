@@ -16,13 +16,39 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.expressions.NotEquals
-import org.neo4j.cypher.internal.rewriting.RewriterStep._
-import org.neo4j.cypher.internal.rewriting.conditions._
-import org.neo4j.cypher.internal.rewriting.rewriters.{replaceLiteralDynamicPropertyLookups, _}
-import org.neo4j.cypher.internal.rewriting.{RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.rewriting.RewriterCondition
+import org.neo4j.cypher.internal.rewriting.RewriterStep.enableCondition
+import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.addImplicitExistToPatternExpressions
+import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
+import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
+import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
+import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
+import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
+import org.neo4j.cypher.internal.rewriting.rewriters.nameMatchPatternElements
+import org.neo4j.cypher.internal.rewriting.rewriters.namePatternComprehensionPatternElements
+import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
+import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,

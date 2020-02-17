@@ -17,9 +17,13 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.util.{Rewriter, bottomUp, symbols}
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols
 
 /**
   * Adds an exist around any pattern expression that is expected to produce a boolean e.g.

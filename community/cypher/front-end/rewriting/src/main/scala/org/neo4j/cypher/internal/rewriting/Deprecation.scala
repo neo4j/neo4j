@@ -17,8 +17,31 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExtractExpression
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.FilterExpression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
+import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
+import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 
 import scala.collection.immutable.TreeMap
 

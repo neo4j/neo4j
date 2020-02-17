@@ -16,9 +16,22 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.{CreateIndexNewSyntax, CreateNodeKeyConstraint, CreateNodePropertyExistenceConstraint, CreateRelationshipPropertyExistenceConstraint, CreateUniquePropertyConstraint, DbmsPrivilege, DefaultDatabaseScope, DenyPrivilege, DropConstraintOnName, DropIndexOnName, GrantPrivilege, RevokePrivilege, Statement, UserManagementAction}
+import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
+import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.DropConstraintOnName
+import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UserManagementAction
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 object Additions {
 

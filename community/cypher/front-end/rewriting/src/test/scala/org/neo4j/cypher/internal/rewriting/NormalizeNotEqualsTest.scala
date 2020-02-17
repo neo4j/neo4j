@@ -16,12 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.expressions.{Equals, Not, NotEquals}
-
 
 class NormalizeNotEqualsTest extends CypherFunSuite {
 

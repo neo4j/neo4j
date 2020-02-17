@@ -16,12 +16,21 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.{GetDegree, GreaterThan}
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.rewriting.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalization, PropertyPredicateNormalizer}
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalization
+import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.{OpenCypherExceptionFactory, Rewriter, inSequence}
 
 class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
 

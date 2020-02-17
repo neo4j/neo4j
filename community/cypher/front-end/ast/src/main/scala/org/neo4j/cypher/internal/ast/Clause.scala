@@ -16,15 +16,71 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.{error, success}
-import org.neo4j.cypher.internal.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck, SemanticState, _}
+import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
+import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.error
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
+import org.neo4j.cypher.internal.ast.semantics.traversableOnceSemanticChecking
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.expressions.functions.{Distance, Exists}
-import org.neo4j.cypher.internal.expressions.{functions, _}
-import org.neo4j.cypher.internal.util.Foldable._
-import org.neo4j.cypher.internal.util._
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.containsAggregate
+import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.expressions.functions.Distance
+import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedStartNotification
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -413,7 +469,6 @@ case class Match(
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
-    import connectedComponents._
     val cc = connectedComponents(pattern.patternParts)
     //if we have multiple connected components we will have
     //a cartesian product

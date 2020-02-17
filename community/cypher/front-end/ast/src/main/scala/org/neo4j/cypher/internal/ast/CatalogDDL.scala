@@ -16,12 +16,19 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult._
-import org.neo4j.cypher.internal.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticError, SemanticFeature, SemanticState}
-import org.neo4j.cypher.internal.expressions.{LogicalVariable, Parameter, SensitiveStringLiteral, Variable}
+import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.symbols._
-
+import org.neo4j.cypher.internal.util.symbols.CTGraphRef
 
 sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 

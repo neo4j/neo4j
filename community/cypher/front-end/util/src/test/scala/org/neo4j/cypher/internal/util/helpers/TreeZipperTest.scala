@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.util.helpers
 
+import org.neo4j.cypher.internal.util.helpers.Tapper.Tapped
+import org.neo4j.cypher.internal.util.helpers.Tapper.TappedOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class TreeZipperTest extends CypherFunSuite {
-  import Tapper._
 
   case class TestElem(name: String, children: Seq[TestElem]) extends TreeElem[TestElem] {
     def updateChildren(newChildren: Seq[TestElem]): TestElem = copy(children = newChildren.toVector)

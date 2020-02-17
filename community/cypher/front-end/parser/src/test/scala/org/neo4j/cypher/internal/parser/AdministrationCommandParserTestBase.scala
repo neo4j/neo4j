@@ -17,7 +17,16 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.PrivilegeType
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Rule1
 

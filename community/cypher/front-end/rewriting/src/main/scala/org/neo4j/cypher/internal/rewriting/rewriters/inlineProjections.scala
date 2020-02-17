@@ -16,13 +16,22 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions._
-import org.neo4j.cypher.internal.util._
-import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UpdateClause
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Pattern
-
+import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.TypedRewriter
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.topDown
 
 case object inlineProjections extends Rewriter {
 

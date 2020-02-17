@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import java.util.regex.Pattern._
+import java.util.regex.Pattern.quote
 
 /**
  * Converts [[ParsedLikePattern]] into a regular expression string

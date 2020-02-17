@@ -17,10 +17,12 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 class PrettifierIT extends CypherFunSuite {
   private implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe

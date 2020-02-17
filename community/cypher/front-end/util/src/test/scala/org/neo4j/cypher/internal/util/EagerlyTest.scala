@@ -18,7 +18,8 @@ package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable
 
 class EagerlyTest extends CypherFunSuite {
   test("maps values of immutable maps to immutable maps") {

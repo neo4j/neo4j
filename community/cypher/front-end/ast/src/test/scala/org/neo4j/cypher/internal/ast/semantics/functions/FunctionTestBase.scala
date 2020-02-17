@@ -16,11 +16,16 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.functions
 
-import org.neo4j.cypher.internal.ast.semantics.{SemanticCheckResult, SemanticExpressionCheck, SemanticFunSuite, SemanticState}
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticFunSuite
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.expressions.{DummyExpression, FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.symbols._
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
 

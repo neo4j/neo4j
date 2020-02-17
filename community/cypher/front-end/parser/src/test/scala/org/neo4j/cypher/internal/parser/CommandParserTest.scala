@@ -16,11 +16,10 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.{ast, expressions => exp}
+import org.neo4j.cypher.internal.expressions
 import org.parboiled.scala.Rule1
-
-import scala.language.implicitConversions
 
 class CommandParserTest
   extends ParserAstTest[ast.Command]
@@ -257,10 +256,10 @@ class CommandParserTest
   // help method
 
   private def propertyKeyName(name: String) = {
-    exp.PropertyKeyName(name)(pos)
+    expressions.PropertyKeyName(name)(pos)
   }
 
   private def relTypeName(name: String) = {
-    exp.RelTypeName(name)(pos)
+    expressions.RelTypeName(name)(pos)
   }
 }

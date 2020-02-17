@@ -16,7 +16,18 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
-import org.neo4j.cypher.internal.expressions.{EveryPath, Expression, NamedPatternPart, NodePattern, Pattern, PatternElement, PatternPart, Range, RelationshipChain, RelationshipPattern, SemanticDirection, ShortestPaths}
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.Range
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPaths
 
 case class PatternStringifier(expr: ExpressionStringifier) {
 
