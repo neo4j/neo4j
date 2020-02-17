@@ -63,7 +63,7 @@ import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 
-public class LuceneIndexSamplerReleaseTaskControlUnderFusion
+public class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 {
     @Rule
     public FileSystemRule fs = new EphemeralFileSystemRule();
@@ -100,7 +100,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
      * This situation was solved by making {@link IndexSampler} {@link java.io.Closeable} and include it in try-with-resource together with
      * {@link IndexReader} that created it.
      */
-    @Test( timeout = 5_000L )
+    @Test
     public void failedIndexSamplingMustNotPreventIndexDrop() throws IOException, IndexEntryConflictException
     {
         LuceneIndexProvider luceneProvider = luceneProvider();
