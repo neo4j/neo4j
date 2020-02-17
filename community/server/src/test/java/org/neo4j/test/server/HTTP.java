@@ -260,7 +260,7 @@ public final class HTTP
         {
             // Specifically, this is never used for character encoding.
             contentEncoding = contentEncoding.toLowerCase();
-            assertThat( contentEncoding ).satisfiesAnyOf( s -> assertThat( s ).startsWith( "gzip" ), s -> assertThat( s ).startsWith( "defalte" ) );
+            assertThat( contentEncoding ).satisfiesAnyOf( s -> assertThat( s ).contains( "gzip" ), s -> assertThat( s ).contains( "defalte" ) );
             assertThat( contentEncoding ).doesNotContain( "utf-8" );
         }
         return response;
