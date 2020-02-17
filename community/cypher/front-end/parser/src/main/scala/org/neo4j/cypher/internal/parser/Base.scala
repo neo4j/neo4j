@@ -47,7 +47,7 @@ trait Base extends Parser {
   def DecimalInteger = rule { (optional("-") ~ UnsignedDecimalInteger).memoMismatches }
   def UnsignedDecimalInteger = rule { (group(("1" - "9") ~ optional(DigitString)) | "0").memoMismatches }
   def RegularDecimalReal = rule { (optional("-") ~ zeroOrMore("0" - "9") ~ "." ~ DigitString).memoMismatches }
-  def ExponentDecimalReal = rule { (optional("-") ~ oneOrMore("0" - "9" | ".") ~ (ch('e') | ch('E')) ~ optional("-") ~ DigitString).memoMismatches }
+  def ExponentDecimalReal = rule { (optional("-") ~ oneOrMore("0" - "9" | ".") ~ (ch('e') | ch('E')) ~ optional("-" | "+") ~ DigitString).memoMismatches }
   def DigitString = rule("'0'-'9'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
   def OctalInteger = rule { (optional("-") ~ UnsignedOctalInteger).memoMismatches }
   def UnsignedOctalInteger = rule { ("0" ~ OctalString).memoMismatches }

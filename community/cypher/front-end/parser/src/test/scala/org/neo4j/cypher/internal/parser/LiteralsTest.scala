@@ -74,6 +74,8 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("-0.3454") shouldGive expressions.DecimalDoubleLiteral("-0.3454")(t)
 
     parsing("1E23") shouldGive expressions.DecimalDoubleLiteral("1E23")(t)
+    parsing("1e23") shouldGive expressions.DecimalDoubleLiteral("1e23")(t)
+    parsing("1E+23") shouldGive expressions.DecimalDoubleLiteral("1E+23")(t)
     parsing("1.34E99") shouldGive expressions.DecimalDoubleLiteral("1.34E99")(t)
     parsing("9E-443") shouldGive expressions.DecimalDoubleLiteral("9E-443")(t)
   }
