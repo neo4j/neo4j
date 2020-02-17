@@ -277,7 +277,10 @@ trait Statement extends Parser
   //`GRANT CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
   //`GRANT CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`GRANT CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  //`GRANT SHOW/TERMINATE TRANSACTION (username) ON DATABASE foo TO role`
   def GrantDatabasePrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT Database & Schema privileges") {
+    group(keyword("GRANT") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((qualifiedAction, scope, grantees) => ast.GrantPrivilege.databaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
     group(keyword("GRANT") ~~ DatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.GrantPrivilege.databaseAction( databaseAction, scope, grantees))
   }
@@ -286,7 +289,10 @@ trait Statement extends Parser
   //`DENY CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
   //`DENY CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`DENY CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  //`DENY SHOW/TERMINATE TRANSACTION (username) ON DATABASE foo TO role`
   def DenyDatabasePrivilege: Rule1[DenyPrivilege] = rule("CATALOG DENY Database & Schema privileges") {
+    group(keyword("DENY") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((qualifiedAction, scope, grantees) => ast.DenyPrivilege.databaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
     group(keyword("DENY") ~~ DatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.DenyPrivilege.databaseAction( databaseAction, scope, grantees))
   }
@@ -295,7 +301,10 @@ trait Statement extends Parser
   //`REVOKE GRANT CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE GRANT CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE GRANT CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  //`REVOKE GRANT SHOW/TERMINATE TRANSACTION (username) ON DATABASE foo TO role`
   def RevokeGrantDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT Database & Schema privileges") {
+    group(keyword("REVOKE GRANT") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.databaseGrantedAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
     group(keyword("REVOKE GRANT") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseGrantedAction( databaseAction, scope, grantees))
   }
@@ -304,7 +313,10 @@ trait Statement extends Parser
   //`REVOKE DENY CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE DENY CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE DENY CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  //`REVOKE DENY SHOW/TERMINATE TRANSACTION (username) ON DATABASE foo TO role`
   def RevokeDenyDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY Database & Schema privileges") {
+    group(keyword("REVOKE DENY") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.databaseDeniedAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
     group(keyword("REVOKE DENY") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseDeniedAction( databaseAction, scope, grantees))
   }
@@ -313,7 +325,10 @@ trait Statement extends Parser
   //`REVOKE CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  //`REVOKE SHOW/TERMINATE TRANSACTION (username) ON DATABASE foo TO role`
   def RevokeDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE Database & Schema privileges") {
+    group(keyword("REVOKE") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.databaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
     group(keyword("REVOKE") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees))
   }
@@ -447,13 +462,18 @@ trait Statement extends Parser
       group("{" ~~ "*" ~~ "}") ~~~> {ast.AllResource()}
   )
 
+  private def UserQualifier: Rule1[PrivilegeQualifier] = rule("(usernameList)")(
+    group("(" ~~ SymbolicNamesList ~~ ")") ~~>> {ast.UsersQualifier(_)} |
+    group("(" ~~ "*" ~~ ")") ~~~> {ast.UserAllQualifier()}
+  )
+
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
     group(RelationshipKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.RelationshipsQualifier(_)} |
     group(RelationshipKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.RelationshipAllQualifier()} |
     group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
     group(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()} |
     group(ElementKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.ElementsQualifier(_)} |
-    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.ElementsAllQualifier()}
   )
 
   private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
@@ -485,6 +505,13 @@ trait Statement extends Parser
       group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
 
+  private def QualifiedDatabaseAction: Rule1[(DatabaseAction, PrivilegeQualifier)] = rule("access/start/stop a database and index, constraint and token management")(
+    group(keyword("SHOW") ~~ TransactionKeyword ~~ UserQualifier) ~~> ((ast.ShowTransactionAction, _)) |
+    group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier) ~~> ((ast.TerminateTransactionAction, _)) |
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier) ~~> ((ast.TransactionManagementAction, _)) |
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT"))) ~~~> (pos => (ast.TransactionManagementAction, ast.UserAllQualifier()(pos)))
+  )
+
   private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
     keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
@@ -508,6 +535,8 @@ trait Statement extends Parser
   private def TypeKeyword: Rule0 = keyword("TYPES") | keyword("TYPE")
 
   private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
+
+  private def TransactionKeyword: Rule0 = keyword("TRANSACTION") | keyword("TRANSACTIONS")
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~

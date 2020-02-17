@@ -22,20 +22,24 @@ package org.neo4j.internal.kernel.api.security;
 public class AdminActionOnResource
 {
     private final PrivilegeAction action;
-    private final DatabaseScope resource;
+    private final DatabaseScope databaseScope;
+    private final Segment segment;
 
-    public AdminActionOnResource( PrivilegeAction action, DatabaseScope resource )
+    public AdminActionOnResource( PrivilegeAction action, DatabaseScope databaseScope, Segment segment )
     {
         this.action = action;
-        this.resource = resource;
+        this.databaseScope = databaseScope;
+        this.segment = segment;
     }
 
     public boolean matches( AdminActionOnResource request )
     {
-        return action.satisfies( request.action ) && (resource.all || resource.name.equals( request.resource.name ));
+        return action.satisfies( request.action ) &&
+               (databaseScope.all || databaseScope.name.equals( request.databaseScope.name )) &&
+               segment.satisfies( request.segment );
     }
 
-    public static final AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL );
+    public static final AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL, Segment.ALL );
 
     public static class DatabaseScope
     {

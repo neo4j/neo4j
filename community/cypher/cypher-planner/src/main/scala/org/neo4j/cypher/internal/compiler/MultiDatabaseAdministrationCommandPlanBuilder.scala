@@ -316,27 +316,36 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
-      case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        planDatabasePrivileges(
-          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
-          (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, role))
-        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+      case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
+        qualifiers.simplify.foldLeft(Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (source, qualifier) =>
+            planDatabasePrivileges(
+              source, roleNames, action,
+              (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, qualifier, role))
+            )
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
-      case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        planDatabasePrivileges(
-          Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
-          (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
-        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+      case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
+        qualifiers.simplify.foldLeft(Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+          case (source, qualifier) =>
+            planDatabasePrivileges(
+              source, roleNames, action,
+              (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, qualifier, role))
+            )
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo FROM role
-      case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        val source = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+      case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
+        val source: Option[PrivilegePlan] = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, database, roleName))
         }
-        planRevokeDatabasePrivileges(source, roleNames, action,
-          (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, role, r)))
-        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+        qualifiers.simplify.foldLeft(source) {
+          case (source, qualifier) =>
+            planRevokeDatabasePrivileges(source, roleNames, action,
+              (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, qualifier, role, r)))
+            )
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>

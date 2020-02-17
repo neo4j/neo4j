@@ -80,9 +80,9 @@ case class GrantDbmsAction(source: Option[PrivilegePlan], action: AdminAction, r
 case class DenyDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
 case class RevokeDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String, revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
 
-case class GrantDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
-case class DenyDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
-case class RevokeDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String, revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
+case class GrantDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
+case class DenyDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
+case class RevokeDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String, revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
 
 case class GrantTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)
 case class DenyTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(source)

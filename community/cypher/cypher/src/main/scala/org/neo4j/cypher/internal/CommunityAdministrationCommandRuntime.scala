@@ -52,6 +52,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DEN
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
@@ -95,7 +96,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check Admin Rights for DBMS commands
     case AssertDbmsAdmin(action) => (_, _, securityContext) =>
       AuthorizationPredicateExecutionPlan(() =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL)),
+        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL)),
         violationMessage = PERMISSION_DENIED
       )
 
@@ -109,7 +110,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check Admin Rights for some Database commands
     case AssertDatabaseAdmin(action, database) => (_, _, securityContext) =>
       AuthorizationPredicateExecutionPlan(() =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), new DatabaseScope(database.name()))),
+        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), new DatabaseScope(database.name()), Segment.ALL)),
         violationMessage = PERMISSION_DENIED
       )
 

@@ -368,4 +368,78 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
     // THEN
     assertFailure("REVOKE ALL ON DATABASE * FROM custom", "Unsupported administration command: REVOKE ALL ON DATABASE * FROM custom")
   }
+
+  // Transaction privileges
+
+  test("should fail on granting show transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("GRANT SHOW TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: GRANT SHOW TRANSACTION (*) ON DATABASE * TO custom")
+  }
+
+  test("should fail on denying show transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY SHOW TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: DENY SHOW TRANSACTION (*) ON DATABASE * TO custom")
+  }
+
+  test("should fail on revoking show transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE SHOW TRANSACTION (*) ON DATABASE * FROM custom", "Unsupported administration command: REVOKE SHOW TRANSACTION (*) ON DATABASE * FROM custom")
+  }
+
+  test("should fail on granting terminate transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("GRANT TERMINATE TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: GRANT TERMINATE TRANSACTION (*) ON DATABASE * TO custom")
+  }
+
+  test("should fail on denying terminate transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY TERMINATE TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: DENY TERMINATE TRANSACTION (*) ON DATABASE * TO custom")
+  }
+
+  test("should fail on revoking terminate transaction privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE TERMINATE TRANSACTION (*) ON DATABASE * FROM custom", "Unsupported administration command: REVOKE TERMINATE TRANSACTION (*) ON DATABASE * FROM custom")
+  }
+
+  test("should fail on granting transaction management privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("GRANT TRANSACTION MANAGEMENT ON DATABASE * TO custom", "Unsupported administration command: GRANT TRANSACTION MANAGEMENT ON DATABASE * TO custom")
+  }
+
+  test("should fail on denying transaction management privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY TRANSACTION MANAGEMENT ON DATABASE * TO custom", "Unsupported administration command: DENY TRANSACTION MANAGEMENT ON DATABASE * TO custom")
+  }
+
+  test("should fail on revoking transaction management privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE TRANSACTION MANAGEMENT ON DATABASE * FROM custom", "Unsupported administration command: REVOKE TRANSACTION MANAGEMENT ON DATABASE * FROM custom")
+  }
 }

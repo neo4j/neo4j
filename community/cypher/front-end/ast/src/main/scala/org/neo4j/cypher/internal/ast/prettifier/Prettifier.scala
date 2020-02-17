@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropView
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
@@ -129,6 +130,9 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.UserAllQualifier
+import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UsersQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -298,14 +302,14 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ RevokePrivilege(DbmsPrivilege(_), _, _, _, roleNames, _) =>
       s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      prettifyDatabasePrivilege(x.name, dbScope, "TO", roleNames)
+    case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames) =>
+      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-    case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
-      prettifyDatabasePrivilege(x.name, dbScope, "TO", roleNames)
+    case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames) =>
+      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-    case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames, _) =>
-      prettifyDatabasePrivilege(x.name, dbScope, "FROM", roleNames)
+    case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames, _) =>
+      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
@@ -409,11 +413,18 @@ case class Prettifier(expr: ExpressionStringifier) {
 
   private def prettifyDatabasePrivilege(privilegeName: String,
                                         dbScope: GraphScope,
+                                        qualifier: PrivilegeQualifier,
                                         preposition: String,
                                         roleNames: Seq[String]): String = {
     val (dbName, default) = Prettifier.extractDbScope(dbScope)
     val db = if (default) s"DEFAULT DATABASE" else s"DATABASE $dbName"
-    s"$privilegeName ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
+    qualifier match {
+      case _: AllQualifier =>
+        s"$privilegeName ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
+      case _ =>
+        val qualifierString = Prettifier.extractQualifierPart(qualifier)
+        s"$privilegeName $qualifierString ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
+    }
   }
 
   private def asString(u: UnionMapping): String = {
@@ -630,20 +641,25 @@ object Prettifier {
       case AllResource() => "*"
       case _ => "<unknown>"
     }
-    val segment = qualifier match {
-      case LabelQualifier(name) => "NODE " + escapeName(name)
-      case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
-      case LabelAllQualifier() => "NODES *"
-      case RelationshipQualifier(name) => "RELATIONSHIP " + escapeName(name)
-      case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
-      case RelationshipAllQualifier() => "RELATIONSHIPS *"
-      case AllQualifier() => "ELEMENTS *"
-      case _ => "<unknown>"
-    }
-    (resourceName, extractDbScope(dbScope)._1, segment)
+    (resourceName, extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
   }
 
   def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
+
+  def extractQualifierPart( qualifier: PrivilegeQualifier ): String = qualifier match {
+    case LabelQualifier(name) => "NODE " + escapeName(name)
+    case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
+    case LabelAllQualifier() => "NODES *"
+    case RelationshipQualifier(name) => "RELATIONSHIP " + escapeName(name)
+    case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
+    case RelationshipAllQualifier() => "RELATIONSHIPS *"
+    case ElementsAllQualifier() => "ELEMENTS *"
+    case UsersQualifier(names) => "(" + names.map(escapeName).mkString(", ") + ")"
+    case UserQualifier(name) => "(" + escapeName(name) + ")"
+    case UserAllQualifier() => "(*)"
+    case AllQualifier() => "*"
+    case _ => "<unknown>"
+  }
 
   def extractDbScope(dbScope: GraphScope): (String, Boolean) = dbScope match {
     case NamedGraphScope(name) => (escapeName(name), false)

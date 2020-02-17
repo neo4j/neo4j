@@ -320,9 +320,9 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
 
                   test( s"validExpressions $command ${privilege.name} {$properties} $graphKeyword $dbName $elementKeyword $preposition") {
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * $preposition role") shouldGive
-                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
+                      func(privilege, resource, graphScope, ast.ElementsAllQualifier() _, Seq("role"))
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") shouldGive
-                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
+                      func(privilege, resource, graphScope, ast.ElementsAllQualifier() _, Seq("role"))
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role"))
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") shouldGive
@@ -332,7 +332,7 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A, B (*) $preposition role1, role2") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") shouldGive
-                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("r:ole"))
+                      func(privilege, resource, graphScope, ast.ElementsAllQualifier() _, Seq("r:ole"))
                     parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword `:A` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq(":A")) _, Seq("role"))
                   }
@@ -349,11 +349,11 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
 
               test( s"validExpressions $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
                 parsing(s"$command ${privilege.name} {*} ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
-                  func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
+                  func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.ElementsAllQualifier() _, Seq("role"))
                 parsing(s"$command ${privilege.name} {bar} ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
-                  func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
+                  func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.ElementsAllQualifier() _, Seq("role"))
                 parsing(s"$command ${privilege.name} {`b:ar`} ON $graphKeyword foo $elementKeyword * $preposition role") shouldGive
-                  func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role"))
+                  func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.ElementsAllQualifier() _, Seq("role"))
               }
 
               test( s"parsingFailures $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
@@ -407,7 +407,7 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
             case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
               test(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $preposition role") {
-                yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+                yields(func(privilege, resource, graphScope, ast.ElementsAllQualifier() _, Seq("role")))
               }
           }
       }

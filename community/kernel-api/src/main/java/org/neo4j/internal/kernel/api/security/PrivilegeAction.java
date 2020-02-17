@@ -50,9 +50,9 @@ public enum PrivilegeAction
     STOP_DATABASE,
 
     SHOW_TRANSACTION,
-    KILL_TRANSACTION,
+    TERMINATE_TRANSACTION,
     SHOW_CONNECTION,
-    KILL_CONNECTION,
+    TERMINATE_CONNECTION,
 
     // DBMS actions
     CREATE_DATABASE,
@@ -172,9 +172,9 @@ public enum PrivilegeAction
                     switch ( action )
                     {
                     case SHOW_TRANSACTION:
-                    case KILL_TRANSACTION:
+                    case TERMINATE_TRANSACTION:
                     case SHOW_CONNECTION:
-                    case KILL_CONNECTION:
+                    case TERMINATE_CONNECTION:
                         return true;
                     default:
                         return this == action;

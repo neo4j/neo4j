@@ -54,8 +54,8 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_PRIVI
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_CONNECTION;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.KILL_TRANSACTION;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_CONNECTION;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REVOKE_PRIVILEGE;
@@ -83,7 +83,7 @@ class PrivilegeActionTest
     {
         expected.put( ADMIN, Set.of( DATABASE_MANAGEMENT, TRANSACTION_MANAGEMENT, ROLE_MANAGEMENT, USER_MANAGEMENT, PRIVILEGE_MANAGEMENT ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( START_DATABASE, STOP_DATABASE, CREATE_DATABASE, DROP_DATABASE ) );
-        expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, KILL_TRANSACTION, SHOW_CONNECTION, KILL_CONNECTION ) );
+        expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION ) );
         expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
         expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, DROP_USER, ALTER_USER ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, GRANT_PRIVILEGE, DENY_PRIVILEGE, REVOKE_PRIVILEGE ) );

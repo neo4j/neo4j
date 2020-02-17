@@ -49,10 +49,13 @@ import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
 import org.neo4j.cypher.internal.ast.SchemaManagementAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TokenManagementAction
+import org.neo4j.cypher.internal.ast.TransactionManagementAction
 import org.neo4j.internal.kernel.api.security
 
 object AdminActionMapper {
@@ -81,6 +84,10 @@ object AdminActionMapper {
     case CreateUserAction => security.PrivilegeAction.CREATE_USER
     case AlterUserAction => security.PrivilegeAction.ALTER_USER
     case DropUserAction => security.PrivilegeAction.DROP_USER
+
+    case TerminateTransactionAction => security.PrivilegeAction.TERMINATE_TRANSACTION
+    case ShowTransactionAction => security.PrivilegeAction.SHOW_TRANSACTION
+    case TransactionManagementAction => security.PrivilegeAction.TRANSACTION_MANAGEMENT
 
     case AllRoleActions => security.PrivilegeAction.ROLE_MANAGEMENT
     case ShowRoleAction => security.PrivilegeAction.SHOW_ROLE
@@ -123,6 +130,10 @@ object AdminActionMapper {
     case security.PrivilegeAction.CREATE_USER => CreateUserAction
     case security.PrivilegeAction.ALTER_USER => AlterUserAction
     case security.PrivilegeAction.DROP_USER => DropUserAction
+
+    case security.PrivilegeAction.TERMINATE_TRANSACTION => TerminateTransactionAction
+    case security.PrivilegeAction.SHOW_TRANSACTION => ShowTransactionAction
+    case security.PrivilegeAction.TRANSACTION_MANAGEMENT => TransactionManagementAction
 
     case security.PrivilegeAction.ROLE_MANAGEMENT => AllRoleActions
     case security.PrivilegeAction.SHOW_ROLE => ShowRoleAction
