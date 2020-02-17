@@ -415,4 +415,41 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     )
   }
 
+  test("excessive aliasing should not confuse namespacer") {
+    val query =
+      """WITH 1 AS q
+        |CALL {
+        |  MATCH (a:A)
+        |  RETURN a AS a, 1 AS b
+        |  UNION
+        |  WITH q
+        |  MATCH (a:B)
+        |  RETURN q AS b, a AS a
+        |}
+        |RETURN a AS q, b AS a, q AS b
+        |""".stripMargin
+
+    val Seq(a28, a59, a83, a134) = namespaced("a", 28, 59, 83, 134)
+    val Seq(b55, b59, b102, b142) = namespaced("b", 55, 59, 102, 142)
+    val Seq(q10, q126) = namespaced("q", 10, 126)
+
+    planFor(query, stripProduceResults = false)._2 should equal {
+      new LogicalPlanBuilder()
+        .produceResults(q126, a134, b142)
+        .projection(s"$a59 AS $q126", s"$b59 AS $a134", s"$q10 AS $b142")
+        .apply()
+        .|.distinct(s"$a59 AS $a59", s"$b59 AS $b59")
+        .|.union()
+        .|.|.projection(s"$a83 AS $a59", s"$b102 AS $b59")
+        .|.|.projection(s"$q10 AS $b102")
+        .|.|.nodeByLabelScan(a83, "B", q10)
+        .|.projection(s"$a28 AS $a59", s"$b55 AS $b59")
+        .|.projection(s"1 AS $b55")
+        .|.nodeByLabelScan(a28, "A")
+        .projection(s"1 AS $q10")
+        .argument()
+        .build()
+    }
+  }
+
 }

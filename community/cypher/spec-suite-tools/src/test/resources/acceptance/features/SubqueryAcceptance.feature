@@ -230,6 +230,19 @@ Feature: SubqueryAcceptance
       """
     Then a SyntaxError should be raised at compile time: UndefinedVariable
 
+  Scenario: Should allow to remove imported variables from subquery scope
+    When executing query:
+      """
+      MATCH (a)
+      CALL {
+        WITH a
+        WITH 1 AS b
+        RETURN a AS c
+      }
+      RETURN c
+      """
+    Then a SyntaxError should be raised at compile time: UndefinedVariable
+
   Scenario: Aggregating top and bottom results from correlated subquery
     And having executed:
     """

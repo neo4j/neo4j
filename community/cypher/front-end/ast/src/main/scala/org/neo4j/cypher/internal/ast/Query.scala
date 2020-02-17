@@ -41,7 +41,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 
   def finalScope(scope: Scope): Scope = part.finalScope(scope)
 
-  override def semanticCheck =
+  override def semanticCheck: SemanticCheck =
     part.semanticCheck chain
     periodicCommitHint.semanticCheck chain
     when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
@@ -120,15 +120,16 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       .filterNot(importWith.contains)
       .filterNot(leadingGraphSelection.contains)
 
-  def semanticCheckAbstract(clauses: Seq[Clause]): SemanticCheck =
+  private def semanticCheckAbstract(clauses: Seq[Clause], clauseCheck: Seq[Clause] => SemanticCheck): SemanticCheck =
     checkStandaloneCall(clauses) chain
     checkOrder(clauses) chain
-    checkClauses(clauses) chain
+    withScopedState(clauseCheck(clauses)) chain
     checkIndexHints(clauses) chain
-    checkInputDataStream(clauses)
+    checkInputDataStream(clauses) chain
+    recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
-    semanticCheckAbstract(clauses)
+    semanticCheckAbstract(clauses, checkClauses)
 
   override def checkImportingWith: SemanticCheck = importWith.foldSemanticCheck(_.semanticCheck)
 
@@ -141,9 +142,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
     checkCorrelatedSubQueriesFeature chain
     checkLeadingFrom(outer) chain
-    importVariables chain
     checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
-    semanticCheckAbstract(clausesExceptLeadingFromAndImportWith)
+    semanticCheckAbstract(
+      clausesExceptLeadingFromAndImportWith,
+      importVariables chain checkClauses(_)
+    )
   }
 
   private def checkConcludesWithReturn(clauses: Seq[Clause]): SemanticCheck =
@@ -222,9 +225,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     semantics.SemanticCheckResult(s, errors ++ lastError)
   }
 
-  private def checkClauses(clauses: Seq[Clause]): SemanticCheck = s => {
+  private def checkClauses(clauses: Seq[Clause]): SemanticCheck = initialState => {
     val lastIndex = clauses.size - 1
-    val result = clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(s.newChildScope)) {
+    clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(initialState)) {
       case (lastResult, (clause, idx)) =>
         val next = clause match {
           case w: With if idx == 0 && lastResult.state.features(SemanticFeature.WithInitialQuerySignature) =>
@@ -245,7 +248,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
         next.copy(state = next.state.recordCurrentScope(clause))
     }
-    SemanticCheckResult(result.state.popScope.recordCurrentScope(this), result.errors)
   }
 
   private def checkHorizon(clause: HorizonClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]) = {
@@ -299,7 +301,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
-  def semanticCheckAbstract(partCheck: QueryPart => SemanticCheck, queryCheck: SingleQuery => SemanticCheck, checkColumnNamesAgree: SemanticCheck): SemanticCheck =
+  def semanticCheckAbstract(partCheck: QueryPart => SemanticCheck, queryCheck: SingleQuery => SemanticCheck): SemanticCheck =
     checkUnionAggregation chain
       withScopedState(partCheck(part)) chain
       withScopedState(queryCheck(query)) chain
@@ -311,8 +313,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def semanticCheck: SemanticCheck =
     semanticCheckAbstract(
       part => part.semanticCheck,
-      query => query.semanticCheck,
-      checkColumnNamesAgree
+      query => query.semanticCheck
     )
 
   override def checkImportingWith: SemanticCheck =
@@ -322,12 +323,9 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
-    // Because we get an additonal empty base scope as the first sibling of each query part in a sub-query context
-    // we need to add an additonal nested scope around these query parts
     semanticCheckAbstract(
-      part => withScopedState(part.semanticCheckInSubqueryContext(outer)),
-      query => withScopedState(query.semanticCheckInSubqueryContext(outer)),
-      checkColumnNamesAgreeInSubQueryContext
+      part => part.semanticCheckInSubqueryContext(outer),
+      query => query.semanticCheckInSubqueryContext(outer)
     )
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
@@ -354,7 +352,6 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   // Check that columns names agree between both parts of the union
   def checkColumnNamesAgree: SemanticCheck
-  def checkColumnNamesAgreeInSubQueryContext: SemanticCheck
 
   private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
 
@@ -430,26 +427,11 @@ trait UnmappedUnion extends Union {
     }
     semantics.SemanticCheckResult(state, errors)
   }
-
-  override def checkColumnNamesAgreeInSubQueryContext: SemanticCheck = (state: SemanticState) => {
-    val myScope: Scope = state.currentScope.scope
-
-    // In a sub-query context we have an additional nested scope
-    val partScope = part.finalScope(myScope.children.head.children.last)
-    val queryScope = query.finalScope(myScope.children.last.children.last)
-    val errors = if (partScope.symbolNames == queryScope.symbolNames) {
-      Seq.empty
-    } else {
-      Seq(SemanticError("All sub queries in an UNION must have the same column names", position))
-    }
-    semantics.SemanticCheckResult(state, errors)
-  }
 }
 
 trait ProjectingUnion extends Union {
   // If we have a ProjectingUnion we have already checked this before and now they have been rewritten to actually not match.
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheckResult.success
-  override def checkColumnNamesAgreeInSubQueryContext: SemanticCheck = SemanticCheckResult.success
 }
 
 final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
