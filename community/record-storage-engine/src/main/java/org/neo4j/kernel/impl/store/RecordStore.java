@@ -74,8 +74,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     long getHighId();
 
     /**
+     * @param cursorTracer underlying page cursor tracer.
      * @return highest id in use in this store.
-
      */
     long getHighestPossibleIdInUse( PageCursorTracer cursorTracer );
 

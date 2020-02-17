@@ -99,8 +99,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
                 try ( var transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryStartPosition );
-                      var cursor = pageCacheTracer.createPageCursorTracer( REVERSE_RECOVERY_TAG );
-                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, cursor ) )
+                      var cursorTracer = pageCacheTracer.createPageCursorTracer( REVERSE_RECOVERY_TAG );
+                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, cursorTracer ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
@@ -125,8 +125,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 schemaLife.init();
 
                 try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
-                        var cursor = pageCacheTracer.createPageCursorTracer( RECOVERY_TAG );
-                        RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, cursor ) )
+                        var cursorTracer = pageCacheTracer.createPageCursorTracer( RECOVERY_TAG );
+                        RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, cursorTracer ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
@@ -169,10 +169,10 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             logsTruncator.truncate( recoveryToPosition );
         }
 
-        try ( var cursor = pageCacheTracer.createPageCursorTracer( RECOVERY_COMPLETED_TAG ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( RECOVERY_COMPLETED_TAG ) )
         {
             final boolean missingLogs = recoveryStartInformation.isMissingLogs();
-            recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition, missingLogs, cursor );
+            recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition, missingLogs, cursorTracer );
         }
         monitor.recoveryCompleted( numberOfRecoveredTransactions, recoveryStartTime.elapsed( MILLISECONDS ) );
     }

@@ -198,7 +198,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
                     @Override
                     public IndexSampler createSampler()
                     {
-                        return cursor ->
+                        return cursorTracer ->
                         {
                             throw sampleException;
                         };

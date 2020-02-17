@@ -111,14 +111,14 @@ public class NeoStores implements AutoCloseable
 
         stores = new CommonAbstractStore[StoreType.values().length];
         // First open the meta data store so that we can verify the record format. We know that this store is of the type MetaDataStore
-        try ( var cursor = pageCacheTracer.createPageCursorTracer( OPEN_ALL_STORES_TAG ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( OPEN_ALL_STORES_TAG ) )
         {
-            verifyRecordFormat( storeTypes, cursor );
+            verifyRecordFormat( storeTypes, cursorTracer );
             try
             {
                 for ( StoreType type : storeTypes )
                 {
-                    getOrOpenStore( type, cursor );
+                    getOrOpenStore( type, cursorTracer );
                 }
             }
             catch ( RuntimeException initException )

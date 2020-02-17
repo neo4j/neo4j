@@ -244,14 +244,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         temporaryNeoStores = instantiateTempStores();
         instantiateExtensions();
 
-        try ( var cursor = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_CREATION_TAG ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_CREATION_TAG ) )
         {
-            neoStores.start( cursor );
-            temporaryNeoStores.start( cursor );
+            neoStores.start( cursorTracer );
+            temporaryNeoStores.start( cursorTracer );
             neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
                     initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
-                    initialIds.lastCommittedTransactionLogVersion(), cursor );
+                    initialIds.lastCommittedTransactionLogVersion(), cursorTracer );
         }
     }
 
@@ -382,9 +382,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             stopFlushingPageCache();
         }
 
-        try ( var cursor = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) )
         {
-            flushAndForce( cursor );
+            flushAndForce( cursorTracer );
         }
 
         // Flush out all pending changes

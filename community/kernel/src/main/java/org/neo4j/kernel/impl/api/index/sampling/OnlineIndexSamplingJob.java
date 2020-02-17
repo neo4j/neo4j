@@ -68,10 +68,10 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             try
             {
                 try ( IndexReader reader = indexProxy.newReader();
-                      var cursor = pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG );
+                      var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG );
                       IndexSampler sampler = reader.createSampler() )
                 {
-                    IndexSample sample = sampler.sampleIndex( cursor );
+                    IndexSample sample = sampler.sampleIndex( cursorTracer );
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )
