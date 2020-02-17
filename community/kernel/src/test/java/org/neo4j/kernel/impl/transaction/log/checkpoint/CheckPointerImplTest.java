@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +50,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static java.time.Duration.ofSeconds;
+import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -74,6 +75,7 @@ import static org.neo4j.test.ThreadTestUtils.forkFuture;
 class CheckPointerImplTest
 {
     private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "Test" );
+    public static final Duration TIMEOUT = ofMinutes( 5 );
 
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
@@ -507,7 +509,7 @@ class CheckPointerImplTest
     @Test
     void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
                 verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
 
     }
@@ -515,7 +517,7 @@ class CheckPointerImplTest
     @Test
     void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
                 verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
