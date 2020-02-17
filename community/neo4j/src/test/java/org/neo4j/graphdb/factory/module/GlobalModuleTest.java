@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipThreadLeakageGuard;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -44,7 +45,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 import static org.neo4j.scheduler.Group.LOG_ROTATION;
 
 @SkipThreadLeakageGuard
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 class GlobalModuleTest
 {
     @Inject
