@@ -65,7 +65,6 @@ import org.neo4j.logging.NullLog
 import org.neo4j.logging.NullLogProvider
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
@@ -136,7 +135,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     }
   }
 
-  override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
   var counter: CacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _

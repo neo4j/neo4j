@@ -44,8 +44,10 @@ import scala.util.Success
 import scala.util.Try
 
 object Neo4jAdapter {
+  val defaultTestConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
+
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
-            dbConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)): Neo4jAdapter = {
+            dbConfig: collection.Map[Setting[_], Object]): Neo4jAdapter = {
     val managementService = createManagementService(dbConfig, graphDatabaseFactory)
     new Neo4jAdapter(managementService, executionPrefix)
   }

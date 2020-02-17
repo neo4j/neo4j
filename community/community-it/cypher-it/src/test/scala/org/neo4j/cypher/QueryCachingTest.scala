@@ -32,12 +32,11 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.Map
 import scala.collection.mutable
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
                                                                GraphDatabaseSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
 
   // The reason we _always_ get a hit after a miss is that ExecuteEngine, on a cache miss,

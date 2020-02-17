@@ -59,7 +59,6 @@ import org.scalatest.matchers.Matcher
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.Map
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>

@@ -32,7 +32,6 @@ import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.exceptions.DatabaseAdministrationException
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer
@@ -315,7 +314,4 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     securityGraphInitializer.initializeSecurityGraph()
     selectDatabase(SYSTEM_DATABASE_NAME)
   }
-
-  // Use the default value instead of the new value in CommunityDDLAcceptanceTestBase
-  override def databaseConfig(): Map[Setting[_], Object] = Map()
 }

@@ -25,8 +25,10 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
+import cypher.features.Neo4jAdapter.defaultTestConfig
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.ExpectError
 import org.opencypher.tools.tck.api.Scenario
@@ -44,6 +46,7 @@ object ScenarioTestHelper {
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
                   graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
+                  dbConfig: collection.Map[Setting[_], Object],
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     checkForDuplicates(scenarios, blacklist.toList)
@@ -62,7 +65,7 @@ object ScenarioTestHelper {
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
-            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory())).execute()
+            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig)).execute()
           } match {
             case Success(_) =>
               if (config.experimental) {
@@ -99,7 +102,7 @@ object ScenarioTestHelper {
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
       val name = scenario.toString()
-      val executable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory()))
+      val executable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig))
       DynamicTest.dynamicTest(name, executable)
     }
     (expectPassTests ++ expectFailTests).asJavaCollection
@@ -153,7 +156,7 @@ object ScenarioTestHelper {
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory())).execute()).isFailure
+      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig)).execute()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None

@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.util
 import java.util.Collections
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.exceptions.DatabaseAdministrationException
@@ -31,6 +32,7 @@ import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -38,9 +40,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
-import scala.collection.Map
-
 class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
+
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
 
   // Tests for showing users
 
