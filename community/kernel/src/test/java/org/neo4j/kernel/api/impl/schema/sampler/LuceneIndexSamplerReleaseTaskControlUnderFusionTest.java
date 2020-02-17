@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 
@@ -61,7 +60,7 @@ import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 @EphemeralTestDirectoryExtension
-class LuceneIndexSamplerReleaseTaskControlUnderFusion
+class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 {
     private static final int indexId = 1;
     private static final IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( 1, 1 ) ).withName( "index_1" ).materialise( indexId );
@@ -98,7 +97,6 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
      * {@link IndexReader} that created it.
      */
     @Test
-    @Timeout( 5 )
     void failedIndexSamplingMustNotPreventIndexDrop() throws IOException, IndexEntryConflictException
     {
         LuceneIndexProvider luceneProvider = luceneProvider();
