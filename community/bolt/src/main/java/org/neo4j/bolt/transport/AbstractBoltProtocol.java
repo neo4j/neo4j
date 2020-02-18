@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.channel.ChannelPipeline;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
@@ -73,8 +71,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     @Override
     public void install()
     {
-        ChannelPipeline pipeline = channel.rawChannel().pipeline();
-        pipeline.addLast(
+        channel.installBoltProtocol(
                 new ChunkDecoder(),
                 new MessageAccumulator(),
                 new MessageDecoder( neo4jPack, messageReader, logging ),

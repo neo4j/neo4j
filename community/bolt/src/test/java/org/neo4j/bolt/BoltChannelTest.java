@@ -21,8 +21,11 @@ package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -31,6 +34,8 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -118,14 +123,32 @@ class BoltChannelTest
     }
 
     @Test
-    void shouldInstallChannelProtectorInConstructor() throws Throwable
+    void shouldNotifyChannelProtectorInConstructor() throws Throwable
     {
         // Given
         var protector = mock( ChannelProtector.class );
         // When
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, protector );
         // Then
-        verify( protector ).enable();
+        verify( protector ).afterChannelCreated();
+    }
+
+    @Test
+    void shouldNotifyChannelProtectorBeforeProtocolInstallation() throws Throwable
+    {
+        // Given
+        var protector = mock( ChannelProtector.class );
+        var channel = mock( Channel.class );
+        var pipeline = mock( ChannelPipeline.class );
+        when( channel.pipeline() ).thenReturn( pipeline );
+
+        // When
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, protector );
+        InOrder inOrder = inOrder( protector, pipeline );
+        boltChannel.installBoltProtocol( mock( ChannelHandler.class ) );
+        // Then
+        inOrder.verify( protector ).beforeBoltProtocolInstalled();
+        inOrder.verify( pipeline ).addLast( any() );
     }
 
     @Test

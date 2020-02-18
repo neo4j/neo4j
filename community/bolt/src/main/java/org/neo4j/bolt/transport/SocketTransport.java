@@ -46,11 +46,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final BoltProtocolFactory boltProtocolFactory;
     private final NetworkConnectionTracker connectionTracker;
     private final Duration channelTimeout;
+    private final long maxMessageSize;
 
     public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired,
             LogProvider logging, TransportThrottleGroup throttleGroup,
             BoltProtocolFactory boltProtocolFactory, NetworkConnectionTracker connectionTracker,
-            Duration channelTimeout )
+            Duration channelTimeout, long maxMessageSize )
     {
         this.connector = connector;
         this.address = address;
@@ -61,6 +62,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.boltProtocolFactory = boltProtocolFactory;
         this.connectionTracker = connectionTracker;
         this.channelTimeout = channelTimeout;
+        this.maxMessageSize = maxMessageSize;
     }
 
     @Override
@@ -99,7 +101,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
 
     private BoltChannel newBoltChannel( Channel ch )
     {
-        var protector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout );
+        var protector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize );
         return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, protector );
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -36,6 +37,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_a
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
@@ -88,10 +90,16 @@ public final class BoltConnector implements SettingsDeclaration
     public static final Setting<Integer> unsupported_thread_pool_queue_size =
             newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
 
-    @Description( "A connection will be dropped if a user fails to authenticate within the specified timeout." )
+    @Description( "The maximum time to wait for a user to finish authentication before closing the connection." )
     @Internal
     public static final Setting<Duration> unsupported_bolt_unauth_connection_timeout =
             newBuilder( "dbms.connector.bolt.unsupported_unauth_connection_timeout", DURATION, ofSeconds( 30 ) )
+                    .build();
+
+    @Description( "The maximum inbound message size in bytes are allowed before a connection is authenticated." )
+    @Internal
+    public static final Setting<Long> unsupported_bolt_unauth_connection_max_inbound_bytes =
+            newBuilder( "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes( 8 ) )
                     .build();
 
     public enum EncryptionLevel

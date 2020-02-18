@@ -20,13 +20,17 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
+import io.netty.util.AttributeKey;
 
 import java.util.List;
 
 import org.neo4j.util.FeatureToggles;
+
+import static io.netty.util.AttributeKey.newInstance;
 
 public class MessageAccumulator extends ByteToMessageDecoder
 {
@@ -56,7 +60,6 @@ public class MessageAccumulator extends ByteToMessageDecoder
 
             readMessageBoundary = true;
         }
-
         super.channelRead( ctx, msg );
     }
 

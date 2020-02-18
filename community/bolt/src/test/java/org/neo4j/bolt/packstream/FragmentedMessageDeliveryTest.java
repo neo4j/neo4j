@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 /**
@@ -131,7 +131,7 @@ public class FragmentedMessageDeliveryTest
     {
         // Given
         channel = new EmbeddedChannel();
-        BoltChannel boltChannel = newBoltChannel( channel );
+        BoltChannel boltChannel = newTestBoltChannel( channel );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
         SynchronousBoltConnection boltConnection = new SynchronousBoltConnection( machine );
@@ -190,12 +190,5 @@ public class FragmentedMessageDeliveryTest
             serialized[i] = channel.getBytes();
         }
         return Chunker.chunk( chunkSize, serialized );
-    }
-
-    private static BoltChannel newBoltChannel( EmbeddedChannel rawChannel )
-    {
-        BoltChannel boltChannel = mock( BoltChannel.class );
-        when( boltChannel.rawChannel() ).thenReturn( rawChannel );
-        return boltChannel;
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 
 import java.net.SocketAddress;
 
@@ -51,12 +52,18 @@ public class BoltChannel implements TrackedNetworkConnection
         this.rawChannel = rawChannel;
         this.info = createConnectionInfo();
         this.protector = protector;
-        this.protector.enable();
+        this.protector.afterChannelCreated();
     }
 
     public Channel rawChannel()
     {
         return rawChannel;
+    }
+
+    public void installBoltProtocol( ChannelHandler... handlers )
+    {
+        protector.beforeBoltProtocolInstalled();
+        rawChannel.pipeline().addLast( handlers );
     }
 
     public ClientConnectionInfo info()

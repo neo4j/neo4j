@@ -25,8 +25,8 @@ import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
 
-import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelTimeoutHandler;
-import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelTimeoutTracker;
+import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutTracker;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
@@ -81,8 +81,8 @@ class SocketTransportTest
 
         EmbeddedChannel channel = new EmbeddedChannel( socketTransport.channelInitializer() );
 
-        assertNotNull( channel.pipeline().get( UnauthenticatedChannelTimeoutTracker.class ) );
-        assertNotNull( channel.pipeline().get( UnauthenticatedChannelTimeoutHandler.class ) );
+        assertNotNull( channel.pipeline().get( AuthenticationTimeoutTracker.class ) );
+        assertNotNull( channel.pipeline().get( AuthenticationTimeoutHandler.class ) );
     }
 
     @Test
@@ -98,7 +98,9 @@ class SocketTransportTest
 
     private static SocketTransport newSocketTransport( NetworkConnectionTracker connectionTracker, TransportThrottleGroup throttleGroup )
     {
-        return new SocketTransport( "bolt", new SocketAddress( "localhost", 7687 ), null, false, NullLogProvider.getInstance(), throttleGroup,
-                mock( BoltProtocolFactory.class ), connectionTracker, Duration.ofSeconds( 0 ) );
+        return new SocketTransport( "bolt", new SocketAddress( "localhost", 7687 ), null, false,
+                NullLogProvider.getInstance(), throttleGroup,
+                mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
+                -1 );
     }
 }

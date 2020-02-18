@@ -23,8 +23,6 @@ import io.netty.channel.ChannelPipeline;
 
 import java.time.Duration;
 
-import static org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelTimeoutTracker.UNAUTH_CHANNEL_TIMEOUT_TRACKER;
-
 /**
  * Protect the channel from unauthenticated users by limiting the resources that they can access to.
  */
@@ -32,25 +30,36 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
 {
     private final Duration channelTimeout;
     private final ChannelPipeline pipeline;
+    private final long maxMessageSize;
 
-    public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout )
+    public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout, long maxMessageSize )
     {
         this.channelTimeout = channelTimeout;
         this.pipeline = pipeline;
+        this.maxMessageSize = maxMessageSize;
     }
 
-    public void enable()
+    public void afterChannelCreated()
     {
         // Adds auth timeout handlers.
         // The timer is counting down after installation.
-        pipeline.addLast( UNAUTH_CHANNEL_TIMEOUT_TRACKER, new UnauthenticatedChannelTimeoutTracker( channelTimeout ) );
-        pipeline.addLast( new UnauthenticatedChannelTimeoutHandler( channelTimeout ) );
+        pipeline.addLast( new AuthenticationTimeoutTracker( channelTimeout ) );
+        pipeline.addLast( new AuthenticationTimeoutHandler( channelTimeout ) );
+    }
+
+    public void beforeBoltProtocolInstalled()
+    {
+        // Adds limits on how many bytes are allowed.
+        pipeline.addLast( new BytesAccumulator( maxMessageSize ) );
     }
 
     public void disable()
     {
         // Removes auth timeout handlers.
-        pipeline.remove( UnauthenticatedChannelTimeoutTracker.class );
-        pipeline.remove( UnauthenticatedChannelTimeoutHandler.class );
+        pipeline.remove( AuthenticationTimeoutTracker.class );
+        pipeline.remove( AuthenticationTimeoutHandler.class );
+
+        // Remove byte limits
+        pipeline.remove( BytesAccumulator.class );
     }
 }

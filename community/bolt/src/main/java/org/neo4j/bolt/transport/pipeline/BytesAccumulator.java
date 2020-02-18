@@ -19,29 +19,42 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import org.neo4j.bolt.runtime.BoltConnectionFatality;
 
-/**
- * Close the channel directly if we failed to finish authentication within certain timeout specified by
- * {@link org.neo4j.configuration.connectors.BoltConnector#unsupported_bolt_unauth_connection_timeout}
- */
-public class UnauthenticatedChannelTimeoutTracker extends ReadTimeoutHandler
+import static java.lang.String.format;
+
+public class BytesAccumulator extends ChannelInboundHandlerAdapter
 {
-    public static final String UNAUTH_CHANNEL_TIMEOUT_TRACKER = UnauthenticatedChannelTimeoutTracker.class.getName();
+    private final long limit;
+    private long count;
 
-    public UnauthenticatedChannelTimeoutTracker( Duration timeout )
+    public BytesAccumulator( long limit )
     {
-        super( timeout.toMillis(), TimeUnit.MILLISECONDS );
+        this.limit = limit;
     }
 
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        // Override the parent's method to ensure the count down timer is never reset.
-        ctx.fireChannelRead( msg );
+        ByteBuf buf = (ByteBuf) msg;
+        count += buf.readableBytes();
+        if ( count < 0 )
+        {
+            count = Long.MAX_VALUE;
+        }
+        if ( count > limit )
+        {
+            ctx.channel().close();
+            throw new BoltConnectionFatality( format(
+                    "A connection '%s' is terminated because too many inbound bytes received " +
+                    "before the client is authenticated. Max bytes allowed: %s. Bytes received: %s.",
+                    ctx.channel(), limit, count ), null );
+        }
+
+        super.channelRead( ctx, msg );
     }
 }

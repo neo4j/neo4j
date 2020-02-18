@@ -193,8 +193,9 @@ public class BoltServer extends LifecycleAdapter
 
         SocketAddress listenAddress = config.get( BoltConnector.listen_address );
         Duration channelTimeout = config.get( BoltConnector.unsupported_bolt_unauth_connection_timeout );
+        long maxMessageSize = config.get( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes );
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout );
+                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize );
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory )

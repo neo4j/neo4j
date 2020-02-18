@@ -25,12 +25,14 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.rule.OtherThreadRule;
 
@@ -60,6 +62,7 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
         return settings -> {
             settings.put( BoltConnector.encryption_level, OPTIONAL );
             settings.put( BoltConnector.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 1 ) );
+            settings.put( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes, ByteUnit.kibiBytes( 1 ) );
         };
     }
 
@@ -130,6 +133,24 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( halfMessage );
+
+        // Then
+        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( eventuallyDisconnects() );
+    }
+
+    @Test
+    public void shouldCloseConnectionDueToTooBigHelloMessage() throws Throwable
+    {
+        // When
+        Map<String,Object> authMeta = new HashMap<>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            authMeta.put( "index-" + i, i );
+        }
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.defaultAuth( authMeta ) );
 
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );

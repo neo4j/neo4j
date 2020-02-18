@@ -21,13 +21,20 @@ package org.neo4j.bolt.transport.pipeline;
 
 public interface ChannelProtector
 {
-    void enable();
+    void afterChannelCreated();
+    void beforeBoltProtocolInstalled();
     void disable();
 
     ChannelProtector NULL = new ChannelProtector()
     {
         @Override
-        public void enable()
+        public void afterChannelCreated()
+        {
+            // do nothing
+        }
+
+        @Override
+        public void beforeBoltProtocolInstalled()
         {
             // do nothing
         }

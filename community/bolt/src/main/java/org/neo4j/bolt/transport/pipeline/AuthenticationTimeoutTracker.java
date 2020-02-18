@@ -20,39 +20,26 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 
 import java.time.Duration;
-
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-
-import static java.lang.String.format;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Close the channel directly if we failed to finish authentication within certain timeout specified by
  * {@link org.neo4j.configuration.connectors.BoltConnector#unsupported_bolt_unauth_connection_timeout}
  */
-public class UnauthenticatedChannelTimeoutHandler extends ChannelInboundHandlerAdapter
+public class AuthenticationTimeoutTracker extends ReadTimeoutHandler
 {
-    private final Duration timeout;
-
-    public UnauthenticatedChannelTimeoutHandler( Duration timeout )
+    public AuthenticationTimeoutTracker( Duration timeout )
     {
-        this.timeout = timeout;
+        super( timeout.toMillis(), TimeUnit.MILLISECONDS );
     }
 
     @Override
-    public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( evt instanceof IdleStateEvent )
-        {
-            ctx.close(); // We failed to finish auth within timeout.
-            throw new BoltConnectionFatality( format(
-                    "A connection '%s' is terminated because the client failed to finish authenticate within %s ms.",
-                    ctx.channel(), timeout.toMillis() ),
-                    null );
-
-        }
+        // Override the parent's method to ensure the count down timer is never reset.
+        ctx.fireChannelRead( msg );
     }
 }
