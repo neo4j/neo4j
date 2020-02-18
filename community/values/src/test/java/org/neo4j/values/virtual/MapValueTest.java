@@ -117,6 +117,20 @@ class MapValueTest
     }
 
     @Test
+    void shouldUpdateWithNonExistingKeyAndNoValue()
+    {
+        // Given
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ) );
+
+        // When
+        MapValue updated = base.updatedWith( "k3", NO_VALUE );
+
+        // Then
+        assertMapValueEquals( updated, mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ),
+                "k3", NO_VALUE ) );
+    }
+
+    @Test
     void shouldUpdateWithNewKey()
     {
         // Given

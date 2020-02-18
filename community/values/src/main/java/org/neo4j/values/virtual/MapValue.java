@@ -695,27 +695,30 @@ public abstract class MapValue extends VirtualValue
 
     public MapValue updatedWith( String key, AnyValue value )
     {
-        AnyValue current = get( key );
-        if ( current.equals( value ) )
-        {
-            return this;
-        }
-        else if ( !containsKey( key ) )
+       if ( !containsKey( key ) )
         {
             return new UpdatedMapValue( this, new String[]{key}, new AnyValue[]{value} );
         }
         else
         {
-            return new MappedMapValue( this, ( k, v ) -> {
-                if ( k.equals( key ) )
-                {
-                    return value;
-                }
-                else
-                {
-                    return v;
-                }
-            } );
+            AnyValue current = get( key );
+            if ( current.equals( value ) )
+            {
+                return this;
+            }
+            else
+            {
+                return new MappedMapValue( this, ( k, v ) -> {
+                    if ( k.equals( key ) )
+                    {
+                        return value;
+                    }
+                    else
+                    {
+                        return v;
+                    }
+                } );
+            }
         }
     }
 
