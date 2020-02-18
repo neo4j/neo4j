@@ -225,8 +225,15 @@ public class FulltextIndexReader implements IndexReader
     {
         try
         {
+            // We are replicating the behaviour of IndexSearcher.search(Query, Collector), which starts out by re-writing the query,
+            // then creates a weight based on the query and index reader context, and then we finally search the leaf contexts with
+            // the weight we created.
+            // The query rewrite does not really depend on any data in the index searcher (we don't produce such queries), so it's fine
+            // that we only rewrite the query once with the first searcher in our partition list.
             query = searchers.get( 0 ).getIndexSearcher().rewrite( query );
             boolean includeTransactionState = context.getTransactionStateOrNull() != null && !isEventuallyConsistent( index );
+            // If we have transaction state, then we need to make our result collector filter out all results touched by the transaction state.
+            // The reason we filter them out entirely, is that we will query the transaction state separately.
             LongPredicate filter = includeTransactionState ? transactionState.isModifiedInTransactionPredicate() : ALWAYS_FALSE;
             List<PreparedSearch> searches = new ArrayList<>( searchers.size() + 1 );
             for ( SearcherReference searcher : searchers )
@@ -240,6 +247,8 @@ public class FulltextIndexReader implements IndexReader
                 searches.add( new PreparedSearch( reference.getIndexSearcher(), ALWAYS_FALSE ) );
             }
 
+            // The StatsCollector aggregates index statistics across all our partitions.
+            // Weights created based on these statistics will produce scores that are comparable across partitions.
             StatsCollector statsCollector = new StatsCollector( searches );
             List<ValuesIterator> results = new ArrayList<>();
 
