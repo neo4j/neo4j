@@ -156,7 +156,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))")
+      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))")
 
     actual should equal(expected)
   }
