@@ -19,8 +19,13 @@
  */
 package org.neo4j.bolt.transport;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslHandler;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -74,11 +79,44 @@ class TransportSelectionHandlerTest
                         "remote peer unexpectedly closed connection: %s", context.channel() );
     }
 
+    @Test
+    void shouldPreventMultipleLevelsOfSslEncryption() throws Exception
+    {
+        // Given
+        ChannelHandlerContext context = channelHandlerContextMockSslAlreadyConfigured();
+        AssertableLogProvider logging = new AssertableLogProvider();
+        SslContext sslCtx = mock( SslContext.class );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null );
+
+        final ByteBuf payload = Unpooled.wrappedBuffer(new byte[] { 22, 3, 1, 0, 5 }); //encrypted
+
+        // When
+        handler.decode( context, payload, null );
+
+        // Then
+        verify( context ).close();
+        assertThat( logging ).forClass( TransportSelectionHandler.class ).forLevel( ERROR )
+                             .containsMessageWithArguments( "Fatal error: multiple levels of SSL encryption detected." +
+                                                            " Terminating connection: %s", context.channel()  );
+    }
+
     private static ChannelHandlerContext channelHandlerContextMock()
     {
         Channel channel = mock( Channel.class );
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
         when( context.channel() ).thenReturn( channel );
+        return context;
+    }
+
+    private static ChannelHandlerContext channelHandlerContextMockSslAlreadyConfigured()
+    {
+        Channel channel = mock( Channel.class );
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        ChannelPipeline pipeline = mock( ChannelPipeline.class );
+        SslHandler sslHandler = mock( SslHandler.class );
+        when( context.channel() ).thenReturn( channel );
+        when( context.pipeline() ).thenReturn( pipeline );
+        when( context.pipeline().get( SslHandler.class )).thenReturn( sslHandler );
         return context;
     }
 }

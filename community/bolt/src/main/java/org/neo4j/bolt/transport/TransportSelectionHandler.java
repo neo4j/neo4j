@@ -78,6 +78,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
 
         if ( detectSsl( in ) )
         {
+            assertSslNotAlreadyConfigured( ctx );
             enableSsl( ctx );
         }
         else if ( isHttp( in ) )
@@ -92,6 +93,17 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         {
             // TODO: send a alert_message for a ssl connection to terminate the handshake
             in.clear();
+            ctx.close();
+        }
+    }
+
+    private void assertSslNotAlreadyConfigured( ChannelHandlerContext ctx )
+    {
+        ChannelPipeline p = ctx.pipeline();
+        if ( p.get( SslHandler.class ) != null )
+        {
+            log.error( "Fatal error: multiple levels of SSL encryption detected." +
+                       " Terminating connection: %s", ctx.channel() );
             ctx.close();
         }
     }
