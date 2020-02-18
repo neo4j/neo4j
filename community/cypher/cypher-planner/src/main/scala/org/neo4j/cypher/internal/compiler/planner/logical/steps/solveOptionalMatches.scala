@@ -44,7 +44,7 @@ case object applyOptional extends OptionalSolver {
 
 abstract class outerHashJoin extends OptionalSolver {
   override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
-    val joinNodes = optionalQg.argumentIds intersect optionalQg.patternNodes
+    val joinNodes = optionalQg.argumentIds
     val solvedHints = optionalQg.joinHints.filter { hint =>
       val hintVariables = hint.variables.map(_.name).toSet
       hintVariables.subsetOf(joinNodes)
