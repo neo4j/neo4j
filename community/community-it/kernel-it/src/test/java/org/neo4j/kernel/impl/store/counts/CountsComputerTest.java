@@ -99,16 +99,23 @@ class CountsComputerTest
     void tracePageCacheAccessOnInitialization() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        var countsStore = db.getDependencyResolver().resolveDependency( GBPTreeCountsStore.class );
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" );
+        try
+        {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            var countsStore = db.getDependencyResolver().resolveDependency( GBPTreeCountsStore.class );
+            var pageCacheTracer = new DefaultPageCacheTracer();
+            var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" );
 
-        countsStore.start( cursorTracer );
+            countsStore.start( cursorTracer );
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
     }
 
     @Test
