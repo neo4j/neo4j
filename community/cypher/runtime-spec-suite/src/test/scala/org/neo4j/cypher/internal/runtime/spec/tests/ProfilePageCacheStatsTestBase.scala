@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
@@ -59,6 +60,28 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     checkProfilerStatsMakeSense(runtimeResult, 4,
       Seq(0) // Projection of a previous row should not access store
     )
+  }
+
+  test("should profile page cache stats of create with new label") {
+    // given
+    uniqueIndex("M", "prop")
+    val nodes = nodePropertyGraph(SIZE, {
+      case i => Map("prop" -> i)
+    },"N", "M")
+    restartTx()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a") // Populates results, thus can have page cache hits & misses
+      .create(createNode("a", "A"))
+      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
+      .build()
+
+    val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime, inputValues(Array[Any](nodes.head)))
+    consume(runtimeResult)
+
+    // then
+    checkProfilerStatsMakeSense(runtimeResult, 3)
   }
 
   test("should profile page cache stats of branched plan") {
