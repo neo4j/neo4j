@@ -20,6 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Collection;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -44,6 +45,8 @@ public class DbmsDiagnosticsManager
     private final Dependencies dependencies;
     private final DiagnosticsManager diagnosticsManager;
     private final Log log;
+    private final ReentrantLock databaseDumpLock = new ReentrantLock();
+    private final ReentrantLock allDumpLock = new ReentrantLock();
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
@@ -52,25 +55,57 @@ public class DbmsDiagnosticsManager
         this.diagnosticsManager = new DiagnosticsManager( log );
     }
 
-    public synchronized void dumpSystemDiagnostics()
+    public void dumpSystemDiagnostics()
     {
-        dumpSystemDiagnostics( log );
+        databaseDumpLock.lock();
+        try
+        {
+            dumpSystemDiagnostics( log );
+        }
+        finally
+        {
+            databaseDumpLock.unlock();
+        }
     }
 
     public synchronized void dumpDatabaseDiagnostics( Database database )
     {
-        dumpDatabaseDiagnostics( database, log, false );
+        databaseDumpLock.lock();
+        try
+        {
+            dumpDatabaseDiagnostics( database, log, false );
+        }
+        finally
+        {
+            databaseDumpLock.unlock();
+        }
     }
 
     public synchronized void dumpAll()
     {
-        dumpAll( log );
+        allDumpLock.lock();
+        try
+        {
+            dumpAll( log );
+        }
+        finally
+        {
+            allDumpLock.unlock();
+        }
     }
 
     public synchronized void dumpAll( Log log )
     {
-        dumpSystemDiagnostics( log );
-        dumpAllDatabases( log );
+        allDumpLock.lock();
+        try
+        {
+            dumpSystemDiagnostics( log );
+            dumpAllDatabases( log );
+        }
+        finally
+        {
+            allDumpLock.unlock();
+        }
     }
 
     private void dumpAllDatabases( Log log )
