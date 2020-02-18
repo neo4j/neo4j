@@ -31,6 +31,7 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -217,6 +218,13 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
+                Optional<Long> size = fileSystem.streamFilesRecursive( testDirectory )
+                        .map( fh -> fileSystem.getFileSize( fh.getFile() ) ) // File size
+                        .reduce( Long::sum ); // Sum
+                if ( size.map( l -> l > 50_000_000 ).orElse( false ) ) // Larger than 50MB
+                {
+                    throw new IllegalStateException( "Test created more than 50MB of data, total size was " + size.get() + " B" );
+                }
                 fileSystem.deleteRecursively( testDirectory );
             }
             testDirectory = null;
