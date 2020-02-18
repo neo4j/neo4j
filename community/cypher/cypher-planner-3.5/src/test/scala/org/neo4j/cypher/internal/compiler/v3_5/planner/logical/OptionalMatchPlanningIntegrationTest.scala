@@ -32,8 +32,9 @@ import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.util.Cardinality
 import org.neo4j.cypher.internal.v3_5.util.LabelId
 import org.neo4j.cypher.internal.v3_5.util.RelTypeId
+import org.scalatest.Inside
 
-class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with Inside {
 
   test("should build plans containing left outer joins") {
     (new given {
@@ -295,6 +296,30 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
             }
         }
         false // this is a "trick" to use treeExists to iterate over the whole tree
+    }
+  }
+
+  test("should not plan outer hash joins when rhs has arguments other than join nodes") {
+    val query = """
+        |WITH 1 AS x
+        |MATCH (a)
+        |OPTIONAL MATCH (a)-[r]->(c)
+        |WHERE c.id = x
+        |RETURN c
+        |""".stripMargin
+
+    val cfg = new given {
+      cost = {
+        case (_: RightOuterHashJoin, _, _) => 1.0
+        case (_: LeftOuterHashJoin, _, _) => 1.0
+        case _ => Double.MaxValue
+      }
+    }
+
+    val plan = cfg.getLogicalPlanFor(query)._2
+    inside(plan) {
+      case Apply(_:Projection, Apply(_:AllNodesScan, Optional(Expand(Selection(_, AllNodesScan("c", arguments)), _, _, _, _, _, _), _))) =>
+        arguments should equal(Set("a", "x"))
     }
   }
 }
