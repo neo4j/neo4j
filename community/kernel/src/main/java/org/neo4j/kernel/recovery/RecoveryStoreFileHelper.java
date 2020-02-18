@@ -33,11 +33,6 @@ class RecoveryStoreFileHelper
     {
     }
 
-    static boolean allIdFilesExist( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
-    {
-        return databaseLayout.idFiles().stream().allMatch( fileSystem::fileExists );
-    }
-
     static StoreFilesInfo checkStoreFiles( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
         Set<File> storeFiles = databaseLayout.storeFiles();

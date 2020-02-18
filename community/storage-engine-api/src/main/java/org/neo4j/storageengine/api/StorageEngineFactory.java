@@ -129,6 +129,17 @@ public interface StorageEngineFactory
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer );
 
     /**
+     * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or
+     * even perhaps mandatory files in order to properly open it, this is the place to report that.
+     *
+     * @param fs {@link FileSystemAbstraction} to use for file operations.
+     * @param databaseLayout {@link DatabaseLayout} for the location of the database in the file system.
+     * @param pageCache {@link PageCache} for any data reading needs.
+     * @return the state of the storage files.
+     */
+    StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+
+    /**
      * @return a {@link CommandReaderFactory} capable of handing out {@link CommandReader} for specific versions. Generally kernel will take care
      * of most of the log entry parsing, i.e. the START, COMMIT, CHECKPOINT commands and their contents (they may be versioned). For COMMAND log entries
      * this returned factory will be used to parse the actual command contents, which are storage-specific. For maximum flexibility the structure should

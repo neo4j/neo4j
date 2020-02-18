@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
@@ -78,7 +76,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.kernel.recovery.RecoveryStoreFileHelper.StoreFilesInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -92,8 +89,10 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
@@ -108,7 +107,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
-import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.checkStoreFiles;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
@@ -279,7 +277,7 @@ public final class Recovery
         {
             return;
         }
-        checkAllFilesPresence( databaseLayout, fs );
+        checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
@@ -406,20 +404,15 @@ public final class Recovery
         }
     }
 
-    private static void checkAllFilesPresence( DatabaseLayout databaseLayout, FileSystemAbstraction fs )
+    private static void checkAllFilesPresence( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            StorageEngineFactory storageEngineFactory )
     {
-        StoreFilesInfo storeFilesInfo = checkStoreFiles( databaseLayout, fs );
-        if ( storeFilesInfo.allFilesPresent() )
+        StorageFilesState state = storageEngineFactory.checkRecoveryRequired( fs, databaseLayout, pageCache );
+        if ( state.getRecoveryState() == RecoveryState.UNRECOVERABLE )
         {
-            return;
+            throw new RuntimeException( format( "Store files %s is(are) missing and recovery is not possible. Please restore from a consistent backup.",
+                    state.getMissingFiles() ) );
         }
-        throw new RuntimeException( format( "Store files %s is(are) missing and recovery is not possible. Please restore from a consistent backup.",
-                getMissingStoreFiles( storeFilesInfo ) ) );
-    }
-
-    private static String getMissingStoreFiles( StoreFilesInfo storeFilesInfo )
-    {
-        return storeFilesInfo.getMissingStoreFiles().stream().map( File::getName ).collect( Collectors.joining( "," ) );
     }
 
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,

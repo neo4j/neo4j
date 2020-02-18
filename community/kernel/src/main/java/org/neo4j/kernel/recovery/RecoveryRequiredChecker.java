@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StorageFilesState;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
-import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allIdFilesExist;
-import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.checkStoreFiles;
 
 /**
  * Utility that can determine if a given store will need recovery.
@@ -82,11 +82,8 @@ class RecoveryRequiredChecker
         {
             return false;
         }
-        if ( !allIdFilesExist( databaseLayout, fs ) )
-        {
-            return true;
-        }
-        if ( !checkStoreFiles( databaseLayout, fs ).allFilesPresent() )
+        StorageFilesState filesRecoveryState = storageEngineFactory.checkRecoveryRequired( fs, databaseLayout, pageCache );
+        if ( filesRecoveryState.getRecoveryState() != RecoveryState.RECOVERED )
         {
             return true;
         }

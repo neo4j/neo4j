@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
@@ -70,6 +71,7 @@ import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -199,6 +201,30 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public CommandReaderFactory commandReaderFactory()
     {
         return RecordStorageCommandReaderFactory.INSTANCE;
+    }
+
+    @Override
+    public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    {
+        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
+        if ( !allIdFilesExist )
+        {
+            return StorageFilesState.recoverableState();
+        }
+
+        Set<File> storeFiles = databaseLayout.storeFiles();
+        // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
+        storeFiles.remove( databaseLayout.countStore() );
+        storeFiles.remove( databaseLayout.indexStatisticsStore() );
+        storeFiles.remove( databaseLayout.labelScanStore() );
+        storeFiles.remove( databaseLayout.relationshipTypeScanStore() );
+        boolean allStoreFilesExist = storeFiles.stream().allMatch( fs::fileExists );
+        if ( !allStoreFilesExist )
+        {
+            return StorageFilesState.unrecoverableState( storeFiles.stream().filter( file -> !fs.fileExists( file ) ).collect( Collectors.toList() ) );
+        }
+
+        return StorageFilesState.recoveredState();
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer )
