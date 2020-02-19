@@ -67,6 +67,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
@@ -107,8 +108,8 @@ class LoadCommandTest
     @Test
     void printUsageHelp()
     {
-        final var baos = new ByteArrayOutputStream();
-        final var command = new LoadCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ), loader );
+        var baos = new ByteArrayOutputStream();
+        var command = new LoadCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ), loader );
         try ( var out = new PrintStream( baos ) )
         {
             CommandLine.usage( command, new PrintStream( out ) );
@@ -118,14 +119,16 @@ class LoadCommandTest
                         "%n" +
                         "USAGE%n" +
                         "%n" +
-                        "load [--force] [--verbose] [--database=<database>] --from=<path>%n" +
+                        "load [--force] [--info] [--verbose] [--database=<database>] --from=<path>%n" +
                         "%n" +
                         "DESCRIPTION%n" +
                         "%n" +
                         "Load a database from an archive. <archive-path> must be an archive created with%n" +
                         "the dump command. <database> is the name of the database to create. Existing%n" +
                         "databases can be replaced by specifying --force. It is not possible to replace%n" +
-                        "a database that is mounted in a running Neo4j server.%n" +
+                        "a database that is mounted in a running Neo4j server. If --info is specified,%n" +
+                        "then the database is not loaded, but information about the archive is printed%n" +
+                        "instead.%n" +
                         "%n" +
                         "OPTIONS%n" +
                         "%n" +
@@ -134,7 +137,9 @@ class LoadCommandTest
                         "      --database=<database>%n" +
                         "                      Name of the database to load.%n" +
                         "                        Default: neo4j%n" +
-                        "      --force         If an existing database should be replaced."
+                        "      --force         If an existing database should be replaced.%n" +
+                        "      --info          Print meta-data information about the archive file,%n" +
+                        "                        instead of loading the contained database."
         ) ) );
     }
 
@@ -295,6 +300,28 @@ class LoadCommandTest
         assertThat( commandFailed.getMessage(), containsString( "valid Neo4j archive" ) );
     }
 
+    @Test
+    void infoMustPrintArchiveMetaData() throws IOException
+    {
+        when( loader.getMetaData( archive ) ).thenReturn( new Loader.DumpMetaData( "ZSTD", "42", "1337" ) );
+        var baos = new ByteArrayOutputStream();
+        try ( PrintStream out = new PrintStream( baos ) )
+        {
+            Path dir = Path.of( "." );
+            var command = new LoadCommand( new ExecutionContext( dir, dir, out, out, testDirectory.getFileSystem() ), loader );
+            CommandLine.populateCommand( command,
+                    "--info",
+                    "--from",
+                    archive.toAbsolutePath().toString() );
+            command.execute();
+            out.flush();
+        }
+        String output = baos.toString();
+        assertThat( output, containsString( "ZSTD" ) );
+        assertThat( output, containsString( "42" ) );
+        assertThat( output, containsString( "1337" ) );
+    }
+
     private DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
     {
         Config config = Config.newBuilder()
@@ -307,8 +334,7 @@ class LoadCommandTest
 
     private void execute( String database, Path archive )
     {
-        final var command = new LoadCommand( new ExecutionContext( homeDir, configDir, mock( PrintStream.class ), mock( PrintStream.class ),
-                testDirectory.getFileSystem() ), loader );
+        var command = buildCommand();
         CommandLine.populateCommand( command,
                 "--from=" + archive,
                 "--database=" + database );
@@ -317,13 +343,20 @@ class LoadCommandTest
 
     private void executeForce( String database )
     {
-        final var command = new LoadCommand( new ExecutionContext( homeDir, configDir, mock( PrintStream.class ), mock( PrintStream.class ),
-                testDirectory.getFileSystem() ), loader );
+        var command = buildCommand();
         CommandLine.populateCommand( command,
                 "--from=" + archive.toAbsolutePath(),
                 "--database=" + database,
                 "--force");
         command.execute();
+    }
+
+    private LoadCommand buildCommand()
+    {
+        PrintStream out = mock( PrintStream.class );
+        PrintStream err = mock( PrintStream.class );
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        return new LoadCommand( new ExecutionContext( homeDir, configDir, out, err, fileSystem ), loader );
     }
 
     private static String formatProperty( Setting setting, Path path )

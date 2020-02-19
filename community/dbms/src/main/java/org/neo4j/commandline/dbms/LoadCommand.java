@@ -55,7 +55,8 @@ import static picocli.CommandLine.Option;
         description = "Load a database from an archive. <archive-path> must be an archive created with the dump " +
                 "command. <database> is the name of the database to create. Existing databases can be replaced " +
                 "by specifying --force. It is not possible to replace a database that is mounted in a running " +
-                "Neo4j server."
+                "Neo4j server. If --info is specified, then the database is not loaded, but information about " +
+                "the archive is printed instead."
 
 )
 public class LoadCommand extends AbstractCommand
@@ -67,6 +68,8 @@ public class LoadCommand extends AbstractCommand
     private NormalizedDatabaseName database;
     @Option( names = "--force", arity = "0", description = "If an existing database should be replaced." )
     private boolean force;
+    @Option( names = "--info", description = "Print meta-data information about the archive file, instead of loading the contained database." )
+    private boolean info;
 
     private final Loader loader;
 
@@ -78,6 +81,33 @@ public class LoadCommand extends AbstractCommand
 
     @Override
     public void execute()
+    {
+        if ( info )
+        {
+            inspectDump();
+        }
+        else
+        {
+            loadDump();
+        }
+    }
+
+    private void inspectDump()
+    {
+        try
+        {
+            Loader.DumpMetaData metaData = loader.getMetaData( from );
+            ctx.out().println( "Format: " + metaData.format );
+            ctx.out().println( "Files: " + metaData.fileCount );
+            ctx.out().println( "Bytes: " + metaData.byteCount );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
+    }
+
+    private void loadDump()
     {
         Config config = buildConfig();
 
