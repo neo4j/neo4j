@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
@@ -111,6 +112,7 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
@@ -648,6 +650,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nodeHashJoin(nodes: String*): IMPL = {
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
+  }
+
+  def rightOuterHashJoin(nodes: String*): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((left, right) => RightOuterHashJoin(nodes.toSet, left, right)(_)))
+  }
+
+  def leftOuterHashJoin(nodes: String*): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((left, right) => LeftOuterHashJoin(nodes.toSet, left, right)(_)))
   }
 
   def valueHashJoin(predicate: String): IMPL = {

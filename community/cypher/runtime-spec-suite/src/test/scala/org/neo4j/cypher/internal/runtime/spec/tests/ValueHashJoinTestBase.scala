@@ -158,4 +158,50 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val expected = nodes.map(n => Array(n))
     runtimeResult should beColumns("ab").withRows(expected)
   }
+
+  test("should join with alias on RHS") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "b2")
+      .valueHashJoin("a.prop=b.prop")
+      .|.projection("b AS b2")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, n))
+    runtimeResult should beColumns("a", "b", "b2").withRows(expected)
+  }
+
+  test("should join with alias on LHS") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "a2", "b")
+      .valueHashJoin("a.prop=b.prop")
+      .|.allNodeScan("b")
+      .projection("a AS a2")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, n))
+    runtimeResult should beColumns("a", "a2", "b").withRows(expected)
+  }
 }

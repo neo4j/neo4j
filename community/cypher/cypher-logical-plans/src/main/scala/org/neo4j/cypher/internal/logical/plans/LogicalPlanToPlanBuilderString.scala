@@ -185,6 +185,10 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(expressionStringifier(join))
       case NodeHashJoin(nodes, _, _) =>
         wrapInQuotationsAndMkString(nodes)
+      case RightOuterHashJoin(nodes, _, _) =>
+        wrapInQuotationsAndMkString(nodes)
+      case LeftOuterHashJoin(nodes, _, _) =>
+        wrapInQuotationsAndMkString(nodes)
       case Sort(_, sortItems) =>
         sortItemsStr(sortItems)
       case Top(_, sortItems, limit) =>

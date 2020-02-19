@@ -531,4 +531,108 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
 
     runtimeResult should beColumns("prop").withRows(expectedResultRows)
   }
+
+  test("should join with alias on non-join-key on RHS") {
+    // given
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .nodeHashJoin("x")
+      .|.projection("y AS y2")
+      .|.expand("(y)--(x)")
+      .|.allNodeScan("y")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, otherNode, otherNode)
+    runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
+  }
+
+  test("should join with alias on join-key on RHS") {
+    // given
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "x2", "y")
+      .nodeHashJoin("x")
+      .|.projection("x AS x2")
+      .|.expand("(y)--(x)")
+      .|.allNodeScan("y")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, node, otherNode)
+    runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
+  }
+
+  test("should join with alias on non-join-key on LHS") {
+    // given
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .nodeHashJoin("x")
+      .|.allNodeScan("x")
+      .projection("y AS y2")
+      .expand("(x)--(y)")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, otherNode, otherNode)
+    runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
+  }
+
+  test("should join with alias on join-key on LHS") {
+    // given
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "x2", "y")
+      .nodeHashJoin("x")
+      .|.expand("(y)--(x)")
+      .|.allNodeScan("y")
+      .projection("x AS x2")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, node, otherNode)
+    runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
+  }
 }

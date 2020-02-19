@@ -197,4 +197,54 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
   }
+
+  test("should union with alias on RHS") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x")
+      .union()
+      .|.projection("x AS xxx")
+      .|.projection("b AS a", "2 AS x")
+      .|.allNodeScan("b")
+      .projection("1 AS x")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, 1)) ++ nodes.map(n => Array(n, 2))
+    runtimeResult should beColumns("a", "x").withRows(expected)
+  }
+
+  test("should union with alias on LHS") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x")
+      .union()
+      .|.projection("1 AS x")
+      .|.allNodeScan("a")
+      .projection("x AS xxx")
+      .projection("b AS a", "2 AS x")
+      .allNodeScan("b")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, 1)) ++ nodes.map(n => Array(n, 2))
+    runtimeResult should beColumns("a", "x").withRows(expected)
+  }
 }

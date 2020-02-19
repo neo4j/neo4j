@@ -287,6 +287,26 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .argument()
       .build())
 
+  testPlan("rightOuterHashJoin",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .rightOuterHashJoin("x", "y")
+      .|.rightOuterHashJoin("x")
+      .|.|.argument()
+      .|.argument()
+      .argument()
+      .build())
+
+  testPlan("leftOuterHashJoin",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .leftOuterHashJoin("x", "y")
+      .|.leftOuterHashJoin("x")
+      .|.|.argument()
+      .|.argument()
+      .argument()
+      .build())
+
   testPlan("emptyResult",
     new TestPlanBuilder()
       .produceResults("x", "y")

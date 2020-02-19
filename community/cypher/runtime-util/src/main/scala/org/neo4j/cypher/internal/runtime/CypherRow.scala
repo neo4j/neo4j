@@ -69,9 +69,6 @@ trait CypherRow extends ReadWriteRow with WithHeapUsageEstimation {
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow
   def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow
 
-  // Needed by legacy pattern matcher. Returns a map of all bound nodes/relationships in the context.
-  // Entities that are only references (ids) are materialized with the provided materialization functions
-  def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue]
 
   def isNull(key: String): Boolean
 
@@ -177,18 +174,6 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
   }
 
   override def createClone(): CypherRow = cloneFromMap(m.clone())
-
-  override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] =
-    m.collect {
-      case kv @ (_, _: NodeValue) =>
-        kv
-      case kv @ (_, _: RelationshipValue) =>
-        kv
-      case (k, v: NodeReference) =>
-        (k, materializeNode(v.id()))
-      case (k, v: RelationshipReference) =>
-        (k, materializeRelationship(v.id()))
-    }.toMap
 
   override def isNull(key: String): Boolean =
     m.get(key) match {
