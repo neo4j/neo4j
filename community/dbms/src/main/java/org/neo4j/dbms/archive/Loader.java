@@ -83,6 +83,25 @@ public class Loader
         }
     }
 
+    public DumpMetaData getMetaData( Path archive ) throws IOException
+    {
+        try ( InputStream decompressor = CompressionFormat.decompress( () -> Files.newInputStream( archive ) ) )
+        {
+            String format = "TAR+GZIP.";
+            String files = "?";
+            String bytes = "?";
+            if ( CompressionFormat.ZSTD.isFormat( decompressor ) )
+            {
+                format = "Neo4j ZSTD Dump.";
+                // Important: Only the ZSTD compressed archives have any archive metadata.
+                readArchiveMetadata( decompressor );
+                files = String.valueOf( progressPrinter.maxFiles );
+                bytes = String.valueOf( progressPrinter.maxBytes );
+            }
+            return new DumpMetaData( format, files, bytes );
+        }
+    }
+
     private void checkDatabasePresence( DatabaseLayout databaseLayout ) throws FileAlreadyExistsException
     {
         if ( databaseLayout.metadataStore().exists() )
@@ -188,6 +207,20 @@ public class Loader
         else
         {
             throw new IOException( "Cannot read archive meta-data. I don't recognise this archive version: " + version + "." );
+        }
+    }
+
+    public static class DumpMetaData
+    {
+        public final String format;
+        public final String fileCount;
+        public final String byteCount;
+
+        public DumpMetaData( String format, String fileCount, String byteCount )
+        {
+            this.format = format;
+            this.fileCount = fileCount;
+            this.byteCount = byteCount;
         }
     }
 }
