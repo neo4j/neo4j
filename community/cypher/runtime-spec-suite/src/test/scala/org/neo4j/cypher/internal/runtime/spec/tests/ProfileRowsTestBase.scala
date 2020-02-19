@@ -135,14 +135,15 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
   test("should profile rows with limit + expand") {
     given {
-      val nodes = nodeGraph(sizeHint * 10)
-      connect(nodes, Seq((1, 2, "REL")))
+      circleGraph(sizeHint * 10)
     }
+
+    val limitSize = sizeHint * 2
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expand("(x)-->(y)")
-      .limit(sizeHint * 2)
+      .limit(limitSize)
       .allNodeScan("x")
       .build()
 
@@ -151,10 +152,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
-    queryProfile.operatorProfile(1).rows() shouldBe 1 // expand
-    queryProfile.operatorProfile(2).rows() shouldBe sizeHint * 2 // limit
-    queryProfile.operatorProfile(3).rows() should be >= (sizeHint * 2L) // all node scan
+    queryProfile.operatorProfile(0).rows() shouldBe limitSize // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe limitSize // expand
+    queryProfile.operatorProfile(2).rows() shouldBe limitSize // limit
+    queryProfile.operatorProfile(3).rows() should be >= limitSize.toLong // all node scan
   }
 
   test("should profile rows with optional expand all") {
