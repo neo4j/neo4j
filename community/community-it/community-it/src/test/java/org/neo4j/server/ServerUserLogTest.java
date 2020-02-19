@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -181,7 +182,9 @@ class ServerUserLogTest
     {
         return Map.of( HttpConnector.listen_address.name(), "localhost:0" ,
                 BoltConnector.listen_address.name(), "localhost:0",
-                HttpsConnector.listen_address.name(), "localhost:0" );
+                HttpsConnector.listen_address.name(), "localhost:0",
+                GraphDatabaseSettings.preallocate_logical_logs.name(), FALSE
+                );
     }
 
     private List<String> getStdOut()

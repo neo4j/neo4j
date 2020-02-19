@@ -31,6 +31,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -79,7 +82,7 @@ class TransactionLogFileRotateAndReadRaceIT
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final long LIMIT_TIME = SECONDS.toMillis( 5 );
-    private static final int LIMIT_ROTATIONS = 500;
+    private static final int LIMIT_ROTATIONS = 100;
     private static final int LIMIT_READS = 1_000;
 
     @BeforeEach
@@ -99,10 +102,17 @@ class TransactionLogFileRotateAndReadRaceIT
     {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        Config cfg = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, databaseLayout.getNeo4jLayout().homeDirectory().toPath() )
+                .set( GraphDatabaseSettings.preallocate_logical_logs, false )
+                .set( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
+                .build();
+
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
+                .withConfig( cfg )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
@@ -122,7 +132,7 @@ class TransactionLogFileRotateAndReadRaceIT
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             startSignal.countDown();
-            while ( !end.get() && (currentTimeMillis() < maxEndTime) )
+            while ( !end.get() )
             {
                 writer.put( dataChunk, random.nextInt( 1, dataChunk.length ) );
                 if ( logFile.rotationNeeded() )
@@ -141,7 +151,7 @@ class TransactionLogFileRotateAndReadRaceIT
         int reads = 0;
         try
         {
-            for ( ; currentTimeMillis() < maxEndTime &&
+            for ( ;
                 reads < LIMIT_READS &&
                 rotations.get() < LIMIT_ROTATIONS; reads++ )
             {

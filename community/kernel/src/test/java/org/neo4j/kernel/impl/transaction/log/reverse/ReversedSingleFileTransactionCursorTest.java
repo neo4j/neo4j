@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -92,6 +93,7 @@ class ReversedSingleFileTransactionCursorTest
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.builder( databaseLayout, fs )
+                .withRotationThreshold( ByteUnit.mebiBytes( 10 ) )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )

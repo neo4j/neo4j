@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -88,7 +89,9 @@ class BatchInsertIndexTest
     @BeforeEach
     void setUp()
     {
-        configBuilder = Config.newBuilder().set( neo4j_home, testDirectory.homeDir().toPath() );
+        configBuilder = Config.newBuilder()
+                .set( preallocate_logical_logs, false )
+                .set( neo4j_home, testDirectory.homeDir().toPath() );
     }
 
     @AfterEach

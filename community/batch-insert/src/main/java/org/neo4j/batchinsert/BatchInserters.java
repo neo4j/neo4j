@@ -30,6 +30,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.service.Services;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+
 /**
  * Provides instances of {@link BatchInserter}.
  */
@@ -51,7 +53,7 @@ public final class BatchInserters
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( databaseLayout, fs, Config.defaults(), loadExtension() );
+        return inserter( databaseLayout, fs, Config.defaults( preallocate_logical_logs, false ), loadExtension() );
     }
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, Config config ) throws IOException

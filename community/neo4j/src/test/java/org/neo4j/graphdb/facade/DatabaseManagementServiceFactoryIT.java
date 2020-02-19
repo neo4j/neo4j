@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 
 @TestDirectoryExtension
 class DatabaseManagementServiceFactoryIT
@@ -119,7 +120,10 @@ class DatabaseManagementServiceFactoryIT
     {
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().toPath() );
+        Config cfg = Config.newBuilder()
+                .set( neo4j_home, testDirectory.absolutePath().toPath() )
+                .set( preallocate_logical_logs, false )
+                .build();
         return databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );
     }
 

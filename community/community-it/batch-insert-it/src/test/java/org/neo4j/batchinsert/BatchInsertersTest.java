@@ -27,6 +27,7 @@ import org.neo4j.batchinsert.internal.FileSystemClosingBatchInserter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -38,6 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.batchinsert.BatchInserters.inserter;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 
 @Neo4jLayoutExtension
 class BatchInsertersTest
@@ -71,7 +74,11 @@ class BatchInsertersTest
 
     private static Config getConfig()
     {
-        return Config.defaults( default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
+        return Config.newBuilder()
+                .set( logical_log_rotation_threshold, ByteUnit.mebiBytes( 10 ) )
+                .set( preallocate_logical_logs, false )
+                .set( default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() )
+                .build();
     }
 
     private static void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter, EphemeralFileSystemAbstraction fileSystemAbstraction )

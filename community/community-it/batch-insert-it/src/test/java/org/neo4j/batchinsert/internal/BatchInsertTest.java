@@ -117,6 +117,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -582,8 +583,11 @@ class BatchInsertTest
     void messagesLogGetsClosed() throws IOException
     {
 
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs,
-                Config.defaults( neo4j_home, testDirectory.homeDir().toPath() ) );
+        Config config = Config.newBuilder()
+                .set( preallocate_logical_logs, false )
+                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .build();
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, config );
         inserter.shutdown();
         assertTrue( new File( databaseLayout.getNeo4jLayout().homeDirectory(), INTERNAL_LOG_FILE ).delete() );
     }
@@ -1388,6 +1392,7 @@ class BatchInsertTest
 
         return Config.newBuilder()
                 .set( neo4j_home, testDirectory.absolutePath().toPath() )
+                .set( preallocate_logical_logs, false )
                 .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
                 .build();
     }

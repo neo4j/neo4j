@@ -51,8 +51,6 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
-import javax.xml.bind.annotation.XmlType;
-
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
@@ -104,11 +102,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.Exceptions.contains;
@@ -2560,7 +2559,8 @@ class ImportCommandTest
     {
         File dbConfig = file( "neo4j.properties" );
         store( Map.of(
-                neo4j_home.name(), testDirectory.homeDir().getAbsolutePath()
+                neo4j_home.name(), testDirectory.homeDir().getAbsolutePath(),
+                preallocate_logical_logs.name(), FALSE
         ), dbConfig );
 
         return dbConfig;
