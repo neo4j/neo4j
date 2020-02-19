@@ -127,8 +127,8 @@ class LoadCommandTest
                         "the dump command. <database> is the name of the database to create. Existing%n" +
                         "databases can be replaced by specifying --force. It is not possible to replace%n" +
                         "a database that is mounted in a running Neo4j server. If --info is specified,%n" +
-                        "then the database is not loaded, but information about the archive is printed%n" +
-                        "instead.%n" +
+                        "then the database is not loaded, but information (i.e. file count, byte count,%n" +
+                        "and format of load file) about the archive is printed instead.%n" +
                         "%n" +
                         "OPTIONS%n" +
                         "%n" +

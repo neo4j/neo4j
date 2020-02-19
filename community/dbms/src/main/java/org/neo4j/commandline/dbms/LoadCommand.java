@@ -55,8 +55,8 @@ import static picocli.CommandLine.Option;
         description = "Load a database from an archive. <archive-path> must be an archive created with the dump " +
                 "command. <database> is the name of the database to create. Existing databases can be replaced " +
                 "by specifying --force. It is not possible to replace a database that is mounted in a running " +
-                "Neo4j server. If --info is specified, then the database is not loaded, but information about " +
-                "the archive is printed instead."
+                "Neo4j server. If --info is specified, then the database is not loaded, but information " +
+                "(i.e. file count, byte count, and format of load file) about the archive is printed instead."
 
 )
 public class LoadCommand extends AbstractCommand
