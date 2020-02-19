@@ -105,6 +105,11 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
 
     protected abstract void collectAddedTxStateSnapshot();
 
+    protected boolean currentRelationshipIsAddedInTx()
+    {
+        return currentAddedInTx != NO_ID;
+    }
+
     /**
      * RelationshipCursor should only see changes that are there from the beginning
      * otherwise it will not be stable.

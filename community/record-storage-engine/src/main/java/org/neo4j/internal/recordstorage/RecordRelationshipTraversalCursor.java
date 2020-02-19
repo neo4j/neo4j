@@ -47,10 +47,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
     private RelationshipSelection selection;
     private long originNodeReference;
-    private long next;
+    private long next = NO_ID;
     private PageCursor pageCursor;
     private final RecordRelationshipGroupCursor group;
-    private GroupState groupState;
+    private GroupState groupState = GroupState.NONE;
     private boolean open;
 
     RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,

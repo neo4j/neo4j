@@ -82,7 +82,14 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
 
         init( read, assertOpen );
         this.type = NODE;
-        storeCursor.initNodeProperties( nodeCursor.storeCursor );
+        if ( !nodeCursor.currentNodeIsAddedInTx() )
+        {
+            storeCursor.initNodeProperties( nodeCursor.storeCursor );
+        }
+        else
+        {
+            storeCursor.initNodeProperties( NO_ID );
+        }
 
         initializeNodeTransactionState( entityReference, read );
     }
@@ -118,7 +125,14 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         assert entityReference != NO_ID;
 
         init( read, assertOpen );
-        storeCursor.initRelationshipProperties( relationshipCursor.storeCursor );
+        if ( !relationshipCursor.currentRelationshipIsAddedInTx() )
+        {
+            storeCursor.initRelationshipProperties( relationshipCursor.storeCursor );
+        }
+        else
+        {
+            storeCursor.initRelationshipProperties( NO_ID );
+        }
 
         initializeRelationshipTransactionState( entityReference, read );
     }

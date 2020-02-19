@@ -105,6 +105,11 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
+    protected boolean currentNodeIsAddedInTx()
+    {
+        return currentAddedInTx != NO_ID;
+    }
+
     @Override
     public long nodeReference()
     {
@@ -178,7 +183,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             {
                 return true;
             }
-            if ( diffSets.getRemoved().contains( label ) )
+            if ( diffSets.getRemoved().contains( label ) || currentAddedInTx != NO_ID )
             {
                 return false;
             }
