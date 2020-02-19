@@ -653,19 +653,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return UTF8.decode( byteArray );
     }
 
-    String getStringFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
-    {
-        ensureHeavy( propertyBlock, cursorTracer );
-        return getStringFor( propertyBlock.getValueRecords(), cursorTracer );
-    }
-
-    public String getStringFor( Collection<DynamicRecord> dynamicRecords, PageCursorTracer cursorTracer )
-    {
-        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, cursorTracer );
-        // A string doesn't have a header in the data array
-        return decodeString( source.other() );
-    }
-
     TextValue getTextValueFor( PropertyBlock propertyBlock, PageCursorTracer cursorTracer )
     {
         ensureHeavy( propertyBlock, cursorTracer );
