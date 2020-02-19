@@ -337,3 +337,22 @@ Feature: SubqueryAcceptance
       | 0   | 22  |
       | 1   | 17  |
     And no side effects
+
+  Scenario: Sorting in a subquery
+    When executing query:
+      """
+       WITH 1 AS x
+       CALL {
+         WITH x
+         WITH count(*) AS y
+         WITH y AS z
+         RETURN z ORDER BY z
+       }
+       RETURN z
+      """
+    Then the result should be, in any order:
+      | z   |
+      | 1   |
+    And no side effects
+
+
