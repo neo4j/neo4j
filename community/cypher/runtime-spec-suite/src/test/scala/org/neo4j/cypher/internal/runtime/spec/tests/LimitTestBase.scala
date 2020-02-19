@@ -354,4 +354,22 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
   }
+
+  test("limit followed by aggregation") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("sum")
+      .aggregation(Seq.empty, Seq("sum(x) AS sum"))
+      .limit(10)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(100000, 3, _ => 11).stream()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("sum").withSingleRow(110)
+
+    input.hasMore should be(true)
+  }
 }
