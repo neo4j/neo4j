@@ -112,7 +112,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private HttpTransactionManager httpTransactionManager;
     private CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
-    private ConnectorPortRegister connectorPortRegister;
+    protected ConnectorPortRegister connectorPortRegister;
     private RotatingRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
@@ -153,7 +153,6 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         httpTransactionManager = createHttpTransactionManager();
         globalAvailabilityGuard = globalDependencies.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
 
-        life.add( new ServerDependenciesLifeCycleAdapter() );
         life.add( new ServerComponentsLifecycleAdapter() );
     }
 
@@ -166,6 +165,12 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     public DatabaseInfo getDatabaseInfo()
     {
         return databaseInfo;
+    }
+
+    @Override
+    public void init()
+    {
+        life.init();
     }
 
     @Override
@@ -437,10 +442,10 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 .collect( toUnmodifiableList() );
     }
 
-    private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter
+    private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
     {
         @Override
-        public void start()
+        public void init()
         {
             webServer = createWebServer();
 
@@ -449,10 +454,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 registerModule( moduleClass );
             }
         }
-    }
 
-    private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
-    {
         @Override
         public void start() throws Exception
         {

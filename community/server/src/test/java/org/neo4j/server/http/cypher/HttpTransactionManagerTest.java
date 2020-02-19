@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
@@ -77,7 +76,7 @@ class HttpTransactionManagerTest
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         HttpTransactionManager manager = newTransactionManager( managementService );
-        final Optional<GraphDatabaseFacade> graphDatabaseFacade = manager.getGraphDatabaseFacade( "data" );
+        var graphDatabaseFacade = manager.getGraphDatabaseAPI( "data" );
 
         assertFalse( graphDatabaseFacade.isPresent() );
 
@@ -89,7 +88,7 @@ class HttpTransactionManagerTest
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         HttpTransactionManager manager = newTransactionManager( managementService );
-        Optional<GraphDatabaseFacade> transactionFacade = manager.getGraphDatabaseFacade( "neo4j" );
+        var transactionFacade = manager.getGraphDatabaseAPI( "neo4j" );
 
         assertTrue( transactionFacade.isPresent() );
 
@@ -101,7 +100,7 @@ class HttpTransactionManagerTest
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         HttpTransactionManager manager = newTransactionManager( managementService );
-        Optional<GraphDatabaseFacade> transactionFacade = manager.getGraphDatabaseFacade( "foo" );
+        var transactionFacade = manager.getGraphDatabaseAPI( "foo" );
 
         assertFalse( transactionFacade.isPresent() );
 

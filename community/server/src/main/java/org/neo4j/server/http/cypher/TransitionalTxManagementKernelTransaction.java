@@ -26,20 +26,19 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class TransitionalTxManagementKernelTransaction
 {
-    private final GraphDatabaseFacade db;
+    private final GraphDatabaseAPI db;
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
     private final long customTransactionTimeout;
     private final ClientConnectionInfo connectionInfo;
 
     private InternalTransaction tx;
-    private KernelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type, LoginContext loginContext,
+    TransitionalTxManagementKernelTransaction( GraphDatabaseAPI db, KernelTransaction.Type type, LoginContext loginContext,
             ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
         this.db = db;

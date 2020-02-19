@@ -24,18 +24,17 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
-import org.neo4j.server.modules.DatabaseModule;
 import org.neo4j.server.modules.LegacyTransactionModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
+import org.neo4j.server.modules.TransactionModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
@@ -55,7 +54,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new DatabaseModule( webServer, getConfig() ),
+                new TransactionModule( webServer, getConfig() ),
                 new LegacyTransactionModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider ),
                 new Neo4jBrowserModule( webServer ),
@@ -74,9 +73,9 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
 
     protected DBMSModule createDBMSModule()
     {
-        // ConnectorPortRegister isn't available until runtime, so defer loading until then
+        // Bolt port isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs =
-                () -> communityDiscoverableURIs( getConfig(), getGlobalDependencies().resolveDependency( ConnectorPortRegister.class ) );
+                () -> communityDiscoverableURIs( getConfig(), connectorPortRegister );
         return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider );
     }
 

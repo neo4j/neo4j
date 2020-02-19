@@ -31,13 +31,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
-@Path( LegacyTransactionRedirectService.DB_TRANSACTION_PATH )
-public class LegacyTransactionRedirectService extends AbstractCypherResource
+@Path( LegacyTransactionService.DB_TRANSACTION_PATH )
+public class LegacyTransactionService extends AbstractCypherResource
 {
     private static final String TRANSACTION = "transaction";
     static final String DB_TRANSACTION_PATH = "/" + TRANSACTION;
 
-    public LegacyTransactionRedirectService(
+    public LegacyTransactionService(
             @Context Config config,
             @Context HttpTransactionManager httpTransactionManager,
             @Context UriInfo uriInfo,

@@ -21,8 +21,8 @@ package org.neo4j.server.http.cypher;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 /**
@@ -47,13 +47,13 @@ import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
  */
 class TransactionFacade
 {
-    private final GraphDatabaseFacade databaseFacade;
+    private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
 
-    TransactionFacade( GraphDatabaseFacade databaseFacade, QueryExecutionEngine engine, TransactionRegistry registry )
+    TransactionFacade( GraphDatabaseAPI databaseAPI, QueryExecutionEngine engine, TransactionRegistry registry )
     {
-        this.databaseFacade = databaseFacade;
+        this.databaseAPI = databaseAPI;
         this.engine = engine;
         this.registry = registry;
     }
@@ -61,7 +61,7 @@ class TransactionFacade
     TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
             LoginContext loginContext, ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
-        return new TransactionHandle( databaseFacade, engine, registry, uriScheme, implicitTransaction,
+        return new TransactionHandle( databaseAPI, engine, registry, uriScheme, implicitTransaction,
                 loginContext, connectionInfo, customTransactionTimeout );
     }
 

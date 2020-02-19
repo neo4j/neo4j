@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Answers;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -39,7 +38,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -116,7 +114,6 @@ public class DiscoveryServiceTest
         return cases;
     }
 
-    private final NeoWebServer neoWebServer = mock( NeoWebServer.class, Answers.RETURNS_DEEP_STUBS );
     private final ConnectorPortRegister portRegistry = mock( ConnectorPortRegister.class );
 
     private URI baseUri;

@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.http.cypher.LegacyTransactionRedirectService;
+import org.neo4j.server.http.cypher.LegacyTransactionService;
 import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
 import org.neo4j.server.web.WebServer;
@@ -50,7 +50,7 @@ public class LegacyTransactionModule implements ServerModule
 
     private List<Class<?>> jaxRsClasses()
     {
-        return List.of( LegacyTransactionRedirectService.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
+        return List.of( LegacyTransactionService.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
     }
 
     @Override

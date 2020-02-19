@@ -26,8 +26,8 @@ import java.util.Optional;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -61,18 +61,18 @@ public class HttpTransactionManager
      * @param databaseName database name.
      * @return a transaction facade or {@code null} if a database with the supplied database name does not exist.
      */
-    public Optional<GraphDatabaseFacade> getGraphDatabaseFacade( String databaseName )
+    public Optional<GraphDatabaseAPI> getGraphDatabaseAPI( String databaseName )
     {
-        Optional<GraphDatabaseFacade> graph;
+        Optional<GraphDatabaseAPI> database;
         try
         {
-            graph = Optional.of( (GraphDatabaseFacade) managementService.database( databaseName ) );
+            database = Optional.of( (GraphDatabaseAPI) managementService.database( databaseName ) );
         }
         catch ( DatabaseNotFoundException e )
         {
-            graph = Optional.empty();
+            database = Optional.empty();
         }
-        return graph;
+        return database;
     }
 
     public TransactionHandleRegistry getTransactionHandleRegistry()
@@ -80,11 +80,11 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseFacade databaseFacade )
+    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI )
     {
-        DependencyResolver dependencyResolver = databaseFacade.getDependencyResolver();
+        DependencyResolver dependencyResolver = databaseAPI.getDependencyResolver();
 
-        return new TransactionFacade( databaseFacade,
+        return new TransactionFacade( databaseAPI,
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry );
     }
 

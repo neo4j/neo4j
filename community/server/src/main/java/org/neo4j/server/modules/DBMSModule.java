@@ -51,7 +51,8 @@ public class DBMSModule implements ServerModule
     private final Supplier<DiscoverableURIs> discoverableURIs;
     private LogProvider logProvider;
 
-    public DBMSModule( WebServer webServer, Config config, Supplier<DiscoverableURIs> discoverableURIs, LogProvider logProvider )
+    public DBMSModule( WebServer webServer, Config config, Supplier<DiscoverableURIs> discoverableURIs,
+            LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;

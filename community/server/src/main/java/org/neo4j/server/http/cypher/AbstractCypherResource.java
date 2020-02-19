@@ -36,7 +36,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
@@ -77,13 +77,13 @@ public abstract class AbstractCypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
-        return graphDatabaseFacade.map( facade -> {
-            if ( isDatabaseNotAvailable( facade ) )
+        var graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+        return graphDatabaseAPI.map( databaseAPI -> {
+            if ( isDatabaseNotAvailable( databaseAPI ) )
             {
                 return createNonAvailableDatabaseResponse( inputStream.getParameters() );
             }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
             TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, false );
 
             Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
@@ -115,14 +115,14 @@ public abstract class AbstractCypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
-        return graphDatabaseFacade.map( facade ->
+        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+        return graphDatabaseAPI.map( databaseAPI ->
         {
-            if ( isDatabaseNotAvailable( facade ) )
+            if ( isDatabaseNotAvailable( databaseAPI ) )
             {
                 return createNonAvailableDatabaseResponse( inputStream.getParameters() );
             }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
             TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, true );
 
             Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
@@ -135,14 +135,14 @@ public abstract class AbstractCypherResource
     @Path( "/{id}" )
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
     {
-        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
-        return graphDatabaseFacade.map( facade ->
+        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+        return graphDatabaseAPI.map( databaseAPI ->
         {
-            if ( isDatabaseNotAvailable( facade ) )
+            if ( isDatabaseNotAvailable( databaseAPI ) )
             {
                 return createNonAvailableDatabaseResponse( emptyMap() );
             }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
             TransactionHandle transactionHandle;
             try
             {
@@ -161,9 +161,9 @@ public abstract class AbstractCypherResource
         } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
     }
 
-    private boolean isDatabaseNotAvailable( GraphDatabaseFacade facade )
+    private boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
     {
-        return !facade.isAvailable( 0 );
+        return !databaseAPI.isAvailable( 0 );
     }
 
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpHeaders headers, HttpServletRequest request,
@@ -179,14 +179,14 @@ public abstract class AbstractCypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
-        return graphDatabaseFacade.map( facade ->
+        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+        return graphDatabaseAPI.map( databaseAPI ->
         {
-            if ( isDatabaseNotAvailable( facade ) )
+            if ( isDatabaseNotAvailable( databaseAPI ) )
             {
                 return createNonAvailableDatabaseResponse( inputStream.getParameters() );
             }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
             TransactionHandle transactionHandle;
             try
             {

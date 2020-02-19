@@ -29,14 +29,14 @@ import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
 import org.neo4j.server.web.WebServer;
 
 /**
- * Mounts the database REST API.
+ * Mounts the transactional endpoint.
  */
-public class DatabaseModule implements ServerModule
+public class TransactionModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
 
-    public DatabaseModule( WebServer webServer, Config config )
+    public TransactionModule( WebServer webServer, Config config )
     {
         this.webServer = webServer;
         this.config = config;

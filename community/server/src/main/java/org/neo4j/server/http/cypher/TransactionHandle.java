@@ -26,8 +26,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction.Type;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
@@ -54,7 +54,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TransactionHandle implements TransactionTerminationHandle
 {
-    private final GraphDatabaseFacade databaseFacade;
+    private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
@@ -66,11 +66,11 @@ public class TransactionHandle implements TransactionTerminationHandle
     private TransitionalTxManagementKernelTransaction context;
     private long expirationTimestamp = -1;
 
-    TransactionHandle( GraphDatabaseFacade databaseFacade, QueryExecutionEngine engine,
+    TransactionHandle( GraphDatabaseAPI databaseAPI, QueryExecutionEngine engine,
                        TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
                        ClientConnectionInfo connectionInfo, long customTransactionTimeoutMillis )
     {
-        this.databaseFacade = databaseFacade;
+        this.databaseAPI = databaseAPI;
         this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
@@ -130,7 +130,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         if ( context == null )
         {
-            context = new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, connectionInfo, customTransactionTimeoutMillis );
+            context = new TransitionalTxManagementKernelTransaction( databaseAPI, type, loginContext, connectionInfo, customTransactionTimeoutMillis );
         }
     }
 
@@ -139,7 +139,8 @@ public class TransactionHandle implements TransactionTerminationHandle
         if ( periodicCommit )
         {
             Result result;
-            try ( Transaction transaction = databaseFacade.beginTransaction( Type.IMPLICIT, loginContext, connectionInfo, customTransactionTimeoutMillis,
+            try ( Transaction transaction = databaseAPI
+                    .beginTransaction( Type.IMPLICIT, loginContext, connectionInfo, customTransactionTimeoutMillis,
                     MILLISECONDS ) )
             {
                 result = transaction.execute( statement.getStatement(), statement.getParameters() );

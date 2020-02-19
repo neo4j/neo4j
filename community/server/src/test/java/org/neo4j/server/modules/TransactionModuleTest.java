@@ -35,7 +35,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class DatabaseModuleTest
+public class TransactionModuleTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
@@ -47,7 +47,7 @@ public class DatabaseModuleTest
         Config config = Config.defaults( ServerSettings.db_api_path, URI.create( "/db/data" ) );
 
         // When
-        DatabaseModule module = new DatabaseModule( webServer, config );
+        TransactionModule module = new TransactionModule( webServer, config );
         module.start();
 
         // Then
