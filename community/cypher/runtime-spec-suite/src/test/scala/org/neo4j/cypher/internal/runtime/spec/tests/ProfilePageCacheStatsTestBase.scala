@@ -63,11 +63,12 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
   }
 
   test("should profile page cache stats of create with new label") {
-    // given
-    uniqueIndex("M", "prop")
-    val nodes = nodePropertyGraph(SIZE, {
-      case i => Map("prop" -> i)
-    },"N", "M")
+    val nodes = given {
+      uniqueIndex("M", "prop")
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      },"N", "M")
+    }
     restartTx()
 
     // when
