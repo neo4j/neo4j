@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;

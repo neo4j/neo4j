@@ -23,12 +23,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
@@ -45,10 +43,10 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -125,11 +123,8 @@ class ApplyRecoveredTransactionsTest
         LockService lockService = mock( LockService.class );
         when( lockService.acquireNodeLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
         when( lockService.acquireRelationshipLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
-        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
-        for ( IdType idType : IdType.values() )
-        {
-            idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
-        }
+        IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
+        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
 
         NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
                 lockService );

@@ -29,17 +29,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -94,12 +92,12 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.util.concurrent.WorkSync;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -1738,11 +1736,8 @@ class TransactionRecordStateTest
 
     private TransactionApplierFactory buildApplier( LockService noLockService )
     {
-        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
-        for ( IdType idType : IdType.values() )
-        {
-            idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
-        }
+        IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
+        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
         return new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService );
     }
 

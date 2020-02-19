@@ -38,4 +38,6 @@ public interface AsyncApply
      * attempt to apply the work.
      */
     void await() throws ExecutionException;
+
+    AsyncApply EMPTY = () -> {};
 }

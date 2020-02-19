@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.lock.LockGroup;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 public interface BatchContext extends AutoCloseable
 {

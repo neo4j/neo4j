@@ -41,8 +41,8 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
@@ -255,7 +255,7 @@ class RecordStorageEngineTest
 
         CapturingTransactionApplierFactoryChain( Consumer<Boolean> applierCloseCall )
         {
-            super( () -> IdUpdateListener.IGNORE );
+            super( w -> w.newBatch( PageCacheTracer.NULL ) );
             this.applierCloseCall = applierCloseCall;
         }
 

@@ -27,7 +27,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -35,6 +34,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.

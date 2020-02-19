@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 /**
  * Updates a batch of records to a store.

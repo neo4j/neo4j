@@ -26,7 +26,6 @@ import java.util.List;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;

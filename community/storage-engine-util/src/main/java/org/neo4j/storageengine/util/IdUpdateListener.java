@@ -17,18 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.storageengine.util;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IdUpdateListener extends AutoCloseable
 {
-    void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext );
+    void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext );
 
-    void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext );
+    void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext );
+
+    default void markId( IdGenerator idGenerator, long id, boolean used, CursorContext cursorContext )
+    {
+        if ( used )
+        {
+            markIdAsUsed( idGenerator, id, cursorContext );
+        }
+        else
+        {
+            markIdAsUnused( idGenerator, id, cursorContext );
+        }
+    }
 
     IdUpdateListener DIRECT = new IdUpdateListener()
     {
@@ -39,7 +50,7 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext )
         {
             try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
@@ -48,7 +59,7 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext )
         {
             try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
@@ -66,12 +77,12 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext )
         {   // no-op
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext )
         {   // no-op
         }
     };

@@ -46,7 +46,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;

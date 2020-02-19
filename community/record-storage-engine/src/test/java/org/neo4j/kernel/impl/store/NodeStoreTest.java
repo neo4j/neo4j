@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -329,8 +330,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), any( CursorContext.class ) );
     }
 
     @Test
@@ -350,8 +351,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
-        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( CursorContext.class ) );
+        verify( idUpdateListener, never() ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), any( CursorContext.class ) );
     }
 
     @Test
@@ -371,8 +372,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), any( CursorContext.class ) );
     }
 
     @Test
@@ -394,8 +395,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
-        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener, never() ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), any( CursorContext.class ) );
     }
 
     @Test

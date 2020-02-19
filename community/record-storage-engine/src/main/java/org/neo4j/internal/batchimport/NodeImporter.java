@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.max;
 import static java.util.Arrays.copyOf;
-import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**

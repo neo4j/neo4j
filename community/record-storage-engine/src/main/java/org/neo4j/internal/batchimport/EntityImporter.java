@@ -44,7 +44,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 /**
  * Abstract class containing logic for importing properties for an entity (node/relationship).

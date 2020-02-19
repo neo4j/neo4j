@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.api.NamedToken;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;

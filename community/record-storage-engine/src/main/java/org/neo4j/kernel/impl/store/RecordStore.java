@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord, CursorContext) updating} and

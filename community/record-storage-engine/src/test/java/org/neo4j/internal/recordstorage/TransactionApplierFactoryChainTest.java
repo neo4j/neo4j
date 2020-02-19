@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.kernel.impl.store.IdUpdateListener;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +57,7 @@ class TransactionApplierFactoryChainTest
         applier3 = mock( TransactionApplierFactory.class );
         when( applier3.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier3 );
 
-        facade = new TransactionApplierFactoryChain( () -> IdUpdateListener.IGNORE, applier1, applier2, applier3 );
+        facade = new TransactionApplierFactoryChain( w -> w.newBatch( PageCacheTracer.NULL ), applier1, applier2, applier3 );
     }
 
     @Test

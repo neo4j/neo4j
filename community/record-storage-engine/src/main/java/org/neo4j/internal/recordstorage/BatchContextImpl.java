@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.lock.LockGroup;
@@ -33,7 +32,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.concurrent.WorkSync;
+import org.neo4j.storageengine.util.IdUpdateListener;
+import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 
 /**
  * A batch context implementation that does not do anything with scan stores.
@@ -42,7 +42,7 @@ import org.neo4j.util.concurrent.WorkSync;
  */
 public class BatchContextImpl implements BatchContext
 {
-    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
+    private final IndexUpdatesWorkSync indexUpdatesSync;
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
     private final StorageEngine storageEngine;
@@ -57,7 +57,7 @@ public class BatchContextImpl implements BatchContext
     private IndexUpdates indexUpdates;
 
     public BatchContextImpl( IndexUpdateListener indexUpdateListener,
-            WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
+            IndexUpdatesWorkSync indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
             RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
             IdUpdateListener idUpdateListener, StoreCursors storeCursors )
     {
@@ -99,9 +99,11 @@ public class BatchContextImpl implements BatchContext
     {
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
+            IndexUpdatesWorkSync.Batch indexUpdatesBatch = indexUpdatesSync.newBatch();
+            indexUpdatesBatch.add( indexUpdates );
             try
             {
-                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates, cursorContext ) );
+                indexUpdatesBatch.apply( cursorContext );
             }
             catch ( ExecutionException e )
             {

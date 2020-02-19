@@ -20,11 +20,11 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

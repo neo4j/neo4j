@@ -23,9 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
@@ -33,7 +32,6 @@ import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
@@ -46,7 +44,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.util.concurrent.WorkSync;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,11 +77,8 @@ class SchemaRuleCommandTest
     @BeforeEach
     void setup()
     {
-        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
-        for ( IdType idType : IdType.values() )
-        {
-            idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
-        }
+        IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
+        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( mock( IdGenerator.class ) ) );
         storeApplier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     }
 

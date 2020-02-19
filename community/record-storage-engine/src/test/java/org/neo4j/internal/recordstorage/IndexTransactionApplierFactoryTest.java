@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -41,12 +40,11 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.util.concurrent.WorkSync;
+import org.neo4j.storageengine.util.IdUpdateListener;
+import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -63,7 +61,7 @@ class IndexTransactionApplierFactoryTest
     {
         // GIVEN
         OrderVerifyingUpdateListener indexUpdateListener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = spy( new WorkSync<>( indexUpdateListener ) );
+        IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
         final SchemaCache mock = mock( SchemaCache.class );
@@ -82,7 +80,6 @@ class IndexTransactionApplierFactoryTest
         }
         indexUpdateListener.done();
         // THEN all assertions happen inside the UpdateListener and #close
-        verify( indexUpdatesSync ).apply( any() );
     }
 
     @Test

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
