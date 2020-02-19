@@ -45,8 +45,6 @@ public class DbmsDiagnosticsManager
     private final Dependencies dependencies;
     private final DiagnosticsManager diagnosticsManager;
     private final Log log;
-    private final ReentrantLock databaseDumpLock = new ReentrantLock();
-    private final ReentrantLock allDumpLock = new ReentrantLock();
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
@@ -57,55 +55,23 @@ public class DbmsDiagnosticsManager
 
     public void dumpSystemDiagnostics()
     {
-        databaseDumpLock.lock();
-        try
-        {
-            dumpSystemDiagnostics( log );
-        }
-        finally
-        {
-            databaseDumpLock.unlock();
-        }
+        dumpSystemDiagnostics( log );
     }
 
     public synchronized void dumpDatabaseDiagnostics( Database database )
     {
-        databaseDumpLock.lock();
-        try
-        {
-            dumpDatabaseDiagnostics( database, log, false );
-        }
-        finally
-        {
-            databaseDumpLock.unlock();
-        }
+        dumpDatabaseDiagnostics( database, log, false );
     }
 
     public synchronized void dumpAll()
     {
-        allDumpLock.lock();
-        try
-        {
-            dumpAll( log );
-        }
-        finally
-        {
-            allDumpLock.unlock();
-        }
+        dumpAll( log );
     }
 
     public synchronized void dumpAll( Log log )
     {
-        allDumpLock.lock();
-        try
-        {
-            dumpSystemDiagnostics( log );
-            dumpAllDatabases( log );
-        }
-        finally
-        {
-            allDumpLock.unlock();
-        }
+        dumpSystemDiagnostics( log );
+        dumpAllDatabases( log );
     }
 
     private void dumpAllDatabases( Log log )
