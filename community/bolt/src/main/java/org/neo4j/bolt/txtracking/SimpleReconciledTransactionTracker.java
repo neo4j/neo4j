@@ -42,7 +42,13 @@ public class SimpleReconciledTransactionTracker implements ReconciledTransaction
     }
 
     @Override
-    public void initialize( long reconciledTransactionId )
+    public void disable()
+    {
+        throw new UnsupportedOperationException( "Initialization is not supported" );
+    }
+
+    @Override
+    public void enable( long reconciledTransactionId )
     {
         throw new UnsupportedOperationException( "Initialization is not supported" );
     }
@@ -67,7 +73,7 @@ public class SimpleReconciledTransactionTracker implements ReconciledTransaction
     }
 
     @Override
-    public void setLastReconciledTransactionId( long reconciledTransactionId )
+    public void offerReconciledTransactionId( long reconciledTransactionId )
     {
         throw new UnsupportedOperationException( "Updates are not supported" );
     }

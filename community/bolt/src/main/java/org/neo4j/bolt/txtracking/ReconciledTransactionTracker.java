@@ -23,9 +23,11 @@ public interface ReconciledTransactionTracker
 {
     long NO_RECONCILED_TRANSACTION_ID = -1;
 
-    void initialize( long reconciledTransactionId );
+    void disable();
+
+    void enable( long reconciledTransactionId );
 
     long getLastReconciledTransactionId();
 
-    void setLastReconciledTransactionId( long reconciledTransactionId );
+    void offerReconciledTransactionId( long reconciledTransactionId );
 }

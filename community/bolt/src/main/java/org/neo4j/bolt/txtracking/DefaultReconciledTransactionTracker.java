@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -28,7 +30,6 @@ import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static org.neo4j.util.Preconditions.checkArgument;
-import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
 /**
@@ -41,8 +42,8 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
     private static final long[] NO_METADATA = new long[0];
 
     /**
-     * Lock protects {@link #getLastReconciledTransactionId()} and {@link #setLastReconciledTransactionId(long)}
-     * from running concurrently with {@link #initialize(long)} and reading/updating a stale {@link #sequence}. This
+     * Lock protects {@link #getLastReconciledTransactionId()} and {@link #offerReconciledTransactionId(long)}
+     * from running concurrently with {@link #enable(long)} and reading/updating a stale {@link #sequence}. This
      * is especially required when re-initialization happens at runtime and not during start of the lifecycle.
      * Re-initialization can happen after a store copy of the system database.
      */
@@ -51,6 +52,8 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
 
     private long startingNumber;
     private OutOfOrderSequence sequence;
+    private Collection<Long> outstanding = new ArrayList<>();
+    private long fixedId = NO_RECONCILED_TRANSACTION_ID;
 
     public DefaultReconciledTransactionTracker( LogService logService )
     {
@@ -59,7 +62,26 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
     }
 
     @Override
-    public void initialize( long reconciledTransactionId )
+    public void disable()
+    {
+        initializationLock.writeLock().lock();
+        try
+        {
+            if ( sequence == null )
+            {
+                return;
+            }
+            fixedId = sequence.getHighestGapFreeNumber();
+            sequence = null;
+        }
+        finally
+        {
+            initializationLock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void enable( long reconciledTransactionId )
     {
         requireNonNegative( reconciledTransactionId );
 
@@ -68,14 +90,23 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
         {
             if ( sequence == null )
             {
-                log.info( "Initializing with transaction ID %s", reconciledTransactionId );
+                log.info( "Enabling with transaction ID %s", reconciledTransactionId );
             }
             else
             {
-                log.info( "Re-initializing from %s to transaction ID %s", sequence, reconciledTransactionId );
+                // This isn't expected to be used, but we leave the code path for robustness.
+                log.warn( "Enabling when not disabled with %s to transaction ID %s", sequence, reconciledTransactionId );
             }
             sequence = new ArrayQueueOutOfOrderSequence( reconciledTransactionId, INITIAL_ARRAY_SIZE, NO_METADATA );
             startingNumber = reconciledTransactionId;
+            for ( long txId : outstanding )
+            {
+                if ( txId > reconciledTransactionId )
+                {
+                    sequence.offer( txId, NO_METADATA );
+                }
+            }
+            outstanding.clear();
         }
         finally
         {
@@ -89,7 +120,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
         initializationLock.readLock().lock();
         try
         {
-            return sequence != null ? sequence.getHighestGapFreeNumber() : NO_RECONCILED_TRANSACTION_ID;
+            return sequence != null ? sequence.getHighestGapFreeNumber() : fixedId;
         }
         finally
         {
@@ -98,31 +129,35 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
     }
 
     @Override
-    public void setLastReconciledTransactionId( long reconciledTransactionId )
+    public void offerReconciledTransactionId( long reconciledTransactionId )
     {
         requireNonNegative( reconciledTransactionId );
 
         initializationLock.readLock().lock();
         try
         {
-            checkState( sequence != null, "Not initialized" );
-
-            if ( reconciledTransactionId < startingNumber )
+            if ( sequence == null )
+            {
+                log.info( "Outstanding ID %s", reconciledTransactionId );
+                outstanding.add( reconciledTransactionId );
+            }
+            else if ( reconciledTransactionId < startingNumber )
             {
                 // this can happen when a store copy happens concurrently with a reconciliation
-                log.info( "Ignoring pre-initialization ID  %s", reconciledTransactionId );
-                return;
+                log.info( "Ignoring pre-enabled ID %s", reconciledTransactionId );
             }
+            else
+            {
+                var currentLastReconciledTxId = sequence.getHighestGapFreeNumber();
 
-            var currentLastReconciledTxId = getLastReconciledTransactionId();
+                // gap-free ID should always be lower than the given ID
+                checkArgument( reconciledTransactionId > currentLastReconciledTxId,
+                        "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s", reconciledTransactionId,
+                        currentLastReconciledTxId, sequence );
 
-            // gap-free ID should always be lower than the given ID
-            checkArgument( reconciledTransactionId > currentLastReconciledTxId,
-                    "Received illegal transaction ID %s which is lower than the current transaction ID %s. Sequence: %s",
-                    reconciledTransactionId, currentLastReconciledTxId, sequence );
-
-            log.debug( "Updating %s with transaction ID %s", sequence, reconciledTransactionId );
-            sequence.offer( reconciledTransactionId, NO_METADATA );
+                log.debug( "Updating %s with transaction ID %s", sequence, reconciledTransactionId );
+                sequence.offer( reconciledTransactionId, NO_METADATA );
+            }
         }
         finally
         {
