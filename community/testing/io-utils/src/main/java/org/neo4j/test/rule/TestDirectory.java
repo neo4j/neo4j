@@ -34,7 +34,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Random;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.VisibleForTesting;
@@ -218,17 +220,31 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
-                Optional<Long> size = fileSystem.streamFilesRecursive( testDirectory )
-                        .map( fh -> fileSystem.getFileSize( fh.getFile() ) ) // File size
-                        .reduce( Long::sum ); // Sum
-                if ( size.map( l -> l > 50_000_000 ).orElse( false ) ) // Larger than 50MB
+                final long printLimit = ByteUnit.mebiBytes( 5 );
+                StringBuilder sb = new StringBuilder( "Files larger than " + ByteUnit.bytesToString( printLimit ) + '\n' );
+
+                Optional<Long> totalSize = fileSystem.streamFilesRecursive( testDirectory ).map( fh ->
                 {
-                    throw new IllegalStateException( "Test created more than 50MB of data, total size was " + size.get() + " B" );
-                }
+                    long size = fileSystem.getFileSize( fh.getFile() );
+                    if ( size > ByteUnit.mebiBytes( 5 ) )
+                    {
+                        String path = homeDir().toPath().relativize( fh.getFile().toPath() ).toString();
+                        sb.append( path ).append( " : " ).append( ByteUnit.bytesToString( size ) ).append( '\n' );
+                    }
+                    return size;
+                } ).reduce( Long::sum ); // Sum
+
                 fileSystem.deleteRecursively( testDirectory );
+
+                final long limit = ByteUnit.mebiBytes( 50 );
+                if ( totalSize.map( l -> l > limit ).orElse( false ) && // Larger than limit
+                        !(fileSystem instanceof EphemeralFileSystemAbstraction) )
+                {
+                    throw new IllegalStateException( String.format( "Test created more than %s of data, total size was %s\n%s",
+                            ByteUnit.bytesToString( limit ), ByteUnit.bytesToString( totalSize.get() ), sb.toString() ) );
+                }
             }
             testDirectory = null;
-
         }
         finally
         {
