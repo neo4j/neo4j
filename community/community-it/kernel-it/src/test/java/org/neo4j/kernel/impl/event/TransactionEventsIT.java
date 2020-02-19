@@ -311,7 +311,10 @@ public class TransactionEventsIT
     public void exceptionMessageShouldGetPassedThrough()
     {
         final String message = "some message from a transaction event handler";
-        db.registerTransactionEventHandler( getBeforeCommitHandler( transactionData -> { throw new RuntimeException(message);} ) );
+        db.registerTransactionEventHandler( getBeforeCommitHandler( transactionData ->
+        {
+            throw new RuntimeException( message );
+        } ) );
         expectedException.expectCause( both( hasMessage( equalTo( message ) ) ).and( instanceOf( TransactionFailureException.class ) ) );
         runTransaction();
     }
