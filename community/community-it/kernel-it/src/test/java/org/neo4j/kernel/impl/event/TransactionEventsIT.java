@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
@@ -230,6 +231,18 @@ class TransactionEventsIT
 
         assertThat( "Should have specified username", usernameRef.get(), equalTo( "Christof" ) );
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
+    }
+
+    @Test
+    void exceptionMessageShouldGetPassedThrough()
+    {
+        var message = "some message from a transaction event handler";
+        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( transactionData ->
+        {
+            throw new RuntimeException( message );
+        } ) );
+        var e = assertThrows( TransactionFailureException.class, this::runTransaction );
+        assertThat( getRootCause( e ).getMessage(), equalTo( message ) );
     }
 
     @Test

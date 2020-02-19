@@ -677,7 +677,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( listenersState != null && listenersState.isFailed() )
             {
                 Throwable cause = listenersState.failure();
-                throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
+                throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, cause.getMessage() );
             }
 
             // Convert changes into commands and commit
