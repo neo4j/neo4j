@@ -53,7 +53,7 @@ class DefaultReconciledTransactionTrackerTest
     @Test
     void shouldReturnReconciledTransactionIdWhenInitializedButNeverUpdated()
     {
-        tracker.initialize( 42 );
+        tracker.enable( 42 );
 
         assertEquals( 42, tracker.getLastReconciledTransactionId() );
     }
@@ -61,9 +61,9 @@ class DefaultReconciledTransactionTrackerTest
     @Test
     void shouldReturnReconciledTransactionIdWhenReInitialized()
     {
-        tracker.initialize( 42 );
-        tracker.initialize( 4242 );
-        tracker.initialize( 424242 );
+        tracker.enable( 42 );
+        tracker.enable( 4242 );
+        tracker.enable( 424242 );
 
         assertEquals( 424242, tracker.getLastReconciledTransactionId() );
     }
@@ -71,13 +71,13 @@ class DefaultReconciledTransactionTrackerTest
     @Test
     void shouldReturnReconciledTransactionIdWhenInitializedAndUpdated()
     {
-        tracker.initialize( 1 );
+        tracker.enable( 1 );
 
-        tracker.setLastReconciledTransactionId( 7 );
-        tracker.setLastReconciledTransactionId( 2 );
-        tracker.setLastReconciledTransactionId( 3 );
-        tracker.setLastReconciledTransactionId( 5 );
-        tracker.setLastReconciledTransactionId( 4 );
+        tracker.offerReconciledTransactionId( 7 );
+        tracker.offerReconciledTransactionId( 2 );
+        tracker.offerReconciledTransactionId( 3 );
+        tracker.offerReconciledTransactionId( 5 );
+        tracker.offerReconciledTransactionId( 4 );
 
         assertEquals( 5, tracker.getLastReconciledTransactionId() );
     }
@@ -85,48 +85,77 @@ class DefaultReconciledTransactionTrackerTest
     @Test
     void shouldFailToInitializeWithNegativeTransactionId()
     {
-        assertThrows( IllegalArgumentException.class, () -> tracker.initialize( -42 ) );
+        assertThrows( IllegalArgumentException.class, () -> tracker.enable( -42 ) );
     }
 
     @Test
     void shouldFailToUpdateWithNegativeTransactionId()
     {
-        tracker.initialize( 42 );
+        tracker.enable( 42 );
 
-        assertThrows( IllegalArgumentException.class, () -> tracker.setLastReconciledTransactionId( -42 ) );
+        assertThrows( IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId( -42 ) );
     }
 
     @Test
-    void shouldFailToUpdateWhenNotInitialized()
+    void shouldApplyQueueWhenFirstEnabled()
     {
-        assertThrows( IllegalStateException.class, () -> tracker.setLastReconciledTransactionId( 42 ) );
+        tracker.offerReconciledTransactionId( 42 );
+        tracker.offerReconciledTransactionId( 43 );
+        tracker.offerReconciledTransactionId( 44 );
+        tracker.offerReconciledTransactionId( 45 );
+        assertEquals( -1, tracker.getLastReconciledTransactionId() );
+
+        tracker.enable( 41 );
+        assertEquals( 45, tracker.getLastReconciledTransactionId() );
+    }
+
+    @Test
+    void shouldKeepLastValueWhenDisabledAndApplyQueueWhenEnabled()
+    {
+        tracker.enable( 42 );
+
+        tracker.offerReconciledTransactionId( 43 );
+        tracker.offerReconciledTransactionId( 44 );
+
+        tracker.disable();
+        assertEquals( 44, tracker.getLastReconciledTransactionId() );
+
+        tracker.offerReconciledTransactionId( 52 );
+        tracker.offerReconciledTransactionId( 51 );
+        tracker.offerReconciledTransactionId( 50 );
+        tracker.offerReconciledTransactionId( 49 );
+        tracker.offerReconciledTransactionId( 48 );
+        assertEquals( 44, tracker.getLastReconciledTransactionId() );
+
+        tracker.enable( 49 );
+        assertEquals( 52, tracker.getLastReconciledTransactionId() );
     }
 
     @Test
     void shouldFailToUpdateWithNonIncreasingTransactionId()
     {
-        tracker.initialize( 1 );
+        tracker.enable( 1 );
 
-        tracker.setLastReconciledTransactionId( 2 );
-        tracker.setLastReconciledTransactionId( 3 );
-        tracker.setLastReconciledTransactionId( 4 );
+        tracker.offerReconciledTransactionId( 2 );
+        tracker.offerReconciledTransactionId( 3 );
+        tracker.offerReconciledTransactionId( 4 );
 
-        assertThrows( IllegalArgumentException.class, () -> tracker.setLastReconciledTransactionId( 2 ) );
+        assertThrows( IllegalArgumentException.class, () -> tracker.offerReconciledTransactionId( 2 ) );
     }
 
     @Test
     void shouldIgnorePreInitializationIds()
     {
-        tracker.initialize( 1 );
-        tracker.setLastReconciledTransactionId( 0 );
+        tracker.enable( 1 );
+        tracker.offerReconciledTransactionId( 0 );
         assertEquals( 1, tracker.getLastReconciledTransactionId() );
 
-        tracker.initialize( 42 );
-        tracker.setLastReconciledTransactionId( 40 );
-        tracker.setLastReconciledTransactionId( 41 );
+        tracker.enable( 42 );
+        tracker.offerReconciledTransactionId( 40 );
+        tracker.offerReconciledTransactionId( 41 );
         assertEquals( 42, tracker.getLastReconciledTransactionId() );
 
-        tracker.setLastReconciledTransactionId( 43 );
+        tracker.offerReconciledTransactionId( 43 );
         assertEquals( 43, tracker.getLastReconciledTransactionId() );
     }
 }

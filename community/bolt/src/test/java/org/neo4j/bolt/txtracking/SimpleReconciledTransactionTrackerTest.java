@@ -45,13 +45,13 @@ class SimpleReconciledTransactionTrackerTest
     @Test
     void shouldNotSupportInitialization()
     {
-        assertThrows( UnsupportedOperationException.class, () -> tracker.initialize( 42 ) );
+        assertThrows( UnsupportedOperationException.class, () -> tracker.enable( 42 ) );
     }
 
     @Test
     void shouldNotSupportUpdates()
     {
-        assertThrows( UnsupportedOperationException.class, () -> tracker.setLastReconciledTransactionId( 42 ) );
+        assertThrows( UnsupportedOperationException.class, () -> tracker.offerReconciledTransactionId( 42 ) );
     }
 
     @Test
