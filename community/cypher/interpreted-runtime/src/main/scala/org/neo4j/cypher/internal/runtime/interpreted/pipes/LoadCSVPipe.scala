@@ -93,7 +93,7 @@ case class LoadCSVPipe(source: Pipe,
 
     private def computeNextRow() = {
       if (inner.hasNext) {
-        val row = inner.next().map(s => Values.stringOrNoValue(s))
+        val row = inner.next().map(s => Values.ut8fOrNoValue(s))
         internalMap.putValues(row.asInstanceOf[Array[AnyValue]])
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
@@ -114,7 +114,7 @@ case class LoadCSVPipe(source: Pipe,
 
     override def next(): CypherRow = {
       // Make sure to pull on inner.next before calling inner.lastProcessed to get the right line number
-      val value = VirtualValues.list(inner.next().map(s => Values.stringOrNoValue(s)): _*)
+      val value = VirtualValues.list(inner.next().map(s => Values.ut8fOrNoValue(s)): _*)
       copyWithLinenumber(filename, inner.lastProcessed, inner.readAll, context, variable, value)
     }
   }
@@ -133,7 +133,7 @@ case class LoadCSVPipe(source: Pipe,
       format match {
         case HasHeaders =>
           val iterator = getLoadCSVIterator(state, url, useHeaders = true)
-          val headers = if (iterator.nonEmpty) iterator.next().map(s => Values.stringOrNoValue(s)).toIndexedSeq else IndexedSeq.empty // First row is headers
+          val headers = if (iterator.nonEmpty) iterator.next().map(s => Values.ut8fOrNoValue(s)).toIndexedSeq else IndexedSeq.empty // First row is headers
           new IteratorWithHeaders(headers, context, url.getFile, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(context, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))

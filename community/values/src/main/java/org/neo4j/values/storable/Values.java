@@ -161,6 +161,18 @@ public final class Values
         return utf8Value( value.getBytes( StandardCharsets.UTF_8 ) );
     }
 
+    public static Value ut8fOrNoValue( String value )
+    {
+        if ( value == null )
+        {
+            return NO_VALUE;
+        }
+        else
+        {
+            return utf8Value( value );
+        }
+    }
+
     public static TextValue utf8Value( byte[] bytes )
     {
         if ( bytes.length == 0 )
