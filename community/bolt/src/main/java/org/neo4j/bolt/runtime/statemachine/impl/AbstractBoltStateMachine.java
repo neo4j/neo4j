@@ -67,13 +67,13 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     private BoltStateMachineState state;
     private final BoltStateMachineState failedState;
 
-    public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock )
+    public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock, boolean renameThreads, String defaultDatabaseName )
     {
         this.id = boltChannel.id();
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = new MutableConnectionState();
-        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock );
+        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock, renameThreads, defaultDatabaseName );
 
         States states = buildStates();
         this.state = states.initial;

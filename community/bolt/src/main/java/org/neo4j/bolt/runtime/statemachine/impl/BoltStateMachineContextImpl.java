@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
+import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
@@ -36,6 +37,7 @@ import org.neo4j.bolt.security.auth.AuthenticationResult;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager
 {
@@ -44,16 +46,20 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     private final BoltStateMachineSPI spi;
     private final MutableConnectionState connectionState;
     private final Clock clock;
+    private final boolean renameThreads;
+    private final String defaultDatabaseName;
     private StatementProcessorProvider statementProcessorProvider;
 
     public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
-            Clock clock )
+            Clock clock, boolean renameThreads, String defaultDatabaseName )
     {
         this.machine = machine;
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = connectionState;
         this.clock = clock;
+        this.renameThreads = renameThreads;
+        this.defaultDatabaseName = defaultDatabaseName;
     }
 
     @Override
@@ -119,6 +125,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
         {
             StatementProcessor statementProcessor = statementProcessorProvider.getStatementProcessor( databaseName );
             connectionState().setStatementProcessor( statementProcessor );
+            extendThreadName( databaseName );
             return statementProcessor;
         }
         else
@@ -134,6 +141,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     @Override
     public void releaseStatementProcessor()
     {
+        extendThreadName( null );
         connectionState().clearStatementProcessor();
     }
 
@@ -149,7 +157,8 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
             else
             {
                 throw new BoltProtocolBreachFatality( format( "Changing database without closing the previous is forbidden. " +
-                        "Current database name: '%s', new database name: '%s'.", currentProcessor.databaseName(), databaseName ) );
+                                                              "Current database name: '%s', new database name: '%s'.", currentProcessor.databaseName(),
+                                                              databaseName ) );
             }
         }
         return true;
@@ -158,5 +167,30 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     void setStatementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
     {
         this.statementProcessorProvider = statementProcessorProvider;
+    }
+
+    /**
+     * Extend the current thread name with the current database name
+     *
+     * @param databaseName
+     */
+    private void extendThreadName( String databaseName )
+    {
+        if ( !renameThreads )
+        {
+            return;
+        }
+        Thread currentThread = Thread.currentThread();
+        String originalName = currentThread.getName();
+        //Remove database name if present
+        String newName = originalName.replaceAll( "^(.*)\\[DB=.*\\] $", "$1" );
+        if ( databaseName != null )
+        {
+            newName = String.format( "%s[DB=%s] ", newName, Objects.equals( databaseName, ABSENT_DB_NAME ) ? defaultDatabaseName : databaseName );
+        }
+        if ( !Objects.equals( originalName, newName ) )
+        {
+            currentThread.setName( newName );
+        }
     }
 }

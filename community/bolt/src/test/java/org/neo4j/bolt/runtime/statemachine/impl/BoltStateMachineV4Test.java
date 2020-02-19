@@ -460,7 +460,7 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), false, "defaultDb" );
 
         machine.close();
 
@@ -472,7 +472,7 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() , false, "defaultDb" );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
         machine.markFailed( error );

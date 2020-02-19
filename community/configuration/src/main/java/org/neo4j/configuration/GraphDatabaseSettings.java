@@ -1080,6 +1080,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .addConstraint( range( 1, Integer.MAX_VALUE ) )
                     .build();
 
+    @Description( "Bolt Worker thread names will be extended with current database name in case the Worker is already " +
+                  "associated with Transaction. This is useful if a Worker thread gets stuck and it is needed to figure out on which database " +
+                  "was it working on from a Thread dump." )
+    @Internal
+    public static final Setting<Boolean> bolt_worker_threads_contain_database_name =
+            newBuilder( "unsupported.dbms.bolt.worker_threads_contain_database", BOOL, false ).dynamic().build();
+
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
     public static final Setting<Boolean> archive_failed_index =

@@ -33,9 +33,9 @@ import org.neo4j.bolt.v4.runtime.ReadyState;
 
 public class BoltStateMachineV4 extends AbstractBoltStateMachine
 {
-    public BoltStateMachineV4( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock )
+    public BoltStateMachineV4( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, boolean renameThreads, String defaultDatabaseName )
     {
-        super( boltSPI, boltChannel, clock );
+        super( boltSPI, boltChannel, clock, renameThreads, defaultDatabaseName );
     }
 
     @Override

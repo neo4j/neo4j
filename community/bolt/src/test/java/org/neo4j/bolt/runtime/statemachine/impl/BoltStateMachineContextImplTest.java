@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -45,6 +46,7 @@ import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
 class BoltStateMachineContextImplTest
 {
     private static final String DB_NAME = "Molly";
+    private static final String DB_NAME_DEFAULT = "Polly";
 
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
@@ -119,14 +121,65 @@ class BoltStateMachineContextImplTest
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
     }
 
+    @Test
+    void shouldThreadsNameBeUnchangedIfSwitchedOff() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImpl context;
+
+        // When thread rename is not switched on then DB name should not be included
+        context = boltStateMachineContextWithStatementProcessor( txStateMachine, DB_NAME, false, DB_NAME_DEFAULT );
+        assertThat( Thread.currentThread().getName(), not( containsString( DB_NAME ) ) );
+        context.releaseStatementProcessor();
+        assertThat( Thread.currentThread().getName(), not( containsString( DB_NAME ) ) );
+    }
+
+    @Test
+    void shouldThreadsNameBeCorrectIfSwitchedOn() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImpl context;
+
+        // When thread rename is switched on then DB name should be included
+        context = boltStateMachineContextWithStatementProcessor( txStateMachine, DB_NAME, true, DB_NAME_DEFAULT );
+        assertThat( Thread.currentThread().getName(), containsString( DB_NAME ) );
+        context.releaseStatementProcessor();
+        assertThat( Thread.currentThread().getName(), not( containsString( DB_NAME ) ) );
+    }
+
+    @Test
+    void shouldThreadsNameBeCorrectIfSwitchedOnAndDefaultDatabase() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImpl context;
+
+        // When thread rename is switched on then with default DB name its name should not be included
+        context = boltStateMachineContextWithStatementProcessor( txStateMachine, "", true, DB_NAME_DEFAULT );
+        assertThat( Thread.currentThread().getName(), containsString( DB_NAME_DEFAULT ) );
+        context.releaseStatementProcessor();
+        assertThat( Thread.currentThread().getName(), not( containsString( DB_NAME_DEFAULT ) ) );
+    }
+
     private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
+
+            throws BoltProtocolBreachFatality, BoltIOException
+    {
+        return boltStateMachineContextWithStatementProcessor(  txStateMachine, databaseName, false, DB_NAME_DEFAULT );
+    }
+
+    private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName,
+                                                                                              boolean renameThreads, String defaultDatabaseName )
             throws BoltProtocolBreachFatality, BoltIOException
     {
         StatementProcessorProvider provider = mock( StatementProcessorProvider.class );
         when( provider.getStatementProcessor( databaseName ) ).thenReturn( txStateMachine );
         when( txStateMachine.databaseName() ).thenReturn( databaseName );
 
-        BoltStateMachineContextImpl context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
+        BoltStateMachineContextImpl context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ),
+                                                          renameThreads, defaultDatabaseName );
         context.setStatementProcessorProvider( provider );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
 
@@ -139,7 +192,14 @@ class BoltStateMachineContextImplTest
 
     private static BoltStateMachineContextImpl newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
+        return newContext( machine, boltSPI, false, DB_NAME_DEFAULT );
+    }
+
+    private static BoltStateMachineContextImpl newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI,
+                                                           boolean renameThreads, String defaultDatabaseName )
+    {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
-        return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
+        return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC(),
+                                                renameThreads, defaultDatabaseName );
     }
 }

@@ -63,7 +63,7 @@ public class BoltV4MachineRoom
     public static BoltStateMachine newMachine( BoltStateMachineSPIImpl spi )
     {
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), false, "defaultDb" );
     }
 
     public static BoltStateMachine newMachineWithTransaction() throws BoltConnectionFatality, BoltIOException
@@ -84,7 +84,7 @@ public class BoltV4MachineRoom
         when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), false, "defaultDb" );
         init( machine );
         return machine;
     }
