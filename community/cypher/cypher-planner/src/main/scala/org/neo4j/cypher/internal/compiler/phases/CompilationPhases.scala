@@ -108,7 +108,9 @@ object CompilationPhases {
   def planPipeLine(sequencer: String => RewriterStepSequencer, pushdownPropertyReads: Boolean = true): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-        isolateAggregation andThen
+        SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
+          Namespacer andThen
+          isolateAggregation andThen
           SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
           Namespacer andThen
           transitiveClosure andThen
