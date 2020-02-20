@@ -34,8 +34,10 @@ object CompilationPhases {
       AstRewriting(sequencer, literalExtraction)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
-    isolateAggregation andThen
     SemanticAnalysis(warn = false) andThen
+      Namespacer andThen
+      isolateAggregation andThen
+      SemanticAnalysis(warn = false) andThen
       Namespacer andThen
       transitiveClosure andThen
       rewriteEqualityToInPredicate andThen
