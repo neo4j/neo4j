@@ -237,6 +237,23 @@ public enum PrivilegeAction
                 }
             },
 
+    /** MATCH element and read labels and properties */
+    MATCH
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case READ:
+                    case TRAVERSE:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
     GRAPH_ACTIONS
             {
                 @Override
@@ -247,6 +264,7 @@ public enum PrivilegeAction
                     case READ:
                     case WRITE:
                     case TRAVERSE:
+                    case MATCH:
                         return true;
                     default:
                         return this == action;

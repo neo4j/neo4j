@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_PRIVI
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
@@ -90,7 +91,8 @@ class PrivilegeActionTest
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, GRANT_PRIVILEGE, DENY_PRIVILEGE, REVOKE_PRIVILEGE ) );
 
         expected.put( DATABASE_ACTIONS, Set.of( GRAPH_ACTIONS, SCHEMA, TOKEN, ACCESS, EXECUTE ) );
-        expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE ) );
+        expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
+        expected.put( MATCH, Set.of( TRAVERSE, READ ) );
         expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( SCHEMA, Set.of( INDEX, CREATE_INDEX, DROP_INDEX, CONSTRAINT, CREATE_CONSTRAINT, DROP_CONSTRAINT ) );

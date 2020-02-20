@@ -460,16 +460,6 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResou
       s"REVOKE ${privilege.name}"
     }
   }
-
-  override def semanticCheck: SemanticCheck = privilege match {
-    case _: MatchPrivilege =>
-      if (revokeType.name.nonEmpty) {
-        SemanticError(s"$name is not a valid command, use REVOKE ${revokeType.name} READ and REVOKE ${revokeType.name} TRAVERSE instead.", position)
-      } else {
-        SemanticError(s"$name is not a valid command, use REVOKE READ and REVOKE TRAVERSE instead.", position)
-      }
-    case _ => super.semanticCheck
-  }
 }
 
 final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {

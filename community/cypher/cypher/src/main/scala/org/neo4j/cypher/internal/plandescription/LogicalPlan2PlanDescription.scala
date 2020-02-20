@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
+import org.neo4j.cypher.internal.logical.plans.DenyMatch
 import org.neo4j.cypher.internal.logical.plans.DenyRead
 import org.neo4j.cypher.internal.logical.plans.DenyTraverse
 import org.neo4j.cypher.internal.logical.plans.DenyWrite
@@ -113,6 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
+import org.neo4j.cypher.internal.logical.plans.GrantMatch
 import org.neo4j.cypher.internal.logical.plans.GrantRead
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.GrantTraverse
@@ -166,6 +168,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
+import org.neo4j.cypher.internal.logical.plans.RevokeMatch
 import org.neo4j.cypher.internal.logical.plans.RevokeRead
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
@@ -495,6 +498,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), NoChildren,
+          Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case GrantMatch(_, resource, database, qualifier, roleName) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "GrantMatch", NoChildren, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case DenyMatch(_, resource, database, qualifier, roleName) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "DenyMatch", NoChildren, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case RevokeMatch(_, resource, database, qualifier, roleName, revokeType) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), NoChildren,
           Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantWrite(_, _, database, qualifier, roleName) =>
@@ -848,6 +864,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), children,
+          Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case GrantMatch(_, resource, database, qualifier, roleName) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "GrantMatch", children, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case DenyMatch(_, resource, database, qualifier, roleName) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "DenyMatch", children, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case RevokeMatch(_, resource, database, qualifier, roleName, revokeType) =>
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children,
           Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantWrite(_, _, database, qualifier, roleName) =>
