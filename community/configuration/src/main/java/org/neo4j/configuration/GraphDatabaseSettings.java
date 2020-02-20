@@ -416,8 +416,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> cypher_pipelined_batch_size_big =
             newBuilder( "unsupported.cypher.pipelined.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
-            " for every physical core in the system." )
+    @Description( "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, two workers will be started" +
+                  " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used." )
     @Internal
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
 

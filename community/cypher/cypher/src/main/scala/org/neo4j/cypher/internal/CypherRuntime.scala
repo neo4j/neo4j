@@ -195,8 +195,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
   }
 }
 
-case class CypherRuntimeConfiguration(workers: Int,
-                                      pipelinedBatchSizeSmall: Int,
+case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
                                       pipelinedBatchSizeBig: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,

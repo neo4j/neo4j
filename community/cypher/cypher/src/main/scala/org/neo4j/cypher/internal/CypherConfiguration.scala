@@ -58,7 +58,6 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.csv_buffer_size).intValue(),
       CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine).toString),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
-      config.get(GraphDatabaseSettings.cypher_worker_count),
       config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_small),
       config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_big),
       config.get(GraphDatabaseSettings.enable_pipelined_runtime_trace),
@@ -130,7 +129,6 @@ case class CypherConfiguration(version: CypherVersion,
                                csvBufferSize: Int,
                                expressionEngineOption: CypherExpressionEngineOption,
                                lenientCreateRelationship: Boolean,
-                               workers: Int,
                                pipelinedBatchSizeSmall: Int,
                                pipelinedBatchSizeBig: Int,
                                doSchedulerTracing: Boolean,
@@ -143,7 +141,6 @@ case class CypherConfiguration(version: CypherVersion,
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
-      workers = workers,
       pipelinedBatchSizeSmall = pipelinedBatchSizeSmall,
       pipelinedBatchSizeBig = pipelinedBatchSizeBig,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
