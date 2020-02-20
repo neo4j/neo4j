@@ -21,12 +21,15 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllResource
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsersQualifier
@@ -224,6 +227,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
+import org.neo4j.cypher.internal.plandescription.Arguments.Resource
 import org.neo4j.cypher.internal.plandescription.Arguments.Role
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Scope
@@ -430,31 +434,31 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RequireRole", NoChildren, Seq(roleName), variables)
 
       case CopyRolePrivileges(_, to, from, grantDeny) =>
-        val fromRole = Role(Prettifier.escapeName(from))
-        val toRole = Role(Prettifier.escapeName(to))
+        val fromRole = Role(s"FROM ROLE ${Prettifier.escapeName(from)}")
+        val toRole = Role(s"TO ROLE ${Prettifier.escapeName(to)}")
         PlanDescriptionImpl(id, s"CopyRolePrivileges($grantDeny)", NoChildren, Seq(fromRole, toRole), variables)
 
       case GrantRoleToUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "GrantRoleToUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+        PlanDescriptionImpl(id, "GrantRoleToUser", NoChildren, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
 
       case RevokeRoleFromUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+        PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
 
       case AssertValidRevoke(_, action, scope, roleName) =>
         val args = action match {
           case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
           case _ => Seq(DbmsAction(action.name))
         }
-        PlanDescriptionImpl(id, "AssertValidRevoke", NoChildren, args :+ Role(Prettifier.escapeName(roleName)), variables)
+        PlanDescriptionImpl(id, "AssertValidRevoke", NoChildren, args :+ getAnnotatedRoleArgument(roleName), variables)
 
       case GrantDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "GrantDbmsAction", NoChildren, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, "GrantDbmsAction", NoChildren, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "DenyDbmsAction", NoChildren, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, "DenyDbmsAction", NoChildren, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeDbmsAction(_, action, roleName, revokeType) =>
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), NoChildren, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), NoChildren, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantDatabaseAction(_, action, database, qualifier, roleName) =>
         val arguments = extractDatabaseArguments(action, database, qualifier, roleName)
@@ -469,40 +473,41 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), NoChildren, arguments, variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyTraverse(_, database, qualifier, roleName) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantRead(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyRead(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "DenyRead", NoChildren, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), NoChildren,
+          Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case GrantWrite(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "GrantWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case GrantWrite(_, _, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case DenyWrite(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case DenyWrite(_, _, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case RevokeWrite(_, _, database, qualifier, roleName, revokeType) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case ShowPrivileges(_, scope) =>
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
@@ -782,31 +787,31 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RequireRole", children, Seq(roleName), variables)
 
       case CopyRolePrivileges(_, to, from, grantDeny) =>
-        val fromRole = Role(Prettifier.escapeName(from))
-        val toRole = Role(Prettifier.escapeName(to))
+        val fromRole = Role(s"FROM ROLE ${Prettifier.escapeName(from)}")
+        val toRole = Role(s"TO ROLE ${Prettifier.escapeName(to)}")
         PlanDescriptionImpl(id, s"CopyRolePrivileges($grantDeny)", children, Seq(fromRole, toRole), variables)
 
       case GrantRoleToUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "GrantRoleToUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+        PlanDescriptionImpl(id, "GrantRoleToUser", children, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
 
       case RevokeRoleFromUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+        PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
 
       case AssertValidRevoke(_, action, scope, roleName) =>
         val args = action match {
           case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
           case _ => Seq(DbmsAction(action.name))
         }
-        PlanDescriptionImpl(id, "AssertValidRevoke", children, args :+ Role(Prettifier.escapeName(roleName)), variables)
+        PlanDescriptionImpl(id, "AssertValidRevoke", children, args :+ getAnnotatedRoleArgument(roleName), variables)
 
       case GrantDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeDbmsAction(_, action, roleName, revokeType) =>
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(DbmsAction(action.name), Role(Prettifier.escapeName(roleName))), variables)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantDatabaseAction(_, action, database, qualifier, roleName) =>
         val arguments = extractDatabaseArguments(action, database, qualifier, roleName)
@@ -821,40 +826,41 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children, arguments, variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyTraverse(_, database, qualifier, roleName) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
-        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantRead(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "GrantRead", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "GrantRead", children, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case DenyRead(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyRead", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, "DenyRead", children, Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), children,
+          Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case GrantWrite(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "GrantWrite", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case GrantWrite(_, _, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case DenyWrite(_, resource, database, qualifier, roleName) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, "DenyWrite", children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case DenyWrite(_, _, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, "DenyWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
-        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), Role(Prettifier.escapeName(roleName))), variables)
+      case RevokeWrite(_, _, database, qualifier, roleName, revokeType) =>
+        val (dbName, qualifierText) = extractGraphScope(database, qualifier)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case ShowPrivileges(_, scope) =>
         PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Scope(Prettifier.extractScope(scope))), variables)
@@ -1090,7 +1096,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractDatabaseArguments(action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String): Seq[Argument] =
-    Seq(DatabaseAction(action.name), Database(extractDbScope(database))) ++ extractUserQualifier(qualifier).map(Qualifier).toSeq :+ Role(Prettifier.escapeName(roleName))
+    Seq(DatabaseAction(action.name), Database(extractDbScope(database))) ++ extractUserQualifier(qualifier).map(Qualifier).toSeq :+ getAnnotatedRoleArgument(roleName)
 
   private def getNameArgumentForLabelInAdministrationCommand(label: String, name: String) = {
     label match {
@@ -1098,6 +1104,23 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case "Role" => Role(Prettifier.escapeName(name))
       case "Database" => Database(Prettifier.escapeName(name))
     }
+  }
+
+  private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (String, String, String) = {
+    val (dbName, qualifierText) = extractGraphScope(dbScope, qualifier)
+    val resourceText = resource match {
+      case PropertyResource(name) => s"PROPERTY ${Prettifier.escapeName(name)}"
+      case AllResource() => "ALL PROPERTIES"
+    }
+    (dbName, qualifierText, resourceText)
+  }
+
+  private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = {
+    val dbName = dbScope match {
+      case NamedGraphScope(name) => s"GRAPH ${Prettifier.escapeName(name)}"
+      case AllGraphsScope() => "ALL GRAPHS"
+    }
+    (dbName, Prettifier.extractQualifierPart(qualifier))
   }
 
   private def extractUserQualifier(qualifier: PrivilegeQualifier): Option[String] = qualifier match {
@@ -1108,8 +1131,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   def extractDbScope(dbScope: GraphScope): String = dbScope match {
-    case NamedGraphScope(name) => Prettifier.escapeName(name)
+    case NamedGraphScope(name) => s"DATABASE ${Prettifier.escapeName(name)}"
     case AllGraphsScope() => "ALL DATABASES"
-    case DefaultDatabaseScope() => "DEFAULT"
+    case DefaultDatabaseScope() => "DEFAULT DATABASE"
   }
+
+  private def getAnnotatedUserArgument(user: String): User = User(s"USER ${Prettifier.escapeName(user)}")
+
+  private def getAnnotatedRoleArgument(role: String): Role = Role(s"ROLE ${Prettifier.escapeName(role)}")
 }

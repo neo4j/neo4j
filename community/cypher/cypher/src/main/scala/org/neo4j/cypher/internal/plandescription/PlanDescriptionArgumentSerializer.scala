@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
+import org.neo4j.cypher.internal.plandescription.Arguments.Resource
 import org.neo4j.cypher.internal.plandescription.Arguments.Role
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
@@ -123,6 +124,7 @@ object PlanDescriptionArgumentSerializer {
       case Role(name) => name
       case User(name) => name
       case Qualifier(name) => name
+      case Resource(name) => name
       case Scope(name) => name
       case SourceCode(className, sourceCode) => sourceCode
       case ByteCode(className, byteCode) => byteCode

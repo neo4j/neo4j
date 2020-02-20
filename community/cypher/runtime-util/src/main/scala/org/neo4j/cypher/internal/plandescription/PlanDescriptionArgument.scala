@@ -152,6 +152,11 @@ object Arguments {
     override def name = "qualifier"
   }
 
+  case class Resource(value: String) extends Argument {
+
+    override def name = "resource"
+  }
+
   case class Scope(value: String) extends Argument {
 
     override def name = "scope"
