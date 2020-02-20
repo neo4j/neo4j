@@ -235,6 +235,8 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_ARGUMENT_PASSING_MODE
     else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
       PROCEDURE_NOT_FOUND
+    else if (msg.startsWith("Type mismatch for parameter"))
+      INVALID_ARGUMENT_TYPE
     else
       msg
   }

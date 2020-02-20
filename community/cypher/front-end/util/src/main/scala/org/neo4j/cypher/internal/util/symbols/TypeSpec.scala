@@ -165,11 +165,15 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   override def hashCode = 41 * ranges.hashCode
   override def equals(that: Any): Boolean = that match {
     case that: TypeSpec =>
-      (that canEqual this) && {
-        val (finite1, infinite1) = ranges.partition(_.hasDefiniteSize)
-        val (finite2, infinite2) = that.ranges.partition(_.hasDefiniteSize)
-        (infinite1 == infinite2) &&
-        ((finite1 == finite2) || (toStream(finite1) == toStream(finite2)))
+      if (this.ranges.isEmpty) {
+        that.ranges.isEmpty
+      } else {
+        (that canEqual this) && {
+          val (finite1, infinite1) = ranges.partition(_.hasDefiniteSize)
+          val (finite2, infinite2) = that.ranges.partition(_.hasDefiniteSize)
+          (infinite1 == infinite2) &&
+            ((finite1 == finite2) || (toStream(finite1) == toStream(finite2)))
+        }
       }
     case _ => false
   }

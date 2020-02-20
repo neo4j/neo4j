@@ -37,6 +37,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -375,6 +376,15 @@ public final class ValueUtils
         {
             return Values.longValue( (long) object );
         }
+        if ( object instanceof IntValue )
+        {
+            return Values.longValue(((IntValue) object).longValue());
+        }
+        if ( object instanceof Integer )
+        {
+            return Values.longValue( (long) object );
+        }
+
         throw new IllegalArgumentException(
                 "Cannot produce a long from " + object.getClass().getName() );
     }

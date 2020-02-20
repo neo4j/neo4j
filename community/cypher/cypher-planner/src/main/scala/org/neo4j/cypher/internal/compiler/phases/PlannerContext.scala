@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.virtual.MapValue
 
 class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
@@ -58,6 +60,10 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
 
   override def errorHandler: Seq[SemanticErrorDef] => Unit =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+
+  def getParameterValueTypeMapping: Map[String, CypherType] = {
+    ParameterValueTypeHelper.asCypherTypeMap(params)
+  }
 
 }
 

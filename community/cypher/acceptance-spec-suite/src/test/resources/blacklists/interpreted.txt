@@ -1,0 +1,3 @@
+Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for LIMIT should fail"
+Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for LIMIT with ORDER BY should fail"
+Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for SKIP should fail"

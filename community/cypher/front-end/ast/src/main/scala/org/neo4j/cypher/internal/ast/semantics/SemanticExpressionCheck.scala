@@ -285,7 +285,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:Property =>
         check(ctx, x.map) chain
           expectType(CTMap.covariant | CTNode.covariant | CTRelationship.covariant | CTPoint.covariant | CTDate.covariant | CTTime.covariant |
-            CTLocalTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant | CTDuration.covariant| CTAny.invariant, x.map) chain
+            CTLocalTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant | CTDuration.covariant, x.map) chain
           specifyType(CTAny.covariant, x)
 
       case x:CachedProperty =>

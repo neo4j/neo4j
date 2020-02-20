@@ -28,18 +28,20 @@ import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsIn
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer,
                         literalExtraction: LiteralExtraction,
                         getDegreeRewriting: Boolean = true, // This does not really belong in the front end. Should move to a planner rewriter,
-                        innerVariableNamer: InnerVariableNamer
+                        innerVariableNamer: InnerVariableNamer,
+                        parameterTypeMapping : Map[String, CypherType] = Map.empty
 ) extends Phase[BaseContext, BaseState, BaseState] {
 
   private val astRewriter = new ASTRewriter(sequencer, literalExtraction, getDegreeRewriting, innerVariableNamer)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
 
-    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.queryText, in.statement(), in.semantics(), context.cypherExceptionFactory)
+    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.queryText, in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
 
     in.withStatement(rewrittenStatement).withParams(extractedParams)
   }

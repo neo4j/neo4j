@@ -93,7 +93,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          evaluator = null,
                                          innerVariableNamer = innerVariableNamer,
                                          params )
-    CompilationPhases.parsing(sequencer, context.innerVariableNamer, compatibilityMode).transform(startState, context)
+    CompilationPhases.parsing(sequencer, context.innerVariableNamer, compatibilityMode, parameterTypeMapping = context.getParameterValueTypeMapping)
+      .transform(startState, context)
   }
 
 }

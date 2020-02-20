@@ -55,7 +55,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)
 
-    val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState, exceptionFactory)
+    // if you ever want to have parameters in here, fix the map
+    val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState, Map.empty, exceptionFactory)
     val state = LogicalPlanState(query, None, IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)

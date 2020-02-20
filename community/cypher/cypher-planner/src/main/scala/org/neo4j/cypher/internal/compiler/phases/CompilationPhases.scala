@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {
 
@@ -66,7 +67,8 @@ object CompilationPhases {
   def parsing(sequencer: String => RewriterStepSequencer,
               innerVariableNamer: InnerVariableNamer,
               compatibilityMode: CypherCompatibilityVersion = Compatibility4_1,
-              literalExtraction: LiteralExtraction = IfNoParameter
+              literalExtraction: LiteralExtraction = IfNoParameter,
+              parameterTypeMapping: Map[String, CypherType] = Map.empty
              ): Transformer[BaseContext, BaseState, BaseState] = {
     def compatibilityCheck(compatibilityMode: CypherCompatibilityVersion, base: Transformer[BaseContext, BaseState, BaseState]): Transformer[BaseContext, BaseState, BaseState] =
       compatibilityMode match {
@@ -92,7 +94,7 @@ object CompilationPhases {
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
       SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
+      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer, parameterTypeMapping = parameterTypeMapping)
   }
 
   // Phase 2

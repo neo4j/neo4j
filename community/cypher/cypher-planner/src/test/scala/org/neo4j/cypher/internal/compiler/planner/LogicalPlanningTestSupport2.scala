@@ -128,7 +128,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
 
   def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-    parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
+    // if you ever want to have parameters in here, fix the map
+    parsing(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads)
   }

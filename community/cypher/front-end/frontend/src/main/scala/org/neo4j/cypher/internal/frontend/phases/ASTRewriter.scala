@@ -47,9 +47,11 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   literalExtraction: LiteralExtraction,
@@ -59,6 +61,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
   def rewrite(queryText: String,
               statement: Statement,
               semanticState: SemanticState,
+              parameterTypeMapping: Map[String, CypherType],
               cypherExceptionFactory: CypherExceptionFactory): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
     val contract = rewriterSequencer("ASTRewriter")(
@@ -89,8 +92,11 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)
-    val (extractParameters, extractedParameters) = literalReplacement(rewrittenStatement, literalExtraction)
 
-    (rewrittenStatement.endoRewrite(extractParameters), extractedParameters, contract.postConditions)
+    val replaceParameterValueTypes = parameterValueTypeReplacement(rewrittenStatement, parameterTypeMapping)
+    val rewrittenStatementWithParameterTypes = rewrittenStatement.endoRewrite(replaceParameterValueTypes)
+    val (extractParameters, extractedParameters) = literalReplacement(rewrittenStatementWithParameterTypes, literalExtraction)
+
+    (rewrittenStatementWithParameterTypes.endoRewrite(extractParameters), extractedParameters, contract.postConditions)
   }
 }

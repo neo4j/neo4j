@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.Expression.DefaultTypeMismatchMessa
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -97,8 +98,14 @@ trait SemanticAnalysisTooling {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(expression).specified.mkString(", ", " or ")
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
-        SemanticCheckResult.error(ss,
-          SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), expression.position))
+        expression match {
+          case p:Parameter if !p.name.matches("""\s\sAUTO(INT|STRING|DOUBLE|LIST)\d+""") => // See literalReplacement for list of all AUTOs
+            SemanticCheckResult.error(ss,
+              SemanticError("Type mismatch for parameter '" + p.name + "': " + messageGen(expectedTypesString, existingTypesString), expression.position))
+          case _ =>
+            SemanticCheckResult.error(ss,
+              SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), expression.position))
+        }
       case (ss, _)             =>
         SemanticCheckResult.success(ss)
     }
