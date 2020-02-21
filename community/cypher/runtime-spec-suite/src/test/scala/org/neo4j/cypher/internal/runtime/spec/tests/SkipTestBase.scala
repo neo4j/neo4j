@@ -331,4 +331,39 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("a2").withRows(rowCount(10))
   }
+
+  test("SKIP combined with fused-over-pipelines") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "rel", "y")
+      .cartesianProduct()
+      .|.argument()
+      .expand("(x)-[rel]->(y)")
+      .skip(99)
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
+  }
+
+  test("SKIP followed by aggregation") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("sum")
+      .aggregation(Seq.empty, Seq("sum(x) AS sum"))
+      .skip(10)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(sizeHint, 3, _ => 11)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("sum").withSingleRow(input.flatten.drop(10).foldLeft(0)((sum, current) => sum + current(0).asInstanceOf[Int]))
+
+  }
 }
