@@ -96,7 +96,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
-import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1800,7 +1799,7 @@ class ImportCommandTest
         // GIVEN
         List<String> lines = new ArrayList<>();
         lines.add( ":ID,name,:LABEL" );
-        lines.add( "id," + repeat( 'l', 2_000 ) + ",Person" );
+        lines.add( "id," + "l".repeat( 2_000 ) + ",Person" );
 
         File dbConfig = prepareDefaultConfigFile();
 

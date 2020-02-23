@@ -26,7 +26,6 @@ import org.neo4j.logging.NullLog;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.center;
-import static org.apache.commons.lang3.StringUtils.repeat;
 
 /**
  * Manager that dumps information from independent available {@link DiagnosticsProvider}s.
@@ -97,16 +96,16 @@ public class DiagnosticsManager
 
     public void section( Log log, String sectionName )
     {
-        log.info( repeat( "*", CAPTION_WIDTH ) );
+        log.info( "*".repeat( CAPTION_WIDTH ) );
         log.info( center( title( sectionName ), CAPTION_WIDTH ) );
-        log.info( repeat( "*", CAPTION_WIDTH ) );
+        log.info( "*".repeat( CAPTION_WIDTH ) );
     }
 
     private static void header( Log log, String caption )
     {
-        log.info( repeat( "-", CAPTION_WIDTH ) );
+        log.info( "-".repeat( CAPTION_WIDTH ) );
         log.info( center( title( caption ), CAPTION_WIDTH ) );
-        log.info( repeat( "-", CAPTION_WIDTH ) );
+        log.info( "-".repeat( CAPTION_WIDTH ) );
     }
 
     private static String title( String name )

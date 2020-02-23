@@ -244,6 +244,6 @@ class SocketAddressParserTest
 
     private static String whitespace( int numberOfWhitespaces )
     {
-        return StringUtils.repeat( " ", numberOfWhitespaces );
+        return " ".repeat( numberOfWhitespaces );
     }
 }

@@ -129,7 +129,7 @@ public class BoltThrottleMaxDurationIT
     public void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached() throws Exception
     {
         int numberOfRunDiscardPairs = 10_000;
-        String largeString = StringUtils.repeat( " ", 8 * 1024  );
+        String largeString = " ".repeat( 8 * 1024 );
 
         client.connect( address )
                 .send( util.defaultAcceptedVersions() )

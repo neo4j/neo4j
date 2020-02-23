@@ -102,7 +102,7 @@ public class BoltChannelAutoReadLimiterIT
     public void largeNumberOfSlowRunningJobsShouldChangeAutoReadState() throws Exception
     {
         int numberOfRunDiscardPairs = 1000;
-        String largeString = StringUtils.repeat( " ", 8 * 1024 );
+        String largeString = " ".repeat( 8 * 1024 );
 
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
