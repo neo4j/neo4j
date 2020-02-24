@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.Cursor
@@ -85,7 +86,8 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         cardinalities: Cardinalities,
                         providedOrders: ProvidedOrders,
                         hasLoadCSV: Boolean,
-                        periodicCommitInfo: Option[PeriodicCommitInfo])
+                        periodicCommitInfo: Option[PeriodicCommitInfo],
+                        idGen: IdGen)
 
 /**
  * Context in which the Runtime performs physical planning

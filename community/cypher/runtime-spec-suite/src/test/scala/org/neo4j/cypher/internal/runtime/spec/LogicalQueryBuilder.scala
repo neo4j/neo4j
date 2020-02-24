@@ -79,6 +79,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  cardinalities,
                  providedOrders,
                  hasLoadCSV = false,
-                 None)
+                 None,
+                 idGen)
   }
 }

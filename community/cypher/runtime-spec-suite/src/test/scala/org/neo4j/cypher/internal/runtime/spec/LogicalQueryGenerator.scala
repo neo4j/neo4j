@@ -57,6 +57,7 @@ object LogicalQueryGenerator {
       state.cardinalities,
       providedOrders,
       hasLoadCSV = false,
-      None), state)
+      None,
+      state.idGen), state)
   }
 }

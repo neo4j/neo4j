@@ -54,8 +54,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .semiApply()
-      .|.emptyResult()
-      .|.argument("x")
+      .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
       .build()
 
