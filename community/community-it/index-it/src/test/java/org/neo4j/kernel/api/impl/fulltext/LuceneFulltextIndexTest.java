@@ -31,7 +31,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -587,7 +587,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         assertThat( (Value) descriptor.getIndexConfig().get( ANALYZER ) ).isEqualTo( Values.stringValue( "standard-no-stop-words" ) );
         assertThat( (Value) descriptor.getIndexConfig().get( EVENTUALLY_CONSISTENT ) ).isEqualTo( Values.booleanValue( true ) );
-        assertThat( asList( descriptor.getCapability().limitations() ) ).containsExactly( IndexLimitation.EVENTUALLY_CONSISTENT );
+        assertThat( asList( descriptor.getCapability().behaviours() ) ).containsExactly( IndexBehaviour.EVENTUALLY_CONSISTENT );
     }
 
     @Test

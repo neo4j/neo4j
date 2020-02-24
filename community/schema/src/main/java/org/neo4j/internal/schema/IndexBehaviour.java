@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
-public enum IndexLimitation
+public enum IndexBehaviour
 {
     /**
      * Highlights that CONTAINS and ENDS WITH isn't supported efficiently.

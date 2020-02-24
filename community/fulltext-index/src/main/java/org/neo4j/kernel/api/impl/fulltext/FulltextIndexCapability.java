@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
@@ -47,8 +47,8 @@ class FulltextIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexLimitation[] limitations()
+    public IndexBehaviour[] behaviours()
     {
-        return isEventuallyConsistent ? new IndexLimitation[] { IndexLimitation.EVENTUALLY_CONSISTENT } : new IndexLimitation[0];
+        return isEventuallyConsistent ? new IndexBehaviour[] { IndexBehaviour.EVENTUALLY_CONSISTENT } : new IndexBehaviour[0];
     }
 }

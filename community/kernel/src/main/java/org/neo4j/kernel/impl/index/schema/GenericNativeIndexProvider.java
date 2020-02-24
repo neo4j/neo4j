@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -191,7 +191,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
 
     private static class GenericIndexCapability implements IndexCapability
     {
-        private final IndexLimitation[] limitations = {IndexLimitation.SLOW_CONTAINS};
+        private final IndexBehaviour[] behaviours = {IndexBehaviour.SLOW_CONTAINS};
 
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
@@ -224,9 +224,9 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         }
 
         @Override
-        public IndexLimitation[] limitations()
+        public IndexBehaviour[] behaviours()
         {
-            return limitations;
+            return behaviours;
         }
     }
 }

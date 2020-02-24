@@ -47,16 +47,12 @@ import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexLimitation
-import org.neo4j.internal.schema.IndexOrder
-import org.neo4j.internal.schema.IndexType
-import org.neo4j.internal.schema.IndexValueCapability
-import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexBehaviour, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
 import org.neo4j.cypher.internal.util.symbols
+
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -147,7 +143,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val label = LabelId(reference.schema().getEntityTokenIds()(0))
         val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
         val isUnique = reference.isUnique
-        val limitations = reference.getCapability.limitations().map(kernelToCypher).toSet
+        val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
           reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
             case Array() => IndexOrderCapability.NONE
@@ -166,12 +162,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType != IndexType.BTREE || reference.getCapability.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
+        if (reference.getIndexType != IndexType.BTREE || reference.getCapability.behaviours().contains(IndexBehaviour.EVENTUALLY_CONSISTENT)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
         } else {
-          Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability, isUnique))
+          Some(IndexDescriptor(label, properties, behaviours, orderCapability, valueCapability, isUnique))
         }
       case _ => None
     }

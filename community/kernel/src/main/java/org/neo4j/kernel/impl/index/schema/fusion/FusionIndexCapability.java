@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.function.Function;
 
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
@@ -32,26 +32,26 @@ public class FusionIndexCapability implements IndexCapability
     private static final Function<ValueCategory,ValueCategory> categoryOf = Function.identity();
     private final SlotSelector slotSelector;
     private final InstanceSelector<IndexCapability> instanceSelector;
-    private final IndexLimitation[] limitations;
+    private final IndexBehaviour[] behaviours;
 
     FusionIndexCapability( SlotSelector slotSelector, InstanceSelector<IndexCapability> instanceSelector )
     {
         this.slotSelector = slotSelector;
         this.instanceSelector = instanceSelector;
-        this.limitations = buildLimitations( slotSelector );
+        this.behaviours = buildBehaviours( slotSelector );
     }
 
-    private static IndexLimitation[] buildLimitations( SlotSelector slotSelector )
+    private static IndexBehaviour[] buildBehaviours( SlotSelector slotSelector )
     {
         // If we delegate single property text queries to anything else than Lucene, we have slow contains
         IndexSlot slot = slotSelector.selectSlot( new ValueCategory[]{ValueCategory.TEXT}, categoryOf );
         if ( slot != IndexSlot.LUCENE )
         {
-            return new IndexLimitation[]{IndexLimitation.SLOW_CONTAINS};
+            return new IndexBehaviour[]{IndexBehaviour.SLOW_CONTAINS};
         }
         else
         {
-            return new IndexLimitation[0];
+            return new IndexBehaviour[0];
         }
     }
 
@@ -78,8 +78,8 @@ public class FusionIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexLimitation[] limitations()
+    public IndexBehaviour[] behaviours()
     {
-        return limitations;
+        return behaviours;
     }
 }

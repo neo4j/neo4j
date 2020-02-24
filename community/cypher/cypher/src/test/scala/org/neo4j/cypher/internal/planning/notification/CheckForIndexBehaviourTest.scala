@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should notify for NodeIndexContainsScan backed by limited index") {
     val planContext = mock[PlanContext]

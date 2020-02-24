@@ -24,14 +24,13 @@ import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.LabelSchemaDescriptor
-import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.{IndexBehaviour, LabelSchemaDescriptor, SchemaDescriptor}
 
 trait IndexDescriptorCompatibility {
-  def kernelToCypher(limitation: schema.IndexLimitation): IndexLimitation = {
-    limitation match {
-      case schema.IndexLimitation.SLOW_CONTAINS => SlowContains
-      case _ => throw new IllegalStateException("Missing kernel to cypher mapping for limitation: " + limitation)
+  def kernelToCypher(behaviour: IndexBehaviour): IndexLimitation = {
+    behaviour match {
+      case schema.IndexBehaviour.SLOW_CONTAINS => SlowContains
+      case _ => throw new IllegalStateException("Missing kernel to cypher mapping for index behaviour: " + behaviour)
     }
   }
 

@@ -32,7 +32,7 @@ public interface IndexCapability
 {
     IndexOrder[] ORDER_BOTH = {IndexOrder.ASCENDING, IndexOrder.DESCENDING};
     IndexOrder[] ORDER_NONE = new IndexOrder[0];
-    IndexLimitation[] LIMITIATION_NONE = new IndexLimitation[0];
+    IndexBehaviour[] BEHAVIOURS_NONE = new IndexBehaviour[0];
 
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueCategory}.
@@ -61,12 +61,12 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
-     * @return an array of limitations that this index has. It could be anything that planning could look at and
-     * either try to avoid or issue warning for.
+     * @return an array of behaviours that are particular to the implementation or configuration of this index.
+     * It could be anything that planning could look at and either try to avoid, seek out, or issue warning for.
      */
-    default IndexLimitation[] limitations()
+    default IndexBehaviour[] behaviours()
     {
-        return LIMITIATION_NONE;
+        return BEHAVIOURS_NONE;
     }
 
     IndexCapability NO_CAPABILITY = new IndexCapability()
