@@ -299,8 +299,6 @@ public enum PrivilegeAction
                     switch ( action )
                     {
                     case ACCESS:
-                    case START_DATABASE:
-                    case STOP_DATABASE:
                         return true;
                     default:
                         return SCHEMA.satisfies( action ) ||

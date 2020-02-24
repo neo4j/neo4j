@@ -97,7 +97,7 @@ class PrivilegeActionTest
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( SCHEMA, Set.of( INDEX, CREATE_INDEX, DROP_INDEX, CONSTRAINT, CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
-        expected.put( ALL_DATABASE_PRIVILEGES, Set.of( SCHEMA, TOKEN, ACCESS, START_DATABASE, STOP_DATABASE ) );
+        expected.put( ALL_DATABASE_PRIVILEGES, Set.of( SCHEMA, TOKEN, ACCESS ) );
     }
 
     @Test
