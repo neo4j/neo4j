@@ -47,7 +47,12 @@ import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexBehaviour, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.IndexBehaviour
+import org.neo4j.internal.schema.IndexOrder
+import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.IndexValueCapability
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
