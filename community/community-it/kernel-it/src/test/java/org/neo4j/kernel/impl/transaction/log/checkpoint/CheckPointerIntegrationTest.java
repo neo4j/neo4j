@@ -239,12 +239,12 @@ class CheckPointerIntegrationTest
                 .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) );
 
         // when
-        DatabaseManagementService managementService1 = databaseManagementServiceBuilder.build();
-        StorageEngineFactory storageEngineFactory =
-                ((GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency(
-                        StorageEngineFactory.class );
-        managementService1.shutdown();
         DatabaseManagementService managementService = databaseManagementServiceBuilder.build();
+        StorageEngineFactory storageEngineFactory =
+                ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency(
+                        StorageEngineFactory.class );
+        managementService.shutdown();
+        managementService = databaseManagementServiceBuilder.build();
         managementService.shutdown();
 
         // then - 2 check points have been written in the log

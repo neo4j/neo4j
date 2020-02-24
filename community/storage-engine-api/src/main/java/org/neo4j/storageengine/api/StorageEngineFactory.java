@@ -155,7 +155,9 @@ public interface StorageEngineFactory
      * Although currently it's more like this:
      *
      * <ol>
-     *     <li></li>
+     *     <li>1B log entry version - dictating both log entry version AND command version</li>
+     *     <li>1B log entry type - managed by kernel</li>
+     *     <li>For COMMAND log entries: command data... - managed by storage, although versioned the same as log entry version</li>
      * </ol>
      */
     CommandReaderFactory commandReaderFactory();
