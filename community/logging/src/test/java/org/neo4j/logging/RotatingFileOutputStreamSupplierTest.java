@@ -68,7 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -185,68 +184,64 @@ class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    void rotationShouldNotDeadlockOnListener()
+    void rotationShouldNotDeadlockOnListener() throws Exception
     {
-        assertTimeoutPreemptively( ofMillis( TEST_TIMEOUT_MILLIS ), () ->
+        String logContent = "Output file created";
+        final AtomicReference<Exception> listenerException = new AtomicReference<>( null );
+        CountDownLatch latch = new CountDownLatch( 1 );
+        RotationListener listener = new RotationListener()
         {
-            String logContent = "Output file created";
-            final AtomicReference<Exception> listenerException = new AtomicReference<>( null );
-            CountDownLatch latch = new CountDownLatch( 1 );
-            RotationListener listener = new RotationListener()
+            @Override
+            public void outputFileCreated( OutputStream out )
             {
-                @Override
-                public void outputFileCreated( OutputStream out )
+                try
                 {
-                    try
+                    Thread thread = new Thread( () ->
                     {
-                        Thread thread = new Thread( () ->
+                        try
                         {
-                            try
-                            {
-                                out.write( logContent.getBytes() );
-                                out.flush();
-                            }
-                            catch ( IOException e )
-                            {
-                                listenerException.set( e );
-                            }
-                        } );
-                        thread.start();
-                        thread.join();
-                    }
-                    catch ( Exception e )
-                    {
-                        listenerException.set( e );
-                    }
-                    super.outputFileCreated( out );
+                            out.write( logContent.getBytes() );
+                            out.flush();
+                        }
+                        catch ( IOException e )
+                        {
+                            listenerException.set( e );
+                        }
+                    } );
+                    thread.start();
+                    thread.join();
                 }
-
-                @Override
-                public void rotationCompleted( OutputStream out )
+                catch ( Exception e )
                 {
-                    latch.countDown();
+                    listenerException.set( e );
                 }
-            };
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
-            RotatingFileOutputStreamSupplier supplier =
-                    new RotatingFileOutputStreamSupplier( defaultFileSystemAbstraction, logFile, 0, 0, 10, executor, listener );
+                super.outputFileCreated( out );
+            }
 
-            OutputStream outputStream = supplier.get();
-            LockingPrintWriter lockingPrintWriter = new LockingPrintWriter( outputStream );
-            lockingPrintWriter.withLock( () ->
+            @Override
+            public void rotationCompleted( OutputStream out )
             {
-                supplier.rotate();
-                latch.await();
-                return Void.TYPE;
-            } );
+                latch.countDown();
+            }
+        };
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( defaultFileSystemAbstraction, logFile, 0, 0, 10, executor, listener );
 
-            shutDownExecutor( executor );
-
-            String actual = Files.readString( logFile.toPath() );
-            assertEquals( logContent, actual );
-            assertNull( listenerException.get() );
+        OutputStream outputStream = supplier.get();
+        LockingPrintWriter lockingPrintWriter = new LockingPrintWriter( outputStream );
+        lockingPrintWriter.withLock( () ->
+        {
+            supplier.rotate();
+            latch.await();
+            return Void.TYPE;
         } );
+
+        shutDownExecutor( executor );
+
+        String actual = Files.readString( logFile.toPath() );
+        assertEquals( logContent, actual );
+        assertNull( listenerException.get() );
     }
 
     private void shutDownExecutor( ExecutorService executor ) throws InterruptedException
