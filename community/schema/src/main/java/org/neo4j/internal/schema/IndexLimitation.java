@@ -26,7 +26,7 @@ public enum IndexLimitation
      */
     SLOW_CONTAINS,
     /**
-     * The index is <em>eventually consistent</em>, meaning that it might not reflect newly committed changes.
+     * The index is <em>eventually consistent</em>, meaning it might not reflect newly committed changes.
      */
     EVENTUALLY_CONSISTENT
 }

@@ -24,9 +24,9 @@ package org.neo4j.internal.schema;
  */
 public enum IndexValueCapability
 {
-    YES( 3 ),     // Can provide values for query
-    PARTIAL( 2 ), // Can provide values for query for part of result set, often depending on what type the value has
-    NO( 1 );      // Can not provide values for query
+    YES( 3 ),     // Can provide values for the query.
+    PARTIAL( 2 ), // Can provide values for part of the query result set, often depending on what type the value has.
+    NO( 1 );      // Cannot provide values for the query.
 
     /**
      * Higher order indicate a higher capability.

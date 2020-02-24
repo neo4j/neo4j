@@ -23,10 +23,10 @@ import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Capabilities of an index.
- * Capabilities of an index can not change during the indexes lifetimes.
+ * Capabilities of an index cannot change during the indexes lifetimes.
  * Caching of IndexCapability is allowed.
- * It does NOT describe the capabilities of the index at some given moment. For example it does not describe
- * index state. Rather it describe the functionality that index provide given that it is available.
+ * It does NOT describe the capabilities of the index at some given moment. For example, it does not describe
+ * index state. Rather, it describes the functionality that the index provides given that it is available.
  */
 public interface IndexCapability
 {
@@ -67,11 +67,6 @@ public interface IndexCapability
     default IndexLimitation[] limitations()
     {
         return LIMITIATION_NONE;
-    }
-
-    default boolean singleWildcard( ValueCategory[] valueCategories )
-    {
-        return valueCategories.length == 1 && valueCategories[0] == ValueCategory.UNKNOWN;
     }
 
     IndexCapability NO_CAPABILITY = new IndexCapability()
