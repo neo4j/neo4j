@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -60,7 +61,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     }
 
     @Override
-    public void prepare( RECORD record, int recordSize, IdSequence idSequence )
+    public void prepare( RECORD record, int recordSize, IdSequence idSequence, PageCursorTracer cursorTracer )
     {
     }
 

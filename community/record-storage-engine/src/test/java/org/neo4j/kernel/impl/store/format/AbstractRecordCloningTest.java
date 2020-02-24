@@ -41,6 +41,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 
 @ExtendWith( RandomExtension.class )
@@ -83,7 +84,7 @@ public abstract class AbstractRecordCloningTest
     protected abstract int propertyBits();
 
     @BeforeEach
-    private void setUp()
+    void setUp()
     {
         RecordFormats formats = formats();
         RecordGenerators generators = new LimitedRecordGenerators( random.randomValues(), entityBits(), propertyBits(), 40, 16, -1 );
@@ -128,7 +129,7 @@ public abstract class AbstractRecordCloningTest
     void preparedDynamicClone()
     {
         DynamicRecord dynamicRecord = getDynamicRecord();
-        dynamicFormat.prepare( dynamicRecord, dynamicRecordSize, idSequence );
+        dynamicFormat.prepare( dynamicRecord, dynamicRecordSize, idSequence, NULL );
         keys.dynamic().assertRecordsEquals( dynamicRecord, dynamicRecord.copy() );
     }
 
@@ -143,7 +144,7 @@ public abstract class AbstractRecordCloningTest
     void preparedLabelTokenClone()
     {
         LabelTokenRecord labelTokenRecord = getLabelTokenRecord();
-        labelTokenFormat.prepare( labelTokenRecord, labelTokenRecordSize, idSequence );
+        labelTokenFormat.prepare( labelTokenRecord, labelTokenRecordSize, idSequence, NULL );
         keys.labelToken().assertRecordsEquals( labelTokenRecord, labelTokenRecord.copy() );
     }
 
@@ -158,7 +159,7 @@ public abstract class AbstractRecordCloningTest
     void preparedNodeClone()
     {
         NodeRecord nodeRecord = getNodeRecord();
-        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence );
+        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence, NULL );
         keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
     }
 
@@ -175,7 +176,7 @@ public abstract class AbstractRecordCloningTest
     {
         NodeRecord nodeRecord = getNodeRecord();
         nodeRecord.setLabelField( 12, Arrays.asList( getDynamicRecord(), getDynamicRecord() ) );
-        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence );
+        nodeFormat.prepare( nodeRecord, nodeRecordSize, idSequence, NULL );
         keys.node().assertRecordsEquals( nodeRecord, nodeRecord.copy() );
     }
 
@@ -190,7 +191,7 @@ public abstract class AbstractRecordCloningTest
     void preparedPropertyClone()
     {
         PropertyRecord propertyRecord = getPropertyRecord();
-        propertyFormat.prepare( propertyRecord, propertyRecordSize, idSequence );
+        propertyFormat.prepare( propertyRecord, propertyRecordSize, idSequence, NULL );
         keys.property().assertRecordsEquals( propertyRecord, propertyRecord.copy() );
     }
 
@@ -205,7 +206,7 @@ public abstract class AbstractRecordCloningTest
     void preparedPropertyKeyTokenClone()
     {
         PropertyKeyTokenRecord propertyKeyTokenRecord = getPropertyKeyTokenRecord();
-        propertyKeyTokenFormat.prepare( propertyKeyTokenRecord, propertyKeyTokenRecordSize, idSequence );
+        propertyKeyTokenFormat.prepare( propertyKeyTokenRecord, propertyKeyTokenRecordSize, idSequence, NULL );
         keys.propertyKeyToken().assertRecordsEquals( propertyKeyTokenRecord, propertyKeyTokenRecord.copy() );
     }
 
@@ -220,7 +221,7 @@ public abstract class AbstractRecordCloningTest
     void preparedRelationshipClone()
     {
         RelationshipRecord relationshipRecord = getRelationshipRecord();
-        relationshipFormat.prepare( relationshipRecord, relationshipRecordSize, idSequence );
+        relationshipFormat.prepare( relationshipRecord, relationshipRecordSize, idSequence, NULL );
         keys.relationship().assertRecordsEquals( relationshipRecord, relationshipRecord.copy() );
     }
 
@@ -235,7 +236,7 @@ public abstract class AbstractRecordCloningTest
     void preparedRelationshipGroupClone()
     {
         RelationshipGroupRecord relationshipGroupRecord = getRelationshipGroupRecord();
-        relationshipGroupFormat.prepare( relationshipGroupRecord, relationshipGroupRecordSize, idSequence );
+        relationshipGroupFormat.prepare( relationshipGroupRecord, relationshipGroupRecordSize, idSequence, NULL );
         keys.relationshipGroup().assertRecordsEquals( relationshipGroupRecord, relationshipGroupRecord.copy() );
     }
 
@@ -250,7 +251,7 @@ public abstract class AbstractRecordCloningTest
     void preparedRelationshipTypeTokenClone()
     {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = getRelationshipTypeTokenRecord();
-        relationshipTypeTokenFormat.prepare( relationshipTypeTokenRecord, relationshipTypeTokenRecordSize, idSequence );
+        relationshipTypeTokenFormat.prepare( relationshipTypeTokenRecord, relationshipTypeTokenRecordSize, idSequence, NULL );
         keys.relationshipTypeToken().assertRecordsEquals( relationshipTypeTokenRecord, relationshipTypeTokenRecord.copy() );
     }
 

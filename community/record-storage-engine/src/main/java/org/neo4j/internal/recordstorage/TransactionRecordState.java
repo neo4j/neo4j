@@ -267,7 +267,7 @@ public class TransactionRecordState implements RecordState
             RecordProxy<RECORD,?> proxy, RecordStore<RECORD> store )
     {
         RECORD after = proxy.forReadingLinkage();
-        store.prepareForCommit( after );
+        store.prepareForCommit( after, cursorTracer );
         return after;
     }
 

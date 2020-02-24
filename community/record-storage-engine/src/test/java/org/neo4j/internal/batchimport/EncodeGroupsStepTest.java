@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -57,7 +58,7 @@ class EncodeGroupsStepTest
             // our own way of marking that this has record been prepared (firstOut=1)
             invocation.<RelationshipGroupRecord>getArgument( 0 ).setFirstOut( 1 );
             return null;
-        } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ) );
+        } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( PageCursorTracer.class ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
         EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store );
 

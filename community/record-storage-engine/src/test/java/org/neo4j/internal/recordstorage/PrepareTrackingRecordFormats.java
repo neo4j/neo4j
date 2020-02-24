@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -214,10 +215,10 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void prepare( RECORD record, int recordSize, IdSequence idSequence )
+        public void prepare( RECORD record, int recordSize, IdSequence idSequence, PageCursorTracer cursorTracer )
         {
             prepare.add( record );
-            actual.prepare( record, recordSize, idSequence );
+            actual.prepare( record, recordSize, idSequence, cursorTracer );
         }
 
         @Override

@@ -985,17 +985,17 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void prepareForCommit( RECORD record )
+    public void prepareForCommit( RECORD record, PageCursorTracer cursorTracer )
     {
-        prepareForCommit( record, this );
+        prepareForCommit( record, this, cursorTracer );
     }
 
     @Override
-    public void prepareForCommit( RECORD record, IdSequence idSequence )
+    public void prepareForCommit( RECORD record, IdSequence idSequence, PageCursorTracer cursorTracer )
     {
         if ( record.inUse() )
         {
-            recordFormat.prepare( record, recordSize, idSequence );
+            recordFormat.prepare( record, recordSize, idSequence, cursorTracer );
         }
     }
 

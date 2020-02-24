@@ -69,7 +69,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
                 // secondary units ends up very close by.
                 for ( int j = groupStartIndex; j <= i; j++ )
                 {
-                    store.prepareForCommit( batch[j] );
+                    store.prepareForCommit( batch[j], TRACER_SUPPLIER.get() );
                 }
 
                 groupStartIndex = i + 1;

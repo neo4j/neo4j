@@ -201,7 +201,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             byte[] bytes = PropertyStore.encodeString( name );
             List<DynamicRecord> nameRecords = new ArrayList<>();
             AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer );
-            nameRecords.forEach( nameStore::prepareForCommit );
+            nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorTracer ) );
             nameRecords.forEach( record -> nameStore.updateRecord( record, cursorTracer ) );
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
             int nameId = Iterables.first( nameRecords ).getIntId();
@@ -210,7 +210,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenRecord.setId( tokenId );
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );
-            keyTokenStore.prepareForCommit( keyTokenRecord );
+            keyTokenStore.prepareForCommit( keyTokenRecord, cursorTracer );
             keyTokenStore.updateRecord( keyTokenRecord, cursorTracer );
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );

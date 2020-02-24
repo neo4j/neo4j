@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -85,7 +86,7 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     }
 
     @Override
-    public void prepare( RECORD record, int recordSize, IdSequence idSequence )
+    public void prepare( RECORD record, int recordSize, IdSequence idSequence, PageCursorTracer cursorTracer )
     {   // Do nothing by default
     }
 

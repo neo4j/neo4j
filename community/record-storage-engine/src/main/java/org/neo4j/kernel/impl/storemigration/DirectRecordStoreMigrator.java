@@ -94,7 +94,7 @@ class DirectRecordStoreMigrator
 
         from.scanAllRecords( record ->
         {
-            to.prepareForCommit( record );
+            to.prepareForCommit( record, cursorTracer );
             to.updateRecord( record, cursorTracer );
             return false;
         }, cursorTracer );

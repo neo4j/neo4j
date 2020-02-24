@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -84,11 +85,11 @@ class UpdateRecordsStepTest
 
         step.process( batch, mock( BatchSender.class ) );
 
-        verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ) );
+        verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ), any( PageCursorTracer.class ) );
         verify( store ).updateRecord( eq( node1 ), any(), any() );
-        verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ) );
+        verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ), any( PageCursorTracer.class ) );
         verify( store ).updateRecord( eq( node2 ), any(), any() );
-        verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ) );
+        verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ), any( PageCursorTracer.class ) );
         verify( store, never() ).updateRecord( eq( nodeWithReservedId ), any() );
     }
 }

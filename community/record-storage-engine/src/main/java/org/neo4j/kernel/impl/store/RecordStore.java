@@ -284,17 +284,19 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * Called once all changes to a record is ready to be converted into a command.
      *
      * @param record record to prepare, potentially updating it with more information before converting into a command.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void prepareForCommit( RECORD record );
+    void prepareForCommit( RECORD record, PageCursorTracer cursorTracer );
 
     /**
      * Called once all changes to a record is ready to be converted into a command.
-     * WARNING this is for advanced use, please consider using {@link #prepareForCommit(AbstractBaseRecord)} instead.
+     * WARNING this is for advanced use, please consider using {@link #prepareForCommit(AbstractBaseRecord, PageCursorTracer)} instead.
      *
      * @param record record to prepare, potentially updating it with more information before converting into a command.
      * @param idSequence {@link IdSequence} to use for potentially generating additional ids required by this record.
+     * @param cursorTracer underlying page cursor tracer
      */
-    void prepareForCommit( RECORD record, IdSequence idSequence );
+    void prepareForCommit( RECORD record, IdSequence idSequence, PageCursorTracer cursorTracer );
 
     /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
@@ -461,15 +463,15 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public void prepareForCommit( R record )
+        public void prepareForCommit( R record, PageCursorTracer cursorTracer )
         {
-            actual.prepareForCommit( record );
+            actual.prepareForCommit( record, cursorTracer );
         }
 
         @Override
-        public void prepareForCommit( R record, IdSequence idSequence )
+        public void prepareForCommit( R record, IdSequence idSequence, PageCursorTracer cursorTracer )
         {
-            actual.prepareForCommit( record, idSequence );
+            actual.prepareForCommit( record, idSequence, cursorTracer );
         }
 
         @Override

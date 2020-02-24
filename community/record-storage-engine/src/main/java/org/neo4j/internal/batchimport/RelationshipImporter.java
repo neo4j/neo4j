@@ -172,7 +172,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setFirstInSecondChain( false );
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-            relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ) );
+            relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), TRACER_SUPPLIER.get() );
             relationshipStore.updateRecord( relationshipRecord, IGNORE, TRACER_SUPPLIER.get() );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );

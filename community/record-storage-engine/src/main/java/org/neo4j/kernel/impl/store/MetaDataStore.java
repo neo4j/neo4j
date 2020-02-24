@@ -856,12 +856,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void prepareForCommit( MetaDataRecord record )
+    public void prepareForCommit( MetaDataRecord record, PageCursorTracer cursorTracer )
     {   // No need to do anything with these records before commit
     }
 
     @Override
-    public void prepareForCommit( MetaDataRecord record, IdSequence idSequence )
+    public void prepareForCommit( MetaDataRecord record, IdSequence idSequence, PageCursorTracer cursorTracer )
     {   // No need to do anything with these records before commit
     }
 

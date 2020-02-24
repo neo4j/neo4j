@@ -69,7 +69,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         {
             if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
-                store.prepareForCommit( record, idSequence.apply( record.getId() ) );
+                store.prepareForCommit( record, idSequence.apply( record.getId() ), TRACER_SUPPLIER.get() );
                 // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                 // instead just note the highId. It will be mostly correct in the end.
                 store.updateRecord( record, IGNORE, TRACER_SUPPLIER.get() );

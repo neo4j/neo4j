@@ -246,7 +246,7 @@ public class DetectAllRelationshipInconsistenciesIT
             }
         }
 
-        store.prepareForCommit( after );
+        store.prepareForCommit( after, NULL );
         store.updateRecord( after, NULL );
 
         RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE, NULL );

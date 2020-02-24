@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
@@ -296,15 +297,15 @@ public class TransactionWriter
     {
         for ( Command.NodeCommand command : nodeCommands )
         {
-            neoStores.getNodeStore().prepareForCommit( command.getAfter() );
+            neoStores.getNodeStore().prepareForCommit( command.getAfter(), NULL );
         }
         for ( Command.RelationshipCommand command : relationshipCommands )
         {
-            neoStores.getRelationshipStore().prepareForCommit( command.getAfter() );
+            neoStores.getRelationshipStore().prepareForCommit( command.getAfter(), NULL );
         }
         for ( Command.RelationshipGroupCommand command : relationshipGroupCommands )
         {
-            neoStores.getRelationshipGroupStore().prepareForCommit( command.getAfter() );
+            neoStores.getRelationshipGroupStore().prepareForCommit( command.getAfter(), NULL );
         }
     }
 
