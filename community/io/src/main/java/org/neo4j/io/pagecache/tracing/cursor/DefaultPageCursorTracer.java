@@ -269,7 +269,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void done()
         {
-            flushes++;
         }
 
         @Override
@@ -281,6 +280,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void addPagesFlushed( int pageCount )
         {
+            flushes += pageCount;
         }
     };
 

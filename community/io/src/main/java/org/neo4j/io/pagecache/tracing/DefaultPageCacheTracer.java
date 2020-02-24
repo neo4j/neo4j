@@ -60,7 +60,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         @Override
         public void done()
         {
-            flushes.increment();
         }
 
         @Override
@@ -72,6 +71,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         @Override
         public void addPagesFlushed( int pageCount )
         {
+            flushes.add( pageCount );
         }
     };
 
