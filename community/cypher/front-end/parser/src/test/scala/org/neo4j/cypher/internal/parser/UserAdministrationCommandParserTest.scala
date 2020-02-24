@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.ast.PasswordString
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
-import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class UserAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
@@ -62,7 +62,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
@@ -70,7 +70,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
@@ -86,7 +86,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER foo SET PASSWORD $password SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
@@ -102,7 +102,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError()))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
@@ -118,15 +118,15 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE uSER foo IF NOT EXISTS SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
   test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
@@ -134,15 +134,15 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE OR REPLACE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace()))
+    yields(ast.CreateUser("foo", Right(expressions.Parameter("password", CTString)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
@@ -292,7 +292,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD $password") {
-    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTAny)(_))), None, None))
+    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTString)(_))), None, None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
@@ -316,7 +316,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTAny)(_))), requirePasswordChange = Some(false), None))
+    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTString)(_))), requirePasswordChange = Some(false), None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
@@ -328,7 +328,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTAny)(_))), requirePasswordChange = Some(false), suspended = Some(true)))
+    yields(ast.AlterUser("foo", Some(Right(expressions.Parameter("password", CTString)(_))), requirePasswordChange = Some(false), suspended = Some(true)))
   }
 
   test("ALTER USER foo") {
@@ -396,23 +396,23 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO $newPassword") {
-    yields(ast.SetOwnPassword(Right(expressions.Parameter("newPassword", CTAny)(_)), Left(PasswordString("current")(_))))
+    yields(ast.SetOwnPassword(Right(expressions.Parameter("newPassword", CTString)(_)), Left(PasswordString("current")(_))))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'new'") {
-    yields(ast.SetOwnPassword(Left(PasswordString("new")(_)), Right(expressions.Parameter("currentPassword", CTAny)(_))))
+    yields(ast.SetOwnPassword(Left(PasswordString("new")(_)), Right(expressions.Parameter("currentPassword", CTString)(_))))
   }
 
   test("alter current user set password from $currentPassword to ''") {
-    yields(ast.SetOwnPassword(Left(PasswordString("")(_)), Right(expressions.Parameter("currentPassword", CTAny)(_))))
+    yields(ast.SetOwnPassword(Left(PasswordString("")(_)), Right(expressions.Parameter("currentPassword", CTString)(_))))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
-    yields(ast.SetOwnPassword(Left(PasswordString("passWORD123%!")(_)), Right(expressions.Parameter("currentPassword", CTAny)(_))))
+    yields(ast.SetOwnPassword(Left(PasswordString("passWORD123%!")(_)), Right(expressions.Parameter("currentPassword", CTString)(_))))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword") {
-    yields(ast.SetOwnPassword(Right(expressions.Parameter("newPassword", CTAny)(_)), Right(expressions.Parameter("currentPassword", CTAny)(_))))
+    yields(ast.SetOwnPassword(Right(expressions.Parameter("newPassword", CTString)(_)), Right(expressions.Parameter("currentPassword", CTString)(_))))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {

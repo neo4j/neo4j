@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
@@ -112,8 +113,8 @@ trait Literals extends Parser
   def Parameter: Rule1[expressions.Parameter] =
     parameterName ~~>> (expressions.Parameter(_, CTAny))
 
-  def SensitiveParameter: Rule1[expressions.Parameter] =
-    parameterName ~~>> (name => pos => new expressions.Parameter(name, CTAny)(pos) with expressions.SensitiveParameter)
+  def SensitiveStringParameter: Rule1[expressions.Parameter] =
+    parameterName ~~>> (name => pos => new expressions.Parameter(name, CTString)(pos) with expressions.SensitiveParameter)
 
   private def parameterName: Rule1[String] = rule("a parameter") {
     (ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches

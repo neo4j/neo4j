@@ -344,7 +344,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val (reusabilityState, shouldCache) = runtime match {
       case m: AdministrationCommandRuntime =>
         if (m.isApplicableAdministrationCommand(logicalPlanState)) {
-          (FineToReuse, false)
+          (FineToReuse, true)
         } else {
           logicalPlanState.maybeLogicalPlan match {
             case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => (FineToReuse, false)

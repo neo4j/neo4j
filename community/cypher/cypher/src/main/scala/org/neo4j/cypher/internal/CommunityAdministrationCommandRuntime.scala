@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.slottedParameters
-import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
@@ -63,9 +62,10 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
+import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -91,8 +91,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR we throw an error
     logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
-
-  private val secureHasher = new SecureHasher
 
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
   private def fullLogicalToExecutable = extraLogicalToExecutable orElse logicalToExecutable
@@ -129,44 +127,14 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
-    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password
-    case CreateUser(source, userName, Left(initialPassword), requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
+    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD 'password'
+    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD $password
+    case CreateUser(source, userName, password, requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
       if (suspendedOptional.isDefined) // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
-      try {
-        validatePassword(initialPassword)
-        UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
-          // NOTE: If username already exists we will violate a constraint
-          """CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
-            |RETURN u.name""".stripMargin,
-          VirtualValues.map(
-            Array("name", "credentials", "passwordChangeRequired"),
-            Array(
-              Values.utf8Value(userName),
-              Values.utf8Value(SystemGraphCredential.createCredentialForPassword(initialPassword, secureHasher).serialize()),
-              Values.booleanValue(requirePasswordChange))),
-          QueryHandler
-            .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
-            .handleError(e => e.getCause match {
-              case _: UniquePropertyValueValidationException =>
-                new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
-              case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", e)
-            }),
-          Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
-        )
-      } finally {
-        // Clear password
-        if (initialPassword != null) java.util.Arrays.fill(initialPassword, 0.toByte)
-      }
-
-    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD $password
-    case CreateUser(_, userName, Right(_), _, _) =>
-      throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
-
-    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD
-    case CreateUser(_, userName, _, _, _) =>
-      throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
+      makeCreateUserExecutionPlan(userName, password, requirePasswordChange, suspended = false)(sourcePlan, normalExecutionEngine)
 
     // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => (context, parameterMapping, securityContext) =>
@@ -185,18 +153,27 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
-    case SetOwnPassword(Left(newPassword), Left(currentPassword)) => (_, _, securityContext) =>
-      val query =
-        """MATCH (user:User {name: $name})
-          |WITH user, user.credentials AS oldCredentials
-          |SET user.credentials = $credentials
-          |SET user.passwordChangeRequired = false
-          |RETURN oldCredentials""".stripMargin
+    // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO $newPassword'
+    // ALTER CURRENT USER SET PASSWORD FROM $currentPassword' TO 'newPassword'
+    // ALTER CURRENT USER SET PASSWORD FROM $currentPassword' TO $newPassword'
+    case SetOwnPassword(newPassword, currentPassword) => (_, _, securityContext) =>
+      val (newKey, newValue, newConverter) = getPasswordFields(newPassword)
+      val (newKeyBytes, newValueBytes, newConverterBytes) = getPasswordFields(newPassword, rename = s => s + "_bytes", hashPw = false)
+      val (currentKey, currentValue, currentConverter) = getPasswordFieldsCurrent(currentPassword)
       val currentUser = securityContext.subject().username()
+      if (currentConverter.overlaps(newConverter)) {
+        throw new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same.")
+      }
+      val query =
+        s"""MATCH (user:User {name: $$name})
+          |WITH user, user.credentials AS oldCredentials
+          |SET user.credentials = $$$newKey
+          |SET user.passwordChangeRequired = false
+          |RETURN [oldCredentials, $$$currentKey, $$$newKeyBytes] AS credentials""".stripMargin
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
-        VirtualValues.map(Array("name", "credentials"),
-          Array(Values.utf8Value(currentUser), Values.utf8Value(SystemGraphCredential.createCredentialForPassword(validatePassword(newPassword), secureHasher).serialize()))),
+        VirtualValues.map(Array("name", newKey, newKeyBytes, currentKey),
+          Array(Values.utf8Value(currentUser), newValue, newValueBytes, currentValue)),
         QueryHandler
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
@@ -204,13 +181,35 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", error)
           }
           .handleResult((_, value) => {
-            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            if (!oldCredentials.matchesPassword(currentPassword))
-              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
-            else if (oldCredentials.matchesPassword(newPassword))
-              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
-            else
-              None
+            val result = value.asInstanceOf[ListValue].asArray()
+            val oldCredentials = SystemGraphCredential.deserialize(result(0).asInstanceOf[TextValue].stringValue(), secureHasher)
+            val maybeThrowable = newPassword match {
+              case Left(newValue: Array[Byte]) =>
+                if (oldCredentials.matchesPassword(newValue))
+                  Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
+                else
+                  None
+              case Right(_) =>
+                val userNew: Array[Byte] = result(2).asInstanceOf[ByteArray].asObjectCopy()
+                if (oldCredentials.matchesPassword(userNew))
+                  Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
+                else
+                  None
+            }
+            val mayBeThrowable2 = currentPassword match {
+              case Left(currentValue: Array[Byte]) =>
+                if (!oldCredentials.matchesPassword(currentValue))
+                  Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
+                else
+                  None
+              case Right(_) =>
+                val userCurrent: Array[Byte] = result(1).asInstanceOf[ByteArray].asObjectCopy()
+                if (!oldCredentials.matchesPassword(userCurrent))
+                  Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
+                else
+                  None
+            }
+            if(maybeThrowable.isDefined) maybeThrowable else mayBeThrowable2
           })
           .handleNoResult( () => {
             if (currentUser.isEmpty) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
@@ -218,23 +217,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             else // The 'current user' doesn't exist in the system graph
               Some(new IllegalStateException(s"User '$currentUser' failed to alter their own password: User does not exist."))
           }),
-        checkCredentialsExpired = false
+        checkCredentialsExpired = false,
+        parameterConverter = m => newConverter(currentConverter(newConverterBytes(m)))
       )
-
-    // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
-    case SetOwnPassword(Right(_), _) => (_, _, securityContext) =>
-      val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
-
-    // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
-    case SetOwnPassword( _, Right(_)) => (_, _, securityContext) =>
-      val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
-
-    // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-    case SetOwnPassword(_, _) => (_, _, securityContext) =>
-      val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Password not correctly supplied.")
 
     // SHOW DATABASES
     case ShowDatabases() => (_, _, securityContext) =>

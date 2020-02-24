@@ -46,7 +46,8 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               systemParams: MapValue,
                                               queryHandler: QueryHandler,
                                               source: Option[ExecutionPlan] = None,
-                                              checkCredentialsExpired: Boolean = true)
+                                              checkCredentialsExpired: Boolean = true,
+                                              parameterConverter: MapValue => MapValue = p => p)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -73,7 +74,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
 
-      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, parameterConverter(systemParams.updatedWith(params)), tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       try {
         execution.consumeAll()
       } catch {

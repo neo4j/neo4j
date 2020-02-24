@@ -68,14 +68,10 @@ final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseA
 }
 
 final case class CreateUser(userName: String,
-                            initialStringPassword: Option[PasswordString],
-                            initialParameterPassword: Option[Parameter],
+                            initialPassword: Either[PasswordString, Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-  assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
-  assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
-
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
@@ -99,12 +95,10 @@ final case class DropUser(userName: String, ifExists: Boolean)(val position: Inp
 }
 
 final case class AlterUser(userName: String,
-                           initialStringPassword: Option[PasswordString],
-                           initialParameterPassword: Option[Parameter],
+                           initialPassword: Option[Either[PasswordString, Parameter]],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-  assert(initialStringPassword.isDefined || initialParameterPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
-  assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
+  assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
 
   override def name = "ALTER USER"
 
@@ -113,14 +107,8 @@ final case class AlterUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(newStringPassword: Option[PasswordString],
-                                newParameterPassword: Option[Parameter],
-                                currentStringPassword: Option[PasswordString],
-                                currentParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-  assert(newStringPassword.isDefined || newParameterPassword.isDefined)
-  assert(!(newStringPassword.isDefined && newParameterPassword.isDefined))
-  assert(currentStringPassword.isDefined || currentParameterPassword.isDefined)
-  assert(!(currentStringPassword.isDefined && currentParameterPassword.isDefined))
+final case class SetOwnPassword(newPassword: Either[PasswordString, Parameter], currentPassword: Either[PasswordString, Parameter])
+                               (val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "ALTER CURRENT USER SET PASSWORD"
 

@@ -34,7 +34,7 @@ object parameterValueTypeReplacement {
     def apply(that: AnyRef): AnyRef = rewriter.apply(that)
 
     private val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case p: Parameter => replaceableParameters(p).parameter
+      case p: Parameter if replaceableParameters.isDefinedAt(p) => replaceableParameters(p).parameter
     })
   }
 

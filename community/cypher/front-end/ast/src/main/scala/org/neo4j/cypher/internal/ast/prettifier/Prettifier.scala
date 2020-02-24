@@ -77,6 +77,7 @@ import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.PasswordString
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -227,7 +228,7 @@ case class Prettifier(expr: ExpressionStringifier) {
       }
       val password = initialPassword match {
         case Left(_) => "'******'"
-        case Right(name) => s"$$$name"
+        case Right(param) => s"$$${param.name}"
       }
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
@@ -256,7 +257,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ SetOwnPassword(newPassword, currentPassword) =>
       def evalPassword(pw: Either[PasswordString, Parameter]): String = pw match {
         case Right(param) => s"$$${param.name}"
-        case _ => s" '******'"
+        case _ => s"'******'"
       }
       s"${x.name} FROM ${evalPassword(currentPassword)} TO ${evalPassword(newPassword)}"
 

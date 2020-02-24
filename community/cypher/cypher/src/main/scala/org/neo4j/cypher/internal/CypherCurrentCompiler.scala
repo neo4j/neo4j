@@ -120,39 +120,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                        params: MapValue
                       ): ExecutableQuery = {
 
-    def resolveParameterForManagementCommands(logicalPlan: LogicalPlan): LogicalPlan = {
-      def getParamValue(paramPassword: Parameter) = {
-        params.get(paramPassword.name) match {
-          case param: TextValue => UTF8.encode(param.stringValue())
-          case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
-          case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
-        }
-      }
-
-      // TODO move this into a tree rewriter that traverses the tree evaluating all passwords
-      // TODO move this to runtime phase, not planner
-      logicalPlan match {
-        case l@LogSystemCommand(source: AdministrationCommandLogicalPlan, _) =>
-          LogSystemCommand(resolveParameterForManagementCommands(source).asInstanceOf[AdministrationCommandLogicalPlan], l.command)(new SequentialIdGen(l.id.x + 1))
-        case c@CreateUser(_, _, Right(paramPassword), _, _) =>
-          CreateUser(c.source, c.userName, Left(getParamValue(paramPassword)), c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
-        case a@AlterUser(_, _, Some(Right(paramPassword)), _, _) =>
-          AlterUser(a.source, a.userName, Some(Left(getParamValue(paramPassword))), a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
-        case p@SetOwnPassword(Right(newParamPassword), Left(currentPassword)) =>
-          SetOwnPassword(Left(getParamValue(newParamPassword)), Left(currentPassword))(new SequentialIdGen(p.id.x + 1))
-        case p@SetOwnPassword(Left(newPassword), Right(currentParamPassword)) =>
-          SetOwnPassword(Left(newPassword), Left(getParamValue(currentParamPassword)))(new SequentialIdGen(p.id.x + 1))
-        case p@SetOwnPassword(newPassword, currentPassword) =>
-          def resolveParameterPassword(expr: Either[Array[Byte], Parameter]): Either[Array[Byte], Parameter] = expr match {
-            case Right(p) => Left(getParamValue(p))
-            case v => v
-          }
-          SetOwnPassword(resolveParameterPassword(newPassword), resolveParameterPassword(currentPassword))(new SequentialIdGen(p.id.x + 1))
-        case _ => // Not an administration command that needs resolving, do nothing
-          logicalPlan
-      }
-    }
-
     // we only pass in the runtime to be able to support checking against the correct CommandManagementRuntime
     val logicalPlanResult = query match {
       case fullyParsedQuery: FullyParsedQuery => planner.plan(fullyParsedQuery, tracer, transactionalContext, params, runtime)
@@ -163,7 +130,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                              "All planning attributes should contain the same plans")
 
     val planState = logicalPlanResult.logicalPlanState
-    val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)
+    val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
 
     val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,

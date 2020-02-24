@@ -122,11 +122,11 @@ trait Statement extends Parser
       ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2)) |
     //
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalStatus
-    group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveParameter ~~
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, suspended) =>
       ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveParameter ~~
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2))
   }
@@ -155,11 +155,11 @@ trait Statement extends Parser
       ast.AlterUser(userName, Some(password(initialPassword)), requirePasswordChange, suspended)) |
     //
     // ALTER USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ SensitiveParameter ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.AlterUser(userName, Some(password(initialPassword)), None, suspended)) |
     // ALTER USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ SensitiveParameter ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.AlterUser(userName, Some(password(initialPassword)), requirePasswordChange, suspended)) |
     //
@@ -177,13 +177,13 @@ trait Statement extends Parser
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ StringLiteral) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
     // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO parameterPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ SensitiveParameter) ~~>>
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
     // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO stringLiteralPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveParameter ~~ keyword("TO") ~~ StringLiteral) ~~>>
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ StringLiteral) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
     // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO parameterPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveParameter ~~ keyword("TO") ~~ SensitiveParameter) ~~>>
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword)))
   }
 
