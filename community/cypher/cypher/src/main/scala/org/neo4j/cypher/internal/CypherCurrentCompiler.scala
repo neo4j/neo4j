@@ -264,7 +264,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     private val resourceMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[ResourceMonitor]) else ResourceMonitor.NOOP
 
     private val planDescriptionBuilder =
-      new PlanDescriptionBuilder(logicalPlan,
+      new PlanDescriptionBuilder(
+        executionPlan.rewrittenPlan.getOrElse(logicalPlan),
         plannerName,
         cypherVersion,
         readOnly,

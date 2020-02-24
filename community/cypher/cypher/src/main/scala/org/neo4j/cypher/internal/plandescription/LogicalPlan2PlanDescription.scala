@@ -263,10 +263,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   def create(plan: LogicalPlan): InternalPlanDescription =
     LogicalPlans.map(plan, this)
 
-  override def onLeaf(logicalPlan: LogicalPlan): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(logicalPlan.isLeaf)
+  override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
+    checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)
 
-    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
 
@@ -586,11 +585,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
-  override def onOneChildPlan(logicalPlan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(logicalPlan.lhs.nonEmpty)
-    checkOnlyWhenAssertionsAreEnabled(logicalPlan.rhs.isEmpty)
+  override def onOneChildPlan(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
+    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.rhs.isEmpty)
 
-    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
@@ -925,12 +923,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
-  override def onTwoChildPlan(logicalPlan: LogicalPlan, lhs: InternalPlanDescription,
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
                               rhs: InternalPlanDescription): InternalPlanDescription = {
-    checkOnlyWhenAssertionsAreEnabled(logicalPlan.lhs.nonEmpty)
-    checkOnlyWhenAssertionsAreEnabled(logicalPlan.rhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
+    checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)
 
-    val plan = executionPlan.mapPlan(logicalPlan)
     val id = plan.id
     val variables = plan.availableSymbols
     val children = TwoChildren(lhs, rhs)

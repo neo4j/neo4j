@@ -175,7 +175,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, parameters = Map.empty)
     val executionPlanDescription = {
       val planDescriptionBuilder =
-        new PlanDescriptionBuilder(logicalQuery.logicalPlan,
+        new PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
                                    IDPPlannerName,
                                    CypherVersion.default,
                                    logicalQuery.readOnly,

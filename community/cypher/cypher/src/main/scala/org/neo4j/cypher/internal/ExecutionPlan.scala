@@ -54,9 +54,9 @@ abstract class ExecutionPlan {
 
   def operatorMetadata(plan: Id): Seq[Argument] = Seq.empty[Argument]
 
-  def mapPlan(plan: LogicalPlan): LogicalPlan = plan
-
   def notifications: Set[InternalNotification]
+
+  def rewrittenPlan: Option[LogicalPlan] = None
 }
 
 trait ResourceManagerFactory {
