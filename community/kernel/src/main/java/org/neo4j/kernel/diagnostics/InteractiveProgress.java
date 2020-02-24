@@ -75,7 +75,7 @@ public class InteractiveProgress implements DiagnosticsReporterProgress
     public void finished()
     {
         // Pad string to erase info string
-        info = String.join( "", Collections.nCopies( longestInfo, " " ) );
+        info = " ".repeat( longestInfo );
 
         percentChanged( 100 );
         out.println();

@@ -67,7 +67,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.join;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -417,7 +416,7 @@ public class IndexStatisticsTest
                 }
                 if ( !mismatches.isEmpty() )
                 {
-                    fail( join( mismatches.toArray(), format( "%n" ) ) );
+                    fail( String.join( format( "%n" ), mismatches ) );
                 }
                 // Node count == indexed node count
                 ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exists( propertyKeyId ) );

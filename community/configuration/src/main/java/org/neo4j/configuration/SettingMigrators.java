@@ -44,7 +44,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.join;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
@@ -138,7 +137,7 @@ public final class SettingMigrators
             } );
             crsValues.forEach( ( name, valueList ) -> {
                 String setting = format( "%s.%s", PREFIX, name );
-                String value = join( valueList, LIST_SEPARATOR );
+                String value = String.join( LIST_SEPARATOR, valueList );
                 values.putIfAbsent( setting, value );
                 log.warn( "Settings migrated to %s = %s", setting, value );
             } );
