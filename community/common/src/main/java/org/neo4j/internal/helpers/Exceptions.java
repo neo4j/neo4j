@@ -157,6 +157,13 @@ public final class Exceptions
         return Optional.empty();
     }
 
+    public static StackTraceElement[] getPartialStackTrace( int from, int to )
+    {
+        return StackWalker.getInstance().walk(
+                s -> s.skip( from ).limit( to - from ).map( StackWalker.StackFrame::toStackTraceElement )
+                        .toArray( StackTraceElement[]::new ) );
+    }
+
     public static String stringify( Throwable throwable )
     {
         if ( throwable == null )
