@@ -126,7 +126,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       .nodeByLabelScan("x", "INPROC")
       .build()
 
-    val verificationResult = execute(logicalQuery, runtime)
+    val verificationResult = execute(verificationQuery, runtime)
 
     // then
     verificationResult should beColumns("x").withRows(rowCount(sizeHint))
