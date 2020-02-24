@@ -102,7 +102,7 @@ object AdminActionMapper {
     case RevokePrivilegeAction => security.PrivilegeAction.REVOKE_PRIVILEGE
     case DenyPrivilegeAction => security.PrivilegeAction.DENY_PRIVILEGE
 
-    case AllDatabaseAction => security.PrivilegeAction.ALL_DATABASE_PRIVILEGES
+    case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
 
     case AllAdminAction => security.PrivilegeAction.ADMIN
   }
@@ -148,7 +148,7 @@ object AdminActionMapper {
     case security.PrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
     case security.PrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
 
-    case security.PrivilegeAction.ALL_DATABASE_PRIVILEGES => AllDatabaseAction
+    case security.PrivilegeAction.DATABASE_ACTIONS => AllDatabaseAction
 
     case security.PrivilegeAction.ADMIN => AllAdminAction
   }

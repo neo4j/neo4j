@@ -277,34 +277,10 @@ public enum PrivilegeAction
                 @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
-                    switch ( action )
-                    {
-                    case ACCESS:
-                    case EXECUTE:
-                        return true;
-                    default:
-                        return SCHEMA.satisfies( action ) ||
-                               TOKEN.satisfies( action ) ||
-                               GRAPH_ACTIONS.satisfies( action ) ||
-                               this == action;
-                    }
-                }
-            },
-
-    ALL_DATABASE_PRIVILEGES
-            {
-                @Override
-                public boolean satisfies( PrivilegeAction action )
-                {
-                    switch ( action )
-                    {
-                    case ACCESS:
-                        return true;
-                    default:
-                        return SCHEMA.satisfies( action ) ||
-                               TOKEN.satisfies( action ) ||
-                               this == action;
-                    }
+                    return action == PrivilegeAction.ACCESS ||
+                           SCHEMA.satisfies( action ) ||
+                           TOKEN.satisfies( action ) ||
+                           this == action;
                 }
             };
 
