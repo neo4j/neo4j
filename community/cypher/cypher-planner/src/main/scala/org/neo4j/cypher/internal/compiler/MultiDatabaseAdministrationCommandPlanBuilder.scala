@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.internal.ast.AdminAction
-import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllResource
-import org.neo4j.cypher.internal.ast.AllRoleActions
-import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -240,10 +236,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // REVOKE _ ON DBMS FROM role
       case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
-        val source = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, AllGraphsScope()(InputPosition.NONE), roleName))
-        }
-        roleNames.foldLeft(source) {
+        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (previous, roleName) => planRevokes(previous, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, action, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -267,12 +260,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // REVOKE _ ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
-        val source: Option[PrivilegePlan] = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, database, roleName))
-        }
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
-        }).foldLeft(source) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (plan, (role, qualifier)) =>
             planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, action, database, qualifier, role, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))

@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
-import org.neo4j.cypher.internal.logical.plans.AssertValidRevoke
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
@@ -447,13 +446,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
 
-      case AssertValidRevoke(_, action, scope, roleName) =>
-        val args = action match {
-          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
-          case _ => Seq(DbmsAction(action.name))
-        }
-        PlanDescriptionImpl(id, "AssertValidRevoke", NoChildren, args :+ getAnnotatedRoleArgument(roleName), variables)
-
       case GrantDbmsAction(_, action, roleName) =>
         PlanDescriptionImpl(id, "GrantDbmsAction", NoChildren, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
 
@@ -812,13 +804,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(getAnnotatedRoleArgument(roleName), getAnnotatedUserArgument(userName)), variables)
-
-      case AssertValidRevoke(_, action, scope, roleName) =>
-        val args = action match {
-          case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)._1))
-          case _ => Seq(DbmsAction(action.name))
-        }
-        PlanDescriptionImpl(id, "AssertValidRevoke", children, args :+ getAnnotatedRoleArgument(roleName), variables)
 
       case GrantDbmsAction(_, action, roleName) =>
         PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(DbmsAction(action.name), getAnnotatedRoleArgument(roleName)), variables)
