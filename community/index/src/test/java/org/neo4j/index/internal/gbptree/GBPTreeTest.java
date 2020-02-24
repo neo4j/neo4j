@@ -50,7 +50,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -86,6 +85,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.toIntExact;
@@ -123,6 +123,8 @@ class GBPTreeTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private RandomRule random;
 
     private File indexFile;
     private ExecutorService executor;
@@ -546,7 +548,7 @@ class GBPTreeTest
             ThrowingRunnable throwingRunnable = () ->
             {
                 index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
-                ThreadLocalRandom.current().nextBytes( expected );
+                random.nextBytes( expected );
                 index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
@@ -560,7 +562,7 @@ class GBPTreeTest
     {
         // GIVEN
         byte[] headerBytes = new byte[12];
-        ThreadLocalRandom.current().nextBytes( headerBytes );
+        random.nextBytes( headerBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
 
         // WHEN
@@ -576,7 +578,7 @@ class GBPTreeTest
     {
         // GIVEN
         byte[] expectedBytes = new byte[12];
-        ThreadLocalRandom.current().nextBytes( expectedBytes );
+        random.nextBytes( expectedBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( expectedBytes );
         PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).with( headerWriter ).build().close();
@@ -585,7 +587,7 @@ class GBPTreeTest
         byte[] fraudulentBytes = new byte[12];
         do
         {
-            ThreadLocalRandom.current().nextBytes( fraudulentBytes );
+            random.nextBytes( fraudulentBytes );
         }
         while ( Arrays.equals( expectedBytes, fraudulentBytes ) );
 
@@ -598,7 +600,6 @@ class GBPTreeTest
     @Test
     void overwriteHeaderMustOnlyOverwriteHeaderNotState() throws Exception
     {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
         byte[] initialHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( initialHeader );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( initialHeader );
@@ -608,7 +609,7 @@ class GBPTreeTest
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite = readTreeStates( pageCache );
 
         byte[] newHeader = new byte[random.nextInt( 100 )];
-        ThreadLocalRandom.current().nextBytes( newHeader );
+        random.nextBytes( newHeader );
         GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), NULL );
 
         Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
@@ -638,7 +639,7 @@ class GBPTreeTest
             throws IOException
     {
         byte[] expectedHeader = new byte[12];
-        ThreadLocalRandom.current().nextBytes( expectedHeader );
+        random.nextBytes( expectedHeader );
         PageCache pageCache = createPageCache( defaultPageSize );
 
         // GIVEN
@@ -816,7 +817,7 @@ class GBPTreeTest
     {
         // GIVEN
         byte[] headerBytes = new byte[12];
-        ThreadLocalRandom.current().nextBytes( headerBytes );
+        random.nextBytes( headerBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
         PageCache pageCache = createPageCache( defaultPageSize );
 
@@ -1739,7 +1740,6 @@ class GBPTreeTest
     void mustNotMakeAnyChangesInReadOnlyMode() throws IOException
     {
         // given
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
         PageCache pageCache = createPageCache( defaultPageSize );
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
