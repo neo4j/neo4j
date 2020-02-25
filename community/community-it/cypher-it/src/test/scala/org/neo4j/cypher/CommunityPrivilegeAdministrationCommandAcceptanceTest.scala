@@ -111,6 +111,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   Seq(
     ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
     ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
     ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
     ("CREATE USER", "CREATE USER ON DBMS"),
     ("DROP USER", "DROP USER ON DBMS"),
@@ -133,19 +134,11 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
       }
   }
 
-  test("should fail on revoking grant MATCH privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailureWithPartialMessage("REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom",
-      "REVOKE GRANT MATCH is not a valid command, use REVOKE GRANT READ and REVOKE GRANT TRAVERSE instead.")
-  }
-
   // Tests for revoking deny privileges
   Seq(
     ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
     ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
     ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
     ("CREATE USER", "CREATE USER ON DBMS"),
     ("DROP USER", "DROP USER ON DBMS"),
@@ -168,19 +161,11 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
       }
   }
 
-  test("should fail on revoking deny MATCH privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailureWithPartialMessage("REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom",
-      "REVOKE DENY MATCH is not a valid command, use REVOKE DENY READ and REVOKE DENY TRAVERSE instead.")
-  }
-
   // Tests for revoking privileges
   Seq(
     ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
     ("read", "READ {*} ON GRAPH * NODES * (*)"),
+    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
     ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
     ("CREATE USER", "CREATE USER ON DBMS"),
     ("DROP USER", "DROP USER ON DBMS"),
@@ -201,15 +186,6 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
         // THEN
         assertFailure(s"REVOKE $command FROM custom", s"Unsupported administration command: REVOKE $command FROM custom")
       }
-  }
-
-  test("should fail on revoking MATCH privilege from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailureWithPartialMessage("REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom",
-      "REVOKE MATCH is not a valid command, use REVOKE READ and REVOKE TRAVERSE instead.")
   }
 
   def assertFailureWithPartialMessage(command: String, errorMsg: String): Unit = {
