@@ -165,10 +165,10 @@ public class ConsistencyCheckServiceIntegrationTest
                 NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT, pageCacheTracer );
 
         assertFalse( result.isSuccessful() );
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 74 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 74 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 35 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 39 );
+        assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );
+        assertThat( pageCacheTracer.unpins() ).isGreaterThanOrEqualTo( 74 );
+        assertThat( pageCacheTracer.hits() ).isGreaterThanOrEqualTo( 35 );
+        assertThat( pageCacheTracer.faults() ).isGreaterThanOrEqualTo( 39 );
     }
 
     @Test
