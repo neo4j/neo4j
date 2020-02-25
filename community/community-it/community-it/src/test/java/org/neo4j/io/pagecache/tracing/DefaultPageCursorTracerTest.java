@@ -154,6 +154,7 @@ class DefaultPageCursorTracerTest
                         flushEvent.done();
                         FlushEvent flushEvent1 = flushEventOpportunity.beginFlush( 0, 1, swapper );
                         flushEvent1.addBytesWritten( 13 );
+                        flushEvent1.addPagesFlushed( 2 );
                         flushEvent1.done();
                     }
                 }
@@ -273,6 +274,7 @@ class DefaultPageCursorTracerTest
                     FlushEventOpportunity flushEventOpportunity = evictionEvent.flushEventOpportunity();
                     FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper );
                     flushEvent.addBytesWritten( 10 );
+                    flushEvent.addPagesFlushed( 1 );
                     flushEvent.done();
                 }
                 evictionEvent.threwException( new IOException( "eviction exception" ) );

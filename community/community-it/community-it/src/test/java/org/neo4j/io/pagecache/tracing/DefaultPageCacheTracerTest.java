@@ -83,6 +83,7 @@ public class DefaultPageCacheTracerTest
             {
                 FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
                 flushEvent.addBytesWritten( 12 );
+                flushEvent.addPagesFlushed( 10 );
                 flushEvent.done();
             }
 
@@ -90,6 +91,7 @@ public class DefaultPageCacheTracerTest
             {
                 FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
                 flushEvent.addBytesWritten( 12 );
+                flushEvent.addPagesFlushed( 1 );
                 flushEvent.done();
                 evictionEvent.threwException( new IOException() );
             }
@@ -98,6 +100,7 @@ public class DefaultPageCacheTracerTest
             {
                 FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
                 flushEvent.addBytesWritten( 12 );
+                flushEvent.addPagesFlushed( 2 );
                 flushEvent.done();
                 evictionEvent.threwException( new IOException() );
             }
@@ -105,7 +108,7 @@ public class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction().close();
         }
 
-        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0,  0d);
+        assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 36, 0, 0,  0d);
     }
 
     @Test
@@ -130,13 +133,21 @@ public class DefaultPageCacheTracerTest
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
-            fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
-            fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
-            fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
+            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            flushEvent1.addPagesFlushed( 1 );
+            flushEvent1.done();
+
+            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            flushEvent2.addPagesFlushed( 2 );
+            flushEvent2.done();
+
+            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            flushEvent3.addPagesFlushed( 3 );
+            flushEvent3.done();
         }
 
         assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d );
