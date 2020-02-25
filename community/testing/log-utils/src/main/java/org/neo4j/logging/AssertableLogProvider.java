@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -35,7 +35,7 @@ import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 public class AssertableLogProvider extends AbstractLogProvider<Log>
 {
     private final boolean debugEnabled;
-    private final Queue<LogCall> logCalls = new ConcurrentLinkedQueue<>();
+    private final Queue<LogCall> logCalls = new LinkedBlockingQueue<>();
 
     public AssertableLogProvider()
     {
