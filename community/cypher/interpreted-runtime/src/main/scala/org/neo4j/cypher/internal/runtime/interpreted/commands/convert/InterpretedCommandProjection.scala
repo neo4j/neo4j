@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadWriteRow
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -31,7 +32,7 @@ case class InterpretedCommandProjection(expressions: Map[String, Expression]) ex
 
   override def registerOwningPipe(pipe: Pipe): Unit = expressions.values.foreach(_.registerOwningPipe(pipe))
 
-  override def project(ctx: CypherRow, state: QueryState): Unit = expressions.foreach {
+  override def project(ctx: ReadWriteRow, state: QueryState): Unit = expressions.foreach {
     case (name, expression) =>
       val result = expression(ctx, state)
       ctx.set(name, result)

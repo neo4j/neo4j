@@ -33,13 +33,14 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsList
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PrefixSeekRangeExpression
-import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.IsList
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
@@ -49,9 +50,9 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.TextValue
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 
@@ -90,7 +91,7 @@ trait NodeIndexSeeker {
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
-  def computeIndexQueries(state: QueryState, row: CypherRow): Seq[Seq[IndexQuery]] =
+  def computeIndexQueries(state: QueryState, row: ReadableRow): Seq[Seq[IndexQuery]] =
     valueExpr match {
 
       // Index range seek over range of values
@@ -127,7 +128,7 @@ trait NodeIndexSeeker {
         computeExactQueries(state, row)
     }
 
-  private def computeRangeQueries(state: QueryState, row: CypherRow, rangeWrapper: Expression, propertyId: Int): Seq[IndexQuery] = {
+  private def computeRangeQueries(state: QueryState, row: ReadableRow, rangeWrapper: Expression, propertyId: Int): Seq[IndexQuery] = {
     rangeWrapper match {
       case PrefixSeekRangeExpression(range) =>
         val expr = range.prefix
@@ -192,7 +193,7 @@ trait NodeIndexSeeker {
     }
   }
 
-  protected def computeExactQueries(state: QueryState, row: CypherRow): Seq[Seq[IndexQuery.ExactPredicate]] =
+  protected def computeExactQueries(state: QueryState, row: ReadableRow): Seq[Seq[IndexQuery.ExactPredicate]] =
     valueExpr match {
       // Index exact value seek on single value
       case SingleQueryExpression(expr) =>
@@ -234,7 +235,7 @@ trait NodeIndexSeeker {
         combine(indexQueries)
     }
 
-  private def computeCompositeQueries(state: QueryState, row: CypherRow)(queryExpression: QueryExpression[Expression], propertyId: Int): Seq[IndexQuery] =
+  private def computeCompositeQueries(state: QueryState, row: ReadableRow)(queryExpression: QueryExpression[Expression], propertyId: Int): Seq[IndexQuery] =
     queryExpression match {
       case SingleQueryExpression(inner) =>
         Seq(IndexQuery.exact(propertyId, makeValueNeoSafe(inner(row, state))))

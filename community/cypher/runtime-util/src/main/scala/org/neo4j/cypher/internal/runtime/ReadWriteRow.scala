@@ -17,14 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.runtime.ReadWriteRow
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-
-trait CommandProjection {
-  def isEmpty: Boolean
-  def registerOwningPipe(pipe: Pipe): Unit
-  def project(ctx: ReadWriteRow, state: QueryState): Unit
-}
+trait ReadWriteRow extends ReadableRow with WritableRow

@@ -50,7 +50,7 @@ trait WorkIdentity {
     */
   def workDescription: String
 
-  override def toString: String = s"$workDescription-$workId"
+  override def toString: String = s"$workDescription-${workId.x}"
 }
 
 trait WorkIdentityMutableDescription extends WorkIdentity {

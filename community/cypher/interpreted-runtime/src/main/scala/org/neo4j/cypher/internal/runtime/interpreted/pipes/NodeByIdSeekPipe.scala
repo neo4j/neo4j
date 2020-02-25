@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsList
@@ -29,20 +30,20 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 sealed trait SeekArgs {
-  def expressions(ctx: CypherRow, state: QueryState): ListValue
+  def expressions(ctx: ReadableRow, state: QueryState): ListValue
   def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SeekArgs {
   object empty extends SeekArgs {
-    def expressions(ctx: CypherRow, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
+    def expressions(ctx: ReadableRow, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
 
     override def registerOwningPipe(pipe: Pipe){}
   }
 }
 
 case class SingleSeekArg(expr: Expression) extends SeekArgs {
-  def expressions(ctx: CypherRow, state: QueryState): ListValue =
+  def expressions(ctx: ReadableRow, state: QueryState): ListValue =
     expr(ctx, state) match {
       case value => VirtualValues.list(value)
     }
@@ -51,7 +52,7 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
-  def expressions(ctx: CypherRow, state: QueryState): ListValue = {
+  def expressions(ctx: ReadableRow, state: QueryState): ListValue = {
     coll(ctx, state) match {
       case IsList(values) => values
     }

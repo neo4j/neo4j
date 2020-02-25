@@ -21,6 +21,7 @@ package org.neo4j.codegen.api
 
 import org.neo4j.codegen
 import org.neo4j.codegen.ClassHandle
+import org.neo4j.codegen.CodeGenerationNotSupportedException
 import org.neo4j.codegen.CodeGenerator
 import org.neo4j.codegen.CodeGenerator.generateCode
 import org.neo4j.codegen.CodeGeneratorOption
@@ -368,6 +369,8 @@ object CodeGeneration {
 
       codegen.Expression.invoke(codegen.Expression.newInstance(classHandle), constructor, args.map(compileExpression(_, block)):_*)
 
+    case unknownIr =>
+      throw new CodeGenerationNotSupportedException(null, s"Unknown ir `$unknownIr`") {}
   }
 
   private def compileClassDeclaration(c: ClassDeclaration[_], generator: CodeGenerator): codegen.ClassHandle = {

@@ -55,7 +55,7 @@ trait WithHeapUsageEstimation {
   def estimatedHeapUsage: Long
 }
 
-trait CypherRow extends ReadableRow with WritableRow with WithHeapUsageEstimation {
+trait CypherRow extends ReadWriteRow with WithHeapUsageEstimation {
 
   @deprecated
   def containsName(name: String): Boolean

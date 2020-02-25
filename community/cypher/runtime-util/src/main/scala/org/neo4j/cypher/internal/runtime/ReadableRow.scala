@@ -19,40 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
 
 /**
   * Cypher row which allows reading variables and caching property values.
   */
-trait ReadableRow {
+trait ReadableRow extends CachedPropertiesRow {
 
   def getLongAt(offset: Int): Long
   def getRefAt(offset: Int): AnyValue
   def getByName(name: String): AnyValue
   def copyTo(target: WritableRow, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit
-
-  // Cached properties
-  //===================================
-
-  /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
-  def getCachedProperty(key: ASTCachedProperty): Value
-
-  /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
-  def getCachedPropertyAt(offset: Int): Value
-
-  def setCachedProperty(key: ASTCachedProperty, value: Value): Unit
-
-  def setCachedPropertyAt(offset: Int, value: Value): Unit
 
   def getLinenumber: Option[ResourceLinenumber]
 }

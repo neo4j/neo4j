@@ -24,7 +24,7 @@ import org.neo4j.values.AnyValue
 /**
   * Cypher row which allows writing variables and invalidating cached properties.
   */
-trait WritableRow {
+trait WritableRow extends CachedPropertiesRow {
 
   def setLongAt(offset: Int, value: Long): Unit
   def setRefAt(offset: Int, value: AnyValue): Unit
@@ -46,7 +46,6 @@ trait WritableRow {
     * Invalidate all cached relationship properties for the given relationship id
     */
   def invalidateCachedRelationshipProperties(rel: Long): Unit
-
 
   // Linenumber and filename specifics
   //===================================
