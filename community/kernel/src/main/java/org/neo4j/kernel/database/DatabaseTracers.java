@@ -37,7 +37,7 @@ public class DatabaseTracers
         this( tracers.getDatabaseTracer(), tracers.getLockTracer(), tracers.getPageCacheTracer() );
     }
 
-    private DatabaseTracers( DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer )
+    public DatabaseTracers( DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer )
     {
         this.databaseTracer = databaseTracer;
         this.lockTracer = lockTracer;

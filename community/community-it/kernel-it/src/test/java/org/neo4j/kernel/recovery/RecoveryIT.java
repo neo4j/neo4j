@@ -38,7 +38,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -49,9 +51,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -74,6 +79,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -136,6 +142,39 @@ class RecoveryIT
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
+
+        GraphDatabaseService recoveredDatabase = createDatabase();
+        try ( Transaction tx = recoveredDatabase.beginTx() )
+        {
+            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnDatabaseRecovery() throws Exception
+    {
+        GraphDatabaseService database = createDatabase();
+
+        int numberOfNodes = 10;
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            createSingleNode( database );
+        }
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile();
+
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
+        recoverDatabase( tracers );
+
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 222 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 222 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 143 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 79 );
 
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction tx = recoveredDatabase.beginTx() )
@@ -488,7 +527,7 @@ class RecoveryIT
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
 
-        performRecovery( fileSystem, pageCache, defaults(), layout );
+        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
         assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
 
         assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
@@ -508,7 +547,7 @@ class RecoveryIT
         }
         assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
 
-        performRecovery( fileSystem, pageCache, defaults(), layout );
+        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
         assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
 
         for ( File idFile : layout.idFiles() )
@@ -569,8 +608,13 @@ class RecoveryIT
 
     private void recoverDatabase() throws Exception
     {
+        recoverDatabase( EMPTY );
+    }
+
+    private void recoverDatabase( DatabaseTracers databaseTracers ) throws Exception
+    {
         assertTrue( isRecoveryRequired( databaseLayout, defaults() ) );
-        performRecovery( databaseLayout );
+        performRecovery( fileSystem, pageCache, databaseTracers, defaults(), databaseLayout );
         assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
     }
 
@@ -709,8 +753,8 @@ class RecoveryIT
         try
         {
             PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
-            assertThat( getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) ).isGreaterThan(
-                    0L );
+            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP );
+            assertThat( record ).isGreaterThan( 0L );
         }
         finally
         {
@@ -744,11 +788,6 @@ class RecoveryIT
         GlobalGuardConsumer( GlobalGuardConsumerTestExtensionFactory.Dependencies dependencies )
         {
             globalGuard = dependencies.globalGuard();
-        }
-
-        public CompositeDatabaseAvailabilityGuard getGlobalGuard()
-        {
-            return globalGuard;
         }
     }
 

@@ -363,7 +363,7 @@ public class Database extends LifecycleAdapter
                 validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache ) );
             }
 
-            performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
+            performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
                     extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ) );
 
             // Build all modules and their services
