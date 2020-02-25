@@ -27,6 +27,9 @@ import org.neo4j.values.storable.ValueCategory;
 
 class FulltextIndexCapability implements IndexCapability
 {
+    private static final IndexBehaviour[] EVENTUALLY_CONSISTENT_BEHAVIOUR = {IndexBehaviour.EVENTUALLY_CONSISTENT, IndexBehaviour.SKIP_AND_LIMIT};
+    private static final IndexBehaviour[] NORMAL_BEHAVIOUR = {IndexBehaviour.SKIP_AND_LIMIT};
+
     private final boolean isEventuallyConsistent;
 
     FulltextIndexCapability( boolean isEventuallyConsistent )
@@ -49,6 +52,6 @@ class FulltextIndexCapability implements IndexCapability
     @Override
     public IndexBehaviour[] behaviours()
     {
-        return isEventuallyConsistent ? new IndexBehaviour[] { IndexBehaviour.EVENTUALLY_CONSISTENT } : new IndexBehaviour[0];
+        return isEventuallyConsistent ? EVENTUALLY_CONSISTENT_BEHAVIOUR : NORMAL_BEHAVIOUR;
     }
 }

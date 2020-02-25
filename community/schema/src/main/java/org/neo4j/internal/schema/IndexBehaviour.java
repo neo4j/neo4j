@@ -28,5 +28,9 @@ public enum IndexBehaviour
     /**
      * The index is <em>eventually consistent</em>, meaning it might not reflect newly committed changes.
      */
-    EVENTUALLY_CONSISTENT
+    EVENTUALLY_CONSISTENT,
+    /**
+     * The index has optimised support for SKIP and LIMIT, allowing these predicates to be pushed down.
+     */
+    SKIP_AND_LIMIT,
 }
