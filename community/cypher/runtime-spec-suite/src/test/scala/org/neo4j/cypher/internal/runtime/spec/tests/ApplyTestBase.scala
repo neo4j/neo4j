@@ -27,20 +27,20 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
-abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
-                                                              edition: Edition[CONTEXT],
-                                                              runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int
-                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
+                                                         edition: Edition[CONTEXT],
+                                                         runtime: CypherRuntime[CONTEXT],
+                                                         sizeHint: Int
+                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("cross apply on empty lhs and rhs") {
+  test("apply on empty lhs and rhs") {
     // given
     val lhsRows = inputValues()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .crossApply()
+      .apply()
       .|.allNodeScan("y", "x")
       .input(nodes = Seq("x"))
       .build()
@@ -51,7 +51,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("cross apply on empty rhs") {
+  test("apply on empty rhs") {
     // given
     val nodes = given {
       nodeGraph(19, "RHS")
@@ -62,7 +62,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .crossApply()
+      .apply()
       .|.expandInto("(y)--(x)")
       .|.nodeByLabelScan("y", "RHS", "x")
       .input(nodes = Seq("x"))
@@ -75,7 +75,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("cross apply on empty lhs") {
+  test("apply on empty lhs") {
     // given
     given {
       nodeGraph(19, "RHS")
@@ -86,7 +86,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .crossApply()
+      .apply()
       .|.nodeByLabelScan("y", "RHS", "x")
       .input(nodes = Seq("x"))
       .build()
@@ -97,7 +97,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("cross apply on aggregation") {
+  test("apply on aggregation") {
     // given
     val nodes = given {
       nodePropertyGraph(sizeHint, {
@@ -109,7 +109,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "xMax")
-      .crossApply()
+      .apply()
       .|.aggregation(Seq.empty, Seq("max(x.prop) as xMax"))
       .|.argument("x")
       .allNodeScan("x")
@@ -121,14 +121,14 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "xMax").withRows(nodes.zipWithIndex.map(_.productIterator.toArray))
   }
 
-  test("cross apply union with aliased variables") {
+  test("apply union with aliased variables") {
     // given
     val lhsRows = inputValues()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("z")
-      .crossApply()
+      .apply()
       .|.distinct("z AS z")
       .|.union()
       .|.|.projection("y AS z")
@@ -145,14 +145,14 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("z").withRows(Array(Array(1), Array(2)))
   }
 
-  test("cross apply union with multiple aliased variables") {
+  test("apply union with multiple aliased variables") {
     // given
     val lhsRows = inputValues()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .crossApply()
+      .apply()
       .|.distinct("n AS n", "m AS m")
       .|.union()
       .|.|.projection("y AS n", "x AS m")
@@ -169,7 +169,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
   }
 
-  test("cross apply after expand on rhs") {
+  test("apply after expand on rhs") {
     val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
@@ -177,7 +177,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .crossApply()
+      .apply()
       .|.expandInto("(y)--(x)")
       .|.allNodeScan("y", "x")
       .input(nodes = Seq("x"))
@@ -195,7 +195,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 
-  test("cross apply with limit on rhs") {
+  test("apply with limit on rhs") {
     val limit = 10
 
     val unfilteredNodes = given {
@@ -211,7 +211,7 @@ abstract class CrossApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .crossApply()
+      .apply()
       .|.limit(limit)
       .|.expandInto("(y)--(x)")
       .|.allNodeScan("y", "x")

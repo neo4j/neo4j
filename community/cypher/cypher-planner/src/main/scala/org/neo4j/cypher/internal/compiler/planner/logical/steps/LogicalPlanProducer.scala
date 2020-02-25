@@ -89,7 +89,6 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
-import org.neo4j.cypher.internal.logical.plans.CrossApply
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
@@ -258,26 +257,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val plan: LogicalPlan =
       if (!correlated)
         CartesianProduct(left, right)
-      else if (hasUncoveredAggregation(right))
-        CrossApply(left, right)
       else
         Apply(left, right)
 
     annotate(plan, solved, providedOrder, context)
-  }
-
-  private def hasUncoveredAggregation(plan: LogicalPlan): Boolean = {
-    type TreeFoldStep = Boolean => (Boolean, Option[Boolean => Boolean])
-    val keepGoing: TreeFoldStep = _ => (false, Some(identity))
-    val dontRecur: TreeFoldStep = _ => (false, None)
-
-    plan.treeFold(false) {
-      case _: Aggregation |
-           _: OrderedAggregation => return true
-      case _: CrossApply         => dontRecur
-      case _: LogicalPlan        => keepGoing
-      case _                     => dontRecur
-    }
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

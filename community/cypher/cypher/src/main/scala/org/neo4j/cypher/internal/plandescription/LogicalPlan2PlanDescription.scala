@@ -68,7 +68,6 @@ import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExisten
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUser
-import org.neo4j.cypher.internal.logical.plans.CrossApply
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -948,9 +947,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case _: Apply =>
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
-
-      case _: CrossApply =>
-        PlanDescriptionImpl(id, "CrossApply", children, Seq.empty, variables)
 
       case _: AssertSameNode =>
         PlanDescriptionImpl(id, "AssertSameNode", children, Seq.empty, variables)

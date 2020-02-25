@@ -60,7 +60,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
   }
 
   protected def resultRow(): CypherRow = {
-    val row = executionContextFactory.newExecutionContext()
+    val row = state.newExecutionContext(executionContextFactory)
     var i = 0
     while (i < aggregationFunctions.length) {
       row.set(aggregations(i).key, aggregationFunctions(i).result(state))

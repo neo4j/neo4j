@@ -80,7 +80,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
         val entry = innerIterator.next()
         val unorderedGroupingValue = entry.getKey
         val aggregateFunctions = entry.getValue
-        val row = executionContextFactory.newExecutionContext()
+        val row = state.newExecutionContext(executionContextFactory)
         addKeys(row, unorderedGroupingValue)
         var i = 0
         while (i < aggregateFunctions.length) {

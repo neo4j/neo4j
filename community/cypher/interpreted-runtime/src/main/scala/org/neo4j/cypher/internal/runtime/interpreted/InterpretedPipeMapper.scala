@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.CrossApply
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -148,7 +147,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConditionalApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.CrossApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
@@ -671,8 +669,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeRightOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables)(id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
-
-      case CrossApply(_, _) => CrossApplyPipe(lhs, rhs)(id = id)
 
       case AssertSameNode(node, _, _) =>
         AssertSameNodePipe(lhs, rhs, node)(id = id)
