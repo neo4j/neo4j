@@ -37,7 +37,6 @@ public enum TransactionApplicationMode
     INTERNAL(
             false, // id tracking not needed since that is done in the transaction before commit
             false, // cache invalidation not needed since cache can be updated
-            false, // no extra care in terms of idempotency needs to be taken
             true,  // include all stores
             AFTER
             ),
@@ -50,7 +49,6 @@ public enum TransactionApplicationMode
     EXTERNAL(
             true,  // id tracking needed since that hasn't been done prior to receiving this external transaction
             true,  // cache invalidation needed since not enough information available to update cache
-            false, // no extra care in terms of idempotency needs to be taken
             true,  // include all stores
             AFTER
             ),
@@ -63,7 +61,6 @@ public enum TransactionApplicationMode
     RECOVERY(
             true,  // id tracking not needed because id generators will be rebuilt after recovery anyway
             true,  // we need cache invalidation during forward recovery, because we need our token holders to be updated with token create commands
-            true,  // extra care needs to be taken to ensure idempotency since this transaction may have been applied previously
             true,  // include all stores
             AFTER
             ),
@@ -77,23 +74,19 @@ public enum TransactionApplicationMode
     REVERSE_RECOVERY(
             false, // id tracking not needed because this is for the initial reverse recovery
             false, // cache invalidation not needed because this is for the initial reverse recovery
-            true,  // extra care in terms of idempotency needs to be taken
             false, // only apply to neo store
             BEFORE
             );
 
     private final boolean needsHighIdTracking;
     private final boolean needsCacheInvalidation;
-    private final boolean needsIdempotencyChecks;
     private final boolean indexesAndCounts;
     private final CommandVersion version;
 
-    TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation,
-            boolean ensureIdempotency, boolean indexesAndCounts, CommandVersion version )
+    TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation, boolean indexesAndCounts, CommandVersion version )
     {
         this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
-        this.needsIdempotencyChecks = ensureIdempotency;
         this.indexesAndCounts = indexesAndCounts;
         this.version = version;
     }
@@ -112,14 +105,6 @@ public enum TransactionApplicationMode
     public boolean needsCacheInvalidationOnUpdates()
     {
         return needsCacheInvalidation;
-    }
-
-    /**
-     * @return whether or not applying a transaction need to be extra cautious about idempotency.
-     */
-    public boolean needsIdempotencyChecks()
-    {
-        return needsIdempotencyChecks;
     }
 
     /**
