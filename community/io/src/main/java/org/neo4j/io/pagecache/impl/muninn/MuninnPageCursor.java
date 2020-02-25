@@ -36,6 +36,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
@@ -182,7 +184,9 @@ public abstract class MuninnPageCursor extends PageCursor
      */
     private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
     {
-        return pagedFile.getLastModifiedTxId( pinnedPageRef ) > lastClosedTransactionId ||
+        long pageRef = pinnedPageRef;
+        Preconditions.checkState( pageRef != 0, "Cursor is closed." );
+        return pagedFile.getLastModifiedTxId( pageRef ) > lastClosedTransactionId ||
                 pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
     }
 
@@ -1101,8 +1105,11 @@ public abstract class MuninnPageCursor extends PageCursor
         return isFlagRaised( pf_flags, PF_SHARED_WRITE_LOCK );
     }
 
+    @VisibleForTesting
     public long lastTxModifierId()
     {
-        return pagedFile.getLastModifiedTxId( pinnedPageRef );
+        long pageRef = pinnedPageRef;
+        Preconditions.checkState( pageRef != 0, "Cursor is closed." );
+        return pagedFile.getLastModifiedTxId( pageRef );
     }
 }

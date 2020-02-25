@@ -37,36 +37,37 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     protected void unpinCurrentPage()
     {
-        if ( pinnedPageRef != 0 )
+        long pageRef = pinnedPageRef;
+        if ( pageRef != 0 )
         {
             pinEvent.done();
             // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
             // flushed. Unlocking the write-locked page will mark it as dirty for us.
             if ( eagerFlush )
             {
-                eagerlyFlushAndUnlockPage();
+                eagerlyFlushAndUnlockPage( pageRef );
             }
             else
             {
-                pagedFile.unlockWrite( pinnedPageRef );
+                pagedFile.unlockWrite( pageRef );
             }
         }
         clearPageCursorState();
     }
 
-    private void eagerlyFlushAndUnlockPage()
+    private void eagerlyFlushAndUnlockPage( long pageRef )
     {
-        long flushStamp = pagedFile.unlockWriteAndTryTakeFlushLock( pinnedPageRef );
+        long flushStamp = pagedFile.unlockWriteAndTryTakeFlushLock( pageRef );
         if ( flushStamp != 0 )
         {
             boolean success = false;
             try
             {
-                success = pagedFile.flushLockedPage( pinnedPageRef, loadPlainCurrentPageId() );
+                success = pagedFile.flushLockedPage( pageRef, loadPlainCurrentPageId() );
             }
             finally
             {
-                pagedFile.unlockFlush( pinnedPageRef, flushStamp, success );
+                pagedFile.unlockFlush( pageRef, flushStamp, success );
             }
         }
     }
