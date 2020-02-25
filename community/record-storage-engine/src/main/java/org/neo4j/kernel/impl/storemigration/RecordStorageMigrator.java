@@ -115,6 +115,7 @@ import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -144,6 +145,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_COMMIT_T
  */
 public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
+    private static final String MIGRATION_THREADS = "migration_threads";
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
 
     private final Config config;
@@ -422,6 +424,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 public boolean highIO()
                 {
                     return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory().toPath() );
+                }
+
+                @Override
+                public int maxNumberOfProcessors()
+                {
+                    return FeatureToggles.getInteger( RecordStorageMigrator.class, MIGRATION_THREADS, super.maxNumberOfProcessors() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =
