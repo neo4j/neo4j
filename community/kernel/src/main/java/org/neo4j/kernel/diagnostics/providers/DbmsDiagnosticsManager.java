@@ -58,17 +58,17 @@ public class DbmsDiagnosticsManager
         dumpSystemDiagnostics( log );
     }
 
-    public synchronized void dumpDatabaseDiagnostics( Database database )
+    public void dumpDatabaseDiagnostics( Database database )
     {
         dumpDatabaseDiagnostics( database, log, false );
     }
 
-    public synchronized void dumpAll()
+    public void dumpAll()
     {
         dumpAll( log );
     }
 
-    public synchronized void dumpAll( Log log )
+    public void dumpAll( Log log )
     {
         dumpSystemDiagnostics( log );
         dumpAllDatabases( log );
