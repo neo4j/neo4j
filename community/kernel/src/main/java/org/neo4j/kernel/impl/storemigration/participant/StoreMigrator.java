@@ -87,6 +87,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -117,6 +118,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  */
 public class StoreMigrator extends AbstractStoreMigrationParticipant
 {
+    private static final String MIGRATION_THREADS = "migration_threads";
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
 
     private final Config config;
@@ -345,6 +347,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 public boolean highIO()
                 {
                     return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory().toPath(), super.highIO() );
+                }
+
+                @Override
+                public int maxNumberOfProcessors()
+                {
+                    return FeatureToggles.getInteger( StoreMigrator.class, MIGRATION_THREADS, super.maxNumberOfProcessors() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =
