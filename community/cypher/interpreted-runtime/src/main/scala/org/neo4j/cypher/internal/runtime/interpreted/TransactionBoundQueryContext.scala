@@ -460,10 +460,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else Nodes.countAll(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
-  override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = {
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) false
-    else nodeCursor.hasCheapDegrees
+    else nodeCursor.isDense
   }
 
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)

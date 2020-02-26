@@ -52,7 +52,7 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 @SuppressWarnings( "unused" )
 public class CachingExpandInto
 {
-    private static final int EXPENSIVE_DEGREE = -1;
+    private static final int NOT_DENSE_DEGREE = -1;
 
     private RelationshipCache relationshipCache = new RelationshipCache();
     private long fromNode = -1L;
@@ -96,26 +96,26 @@ public class CachingExpandInto
         }
         Direction reverseDirection = direction.reverse();
         //Check toNode, will position nodeCursor at toNode
-        int toDegree = calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types );
+        int toDegree = calculateTotalDegreeIfDense( read, toNode, nodeCursor, reverseDirection, types );
         if ( toDegree == 0 )
         {
             done();
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean toNodeHasCheapDegrees = toDegree != EXPENSIVE_DEGREE;
+        boolean toNodeIsDense = toDegree != NOT_DENSE_DEGREE;
 
         //Check fromNode, note that nodeCursor is now pointing at fromNode
         if ( !singleNode( read, nodeCursor, fromNode ) )
         {
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean fromNodeHasCheapDegrees = nodeCursor.hasCheapDegrees();
+        boolean fromNodeIsDense = nodeCursor.isDense();
 
-        //Both can determine degree cheaply, start with the one with the lesser degree
-        if ( fromNodeHasCheapDegrees && toNodeHasCheapDegrees )
+        //Both are dense, start with the one with the lesser degree
+        if ( fromNodeIsDense && toNodeIsDense )
         {
             //Note that we have already position the cursor at fromNode
-            int fromDegree = calculateTotalDegree( nodeCursor, direction, types );
+            int fromDegree = calculateTotalDegreeDense( nodeCursor, direction, types );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -135,11 +135,11 @@ public class CachingExpandInto
 
             return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), endNode );
         }
-        else if ( toNodeHasCheapDegrees )
+        else if ( toNodeIsDense )
         {
             return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
         }
-        else if ( fromNodeHasCheapDegrees )
+        else if ( fromNodeIsDense )
         {
             //must move to toNode
             singleNode( read, nodeCursor, toNode );
@@ -168,21 +168,21 @@ public class CachingExpandInto
         return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor(), fromNode, types, toNode );
     }
 
-    private int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
+    private int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
             int[] types )
     {
         if ( !singleNode( read, nodeCursor, node ) )
         {
             return 0;
         }
-        if ( !nodeCursor.hasCheapDegrees() )
+        if ( !nodeCursor.isDense() )
         {
-            return EXPENSIVE_DEGREE;
+            return NOT_DENSE_DEGREE;
         }
-        return calculateTotalDegree( nodeCursor, direction, types );
+        return calculateTotalDegreeDense( nodeCursor, direction, types );
     }
 
-    private int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
+    private int calculateTotalDegreeDense( NodeCursor nodeCursor, Direction direction, int[] types )
     {
         return nodeCursor.degrees( selection( types, direction ) ).degree( direction );
     }
@@ -599,3 +599,4 @@ public class CachingExpandInto
         }
     }
 }
+

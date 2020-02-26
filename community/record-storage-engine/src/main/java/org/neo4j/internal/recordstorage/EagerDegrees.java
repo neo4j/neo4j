@@ -27,34 +27,13 @@ import org.neo4j.storageengine.api.Degrees;
 
 class EagerDegrees implements Degrees
 {
-    private final MutableIntObjectMap<Degree> degrees = IntObjectMaps.mutable.empty();
+    private static final int[] UNKNOWNS = new int[3];
 
-    void add( int type, int outgoing, int incoming, int loop )
-    {
-        Degree degree = getOrCreateDegree( type );
-        degree.outgoing += outgoing;
-        degree.incoming += incoming;
-        degree.loop += loop;
-    }
+    private final MutableIntObjectMap<int[]> degrees = IntObjectMaps.mutable.empty();
 
-    void addOutgoing( int type, int count )
+    void add( int type, int outgoing, int incoming, int total )
     {
-        getOrCreateDegree( type ).outgoing += count;
-    }
-
-    void addIncoming( int type, int count )
-    {
-        getOrCreateDegree( type ).incoming += count;
-    }
-
-    void addLoop( int type, int count )
-    {
-        getOrCreateDegree( type ).loop += count;
-    }
-
-    private Degree getOrCreateDegree( int type )
-    {
-        return degrees.getIfAbsentPut( type, Degree::new );
+        degrees.put( type, new int[]{outgoing, incoming, total} );
     }
 
     @Override
@@ -66,28 +45,6 @@ class EagerDegrees implements Degrees
     @Override
     public int degree( int type, Direction direction )
     {
-        Degree degree = degrees.get( type );
-        if ( degree == null )
-        {
-            return 0;
-        }
-        switch ( direction )
-        {
-        case OUTGOING:
-            return degree.outgoing + degree.loop;
-        case INCOMING:
-            return degree.incoming + degree.loop;
-        case BOTH:
-            return degree.outgoing + degree.incoming + degree.loop;
-        default:
-            throw new IllegalArgumentException( "Unrecognized direction " + direction );
-        }
-    }
-
-    private static class Degree
-    {
-        private int outgoing;
-        private int incoming;
-        private int loop;
+        return degrees.getIfAbsent( type, () -> UNKNOWNS )[direction.ordinal()];
     }
 }

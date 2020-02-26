@@ -62,6 +62,53 @@ public abstract class RelationshipSelection
      */
     public abstract LongIterator addedRelationship( NodeState transactionState );
 
+    public static RelationshipSelection lazyCapture()
+    {
+        return new RelationshipSelection()
+        {
+            private int type = -1;
+            private RelationshipDirection direction;
+
+            @Override
+            public boolean test( int type, RelationshipDirection direction )
+            {
+                if ( this.direction == null )
+                {
+                    // Capture filtering from the first relationship we encounter. It's an old storage format thing
+                    this.type = type;
+                    this.direction = direction;
+                    return true;
+                }
+
+                return this.type == type && this.direction.equals( direction );
+            }
+
+            @Override
+            public boolean test( int type )
+            {
+                if ( this.type == -1 )
+                {
+                    this.type = type;
+                    return true;
+                }
+
+                return this.type == type;
+            }
+
+            @Override
+            public boolean isInitialized()
+            {
+                return direction != null && type != -1;
+            }
+
+            @Override
+            public LongIterator addedRelationship( NodeState transactionState )
+            {
+                return transactionState.getAddedRelationships( asSelectionDirection( direction ), type );
+            }
+        };
+    }
+
     public static RelationshipSelection selection( int[] types, Direction direction )
     {
         if ( types == null || types.length == 0 )

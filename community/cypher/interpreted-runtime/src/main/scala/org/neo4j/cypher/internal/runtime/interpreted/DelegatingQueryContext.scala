@@ -244,7 +244,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
-  override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.nodeHasCheapDegrees(node, nodeCursor))
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.nodeIsDense(node, nodeCursor))
 
   override def variableLengthPathExpand(realNode: Long,
                                         minHops: Option[Int],

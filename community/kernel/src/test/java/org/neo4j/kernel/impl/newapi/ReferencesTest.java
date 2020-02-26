@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.junit.jupiter.api.Test;
@@ -30,9 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
-import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.DENSE;
-import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.clearEncoding;
-import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.parseEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE_SELECTION;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.SELECTION;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
 
 class ReferencesTest
 {
@@ -43,6 +45,8 @@ class ReferencesTest
     void shouldPreserveNoId()
     {
         assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ) ).isEqualTo( NO_ID );
     }
 
     @Test
@@ -52,9 +56,11 @@ class ReferencesTest
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            int token = random.nextInt( Integer.MAX_VALUE );
+            int token = random.nextInt(Integer.MAX_VALUE);
 
             assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDense( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeSelection( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDenseSelection( reference ) ) ).isEqualTo( reference );
         }
     }
 
@@ -62,6 +68,18 @@ class ReferencesTest
     void encodeDense()
     {
         testLongFlag( DENSE, RelationshipReferenceEncoding::encodeDense );
+    }
+
+    @Test
+    void encodeSelection()
+    {
+        testLongFlag( SELECTION, RelationshipReferenceEncoding::encodeSelection );
+    }
+
+    @Test
+    void encodeDenseSelection()
+    {
+        testLongFlag( DENSE_SELECTION, RelationshipReferenceEncoding::encodeDenseSelection );
     }
 
     private void testLongFlag( RelationshipReferenceEncoding flag, LongToLongFunction encoder )

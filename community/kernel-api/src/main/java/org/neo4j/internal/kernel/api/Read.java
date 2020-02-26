@@ -23,7 +23,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -312,13 +311,11 @@ public interface Read
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference to start of relationships.
-     * @param selection
-     *         which relationships to select.
+     *         a reference to start of relationships
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor );
+    void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor );
 
     /**
      * @param nodeReference

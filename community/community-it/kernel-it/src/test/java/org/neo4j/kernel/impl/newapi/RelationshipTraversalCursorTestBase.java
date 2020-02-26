@@ -197,11 +197,11 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         {
             read.singleNode( dense.id, node );
             assertTrue( node.next(), "access dense node" );
-            assertTrue( node.hasCheapDegrees(), "dense node" );
+            assertTrue( node.isDense(), "dense node" );
 
             read.singleNode( sparse.id, node );
             assertTrue( node.next(), "access sparse node" );
-            assertFalse( node.hasCheapDegrees() && supportsSparseNodes(), "sparse node" );
+            assertFalse( node.isDense() && supportsSparseNodes(), "sparse node" );
         }
     }
 
@@ -246,7 +246,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
             if ( detached )
             {
-                read.relationships( start.id, node.relationshipsReference(), ALL_RELATIONSHIPS, relationship );
+                read.relationships( start.id, node.relationshipsReference(), relationship );
             }
             else
             {

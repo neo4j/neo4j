@@ -166,7 +166,7 @@ trait QueryContext extends TokenContext with DbAccess {
     case SemanticDirection.BOTH => nodeGetTotalDegree(node, relTypeId, nodeCursor)
   }
 
-  def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean
+  def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean
 
   def asObject(value: AnyValue): AnyRef
 

@@ -142,7 +142,7 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public boolean hasCheapDegrees()
+    public boolean isDense()
     {
         return dense;
     }

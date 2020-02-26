@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.RelationshipSelection.lazyCapture;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -48,44 +49,41 @@ class DefaultRelationshipTraversalCursorTest
     private static final int type = 9999;
     private static final int type2 = 9998;
     private static final long relationship = 100;
+    private static final long relationshipGroup = 313;
     private final DefaultPooledCursors pool = mock( DefaultPooledCursors.class );
 
     // Regular traversal of a sparse chain
 
     @Test
-    void regularTraversal() throws NoSuchFieldException
+    void regularSparseTraversal() throws NoSuchFieldException
     {
-        // given
-        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor );
-        Read read = emptyTxState();
-
-        // when
-        cursor.init( node, relationship, ALL_RELATIONSHIPS, read );
-
-        // then
-        assertRelationships( cursor, 100, 102, 104 );
+        regularTraversal( relationship, false );
     }
 
     @Test
-    void regularTraversalWithTxState() throws NoSuchFieldException
+    void regularSparseTraversalWithTxState() throws NoSuchFieldException
     {
-        // given
-        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
-        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor );
-        Read read = txState( 3, 4 );
+        regularTraversalWithTxState( relationship, false );
+    }
 
-        // when
-        cursor.init( node, relationship, ALL_RELATIONSHIPS, read );
+    // Dense traversal is just like regular for this class, denseness is handled by the store
 
-        // then
-        assertRelationships( cursor, 3, 4, 100, 102, 104 );
+    @Test
+    void regularDenseTraversal() throws NoSuchFieldException
+    {
+        regularTraversal( relationshipGroup, true );
+    }
+
+    @Test
+    void regularDenseTraversalWithTxState() throws NoSuchFieldException
+    {
+        regularTraversalWithTxState( relationshipGroup, true );
     }
 
     // Sparse traversal but with tx-state filtering
 
     @Test
-    void traversalWithTxStateFiltering() throws NoSuchFieldException
+    void sparseTraversalWithTxStateFiltering() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor =
@@ -106,10 +104,39 @@ class DefaultRelationshipTraversalCursorTest
         // when
         cursor.init( node, relationship,
                 // relationships of a specific type/direction
-                selection( type, Direction.OUTGOING ), read );
+                true, lazyCapture(), read );
 
         // then
         assertRelationships( cursor, 100, 3, 7, 6, 102, 104 );
+    }
+
+    // Sparse traversal but with filtering both of store and tx-state
+
+    @Test
+    void sparseTraversalWithFiltering() throws NoSuchFieldException
+    {
+        // given
+        StorageRelationshipTraversalCursor storeCursor =
+                storeCursor(
+                        rel( 100, 50, node, type ), // <- the filter template
+                        rel( 103, 51, node, type ) );
+
+        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, NULL );
+        Read read = txState(
+                rel( 3, node, 50, type ),
+                rel( 4, 50, node, type ),
+                rel( 5, node, 50, type2 ),
+                rel( 6, node, node, type ),
+                rel( 7, node, 52, type )
+        );
+
+        // when
+        cursor.init( node, relationship,
+                // relationships of a specific type/direction
+                false, lazyCapture(), read );
+
+        // then
+        assertRelationships( cursor, 100, 4, 6, 103 );
     }
 
     // Empty store, but filter tx-state
@@ -130,7 +157,7 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.OUTGOING ), read );
+        cursor.init( node, relationship, false, selection( type, Direction.OUTGOING ), read );
 
         // then
         assertRelationships( cursor, 3, 7, 6 );
@@ -153,7 +180,7 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.INCOMING ), read );
+        cursor.init( node, relationship, false, selection( type, Direction.INCOMING ), read );
 
         // then
         assertRelationships( cursor, 4, 7, 6 );
@@ -176,13 +203,41 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, selection( type, Direction.BOTH ), read );
+        cursor.init( node, relationship, false, selection( type, Direction.BOTH ), read );
 
         // then
         assertRelationships( cursor, 3, 8, 7, 2, 6 );
     }
 
     // HELPERS
+
+    private void regularTraversal( long reference, boolean dense ) throws NoSuchFieldException
+    {
+        // given
+        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
+        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, NULL );
+        Read read = emptyTxState();
+
+        // when
+        cursor.init( node, reference, dense, ALL_RELATIONSHIPS, read );
+
+        // then
+        assertRelationships( cursor, 100, 102, 104 );
+    }
+
+    private void regularTraversalWithTxState( long reference, boolean dense ) throws NoSuchFieldException
+    {
+        // given
+        StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
+        DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor, NULL );
+        Read read = txState( 3, 4 );
+
+        // when
+        cursor.init( node, reference, dense, ALL_RELATIONSHIPS, read );
+
+        // then
+        assertRelationships( cursor, 3, 4, 100, 102, 104 );
+    }
 
     private static Read emptyTxState() throws NoSuchFieldException
     {
@@ -292,7 +347,7 @@ class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void init( long nodeReference, long reference, RelationshipSelection selection )
+            public void init( long nodeReference, long reference, boolean nodeIsDense, RelationshipSelection selection )
             {
                 this.nodeReference = nodeReference;
                 this.selection = selection;
