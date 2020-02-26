@@ -71,6 +71,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -180,11 +181,16 @@ class IndexingServiceTest
     private final JobScheduler scheduler = JobSchedulerFactory.createScheduler();
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IndexNotFoundKernelException
     {
         when( populator.sample() ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
+        IndexReader indexReader = mock( IndexReader.class );
+        IndexSampler indexSampler = mock( IndexSampler.class );
+        when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
+        when( indexReader.createSampler() ).thenReturn( indexSampler );
+        when( accessor.newReader() ).thenReturn( indexReader );
     }
 
     @AfterEach
