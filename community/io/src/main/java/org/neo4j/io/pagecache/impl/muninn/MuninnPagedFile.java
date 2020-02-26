@@ -41,18 +41,19 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
+import static org.neo4j.util.FeatureToggles.getInteger;
+
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 {
     static final int UNMAPPED_TTE = -1;
-    private static final int translationTableChunkSizePower = Integer.getInteger(
-            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
+    private static final int maxChunkGrowth = getInteger( MuninnPagedFile.class, "maxChunkGrowth", 16 ); // One chunk is 32 MiB, by default.
+    private static final int translationTableChunkSizePower = getInteger( MuninnPagedFile.class, "translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
     private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
     private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( int[].class );
     private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( int[].class );
 
-    private static final long headerStateOffset =
-            UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "headerState" );
+    private static final long headerStateOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "headerState" );
     private static final int headerStateRefCountShift = 48;
     private static final int headerStateRefCountMax = 0x7FFF;
     private static final long headerStateRefCountMask = 0x7FFF_0000_0000_0000L;
@@ -750,8 +751,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     private int computeNewRootTableLength( int maxChunkId )
     {
-        // Grow by approx. 10% but always by at least one full chunk.
-        return 1 + (int) (maxChunkId * 1.1);
+        // Grow by approximate 10% but always by at least one full chunk, and no more than maxChunkGrowth (16 by default, equivalent to 512 MiB).
+        int next = 1 + (int) (maxChunkId * 1.1);
+        return Math.min( next, maxChunkId + maxChunkGrowth );
     }
 
     static int computeChunkId( long filePageId )
