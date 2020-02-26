@@ -1,1 +1,1 @@
-For upgrade instructions, please see https://neo4j.com/docs/operations-manual/current/upgrade/.
+For upgrade instructions, please see https://neo4j.com/docs/operations-manual/3.5/upgrade/.
