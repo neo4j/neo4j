@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                             runtime: CypherRuntime[CONTEXT],
-                                                            sizeHint: Int
+                                                            val sizeHint: Int
                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("empty lhs should produce no rows") {
@@ -352,4 +352,114 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
   }
 
+  test("top on rhs") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .semiApply()
+      .|.top(Seq(Ascending("x")), 10)
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+}
+
+// Supported by interpreted, slotted
+trait SemiApplyWithRhsAggregationTestBase[CONTEXT <: RuntimeContext] {
+  self: SemiApplyTestBase[CONTEXT] =>
+
+  test("should only let through rows that match, with RHS aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .semiApply()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
+
+  test("should only let through rows that match, with RHS grouping and aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .semiApply()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq("x AS x"), Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
+
+  test("aggregation on lhs, non-empty rhs, with RHS aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .semiApply()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(c) AS s"))
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("c").withRows(Seq(Array(inputRows.size)))
+  }
+
+  test("aggregation on lhs, non-empty rhs, with RHS sort") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .semiApply()
+      .|.filter("x % 2 = 0")
+      .|.sort(Seq(Ascending("x")))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
 }
