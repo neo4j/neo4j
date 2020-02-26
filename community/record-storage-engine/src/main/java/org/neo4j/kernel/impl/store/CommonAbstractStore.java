@@ -92,6 +92,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected int recordSize;
     private int filePageSize;
     private int recordsPerPage;
+    private int recordsEndOffset;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
@@ -374,6 +375,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordSize = determineRecordSize();
         filePageSize = recordFormat.getPageSize( pageCache.pageSize(), recordSize );
         recordsPerPage = filePageSize / recordSize;
+        recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 
     public boolean isInUse( long id, PageCursorTracer cursorTracer )
@@ -905,18 +907,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
         try
         {
-            int offset = cursor.getOffset();
             long id = record.getId() + 1;
             record.setId( id );
             long pageId = cursor.getCurrentPageId();
-            if ( (offset >= (recordsPerPage * recordSize)) || (pageId < 0) )
+            if ( (cursor.getOffset() >= recordsEndOffset) || (pageId < 0) )
             {
                 if ( !cursor.next() )
                 {
                     verifyAfterNotRead( record, mode );
                     return;
                 }
-                cursor.setOffset( 0 );
             }
             readRecordFromPage( id, record, mode, cursor );
         }
