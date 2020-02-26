@@ -2,7 +2,7 @@ Neo4j Extensions
 ================
 
 Neo4j can be extended by writing custom code which can be invoked directly from Cypher,
-as described in the developer manual at https://neo4j.com/docs/developer-manual/current/extending-neo4j/
+as described in the developer manual at https://neo4j.com/docs/developer-manual/3.5/extending-neo4j/
 
 These extensions are user defined procedures, user defined functions or security plugins. They are written in Java
 and compiled into jar files. They can be deployed to the database by dropping a JAR file into the $NEO4J_HOME/plugins
@@ -18,7 +18,7 @@ or user defined functions:
 * dbms.security.procedures.whitelist
 
 These are described in more detail in the documentation at
-https://neo4j.com/docs/operations-manual/current/security/securing-extensions/
+https://neo4j.com/docs/operations-manual/3.5/security/securing-extensions/
 
 Sandboxing
 ----------
