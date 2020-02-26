@@ -46,7 +46,7 @@ public interface NodeCursor extends Cursor
     /**
      * @return whether or not this node cursor can decide degree for various relationship selections cheaper than doing a full scan of all relationships.
      */
-    boolean supportsFastDegreeLookup();
+    boolean hasCheapDegrees();
 
     int[] relationshipTypes();
 

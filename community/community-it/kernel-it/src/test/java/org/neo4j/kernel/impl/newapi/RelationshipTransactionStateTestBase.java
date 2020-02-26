@@ -781,7 +781,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertFalse( node.supportsFastDegreeLookup() );
+                assertFalse( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
@@ -839,7 +839,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertTrue( node.supportsFastDegreeLookup() );
+                assertTrue( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
@@ -898,7 +898,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertFalse( node.supportsFastDegreeLookup() );
+                assertFalse( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( selection( type, BOTH ) );
                 assertEquals( 2, degrees.outgoingDegree() );
                 assertEquals( 0, degrees.incomingDegree() );
@@ -940,7 +940,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertTrue( node.supportsFastDegreeLookup() );
+                assertTrue( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
