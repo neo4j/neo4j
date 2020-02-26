@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ApplyUnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase
@@ -105,6 +106,7 @@ class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY.EDITION, 
                                  with AllNodeScanWithOtherOperatorsTestBase[CommunityRuntimeContext]
 class InterpretedCartesianProductTest extends CartesianProductTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedApplyTest extends ApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+                           with ApplyUnionTestBase[CommunityRuntimeContext]
 class InterpretedNodeByIdSeekTest extends NodeByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDirectedRelationshipByIdSeekTest extends DirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUndirectedRelationshipByIdSeekTest extends UndirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

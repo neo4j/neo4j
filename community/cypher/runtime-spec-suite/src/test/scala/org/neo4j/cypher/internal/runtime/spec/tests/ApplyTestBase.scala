@@ -121,54 +121,6 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "xMax").withRows(nodes.zipWithIndex.map(_.productIterator.toArray))
   }
 
-  test("apply union with aliased variables") {
-    // given
-    val lhsRows = inputValues()
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("z")
-      .apply()
-      .|.distinct("z AS z")
-      .|.union()
-      .|.|.projection("y AS z")
-      .|.|.argument("y")
-      .|.projection("x AS z")
-      .|.argument("x")
-      .projection("1 AS x", "2 AS y")
-      .argument()
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-
-    // then
-    runtimeResult should beColumns("z").withRows(Array(Array(1), Array(2)))
-  }
-
-  test("apply union with multiple aliased variables") {
-    // given
-    val lhsRows = inputValues()
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("n", "m")
-      .apply()
-      .|.distinct("n AS n", "m AS m")
-      .|.union()
-      .|.|.projection("y AS n", "x AS m")
-      .|.|.argument("x", "y")
-      .|.projection("x AS n", "y AS m")
-      .|.argument("x", "y")
-      .projection("1 AS x", "2 AS y")
-      .argument()
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-
-    // then
-    runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
-  }
-
   test("apply after expand on rhs") {
     val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
@@ -233,4 +185,56 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(rowCount(expectedRowCount))
   }
 
+}
+
+trait ApplyUnionTestBase[CONTEXT <: RuntimeContext] {
+  self: ApplyTestBase[CONTEXT] =>
+
+  test("apply union with aliased variables") {
+    // given
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("z")
+      .apply()
+      .|.distinct("z AS z")
+      .|.union()
+      .|.|.projection("y AS z")
+      .|.|.argument("y")
+      .|.projection("x AS z")
+      .|.argument("x")
+      .projection("1 AS x", "2 AS y")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("z").withRows(Array(Array(1), Array(2)))
+  }
+
+  test("apply union with multiple aliased variables") {
+    // given
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .apply()
+      .|.distinct("n AS n", "m AS m")
+      .|.union()
+      .|.|.projection("y AS n", "x AS m")
+      .|.|.argument("x", "y")
+      .|.projection("x AS n", "y AS m")
+      .|.argument("x", "y")
+      .projection("1 AS x", "2 AS y")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
+  }
 }
