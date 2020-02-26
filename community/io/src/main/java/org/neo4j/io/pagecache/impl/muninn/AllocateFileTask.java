@@ -28,7 +28,7 @@ class AllocateFileTask implements Callable<Void>
     private final PageSwapper swapper;
     private final long newFileSize;
 
-    public AllocateFileTask( PageSwapper swapper, long newFileSize )
+    AllocateFileTask( PageSwapper swapper, long newFileSize )
     {
         this.swapper = swapper;
         this.newFileSize = newFileSize;
