@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.storageengine.api.RelationshipVisitor

@@ -69,7 +69,6 @@ import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexQuery
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
@@ -78,9 +77,12 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
@@ -142,6 +144,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   private def writes() = transactionalContext.dataWrite
 
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
+
+  override def groupCursor(): RelationshipGroupCursor = allocateAndTraceRelationshipGroupCursor()
 
   private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
 

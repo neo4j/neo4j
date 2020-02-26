@@ -24,7 +24,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
@@ -40,7 +39,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -465,8 +463,9 @@ class CachingExpandIntoTest
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 
             CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction );
-            RelationshipTraversalCursor cursor = expandInto.connectingRelationships(
+            RelationshipSelectionCursor cursor = expandInto.connectingRelationships(
                     nodeCursor,
+                    groupCursor,
                     traversalCursor,
                     start,
                     typeIds,
@@ -475,6 +474,7 @@ class CachingExpandIntoTest
             // After exhausting the cursor, it should be OK to reuse the CachingExpandInto object without triggering any assertion errors
             expandInto.connectingRelationships(
                     nodeCursor,
+                    groupCursor,
                     traversalCursor,
                     start,
                     typeIds,

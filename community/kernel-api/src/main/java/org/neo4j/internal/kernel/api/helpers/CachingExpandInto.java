@@ -110,7 +110,7 @@ public class CachingExpandInto
         if ( toDegree == 0 )
         {
             done();
-            return RelationshipTraversalCursor.EMPTY;
+            return RelationshipSelectionCursor.EMPTY;
         }
         boolean toNodeIsDense = toDegree != NOT_DENSE_DEGREE;
 

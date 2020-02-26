@@ -66,6 +66,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 val nodeCursor = query.nodeCursor()
                 try {
                   val selectionCursor = expandInto.connectingRelationships(nodeCursor,
+                                                                           groupCursor,
                                                                            traversalCursor,
                                                                            fromNode.id(),
                                                                            types.types(query),
