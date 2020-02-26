@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
@@ -32,6 +33,7 @@ trait IndexDescriptorCompatibility {
   def kernelToCypher(behaviour: IndexBehaviour): IndexLimitation = {
     behaviour match {
       case schema.IndexBehaviour.SLOW_CONTAINS => SlowContains
+      case schema.IndexBehaviour.SKIP_AND_LIMIT => SkipAndLimit
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for index behaviour: " + behaviour)
     }
   }

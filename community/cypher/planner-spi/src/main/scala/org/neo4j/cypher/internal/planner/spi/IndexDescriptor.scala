@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
+case object SkipAndLimit extends IndexLimitation
 
 sealed trait IndexOrderCapability {
   def asc: Boolean

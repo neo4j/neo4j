@@ -587,7 +587,8 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         assertThat( (Value) descriptor.getIndexConfig().get( ANALYZER ) ).isEqualTo( Values.stringValue( "standard-no-stop-words" ) );
         assertThat( (Value) descriptor.getIndexConfig().get( EVENTUALLY_CONSISTENT ) ).isEqualTo( Values.booleanValue( true ) );
-        assertThat( asList( descriptor.getCapability().behaviours() ) ).containsExactly( IndexBehaviour.EVENTUALLY_CONSISTENT );
+        assertThat( asList( descriptor.getCapability().behaviours() ) ).containsExactlyInAnyOrder(
+                IndexBehaviour.EVENTUALLY_CONSISTENT, IndexBehaviour.SKIP_AND_LIMIT );
     }
 
     @Test
