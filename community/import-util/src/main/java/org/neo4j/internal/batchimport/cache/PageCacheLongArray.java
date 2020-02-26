@@ -24,18 +24,20 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implements LongArray
 {
-    PageCacheLongArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
+    private static final String PAGE_CACHE_LONG_ARRAY_WORKER_TAG = "pageCacheLongArrayWorker";
+
+    PageCacheLongArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, long length, long defaultValue, long base ) throws IOException
     {
-        super( pagedFile, Long.BYTES, length, defaultValue, base );
+        super( pagedFile, pageCacheTracer, Long.BYTES, length, defaultValue, base );
     }
 
     @Override
@@ -43,7 +45,7 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -67,7 +69,7 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
             PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();

@@ -22,8 +22,10 @@ package org.neo4j.internal.batchimport.cache;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest
 {
@@ -42,7 +44,7 @@ public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcu
     @Override
     protected PageCacheLongArray getNumberArray( PagedFile file ) throws IOException
     {
-        return new PageCacheLongArray( file, COUNT, 0, 0 );
+        return new PageCacheLongArray( file, NULL, COUNT, 0, 0 );
     }
 
     private static class WholeFileRacer implements Runnable

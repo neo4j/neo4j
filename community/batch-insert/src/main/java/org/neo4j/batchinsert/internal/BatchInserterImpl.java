@@ -600,7 +600,7 @@ public class BatchInserterImpl implements BatchInserter
     private void rebuildCounts( PageCacheTracer cacheTracer ) throws IOException
     {
         new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
-                new CountsComputer( neoStores, pageCache, databaseLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ).close();
+                new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ).close();
     }
 
     private void createEmptyTransactionLog()

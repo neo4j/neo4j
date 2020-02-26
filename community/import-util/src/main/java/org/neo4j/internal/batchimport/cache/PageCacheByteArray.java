@@ -24,22 +24,23 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implements ByteArray
 {
+    private static final String PAGE_CACHE_BYTE_ARRAY_WORKER_TAG = "pageCacheByteArrayWorker";
     private final byte[] defaultValue;
 
-    PageCacheByteArray( PagedFile pagedFile, long length, byte[] defaultValue, long base ) throws IOException
+    PageCacheByteArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, long length, byte[] defaultValue, long base ) throws IOException
     {
         // Default value is handled locally in this class, in contrast to its siblings, which lets the superclass
         // handle it.
-        super( pagedFile, defaultValue.length, length, base );
+        super( pagedFile, pageCacheTracer, defaultValue.length, length, base );
         this.defaultValue = defaultValue;
         setDefaultValue( -1 );
     }
@@ -60,7 +61,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
         int fromOffset = offset( fromIndex );
         long toPageId = pageId( toIndex );
         int toOffset = offset( toIndex );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor fromCursor = pagedFile.io( fromPageId, PF_SHARED_WRITE_LOCK, cursorTracer );
               PageCursor toCursor = pagedFile.io( toPageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
@@ -84,7 +85,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -109,7 +110,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -133,7 +134,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -157,7 +158,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -181,7 +182,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -207,7 +208,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -233,7 +234,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -258,7 +259,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
         assert value.length == entrySize;
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -279,7 +280,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -297,7 +298,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -315,7 +316,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -333,7 +334,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -352,7 +353,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -371,7 +372,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();
@@ -390,7 +391,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
 
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
         {
             cursor.next();
@@ -416,7 +417,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_BYTE_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             cursor.next();

@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import static java.lang.Long.min;
+import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
 
 /**
  * Used as part of the fallback strategy for {@link Auto}. Tries to split up fixed-size arrays
@@ -29,9 +30,6 @@ import static java.lang.Long.min;
 public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
     static final int MAGIC_CHUNK_COUNT = 10;
-    // This is a safe bet on the maximum number of items the JVM can store in an array. It is commonly slightly less
-    // than Integer.MAX_VALUE
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - Short.MAX_VALUE;
     private final NumberArrayFactory delegate;
 
     ChunkedNumberArrayFactory( Monitor monitor )

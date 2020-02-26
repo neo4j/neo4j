@@ -24,13 +24,12 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
-
 /**
  * Abstraction over page cache backed number arrays.
  *
@@ -38,30 +37,33 @@ import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSuppl
  */
 public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {
+    private static final String PAGE_CACHE_WORKER_TAG = "pageCacheNumberArrayWorker";
     protected final PagedFile pagedFile;
     protected final int entriesPerPage;
+    protected final PageCacheTracer pageCacheTracer;
     protected final int entrySize;
     private final long length;
     private final long defaultValue;
     private final long base;
     private boolean closed;
 
-    PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length, long base ) throws IOException
+    PageCacheNumberArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, int entrySize, long length, long base ) throws IOException
     {
-        this( pagedFile, entrySize, length, 0, base );
+        this( pagedFile, pageCacheTracer, entrySize, length, 0, base );
     }
 
-    PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length, long defaultValue, long base )
+    PageCacheNumberArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, int entrySize, long length, long defaultValue, long base )
             throws IOException
     {
         this.pagedFile = pagedFile;
+        this.pageCacheTracer = pageCacheTracer;
         this.entrySize = entrySize;
         this.entriesPerPage = pagedFile.pageSize() / entrySize;
         this.length = length;
         this.defaultValue = defaultValue;
         this.base = base;
 
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG );
               PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             setLength( cursorToSetLength, length );
@@ -99,7 +101,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected void setDefaultValue( long defaultValue ) throws IOException
     {
-        try ( PageCursorTracer cursorTracer = TRACER_SUPPLIER.get();
+        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG );
               PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
         {
             writeCursor.next();

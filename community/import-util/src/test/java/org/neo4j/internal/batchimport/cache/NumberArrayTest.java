@@ -41,6 +41,7 @@ import org.neo4j.test.rule.RandomRule;
 import static java.lang.Integer.max;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class NumberArrayTest extends NumberArrayPageCacheTestSupport
 {
@@ -119,8 +120,8 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         factories.put( "OFF_HEAP", NumberArrayFactory.OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactory.CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR ) );
-        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir ) );
+        factories.put( "autoWithPageCacheFallback", NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR ) );
+        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
             String name = entry.getKey() + " => ";

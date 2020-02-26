@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @RunWith( Parameterized.class )
 public class ByteArrayTest extends NumberArrayPageCacheTestSupport
@@ -53,8 +54,8 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Arrays.asList(
                 () -> NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT ),

@@ -22,13 +22,14 @@ package org.neo4j.internal.batchimport.cache;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 
 /**
@@ -39,12 +40,13 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
     private final PageCache pageCache;
     private final File storeDir;
+    private final PageCacheTracer pageCacheTracer;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
+    public PageCachedNumberArrayFactory( PageCache pageCache, PageCacheTracer pageCacheTracer, File storeDir )
     {
-        Objects.requireNonNull( pageCache );
-        this.pageCache = pageCache;
-        this.storeDir = storeDir;
+        this.pageCache = requireNonNull( pageCache );
+        this.pageCacheTracer = requireNonNull( pageCacheTracer );
+        this.storeDir = requireNonNull( storeDir );
     }
 
     @Override
@@ -54,7 +56,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "intArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            return new PageCacheIntArray( pagedFile, length, defaultValue, base );
+            return new PageCacheIntArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )
         {
@@ -69,7 +71,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "longArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            return new PageCacheLongArray( pagedFile, length, defaultValue, base );
+            return new PageCacheLongArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )
         {
@@ -84,7 +86,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "byteArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
-            return new PageCacheByteArray( pagedFile, length, defaultValue, base );
+            return new PageCacheByteArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )
         {

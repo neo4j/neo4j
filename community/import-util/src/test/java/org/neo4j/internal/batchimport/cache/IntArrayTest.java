@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicTest.stream;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class IntArrayTest extends NumberArrayPageCacheTestSupport
 {
@@ -131,8 +132,8 @@ class IntArrayTest extends NumberArrayPageCacheTestSupport
     {
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir );
         return Iterators.iterator( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 }

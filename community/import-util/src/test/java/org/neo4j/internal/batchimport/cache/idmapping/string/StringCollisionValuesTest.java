@@ -32,6 +32,7 @@ import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.PageCachedNumberArrayFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -63,7 +64,7 @@ public class StringCollisionValuesTest
                 storage -> NumberArrayFactory.OFF_HEAP,
                 storage -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
                 storage -> NumberArrayFactory.CHUNKED_FIXED_SIZE,
-                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), storage.directory().homeDir() ) );
+                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homeDir() ) );
     }
 
     @Parameter( 0 )

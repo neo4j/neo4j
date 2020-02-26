@@ -36,6 +36,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.NO_MONITOR;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -54,7 +56,7 @@ class PageCacheLongArrayTest
     {
         PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
 
-        try ( LongArray array = new PageCacheLongArray( file, COUNT, 0, 0 ) )
+        try ( LongArray array = new PageCacheLongArray( file, NULL, COUNT, 0, 0 ) )
         {
             verifyBehaviour( array );
         }
@@ -64,7 +66,7 @@ class PageCacheLongArrayTest
     void verifyChunkingArrayWithPageCacheLongArray()
     {
         File directory = testDirectory.homeDir();
-        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory, false, NumberArrayFactory.NO_MONITOR );
+        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, NULL, directory, false, NO_MONITOR );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
         {
             verifyBehaviour( array );

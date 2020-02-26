@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -133,6 +134,7 @@ public interface NumberArrayFactory
      * {@link Auto} factory which has a page cache backed number array as final fallback, in order to prevent OOM
      * errors.
      * @param pageCache {@link PageCache} to fallback allocation into, if no more memory is available.
+     * @param pageCacheTracer underlying page cache events tracer
      * @param dir directory where cached files are placed.
      * @param allowHeapAllocation whether or not to allow allocation on heap. Otherwise allocation is restricted
      * to off-heap and the page cache fallback. This to be more in control of available space in the heap at all times.
@@ -140,9 +142,10 @@ public interface NumberArrayFactory
      * @return a {@link NumberArrayFactory} which tries to allocation off-heap, then potentially on heap
      * and lastly falls back to allocating inside the given {@code pageCache}.
      */
-    static NumberArrayFactory auto( PageCache pageCache, File dir, boolean allowHeapAllocation, Monitor monitor )
+    static NumberArrayFactory auto( PageCache pageCache, PageCacheTracer pageCacheTracer,
+            File dir, boolean allowHeapAllocation, Monitor monitor )
     {
-        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir );
         ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,
                 allocationAlternatives( allowHeapAllocation, pagedArrayFactory ) );
         return new Auto( monitor, allocationAlternatives( allowHeapAllocation, chunkedArrayFactory ) );
