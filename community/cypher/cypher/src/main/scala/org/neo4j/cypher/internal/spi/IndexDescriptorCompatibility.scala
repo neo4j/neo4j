@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.IndexBehaviour
 import org.neo4j.internal.schema.LabelSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 
 trait IndexDescriptorCompatibility {
-  def kernelToCypher(behaviour: IndexBehaviour): IndexLimitation = {
+  def kernelToCypher(behaviour: schema.IndexBehaviour): IndexBehaviour = {
     behaviour match {
       case schema.IndexBehaviour.SLOW_CONTAINS => SlowContains
       case schema.IndexBehaviour.SKIP_AND_LIMIT => SkipAndLimit

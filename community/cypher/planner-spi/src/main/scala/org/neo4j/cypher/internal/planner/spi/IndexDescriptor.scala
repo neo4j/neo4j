@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-sealed trait IndexLimitation
-case object SlowContains extends IndexLimitation
-case object SkipAndLimit extends IndexLimitation
+sealed trait IndexBehaviour
+case object SlowContains extends IndexBehaviour
+case object SkipAndLimit extends IndexBehaviour
 
 sealed trait IndexOrderCapability {
   def asc: Boolean
@@ -66,7 +66,7 @@ object IndexDescriptor {
 
 case class IndexDescriptor(label: LabelId,
                            properties: Seq[PropertyKeyId],
-                           limitations: Set[IndexLimitation] = Set.empty[IndexLimitation],
+                           behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
                            orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
                            valueCapability: ValueCapability = IndexDescriptor.noValueCapability,
                            isUnique: Boolean = false) {
@@ -83,12 +83,12 @@ case class IndexDescriptor(label: LabelId,
       (that canEqual this) &&
         label == that.label &&
         properties == that.properties &&
-        limitations == that.limitations
+        behaviours == that.behaviours
     case _ => false
   }
 
   override def hashCode(): Int = {
-    val state = Seq(label, properties, limitations)
+    val state = Seq(label, properties, behaviours)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }

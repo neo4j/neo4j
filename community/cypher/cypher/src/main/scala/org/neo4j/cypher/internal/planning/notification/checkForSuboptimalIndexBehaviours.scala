@@ -26,32 +26,32 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
-import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.util.InternalNotification
 
-case class checkForIndexLimitation(planContext: PlanContext) extends NotificationChecker {
+case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends NotificationChecker {
 
   def apply(plan: LogicalPlan): Set[InternalNotification] = {
 
     plan.treeFold[Set[InternalNotification]](Set.empty) {
       case NodeIndexContainsScan(_, label, property, _, _, _) =>
         acc =>
-          val notifications = getLimitations(label, property.propertyKeyToken).collect {
+          val notifications = getBehaviours(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(label.name, Seq(property.propertyKeyToken.name))
           }
           (acc ++ notifications, None)
       case NodeIndexEndsWithScan(_, label, property, _, _, _) =>
         acc =>
-          val notifications = getLimitations(label, property.propertyKeyToken).collect {
+          val notifications = getBehaviours(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(label.name, Seq(property.propertyKeyToken.name))
           }
           (acc ++ notifications, None)
     }
   }
 
-  private def getLimitations(label: LabelToken, property: PropertyKeyToken): Set[IndexLimitation] = {
-    planContext.indexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexLimitation])(_.limitations)
+  private def getBehaviours(label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
+    planContext.indexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
   }
 }

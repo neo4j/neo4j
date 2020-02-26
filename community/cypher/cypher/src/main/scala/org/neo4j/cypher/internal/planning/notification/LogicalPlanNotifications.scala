@@ -35,7 +35,7 @@ object LogicalPlanNotifications {
     val notificationCheckers = Seq(
       checkForEagerLoadCsv,
       checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold),
-      checkForIndexLimitation(planContext))
+      checkForSuboptimalIndexBehaviours(planContext))
 
     notificationCheckers.flatMap(_ (logicalPlan))
   }

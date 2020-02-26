@@ -25,7 +25,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexLimitation
+import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.Cardinality
@@ -170,8 +170,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val prop1id = planContext.getPropertyKeyId("prop")
       val prop2id = planContext.getPropertyKeyId("prop2")
       planContext.indexesGetForLabel(l1id).toSet should equal(Set(
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexLimitation](SlowContains)),
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexBehaviour](SlowContains)),
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexBehaviour](SlowContains))
       ))
     })
   }
@@ -189,7 +189,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val l1id = planContext.getLabelId("L1")
       val prop2id = planContext.getPropertyKeyId("prop2")
       planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexBehaviour](SlowContains))
       ))
     })
   }
