@@ -25,19 +25,16 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.Degrees;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
-
 class EagerDegrees implements Degrees
 {
-    private static final int FIRST_TYPE_UNDECIDED = -1;
-
-    private int firstType = FIRST_TYPE_UNDECIDED;
-    private Degree firstTypeDegrees;
-    private MutableIntObjectMap<Degree> degrees;
+    private final MutableIntObjectMap<Degree> degrees = IntObjectMaps.mutable.empty();
 
     void add( int type, int outgoing, int incoming, int loop )
     {
-        getOrCreateDegree( type ).add( outgoing, incoming, loop );
+        Degree degree = getOrCreateDegree( type );
+        degree.outgoing += outgoing;
+        degree.incoming += incoming;
+        degree.loop += loop;
     }
 
     void addOutgoing( int type, int count )
@@ -57,53 +54,19 @@ class EagerDegrees implements Degrees
 
     private Degree getOrCreateDegree( int type )
     {
-        if ( firstType == FIRST_TYPE_UNDECIDED )
-        {
-            firstType = type;
-            firstTypeDegrees = new Degree();
-            return firstTypeDegrees;
-        }
-        else if ( firstType == type )
-        {
-            return firstTypeDegrees;
-        }
-
-        if ( degrees == null )
-        {
-            degrees = IntObjectMaps.mutable.empty();
-        }
         return degrees.getIfAbsentPut( type, Degree::new );
     }
 
     @Override
     public int[] types()
     {
-        if ( firstType == FIRST_TYPE_UNDECIDED )
-        {
-            return EMPTY_INT_ARRAY;
-        }
-        if ( degrees == null )
-        {
-            return new int[]{firstType};
-        }
-        int[] types = new int[degrees.size() + 1];
-        types[0] = firstType;
-        System.arraycopy( degrees.keySet().toArray(), 0, types, 1, degrees.size() );
-        return types;
+        return degrees.keySet().toArray();
     }
 
     @Override
     public int degree( int type, Direction direction )
     {
-        Degree degree = null;
-        if ( firstType == type )
-        {
-            degree = firstTypeDegrees;
-        }
-        else if ( degrees != null )
-        {
-            degree = degrees.get( type );
-        }
+        Degree degree = degrees.get( type );
         if ( degree == null )
         {
             return 0;
@@ -126,12 +89,5 @@ class EagerDegrees implements Degrees
         private int outgoing;
         private int incoming;
         private int loop;
-
-        void add( int outgoing, int incoming, int loop )
-        {
-            this.outgoing += outgoing;
-            this.incoming += incoming;
-            this.loop += loop;
-        }
     }
 }
