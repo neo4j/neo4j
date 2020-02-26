@@ -247,7 +247,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       val read = reads()
       val cursors = transactionalContext.cursors
-      val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
+      var cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
       read.singleNode(node, cursor)
       if (!cursor.next()) RelationshipIterator.EMPTY
       else {
@@ -427,37 +427,37 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor)
+    else Nodes.countOutgoing(nodeCursor, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor)
+    else Nodes.countIncoming(nodeCursor, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor)
+    else Nodes.countAll(nodeCursor, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, relationship)
+    else Nodes.countOutgoing(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, relationship)
+    else Nodes.countIncoming(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, relationship)
+    else Nodes.countAll(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
   }
 
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = {

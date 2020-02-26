@@ -637,7 +637,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
 
-        return Nodes.countAll( nodes );
+        return Nodes.countAll( nodes, transaction.pageCursorTracer() );
     }
 
     @Override
@@ -652,7 +652,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        return Nodes.countAll( nodes, typeId );
+        return Nodes.countAll( nodes, typeId, transaction.pageCursorTracer() );
     }
 
     @Override
@@ -662,14 +662,15 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
+        var cursorTracer = transaction.pageCursorTracer();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes );
+            return Nodes.countOutgoing( nodes, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes );
+            return Nodes.countIncoming( nodes, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes );
+            return Nodes.countAll( nodes, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -687,14 +688,15 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
+        var cursorTracer = transaction.pageCursorTracer();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, typeId );
+            return Nodes.countOutgoing( nodes, typeId, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes, typeId );
+            return Nodes.countIncoming( nodes, typeId, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes, typeId );
+            return Nodes.countAll( nodes, typeId, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }

@@ -201,7 +201,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( relationshipCursor == null )
             {
-                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
+                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore );
             }
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )
@@ -232,7 +232,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( relationshipCursor == null )
             {
-                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
+                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore );
             }
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )

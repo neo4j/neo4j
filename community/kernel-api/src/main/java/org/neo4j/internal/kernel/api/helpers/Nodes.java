@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -43,9 +44,10 @@ public final class Nodes
      * NOTE: The number of outgoing relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
+     * @param cursorTracer underlying page cursor tracer.
      * @return the number of outgoing - including loops - relationships from the node
      */
-    public static int countOutgoing( NodeCursor nodeCursor )
+    public static int countOutgoing( NodeCursor nodeCursor, PageCursorTracer cursorTracer )
     {
         return count( nodeCursor, OUTGOING );
     }
@@ -57,9 +59,10 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param type the type of the relationship we're counting
+     * @param cursorTracer underlying page cursor tracer.
      * @return the number of outgoing - including loops - relationships from the node with the given type
      */
-    public static int countOutgoing( NodeCursor nodeCursor, int type )
+    public static int countOutgoing( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
         return count( nodeCursor, type, OUTGOING );
     }
@@ -84,9 +87,10 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param type the type of the relationship we're counting
+     * @param cursorTracer underlying page cursor tracer.
      * @return the number of incoming - including loops - relationships from the node with the given type
      */
-    public static int countIncoming( NodeCursor nodeCursor, int type )
+    public static int countIncoming( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
         return count( nodeCursor, type, INCOMING );
     }
@@ -107,9 +111,10 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param type the type of the relationship we're counting
+     * @param cursorTracer underlying page cursor tracer.
      * @return the number relationships from the node with the given type
      */
-    public static int countAll( NodeCursor nodeCursor, int type )
+    public static int countAll( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
         return count( nodeCursor, type, BOTH );
     }
@@ -119,7 +124,7 @@ public final class Nodes
         return nodeCursor.degrees( selection( type, direction ) ).degree( type, direction );
     }
 
-    public static int count( NodeCursor nodeCursor, Direction direction )
+    public static int count( NodeCursor nodeCursor, Direction direction, PageCursorTracer pageCursorTracer )
     {
         return nodeCursor.degrees( selection( direction ) ).degree( direction );
     }

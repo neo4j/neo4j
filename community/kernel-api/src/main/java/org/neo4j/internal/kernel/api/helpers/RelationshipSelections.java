@@ -25,8 +25,11 @@ import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Utilities for dealing with RelationshipSelectionCursor and corresponding iterators.
@@ -52,7 +55,7 @@ public final class RelationshipSelections
                                                               int[] types,
                                                               PageCursorTracer cursorTracer )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.OUTGOING );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor(), node, types, Direction.OUTGOING );
     }
 
     /**
@@ -83,7 +86,7 @@ public final class RelationshipSelections
                                                               int[] types,
                                                               PageCursorTracer cursorTracer )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.INCOMING );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor(), node, types, Direction.INCOMING );
     }
 
     /**
@@ -114,7 +117,7 @@ public final class RelationshipSelections
                                                          int[] types,
                                                          PageCursorTracer cursorTracer )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.BOTH );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor(), node, types, Direction.BOTH );
     }
 
     /**
@@ -163,7 +166,7 @@ public final class RelationshipSelections
                                                             RelationshipFactory<T> factory,
                                                             PageCursorTracer cursorTracer )
     {
-        return new RelationshipEntityIterator<>( outgoingCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( outgoingCursor( cursors, node, types ), factory );
     }
 
     /**
@@ -182,7 +185,7 @@ public final class RelationshipSelections
                                                             RelationshipFactory<T> factory,
                                                             PageCursorTracer cursorTracer )
     {
-        return new RelationshipEntityIterator<>( incomingCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( incomingCursor( cursors, node, types ), factory );
     }
 
     /**
@@ -201,7 +204,7 @@ public final class RelationshipSelections
                                                        RelationshipFactory<T> factory,
                                                        PageCursorTracer cursorTracer )
     {
-        return new RelationshipEntityIterator<>( allCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( allCursor( cursors, node, types ), factory );
     }
 
     private static class RelationshipEntityIterator<T> extends PrefetchingResourceIterator<T>

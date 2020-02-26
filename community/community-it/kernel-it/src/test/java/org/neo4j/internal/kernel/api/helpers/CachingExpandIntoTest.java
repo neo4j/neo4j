@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
@@ -38,6 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -301,7 +303,7 @@ class CachingExpandIntoTest
         try ( KernelTransaction tx = transaction();
               NodeCursor nodes = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
               RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() );
-              PropertyCursor properties = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
+              PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
         {
 
             int[] types = {t2, t3};
