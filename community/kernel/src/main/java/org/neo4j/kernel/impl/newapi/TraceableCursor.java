@@ -32,7 +32,7 @@ abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
+    public final void setTracer( KernelReadTracer tracer )
     {
         this.tracer = tracer;
     }

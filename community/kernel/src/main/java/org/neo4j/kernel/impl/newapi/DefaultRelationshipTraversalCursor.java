@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -148,24 +147,14 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             AccessMode mode = read.ktx.securityContext().mode();
             if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
+                if ( tracer != null )
+                {
+                    tracer.onRelationship( relationshipReference() );
+                }
                 return true;
             }
         }
         return false;
-    }
-
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        super.setTracer( tracer );
-        storeCursor.setTracer( tracer );
-    }
-
-    @Override
-    public void removeTracer()
-    {
-        storeCursor.removeTracer();
-        super.removeTracer();
     }
 
     private boolean allowedToSeeEndNode( AccessMode mode )

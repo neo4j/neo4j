@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.storageengine.api.ReadTracer;
 
 /**
  * Tracer of kernel API reads. The Kernel will callback the tracer methods on various key events
@@ -32,20 +31,18 @@ import org.neo4j.storageengine.api.ReadTracer;
  *       add additional callback, extend some callbacks with more details, or
  *       differentiate callbacks (e.g. onNode) depending on the underlying read.
  */
-public interface KernelReadTracer extends ReadTracer
+public interface KernelReadTracer
 {
     /**
      * Called just before {@link NodeCursor#next()} returns true.
      *
      * @param nodeReference the node reference that will be available.
      */
-    @Override
     void onNode( long nodeReference );
 
     /**
      * Called on {@link Read#allNodesScan(NodeCursor)}.
      */
-    @Override
     void onAllNodesScan();
 
     /**
@@ -63,7 +60,6 @@ public interface KernelReadTracer extends ReadTracer
      *
      * @param relationshipReference the relationship reference that will be available.
      */
-    @Override
     void onRelationship( long relationshipReference );
 
     /**
@@ -71,6 +67,5 @@ public interface KernelReadTracer extends ReadTracer
      *
      * @param propertyKey the property key of the next property.
      */
-    @Override
     void onProperty( int propertyKey );
 }

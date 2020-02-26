@@ -158,7 +158,7 @@ public class NodeEntityTest extends EntityTest
             assertThat( count( source.getRelationships( Direction.INCOMING, relationshipType ) ) ).isGreaterThan( 0 );
 
             assertThat( cursorTracer.hits() ).isEqualTo( 3 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         }
     }

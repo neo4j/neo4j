@@ -73,12 +73,6 @@ public class TestKernelReadTracer implements KernelReadTracer
         traceEvents.add( OnProperty( propertyKey ) );
     }
 
-    @Override
-    public void dbHit()
-    {
-        throw new UnsupportedOperationException();
-    }
-
     void assertEvents( TraceEvent... expected )
     {
         assertEvents( Arrays.asList( expected ) );
