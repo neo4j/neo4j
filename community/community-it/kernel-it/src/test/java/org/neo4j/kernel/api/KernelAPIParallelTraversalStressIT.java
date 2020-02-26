@@ -34,7 +34,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 @DbmsExtension
 class KernelAPIParallelTraversalStressIT
@@ -102,7 +101,7 @@ class KernelAPIParallelTraversalStressIT
             int r = 0;
             while ( cursors.nodeCursor.next() )
             {
-                cursors.nodeCursor.relationships( cursors.traversalCursor, ALL_RELATIONSHIPS );
+                cursors.nodeCursor.allRelationships( cursors.traversalCursor );
                 while ( cursors.traversalCursor.next() )
                 {
                     r++;

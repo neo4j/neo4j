@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStrict;
@@ -39,7 +39,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         NONE
     }
 
-    private RelationshipSelection selection;
+    private int filterType = NO_ID;
+    private RelationshipDirection filterDirection;
+    private boolean lazyFilterInitialization;
     private long originNodeReference;
     private long next;
     private Record buffer;
@@ -55,9 +57,8 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public void init( long nodeReference, long reference, boolean nodeIsDense, RelationshipSelection selection )
+    public void init( long nodeReference, long reference, boolean nodeIsDense )
     {
-        this.selection = selection;
         // Read all relationships, regardless of type/direction
         if ( nodeIsDense )
         {
@@ -68,6 +69,24 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         {
             // The reference points to a relationship record
             chain( nodeReference, reference );
+        }
+        open = true;
+    }
+
+    @Override
+    public void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense )
+    {
+        // Read relationships of specific type/direction
+        chain( nodeReference, reference );
+        if ( !nodeIsDense )
+        {
+            // For non-dense nodes the chain we're about to traverse contains relationships of mixed type/direction so we need to filter
+            filterType = type;
+            filterDirection = direction;
+            if ( filterType == NO_ID )
+            {
+                lazyFilterInitialization = true;
+            }
         }
         open = true;
     }
@@ -146,11 +165,25 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             }
 
             relationshipFull( this, next, pageCursor );
+            if ( !traversingDenseNode )
+            {
+                if ( lazyFilterInitialization )
+                {
+                    filterType = getType();
+                    filterDirection = directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() );
+                    lazyFilterInitialization = false;
+                }
+            }
             computeNext();
         }
-        while ( !inUse() || !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() )) );
+        while ( !inUse() || (filterType != NO_ID && !correctTypeAndDirection()) );
 
         return true;
+    }
+
+    private boolean correctTypeAndDirection()
+    {
+        return filterType == getType() && directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) == filterDirection;
     }
 
     private boolean nextBuffered()
@@ -284,7 +317,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     {
         setId( next = NO_ID );
         groupState = GroupState.NONE;
-        selection = null;
+        filterType = NO_ID;
+        filterDirection = null;
+        lazyFilterInitialization = false;
         buffer = null;
     }
 

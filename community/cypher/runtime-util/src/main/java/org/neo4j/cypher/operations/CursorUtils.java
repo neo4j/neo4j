@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.StatementConstants;
@@ -172,13 +172,13 @@ public final class CursorUtils
         return nodeCursor.hasLabel( label );
     }
 
-    public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
             long nodeId, Direction direction, int[] types, PageCursorTracer cursorTracer )
     {
         read.singleNode( nodeId, node );
         if ( !node.next() )
         {
-            return RelationshipTraversalCursor.EMPTY;
+            return RelationshipSelectionCursor.EMPTY;
         }
         switch ( direction )
         {
@@ -288,7 +288,7 @@ public final class CursorUtils
         return propertyCursor.seekProperty( prop );
     }
 
-    public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
             long nodeId, Direction direction, PageCursorTracer cursorTracer )
     {
         return nodeGetRelationships( read, cursors, node, nodeId, direction, null, cursorTracer );

@@ -114,7 +114,6 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @EphemeralNeo4jLayoutExtension
@@ -763,7 +762,7 @@ public class NeoStoresTest
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
         StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL );
-        node.relationships( relationships, ALL_RELATIONSHIPS );
+        relationships.init( node.entityReference(), node.allRelationshipsReference(), node.isDense() );
         return relationships;
     }
 

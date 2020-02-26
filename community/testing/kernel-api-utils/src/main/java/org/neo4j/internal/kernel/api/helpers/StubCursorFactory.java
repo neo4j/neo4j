@@ -41,7 +41,7 @@ public class StubCursorFactory implements CursorFactory
     private Queue<NodeCursor> fullNodeCursors = new LinkedList<>();
     private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>();
     private Queue<RelationshipScanCursor> fullRelationshipScanCursors = new LinkedList<>();
-    private Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
+    private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>();
     private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
     private Queue<PropertyCursor> fullPropertyCursors = new LinkedList<>();
     private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
@@ -86,7 +86,7 @@ public class StubCursorFactory implements CursorFactory
     @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
-        return poll( relationshipTraversalCursors );
+        return poll( relationshiTraversalCursors );
     }
 
     @Override
@@ -133,7 +133,7 @@ public class StubCursorFactory implements CursorFactory
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )
     {
-        relationshipTraversalCursors.addAll( Arrays.asList( cursors ) );
+        relationshiTraversalCursors.addAll( Arrays.asList( cursors ) );
         return this;
     }
 

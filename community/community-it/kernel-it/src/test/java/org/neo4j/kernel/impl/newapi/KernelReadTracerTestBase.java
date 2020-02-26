@@ -57,7 +57,6 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipGroup;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -300,7 +299,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
             read.singleNode( foo, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.relationships( cursor, ALL_RELATIONSHIPS );
+            nodeCursor.allRelationships( cursor );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
@@ -337,7 +336,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
             read.singleNode( foo, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.relationshipGroups( groupCursor );
+            nodeCursor.relationships( groupCursor );
 
             assertTrue( groupCursor.next() );
             if ( groupCursor.type() != token.relationshipType( "HAS" ) )
@@ -345,7 +344,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
                 assertTrue( groupCursor.next() );
             }
 
-            groupCursor.outgoing( cursor );
+            tx.dataRead().relationships( foo, groupCursor.outgoingReference(), cursor );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
@@ -380,7 +379,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
             read.singleNode( foo, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.relationshipGroups( groupCursor );
+            nodeCursor.relationships( groupCursor );
 
             assertTrue( groupCursor.next() );
             int expectedType = groupCursor.type();

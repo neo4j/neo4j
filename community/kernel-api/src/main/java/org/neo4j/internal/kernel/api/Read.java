@@ -311,7 +311,19 @@ public interface Read
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference to start of relationships
+     *         a reference from {@link NodeCursor#relationshipGroupReference()}.
+     * @param cursor
+     *         the cursor to use for consuming the results.
+     */
+    void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor );
+
+    /**
+     * @param nodeReference
+     *         a reference from {@link NodeCursor#nodeReference()}.
+     * @param reference
+     *         a reference from {@link RelationshipGroupCursor#outgoingReference()},
+     *         {@link RelationshipGroupCursor#incomingReference()},
+     *         or {@link RelationshipGroupCursor#loopsReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */

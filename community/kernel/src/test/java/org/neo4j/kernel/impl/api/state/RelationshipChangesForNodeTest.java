@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.Direction;
-
 import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +32,7 @@ import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
 class RelationshipChangesForNodeTest
 {
+
     @Test
     void shouldGetRelationships()
     {
@@ -73,10 +72,13 @@ class RelationshipChangesForNodeTest
         changes.addRelationship( 11, DECOY_TYPE, OUTGOING );
         changes.addRelationship( 12, DECOY_TYPE, LOOP );
 
-        LongIterator rawIncoming = changes.getRelationships( Direction.INCOMING, TYPE );
-        assertThat( asArray( rawIncoming ) ).containsExactly( 1, 4, 5, 6 );
+        LongIterator rawIncoming = changes.getRelationships( INCOMING, TYPE );
+        assertThat( asArray( rawIncoming ) ).containsExactly( 1 );
 
-        LongIterator rawOutgoing = changes.getRelationships( Direction.OUTGOING, TYPE );
-        assertThat( asArray( rawOutgoing ) ).containsExactly( 2, 3, 4, 5, 6 );
+        LongIterator rawOutgoing = changes.getRelationships( OUTGOING, TYPE );
+        assertThat( asArray( rawOutgoing ) ).containsExactly( 2, 3 );
+
+        LongIterator rawLoops = changes.getRelationships( LOOP, TYPE );
+        assertThat( asArray( rawLoops ) ).containsExactly( 4, 5, 6 );
     }
 }

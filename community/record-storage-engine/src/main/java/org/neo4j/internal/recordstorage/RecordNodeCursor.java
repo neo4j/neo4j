@@ -26,11 +26,8 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.AllNodeScan;
-import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
-import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static java.lang.Math.min;
 
@@ -160,21 +157,15 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public long relationshipsReference()
+    public long relationshipGroupReference()
     {
         return getNextRel();
     }
 
     @Override
-    public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
+    public long allRelationshipsReference()
     {
-        traversalCursor.init( entityReference(), getNextRel(), isDense(), selection );
-    }
-
-    @Override
-    public void relationshipGroups( StorageRelationshipGroupCursor groupCursor )
-    {
-        groupCursor.init( entityReference(), getNextRel(), isDense() );
+        return getNextRel();
     }
 
     @Override

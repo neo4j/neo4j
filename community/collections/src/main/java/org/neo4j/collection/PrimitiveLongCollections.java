@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Arrays.copyOf;
 
@@ -68,12 +67,12 @@ public final class PrimitiveLongCollections
     // Concating
     public static LongIterator concat( LongIterator... longIterators )
     {
-        return concat( Iterators.iterator( longIterators ) );
+        return concat( Arrays.asList( longIterators ) );
     }
 
-    public static LongIterator concat( Iterator<LongIterator> primitiveLongIterators )
+    public static LongIterator concat( Iterable<LongIterator> primitiveLongIterators )
     {
-        return new PrimitiveLongConcatingIterator( primitiveLongIterators );
+        return new PrimitiveLongConcatingIterator( primitiveLongIterators.iterator() );
     }
 
     public static LongIterator filter( LongIterator source, final LongPredicate filter )

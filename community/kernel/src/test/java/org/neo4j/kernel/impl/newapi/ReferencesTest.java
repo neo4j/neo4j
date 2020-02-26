@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE_SELECTION;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_LOOPS_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.SELECTION;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
@@ -47,6 +50,9 @@ class ReferencesTest
         assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ) ).isEqualTo( NO_ID );
         assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ) ).isEqualTo( NO_ID );
         assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoIncoming( (int) NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoOutgoing( (int) NO_ID ) ).isEqualTo( NO_ID );
+        assertThat( RelationshipReferenceEncoding.encodeNoLoops( (int) NO_ID ) ).isEqualTo( NO_ID );
     }
 
     @Test
@@ -61,6 +67,9 @@ class ReferencesTest
             assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDense( reference ) ) ).isEqualTo( reference );
             assertThat( clearEncoding( RelationshipReferenceEncoding.encodeSelection( reference ) ) ).isEqualTo( reference );
             assertThat( clearEncoding( RelationshipReferenceEncoding.encodeDenseSelection( reference ) ) ).isEqualTo( reference );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoIncoming( token ) ) ).isEqualTo( (long) token );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoOutgoing( token ) ) ).isEqualTo( (long) token );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoLoops( token ) ) ).isEqualTo( (long) token );
         }
     }
 
@@ -80,6 +89,24 @@ class ReferencesTest
     void encodeDenseSelection()
     {
         testLongFlag( DENSE_SELECTION, RelationshipReferenceEncoding::encodeDenseSelection );
+    }
+
+    @Test
+    void encodeNoIncomingRels()
+    {
+        testIntFlag( NO_INCOMING_OF_TYPE, RelationshipReferenceEncoding::encodeNoIncoming );
+    }
+
+    @Test
+    void encodeNoOutgoingRels()
+    {
+        testIntFlag( NO_OUTGOING_OF_TYPE, RelationshipReferenceEncoding::encodeNoOutgoing );
+    }
+
+    @Test
+    void encodeNoLoopRels()
+    {
+        testIntFlag( NO_LOOPS_OF_TYPE, RelationshipReferenceEncoding::encodeNoLoops );
     }
 
     private void testLongFlag( RelationshipReferenceEncoding flag, LongToLongFunction encoder )

@@ -57,7 +57,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -111,13 +110,13 @@ class RecordRelationshipTraversalCursorTest
 
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1L, dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, 1L, dense );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 2, dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, 2, dense );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 3, dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, 3, dense );
             assertTrue( cursor.next() );
         }
     }
@@ -130,7 +129,7 @@ class RecordRelationshipTraversalCursorTest
         long expectedNodeId = 1;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1, dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
                 assertEquals( expectedNodeId++, cursor.entityReference(), "Should load next relationship in a sequence" );
@@ -149,7 +148,7 @@ class RecordRelationshipTraversalCursorTest
         int relationshipIndex = 0;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1, dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
                 assertEquals(
@@ -169,7 +168,7 @@ class RecordRelationshipTraversalCursorTest
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue(), dense, ALL_RELATIONSHIPS );
+            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue(), dense );
 
             // THEN
             assertFalse( cursor.next() );

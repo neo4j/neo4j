@@ -30,11 +30,22 @@ public interface RelationshipGroupCursor extends Cursor
 
     int incomingCount();
 
-    int totalCount();
+    int loopCount();
+
+    default int totalCount()
+    {
+        return outgoingCount() + incomingCount() + loopCount();
+    }
 
     void outgoing( RelationshipTraversalCursor cursor );
 
     void incoming( RelationshipTraversalCursor cursor );
 
-    // TODO even add an all( RelationshipTraversalCursor cursor ); ?
+    void loops( RelationshipTraversalCursor cursor );
+
+    long outgoingReference();
+
+    long incomingReference();
+
+    long loopsReference();
 }

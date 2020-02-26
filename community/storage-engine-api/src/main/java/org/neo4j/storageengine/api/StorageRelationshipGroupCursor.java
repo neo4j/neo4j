@@ -27,7 +27,7 @@ public interface StorageRelationshipGroupCursor extends StorageCursor
 
     int incomingCount();
 
-    int totalCount();
+    int loopCount();
 
     /**
      * @return reference to a starting point for outgoing relationships with this type.

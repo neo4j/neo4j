@@ -40,8 +40,15 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countAllDense;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncomingDense;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoingDense;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allDenseCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allSparseCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingDenseCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingSparseCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingDenseCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingSparseCursor;
 
 /**
  * Utility for performing Expand(Into)
@@ -78,7 +85,7 @@ public class CachingExpandInto
      * @param toNode The end node
      * @return The interconnecting relationships in the given direction with any of the given types.
      */
-    public RelationshipTraversalCursor connectingRelationships(
+    public RelationshipSelectionCursor connectingRelationships(
             NodeCursor nodeCursor,
             RelationshipGroupCursor groupCursor,
             RelationshipTraversalCursor traversalCursor,
@@ -110,7 +117,7 @@ public class CachingExpandInto
         //Check fromNode, note that nodeCursor is now pointing at fromNode
         if ( !singleNode( read, nodeCursor, fromNode ) )
         {
-            return RelationshipTraversalCursor.EMPTY;
+            return RelationshipSelectionCursor.EMPTY;
         }
         boolean fromNodeIsDense = nodeCursor.isDense();
 
@@ -136,13 +143,14 @@ public class CachingExpandInto
                 relDirection = reverseDirection;
             }
 
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), endNode );
+            return denseConnectingRelationshipsCursor( relDirection, groupCursor, traversalCursor, nodeCursor, types,
+                    endNode );
         }
         else if ( toNodeIsDense )
         {
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
+            return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
         }
         else if ( fromNodeIsDense )
         {
@@ -150,14 +158,14 @@ public class CachingExpandInto
             groupCursor.close();
             //must move to toNode
             singleNode( read, nodeCursor, toNode );
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, reverseDirection ), fromNode );
+            return sparseConnectingRelationshipsCursor( reverseDirection, traversalCursor, nodeCursor, types, fromNode );
         }
         else
         {
             //Both are sparse
             //TODO this closing is for compiled runtime and can be removed with the compiled runtime
             groupCursor.close();
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
+            return sparseConnectingRelationshipsCursor( direction, traversalCursor, nodeCursor, types, toNode );
         }
     }
 
@@ -166,7 +174,7 @@ public class CachingExpandInto
         this.toNode = this.fromNode = -1L;
     }
 
-    public RelationshipTraversalCursor connectingRelationships(
+    public RelationshipSelectionCursor connectingRelationships(
             CursorFactory cursors,
             NodeCursor nodeCursor,
             long fromNode,
@@ -180,12 +188,32 @@ public class CachingExpandInto
 
     int nodeGetDegreeDense( NodeCursor nodeCursor, RelationshipGroupCursor group, Direction direction )
     {
-        return Nodes.countDense( nodeCursor, group, selection( direction ), direction );
+        switch ( direction )
+        {
+        case OUTGOING:
+            return countOutgoingDense( nodeCursor, group );
+        case INCOMING:
+            return countIncomingDense( nodeCursor, group );
+        case BOTH:
+            return countAllDense( nodeCursor, group );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
     }
 
     int nodeGetDegreeDense( NodeCursor nodeCursor, RelationshipGroupCursor groupCursor, Direction direction, int type )
     {
-        return Nodes.countDense( nodeCursor, groupCursor, selection( type, direction ), direction );
+        switch ( direction )
+        {
+        case OUTGOING:
+            return countOutgoingDense( nodeCursor, groupCursor, type );
+        case INCOMING:
+            return countIncomingDense( nodeCursor, groupCursor, type );
+        case BOTH:
+            return countAllDense( nodeCursor, groupCursor, type );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
     }
 
     private int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
@@ -217,19 +245,63 @@ public class CachingExpandInto
         return degree;
     }
 
+    private RelationshipSelectionCursor denseConnectingRelationshipsCursor(
+            Direction relDirection,
+            RelationshipGroupCursor groupCursor,
+            RelationshipTraversalCursor traversalCursor,
+            NodeCursor nodeCursor,
+            int[] types,
+            long endNode )
+    {
+        switch ( relDirection )
+        {
+        case OUTGOING:
+            return connectingRelationshipsCursor(
+                    outgoingDenseCursor( groupCursor, traversalCursor, nodeCursor, types ), endNode );
+        case INCOMING:
+            return connectingRelationshipsCursor(
+                    incomingDenseCursor( groupCursor, traversalCursor, nodeCursor, types ), endNode );
+        case BOTH:
+            return connectingRelationshipsCursor( allDenseCursor( groupCursor, traversalCursor, nodeCursor, types ),
+                    endNode );
+        default:
+            throw new IllegalStateException( "there is no such direction" );
+        }
+    }
+
+    private RelationshipSelectionCursor sparseConnectingRelationshipsCursor(
+            Direction relDirection,
+            RelationshipTraversalCursor traversalCursor,
+            NodeCursor nodeCursor,
+            int[] types,
+            long endNode )
+    {
+        switch ( relDirection )
+        {
+        case OUTGOING:
+            return connectingRelationshipsCursor( outgoingSparseCursor( traversalCursor, nodeCursor, types ), endNode );
+        case INCOMING:
+            return connectingRelationshipsCursor( incomingSparseCursor( traversalCursor, nodeCursor, types ), endNode );
+        case BOTH:
+            return connectingRelationshipsCursor( allSparseCursor( traversalCursor, nodeCursor, types ), endNode );
+        default:
+            throw new IllegalStateException( "there is no such direction" );
+        }
+    }
+
     private static boolean singleNode( Read read, NodeCursor nodeCursor, long node )
     {
         read.singleNode( node, nodeCursor );
         return nodeCursor.next();
     }
 
-    private RelationshipTraversalCursor connectingRelationshipsCursor(
-            final RelationshipTraversalCursor allRelationships, final long toNode )
+    private  RelationshipSelectionCursor connectingRelationshipsCursor(
+            final RelationshipSelectionCursor allRelationships, final long toNode )
     {
         return new ExpandIntoSelectionCursor( allRelationships, toNode );
     }
 
-    private class FromCachedSelectionCursor implements RelationshipTraversalCursor
+    private class FromCachedSelectionCursor implements RelationshipSelectionCursor
     {
         private final Iterator<Relationship> relationships;
         private Relationship currentRelationship;
@@ -261,11 +333,6 @@ public class CachingExpandInto
         public void setTracer( KernelReadTracer tracer )
         {
             //these are cached no need to trace anything
-        }
-
-        @Override
-        public void removeTracer()
-        {
         }
 
         @Override
@@ -328,21 +395,9 @@ public class CachingExpandInto
         }
 
         @Override
-        public void otherNode( NodeCursor cursor )
-        {
-            read.singleNode( otherNodeReference(), cursor );
-        }
-
-        @Override
         public long otherNodeReference()
         {
             return currentRelationship.from == fromNode ? toNode : fromNode;
-        }
-
-        @Override
-        public long originNodeReference()
-        {
-            return currentRelationship.from;
         }
 
         @Override
@@ -382,14 +437,14 @@ public class CachingExpandInto
         }
     }
 
-    private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
+    private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipSelectionCursor
     {
-        private final RelationshipTraversalCursor allRelationships;
+        private final RelationshipSelectionCursor allRelationships;
         private final long otherNode;
 
         private List<Relationship> connections = new ArrayList<>( 2 );
 
-        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships, long otherNode )
+        ExpandIntoSelectionCursor( RelationshipSelectionCursor allRelationships, long otherNode )
         {
             this.allRelationships = allRelationships;
             this.otherNode = otherNode;
@@ -424,21 +479,9 @@ public class CachingExpandInto
         }
 
         @Override
-        public void otherNode( NodeCursor cursor )
-        {
-            allRelationships.otherNode( cursor );
-        }
-
-        @Override
         public long otherNodeReference()
         {
             return allRelationships.otherNodeReference();
-        }
-
-        @Override
-        public long originNodeReference()
-        {
-            return allRelationships.originNodeReference();
         }
 
         @Override
@@ -487,12 +530,6 @@ public class CachingExpandInto
         public void setTracer( KernelReadTracer tracer )
         {
             allRelationships.setTracer( tracer );
-        }
-
-        @Override
-        public void removeTracer()
-        {
-            allRelationships.removeTracer();
         }
 
         @Override
@@ -604,7 +641,7 @@ public class CachingExpandInto
         }
     }
 
-    static Relationship relationship( RelationshipTraversalCursor allRelationships )
+    static Relationship relationship( RelationshipSelectionCursor allRelationships )
     {
         return new Relationship(
                 allRelationships.relationshipReference(),

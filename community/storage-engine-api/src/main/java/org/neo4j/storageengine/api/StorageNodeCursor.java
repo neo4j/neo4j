@@ -35,13 +35,17 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
     boolean hasLabel( int label );
 
     /**
+     * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.
+     * However this method has to exist as long as the kernel API also exposes this. This needs to change at some point.
+     *
+     * @return reference for reading relationship groups, i.e. relationships split up by direction/type of the node this cursor currently is placed at.
+     */
+    long relationshipGroupReference();
+
+    /**
      * @return reference for reading all relationships of the node this cursor currently is placed at.
      */
-    long relationshipsReference();
-
-    void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection );
-
-    void relationshipGroups( StorageRelationshipGroupCursor groupCursor );
+    long allRelationshipsReference();
 
     /**
      * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.

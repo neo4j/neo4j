@@ -24,12 +24,10 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.stream.LongStream;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -38,10 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-import static org.neo4j.storageengine.api.RelationshipSelection.lazyCapture;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
+import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
+import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
 class DefaultRelationshipTraversalCursorTest
 {
@@ -104,10 +103,10 @@ class DefaultRelationshipTraversalCursorTest
         // when
         cursor.init( node, relationship,
                 // relationships of a specific type/direction
-                true, lazyCapture(), read );
+                (int) NO_ID, null, true, read );
 
         // then
-        assertRelationships( cursor, 100, 3, 7, 6, 102, 104 );
+        assertRelationships( cursor, 100, 3, 7, 102, 104 );
     }
 
     // Sparse traversal but with filtering both of store and tx-state
@@ -133,10 +132,10 @@ class DefaultRelationshipTraversalCursorTest
         // when
         cursor.init( node, relationship,
                 // relationships of a specific type/direction
-                false, lazyCapture(), read );
+                (int) NO_ID, null, false, read );
 
         // then
-        assertRelationships( cursor, 100, 4, 6, 103 );
+        assertRelationships( cursor, 100, 4, 103 );
     }
 
     // Empty store, but filter tx-state
@@ -157,10 +156,10 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, false, selection( type, Direction.OUTGOING ), read );
+        cursor.init( node, relationship, type, OUTGOING, false, read );
 
         // then
-        assertRelationships( cursor, 3, 7, 6 );
+        assertRelationships( cursor, 3, 7 );
     }
 
     @Test
@@ -180,14 +179,14 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, false, selection( type, Direction.INCOMING ), read );
+        cursor.init( node, relationship, type, INCOMING, false, read );
 
         // then
-        assertRelationships( cursor, 4, 7, 6 );
+        assertRelationships( cursor, 4, 7 );
     }
 
     @Test
-    void emptyStoreAllOfType() throws NoSuchFieldException
+    void emptyStoreLoopsOfType() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -203,10 +202,10 @@ class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, relationship, false, selection( type, Direction.BOTH ), read );
+        cursor.init( node, relationship, type, LOOP, false, read );
 
         // then
-        assertRelationships( cursor, 3, 8, 7, 2, 6 );
+        assertRelationships( cursor, 2, 6 );
     }
 
     // HELPERS
@@ -219,7 +218,7 @@ class DefaultRelationshipTraversalCursorTest
         Read read = emptyTxState();
 
         // when
-        cursor.init( node, reference, dense, ALL_RELATIONSHIPS, read );
+        cursor.init( node, reference, dense, read );
 
         // then
         assertRelationships( cursor, 100, 102, 104 );
@@ -233,7 +232,7 @@ class DefaultRelationshipTraversalCursorTest
         Read read = txState( 3, 4 );
 
         // when
-        cursor.init( node, reference, dense, ALL_RELATIONSHIPS, read );
+        cursor.init( node, reference, dense, read );
 
         // then
         assertRelationships( cursor, 3, 4, 100, 102, 104 );
@@ -304,15 +303,6 @@ class DefaultRelationshipTraversalCursorTest
             this.targetId = targetId;
             this.type = type;
         }
-
-        RelationshipDirection direction( long nodeReference )
-        {
-            if ( sourceId == targetId )
-            {
-                return RelationshipDirection.LOOP;
-            }
-            return nodeReference == sourceId ? RelationshipDirection.OUTGOING : RelationshipDirection.INCOMING;
-        }
     }
 
     private static StorageRelationshipTraversalCursor emptyStoreCursor()
@@ -329,8 +319,6 @@ class DefaultRelationshipTraversalCursorTest
     {
         return new StorageRelationshipTraversalCursor()
         {
-            private long nodeReference;
-            private RelationshipSelection selection;
             private int i = -1;
             private Rel rel = NO_REL;
 
@@ -347,10 +335,13 @@ class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void init( long nodeReference, long reference, boolean nodeIsDense, RelationshipSelection selection )
+            public void init( long nodeReference, long reference, boolean nodeIsDense )
             {
-                this.nodeReference = nodeReference;
-                this.selection = selection;
+            }
+
+            @Override
+            public void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense )
+            {
             }
 
             @Override
@@ -398,24 +389,17 @@ class DefaultRelationshipTraversalCursorTest
             @Override
             public boolean next()
             {
-                while ( i + 1 < rels.length )
+                i++;
+                if ( i < 0 || i >= rels.length )
                 {
-                    i++;
-                    if ( i < 0 || i >= rels.length )
-                    {
-                        rel = NO_REL;
-                        return false;
-                    }
-                    else
-                    {
-                        rel = rels[i];
-                        if ( selection.test( rel.type, rel.direction( nodeReference ) ) )
-                        {
-                            return true;
-                        }
-                    }
+                    rel = NO_REL;
+                    return false;
                 }
-                return false;
+                else
+                {
+                    rel = rels[i];
+                    return true;
+                }
             }
 
             @Override
