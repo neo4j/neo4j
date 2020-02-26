@@ -28,22 +28,8 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.exceptions.EntityNotFoundException
-import org.neo4j.graphdb.Entity
-import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.CursorFactory
-import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.internal.kernel.api.IndexQuery
-import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.internal.kernel.api.KernelReadTracer
-import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor
-import org.neo4j.internal.kernel.api.PropertyCursor
-import org.neo4j.internal.kernel.api.Read
-import org.neo4j.internal.kernel.api.RelationshipScanCursor
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.internal.kernel.api.SchemaRead
-import org.neo4j.internal.kernel.api.TokenRead
-import org.neo4j.internal.kernel.api.Write
+import org.neo4j.graphdb.{Entity, Path}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
@@ -52,10 +38,8 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.TextValue
-import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.storable.{TextValue, Value}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 

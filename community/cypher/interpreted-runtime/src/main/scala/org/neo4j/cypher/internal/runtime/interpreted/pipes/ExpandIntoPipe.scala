@@ -33,8 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
