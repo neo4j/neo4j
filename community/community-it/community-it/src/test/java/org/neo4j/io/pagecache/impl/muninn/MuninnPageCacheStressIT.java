@@ -46,7 +46,7 @@ class MuninnPageCacheStressIT
     @Test
     void shouldHandleTheStressOfManyManyEvictions() throws Exception
     {
-        DefaultPageCacheTracer monitor = DefaultPageCacheTracer.TRACER;
+        DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
         Condition condition = numberOfEvictions( monitor, 100_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()

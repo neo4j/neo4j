@@ -789,7 +789,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         PredictablePageCursorTracer()
         {
-            super( DefaultPageCacheTracer.TRACER, "ktxTest" );
+            super( new DefaultPageCacheTracer(), "ktxTest" );
         }
 
         @Override

@@ -234,7 +234,7 @@ public class DatabaseTest
     @Test
     public void noPageCacheFlushOnDatabaseDrop() throws Throwable
     {
-        DefaultPageCacheTracer pageCacheTracer = DefaultPageCacheTracer.TRACER;
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
@@ -273,7 +273,7 @@ public class DatabaseTest
     @Test
     public void flushDatabaseDataOnStop() throws Throwable
     {
-        DefaultPageCacheTracer pageCacheTracer = DefaultPageCacheTracer.TRACER;
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );

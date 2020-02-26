@@ -266,7 +266,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             Config dbConfig, JobScheduler jobScheduler )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
-        final PageCacheTracer tracer = DefaultPageCacheTracer.TRACER;
+        final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, tracer, jobScheduler );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
