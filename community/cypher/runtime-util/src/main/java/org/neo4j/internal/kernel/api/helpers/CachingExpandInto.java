@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.eclipse.collections.api.block.function.primitive.IntFunction0;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -61,6 +64,7 @@ public class CachingExpandInto
     private static final int EXPENSIVE_DEGREE = -1;
 
     private final RelationshipCache relationshipCache;
+    private final NodeDegreeCache degreeCache = new NodeDegreeCache( );
     private long fromNode = -1L;
     private long toNode = -1L;
 
@@ -111,7 +115,9 @@ public class CachingExpandInto
         }
         Direction reverseDirection = direction.reverse();
         //Check toNode, will position nodeCursor at toNode
-        int toDegree = calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types );
+        int toDegree = degreeCache.getIfAbsentPut( toNode,
+                () -> calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types ));
+
         if ( toDegree == 0 )
         {
             done();
@@ -130,7 +136,7 @@ public class CachingExpandInto
         if ( fromNodeHasCheapDegrees && toNodeHasCheapDegrees )
         {
             //Note that we have already position the cursor at fromNode
-            int fromDegree = calculateTotalDegree( nodeCursor, direction, types );
+            int fromDegree = degreeCache.getIfAbsentPut( fromNode, () -> calculateTotalDegree( nodeCursor, direction, types ));
             long startNode;
             long endNode;
             Direction relDirection;
@@ -500,9 +506,42 @@ public class CachingExpandInto
         }
     }
 
+    private static final int DEFAULT_CAPACITY = 100000;
+
+    static class NodeDegreeCache
+    {
+        private final int capacity;
+        private MutableLongIntMap degreeCache = new LongIntHashMap();
+
+        NodeDegreeCache()
+        {
+            this( DEFAULT_CAPACITY );
+        }
+
+        NodeDegreeCache( int capacity )
+        {
+            this.capacity = capacity;
+        }
+
+        public int getIfAbsentPut( long node, IntFunction0 update )
+        {
+            if ( degreeCache.size() > capacity )
+            {
+                if ( degreeCache.containsKey( node ) )
+                {
+                    return degreeCache.get( node );
+                }
+                else
+                {
+                    return update.getAsInt();
+                }
+            }
+            return degreeCache.getIfAbsentPut( node, update );
+        }
+    }
+
     static class RelationshipCache
     {
-        private static final int DEFAULT_CAPACITY = 100000;
 
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
         private final int capacity;
