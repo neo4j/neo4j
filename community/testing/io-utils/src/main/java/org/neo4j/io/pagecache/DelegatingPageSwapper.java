@@ -85,6 +85,18 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
+    public boolean canAllocate()
+    {
+        return delegate.canAllocate();
+    }
+
+    @Override
+    public void allocate( long newFileSize ) throws IOException
+    {
+        delegate.allocate( newFileSize );
+    }
+
+    @Override
     public void closeAndDelete() throws IOException
     {
         delegate.closeAndDelete();

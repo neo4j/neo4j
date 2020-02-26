@@ -121,12 +121,6 @@ public interface PageSwapper
     /**
      * Forces all writes done by this PageSwapper to the underlying storage device, such that the writes are durable
      * when this call returns.
-     * <p>
-     * This method has no effect if the {@link PageSwapperFactory#syncDevice()} method forces the writes for all
-     * non-closed PageSwappers created through the given <code>PageSwapperFactory</code>.
-     * The {@link PageCache#flushAndForce()} method will first call <code>force</code> on the PageSwappers for all
-     * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made
-     * durable regardless of which method that does the forcing.
      */
     void force() throws IOException;
 
@@ -144,4 +138,16 @@ public interface PageSwapper
      * the file with any zero padding and the written data.
      */
     void truncate() throws IOException;
+
+    /**
+     * @return {@code true} if the given page swapper implementation supports pre-allocating files.
+     */
+    boolean canAllocate();
+
+    /**
+     * Send a hint to the file system that it may reserve the given number of bytes of capacity for this file.
+     * The hope is that this might speed up future operations and reduce fragmentation.
+     * @param newFileSize The new size of the file; following this call, the file system may anticipate to receive IOs in this range.
+     */
+    void allocate( long newFileSize ) throws IOException;
 }

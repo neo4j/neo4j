@@ -728,6 +728,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             }
             tt = ntt;
             translationTable = tt;
+            if ( swapper.canAllocate() )
+            {
+                // Hint to the file system that we've grown our file.
+                // This should reduce our tendency to fragment files.
+                long newFileSize = tt.length; // New number of chunks.
+                newFileSize *= translationTableChunkSize; // Pages per chunk.
+                newFileSize *= filePageSize; // Bytes per page.
+                pageCache.allocateFileAsync( swapper, newFileSize );
+            }
         }
         return tt;
     }

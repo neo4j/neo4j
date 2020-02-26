@@ -32,6 +32,9 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -619,6 +622,26 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             tryReopen( e );
             throw new IOException( "IO failed due to interruption", e );
+        }
+    }
+
+    @Override
+    public boolean canAllocate()
+    {
+        return NativeAccessProvider.getNativeAccess().isAvailable();
+    }
+
+    @Override
+    public void allocate( long newFileSize ) throws IOException
+    {
+        NativeAccess access = NativeAccessProvider.getNativeAccess();
+        if ( access.isAvailable() )
+        {
+            NativeCallResult result = access.tryPreallocateSpace( channel.getFileDescriptor(), newFileSize );
+            if ( result.isError() )
+            {
+                throw new IOException( result.getErrorMessage() );
+            }
         }
     }
 

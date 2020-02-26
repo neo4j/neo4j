@@ -80,6 +80,17 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
+    public boolean canAllocate()
+    {
+        return false;
+    }
+
+    @Override
+    public void allocate( long newFileSize )
+    {
+    }
+
+    @Override
     public void closeAndDelete()
     {
     }

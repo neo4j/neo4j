@@ -41,6 +41,7 @@ import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -1063,5 +1064,10 @@ public class MuninnPageCache implements PageCache
     {
         PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, preFetcher );
+    }
+
+    void allocateFileAsync( PageSwapper swapper, long newFileSize )
+    {
+        scheduler.schedule( Group.FILE_IO_HELPER, new AllocateFileTask( swapper, newFileSize ) );
     }
 }
