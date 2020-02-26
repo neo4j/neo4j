@@ -223,7 +223,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command SHOW TRANSACTIONS ON DATABASES * $preposition role") {
-        failsToParse
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role")))
       }
 
       test(s"$command TERMINATE TRANSACTION (*) ON DATABASE * $preposition role") {
@@ -243,7 +243,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TERMINATE TRANSACTIONS ON DATABASES * $preposition role") {
-        failsToParse
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.AllGraphsScope() _, ast.UserAllQualifier() _, Seq("role")))
       }
 
       test(s"$command TRANSACTION ON DATABASES * $preposition role1, role2") {
