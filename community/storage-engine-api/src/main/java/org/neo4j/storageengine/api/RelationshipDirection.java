@@ -41,7 +41,8 @@ public enum RelationshipDirection
 {
     OUTGOING,
     INCOMING,
-    LOOP;
+    LOOP,
+    ERROR;
 
     public static RelationshipDirection directionOfStrict( long nodeReference, long sourceNodeReference, long targetNodeReference )
     {
@@ -55,5 +56,18 @@ public enum RelationshipDirection
         }
         throw new IllegalStateException( "Traversed relationship that wasn't part of the origin node:" + nodeReference +
                 ". The encountered relationship has source:" + sourceNodeReference + " and target:" + targetNodeReference );
+    }
+
+    public static RelationshipDirection directionOf( long nodeReference, long sourceNodeReference, long targetNodeReference )
+    {
+        if ( sourceNodeReference == nodeReference )
+        {
+            return targetNodeReference == nodeReference ? LOOP : OUTGOING;
+        }
+        if ( targetNodeReference == nodeReference )
+        {
+            return INCOMING;
+        }
+        return ERROR;
     }
 }

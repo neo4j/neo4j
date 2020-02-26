@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -38,6 +37,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -56,8 +56,8 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipGroup;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -329,6 +329,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( NULL );
               RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {
             // when
@@ -336,9 +337,15 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
             read.singleNode( foo, nodeCursor );
             assertTrue( nodeCursor.next() );
+            nodeCursor.relationshipGroups( groupCursor );
 
-            int type = token.relationshipType( "HAS" );
-            nodeCursor.relationships( cursor, selection( type, Direction.OUTGOING ) );
+            assertTrue( groupCursor.next() );
+            if ( groupCursor.type() != token.relationshipType( "HAS" ) )
+            {
+                assertTrue( groupCursor.next() );
+            }
+
+            groupCursor.outgoing( cursor );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
@@ -355,6 +362,36 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             tracer.clear();
 
             assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceGroupTraversal()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( NULL ) )
+        {
+            // when
+            groupCursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.relationshipGroups( groupCursor );
+
+            assertTrue( groupCursor.next() );
+            int expectedType = groupCursor.type();
+            tracer.assertEvents( OnRelationshipGroup( expectedType ) );
+
+            groupCursor.removeTracer();
+            assertTrue( groupCursor.next() );
+            tracer.assertEvents();
+
+            groupCursor.setTracer( tracer );
+            assertFalse( groupCursor.next() );
             tracer.assertEvents();
         }
     }

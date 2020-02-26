@@ -35,14 +35,16 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -243,6 +245,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeCursor(): NodeCursor = translateException(inner.nodeCursor())
+
+  override def groupCursor(): RelationshipGroupCursor = translateException(inner.groupCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = translateException(inner.traversalCursor())
 

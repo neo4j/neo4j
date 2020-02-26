@@ -61,6 +61,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 row.set(relName, Values.NO_VALUE)
                 Iterator.single(row)
               case n: NodeValue =>
+                val groupCursor = query.groupCursor()
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
                 try {

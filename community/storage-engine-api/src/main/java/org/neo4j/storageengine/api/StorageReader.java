@@ -141,6 +141,11 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
 
     /**
+     * @return a new {@link StorageRelationshipGroupCursor} capable of reading relationship group data from the underlying storage.
+     */
+    StorageRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer );
+
+    /**
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
      */
     StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );

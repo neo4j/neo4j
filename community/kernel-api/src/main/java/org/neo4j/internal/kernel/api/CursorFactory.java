@@ -37,8 +37,6 @@ public interface CursorFactory
 
     RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer );
 
-    // traversal
-
     RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
 
     // properties
@@ -46,6 +44,10 @@ public interface CursorFactory
     PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
 
     PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer );
+
+    // traversal
+
+    RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer );
 
     // schema indexes
 

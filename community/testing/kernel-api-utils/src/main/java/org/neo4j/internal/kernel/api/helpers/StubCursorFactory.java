@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -43,6 +44,7 @@ public class StubCursorFactory implements CursorFactory
     private Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
     private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
     private Queue<PropertyCursor> fullPropertyCursors = new LinkedList<>();
+    private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
     private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
     private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
     private Queue<RelationshipIndexCursor> relationshipIndexCursors = new LinkedList<>();
@@ -100,6 +102,12 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
+    public RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
+    {
+        return poll( groupCursors );
+    }
+
+    @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor()
     {
         return poll( nodeValueIndexCursors );
@@ -115,6 +123,12 @@ public class StubCursorFactory implements CursorFactory
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         return poll( relationshipIndexCursors );
+    }
+
+    public StubCursorFactory withGroupCursors( RelationshipGroupCursor...cursors )
+    {
+        groupCursors.addAll( Arrays.asList( cursors ) );
+        return this;
     }
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )

@@ -17,32 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.storageengine.api.RelationshipSelection;
-
-/**
- * Cursor for scanning nodes.
- */
-public interface NodeCursor extends Cursor
+public interface StorageRelationshipGroupCursor extends StorageCursor
 {
-    long nodeReference();
+    int type();
 
-    LabelSet labels();
+    int outgoingCount();
 
-    LabelSet labelsIgnoringTxStateSetRemove();
+    int incomingCount();
 
-    boolean hasLabel( int label );
+    int totalCount();
 
-    void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
+    /**
+     * @return reference to a starting point for outgoing relationships with this type.
+     */
+    long outgoingReference();
 
-    void relationshipGroups( RelationshipGroupCursor groupCursor );
+    /**
+     * @return reference to a starting point for outgoing relationships with this type.
+     */
+    long incomingReference();
 
-    void properties( PropertyCursor cursor );
+    /**
+     * @return reference to a starting point for outgoing relationships with this type.
+     */
+    long loopsReference();
 
-    long relationshipsReference();
+    long getOwningNode();
 
-    long propertiesReference();
-
-    boolean isDense();
+    void init( long nodeReference, long reference, boolean nodeIsDense );
 }

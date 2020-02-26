@@ -313,6 +313,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public StorageRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -475,13 +481,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public int[] relationshipTypes()
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
-        }
-
-        @Override
-        public Degrees degrees( RelationshipSelection selection )
+        public void relationshipGroups( StorageRelationshipGroupCursor groupCursor )
         {
             throw new UnsupportedOperationException( "Not implemented yet" );
         }

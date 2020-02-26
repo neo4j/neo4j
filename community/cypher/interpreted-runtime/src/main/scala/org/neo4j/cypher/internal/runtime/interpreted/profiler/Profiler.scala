@@ -228,6 +228,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def score(): Float = inner.score()
   }
 
+  override protected def manyDbHits(inner: RelationshipGroupCursor): RelationshipGroupCursor = {
+    val tracer = new PipeTracer
+    inner.setTracer(tracer)
+    inner
+  }
+
   override protected def manyDbHits(inner: RelationshipTraversalCursor): RelationshipTraversalCursor = {
     val tracer = new PipeTracer
     inner.setTracer(tracer)

@@ -27,9 +27,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
-import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
-import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStrict;
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
@@ -134,10 +131,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             return nextBuffered();
         }
 
-        boolean traversingDenseNode;
         do
         {
-            traversingDenseNode = traversingDenseNode();
+            boolean traversingDenseNode = traversingDenseNode();
             if ( traversingDenseNode )
             {
                 traverseDenseNode();
@@ -152,7 +148,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             relationshipFull( this, next, pageCursor );
             computeNext();
         }
-        while ( !inUse() || (!traversingDenseNode && !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) )) );
+        while ( !inUse() || !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() )) );
 
         return true;
     }
@@ -219,49 +215,27 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
                     assert next == NO_ID;
                     return; // no more groups nor relationships
                 }
-                if ( !selection.test( group.getType() ) )
+                next = group.incomingRawId();
+                if ( pageCursor == null )
                 {
-                    // This type isn't part of this selection, so skip the whole group
-                    continue;
-                }
-
-                if ( selection.test( group.getType(), INCOMING ) )
-                {
-                    next = group.incomingRawId();
-                    initializePageCursor();
+                    pageCursor = relationshipPage( Math.max( next, 0L ) );
                 }
                 groupState = GroupState.OUTGOING;
                 break;
 
             case OUTGOING:
-                if ( selection.test( group.getType(), OUTGOING ) )
-                {
-                    initializePageCursor();
-                    next = group.outgoingRawId();
-                }
+                next = group.outgoingRawId();
                 groupState = GroupState.LOOP;
                 break;
 
             case LOOP:
-                if ( selection.test( group.getType(), LOOP ) )
-                {
-                    initializePageCursor();
-                    next = group.loopsRawId();
-                }
+                next = group.loopsRawId();
                 groupState = GroupState.INCOMING;
                 break;
 
             default:
                 throw new IllegalStateException( "We cannot get here, but checkstyle forces this!" );
             }
-        }
-    }
-
-    private void initializePageCursor()
-    {
-        if ( pageCursor == null )
-        {
-            pageCursor = relationshipPage( Math.max( next, 0L ) );
         }
     }
 

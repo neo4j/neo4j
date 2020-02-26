@@ -526,6 +526,7 @@ class EntityUpdatesTest
         when( reader.allocateNodeCursor( any() ) ).thenThrow( exception );
         when( reader.allocateRelationshipScanCursor( any() ) ).thenThrow( exception );
         when( reader.allocateRelationshipTraversalCursor( any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipGroupCursor( any() ) ).thenThrow( exception );
         when( reader.allocatePropertyCursor( any() ) ).thenThrow( exception );
         return reader;
     }

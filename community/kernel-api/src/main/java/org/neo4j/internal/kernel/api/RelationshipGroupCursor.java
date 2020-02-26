@@ -19,30 +19,22 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.storageengine.api.RelationshipSelection;
-
 /**
- * Cursor for scanning nodes.
+ * Cursor for traversing the relationship groups of a node.
  */
-public interface NodeCursor extends Cursor
+public interface RelationshipGroupCursor extends Cursor
 {
-    long nodeReference();
+    int type();
 
-    LabelSet labels();
+    int outgoingCount();
 
-    LabelSet labelsIgnoringTxStateSetRemove();
+    int incomingCount();
 
-    boolean hasLabel( int label );
+    int totalCount();
 
-    void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
+    void outgoing( RelationshipTraversalCursor cursor );
 
-    void relationshipGroups( RelationshipGroupCursor groupCursor );
+    void incoming( RelationshipTraversalCursor cursor );
 
-    void properties( PropertyCursor cursor );
-
-    long relationshipsReference();
-
-    long propertiesReference();
-
-    boolean isDense();
+    // TODO even add an all( RelationshipTraversalCursor cursor ); ?
 }

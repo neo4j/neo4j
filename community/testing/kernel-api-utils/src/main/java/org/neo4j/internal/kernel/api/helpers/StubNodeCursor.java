@@ -29,8 +29,8 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
@@ -110,9 +110,15 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public void relationshipGroups( RelationshipGroupCursor cursor )
+    {
+        ((StubGroupCursor) cursor).rewind();
+    }
+
+    @Override
     public void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection )
     {
-        ((StubRelationshipCursor) relationships).rewind( nodeReference(), selection );
+        ((StubRelationshipCursor) relationships).rewind();
     }
 
     @Override
@@ -145,18 +151,6 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     public boolean isDense()
     {
         return dense;
-    }
-
-    @Override
-    public int[] relationshipTypes()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public Degrees degrees( RelationshipSelection selection )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override

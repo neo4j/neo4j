@@ -74,6 +74,7 @@ case class ExpandIntoPipe(source: Pipe,
             toNode match {
               case IsNoValue() => Iterator.empty
               case n: NodeValue =>
+                val groupCursor = query.groupCursor()
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
                 try {

@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.storageengine.api.RelationshipSelection;
 
 public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
 {
@@ -36,8 +35,6 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     private int offset;
     private int chainId;
     private boolean isClosed;
-    private long nodeReference;
-    private RelationshipSelection selection;
 
     public StubRelationshipCursor( TestRelationshipChain chain )
     {
@@ -52,12 +49,16 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
         this.isClosed = true;
     }
 
-    void rewind( long nodeReference, RelationshipSelection selection )
+    void rewind()
     {
-        this.nodeReference = nodeReference;
-        this.selection = selection;
         this.offset = -1;
         this.isClosed = true;
+    }
+
+    void read( int chainId )
+    {
+        this.chainId = chainId;
+        rewind();
     }
 
     @Override
@@ -129,21 +130,8 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     @Override
     public boolean next()
     {
-        while ( chainId >= 0 && chainId < store.size() && store.get( chainId ).isValidOffset( offset + 1 ) )
-        {
-            offset++;
-            TestRelationshipChain chain = store.get( chainId );
-            if ( !chain.isValidOffset( offset ) )
-            {
-                return false;
-            }
-            TestRelationshipChain.Data data = chain.get( offset );
-            if ( selection.test( data.type, data.relationshipRirection( nodeReference ) ) )
-            {
-                return true;
-            }
-        }
-        return false;
+        offset++;
+        return store.get( chainId ).isValidOffset( offset );
     }
 
     @Override

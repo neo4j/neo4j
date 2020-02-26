@@ -19,22 +19,17 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.AllNodeScan;
-import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static java.lang.Math.min;
@@ -43,23 +38,18 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private final NodeStore read;
     private final PageCursorTracer cursorTracer;
-    private final RelationshipStore relationshipStore;
-    private final RelationshipGroupStore groupStore;
     private PageCursor pageCursor;
     private long next;
     private long highMark;
     private long nextStoreReference;
     private boolean open;
     private boolean batched;
-    private RecordRelationshipGroupCursor groupCursor;
 
-    RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
+    RecordNodeCursor( NodeStore read, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.read = read;
         this.cursorTracer = cursorTracer;
-        this.relationshipStore = relationshipStore;
-        this.groupStore = groupStore;
     }
 
     @Override
@@ -182,38 +172,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public int[] relationshipTypes()
+    public void relationshipGroups( StorageRelationshipGroupCursor groupCursor )
     {
-        MutableIntSet types = IntSets.mutable.empty();
-        if ( groupCursor == null )
-        {
-            groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
-        }
         groupCursor.init( entityReference(), getNextRel(), isDense() );
-        while ( groupCursor.next() )
-        {
-            types.add( groupCursor.getType() );
-        }
-        return types.toArray();
-    }
-
-    @Override
-    public Degrees degrees( RelationshipSelection selection )
-    {
-        if ( groupCursor == null )
-        {
-            groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
-        }
-        groupCursor.init( entityReference(), getNextRel(), isDense() );
-        EagerDegrees result = new EagerDegrees();
-        while ( groupCursor.next() )
-        {
-            if ( selection.test( groupCursor.getType() ) )
-            {
-                result.add( groupCursor.getType(), groupCursor.outgoingCount(), groupCursor.incomingCount(), groupCursor.totalCount() );
-            }
-        }
-        return result;
     }
 
     @Override
@@ -328,11 +289,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             pageCursor.close();
             pageCursor = null;
-        }
-        if ( groupCursor != null )
-        {
-            groupCursor.close();
-            groupCursor = null;
         }
     }
 
