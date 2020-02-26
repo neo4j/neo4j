@@ -108,7 +108,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     node.relationships( relationship, selection( type, BOTH ) );
                     while ( relationship.next() )
                     {
-                        assertEquals( type, relationship.type(), "node #" + node.nodeReference() + " relationship has label not part of selection" );
+                        assertEquals( type, relationship.type(), "node #" + node.nodeReference() + " relationship should have same label as group" );
                         if ( relationship.sourceNodeReference() == node.nodeReference() )
                         {
                             degree.outgoing++;
@@ -147,7 +147,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             read.singleNode( start, node );
             assertTrue( node.next(), "access start node" );
             int[] types = node.relationshipTypes();
-            assertTrue( types.length > 0 );
+            assertTrue( types.length > 0, "access relationship group" );
             node.relationships( relationship, selection( types[0], OUTGOING ) );
             assertTrue( relationship.next(), "access outgoing relationships" );
 
@@ -158,7 +158,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( start, relationship.originNodeReference(), "node of origin" );
             assertEquals( end, relationship.otherNodeReference(), "neighbouring node" );
 
-            assertEquals( types[0], relationship.type(), "relationship should have correct label" );
+            assertEquals( types[0], relationship.type(), "relationship should have same label as group" );
 
             assertFalse( relationship.next(), "only a single relationship" );
 
@@ -169,7 +169,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             read.singleNode( end, node );
             assertTrue( node.next(), "access start node" );
             types = node.relationshipTypes();
-            assertTrue( types.length > 0 );
+            assertTrue( types.length > 0, "access relationship group" );
             node.relationships( relationship, selection( types[0], INCOMING ) );
             assertTrue( relationship.next(), "access incoming relationships" );
 
@@ -180,7 +180,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( end, relationship.originNodeReference(), "node of origin" );
             assertEquals( start, relationship.otherNodeReference(), "neighbouring node" );
 
-            assertEquals( types[0], relationship.type(), "relationship should have correct label" );
+            assertEquals( types[0], relationship.type(), "relationship should have same label as group" );
 
             assertFalse( relationship.next(), "only a single relationship" );
 
@@ -206,28 +206,28 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    void shouldTraverseSparseNode() throws Exception
+    void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
         assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
         traverse( sparse, false );
     }
 
     @Test
-    void shouldTraverseDenseNode() throws Exception
+    void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
         assumeTrue( supportsDirectTraversal() );
         traverse( dense, false );
     }
 
     @Test
-    void shouldTraverseSparseNodeWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         assumeTrue( supportsSparseNodes() );
         traverse( sparse, true );
     }
 
     @Test
-    void shouldTraverseDenseNodeWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         assumeTrue( supportsDirectTraversal() );
         traverse( dense, true );

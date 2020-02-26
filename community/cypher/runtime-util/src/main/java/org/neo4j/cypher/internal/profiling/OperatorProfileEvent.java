@@ -65,6 +65,12 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
     }
 
     @Override
+    public void onRelationshipGroup( int type )
+    {
+        dbHit();
+    }
+
+    @Override
     public void onProperty( int propertyKey )
     {
         dbHit();

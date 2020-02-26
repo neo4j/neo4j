@@ -68,6 +68,12 @@ public class TestKernelReadTracer implements KernelReadTracer
     }
 
     @Override
+    public void onRelationshipGroup( int type )
+    {
+        traceEvents.add( OnRelationshipGroup( type ) );
+    }
+
+    @Override
     public void onProperty( int propertyKey )
     {
         traceEvents.add( OnProperty( propertyKey ) );
@@ -95,7 +101,8 @@ public class TestKernelReadTracer implements KernelReadTracer
         AllNodesScan,
         LabelScan,
         IndexSeek,
-        Relationship,
+        Relatioship,
+        RelatioshipGroup,
         Property
     }
 
@@ -163,7 +170,12 @@ public class TestKernelReadTracer implements KernelReadTracer
 
     static TraceEvent OnRelationship( long relationshipReference )
     {
-        return new TraceEvent( TraceEventKind.Relationship, relationshipReference );
+        return new TraceEvent( TraceEventKind.Relatioship, relationshipReference );
+    }
+
+    static TraceEvent OnRelationshipGroup( int type )
+    {
+        return new TraceEvent( TraceEventKind.RelatioshipGroup, type );
     }
 
     static TraceEvent OnProperty( int propertyKey )

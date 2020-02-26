@@ -23,60 +23,27 @@ import java.util.stream.IntStream;
 
 import org.neo4j.graphdb.Direction;
 
-/**
- * Holds data about degrees for various combinations of relationship type and {@link Direction}, retrieved from a node.
- */
 public interface Degrees
 {
-    /**
-     * @return which relationship types this instances has degrees for.
-     */
     int[] types();
 
-    /**
-     * @param type the relationship type to get degree for.
-     * @param direction the {@link Direction} to get degree for. {@link Direction#OUTGOING} and {@link Direction#INCOMING} will include loops too.
-     * @return the degree (i.e. number of relationships on the specific node) of the given relationship type and direction,
-     * or {@code 0} if no degree of that combination was found.
-     */
     int degree( int type, Direction direction );
 
-    /**
-     * @param type the relationship type to get degree for.
-     * @return the outgoing degree, including loops (i.e. number of relationships on the specific node) of the given relationship type,
-     * or {@code 0} if no degree of that combination was found.
-     */
     default int outgoingDegree( int type )
     {
         return degree( type, Direction.OUTGOING );
     }
 
-    /**
-     * @param type the relationship type to get degree for.
-     * @return the incoming degree, including loops (i.e. number of relationships on the specific node) of the given relationship type,
-     * or {@code 0} if no degree of that combination was found.
-     */
     default int incomingDegree( int type )
     {
         return degree( type, Direction.INCOMING );
     }
 
-    /**
-     * @param type the relationship type to get degree for.
-     * @return the degree (i.e. number of relationships on the specific node) of the given relationship type in all directions,
-     * or {@code 0} if no degree of that combination was found.
-     */
     default int totalDegree( int type )
     {
         return degree( type, Direction.BOTH );
     }
 
-    /**
-     * @param direction the {@link Direction} to get degree for, regardless of type.
-     * {@link Direction#OUTGOING} and {@link Direction#INCOMING} will include loops too.
-     * @return the degree (i.e. number of relationships on the specific node) of the given relationship type and direction,
-     * or {@code 0} if no degree of that combination was found.
-     */
     default int degree( Direction direction )
     {
         switch ( direction )
@@ -92,25 +59,16 @@ public interface Degrees
         }
     }
 
-    /**
-     * @return the outgoing degree, including loops (i.e. number of relationships on the specific node) or {@code 0} if no degree of that combination was found.
-     */
     default int outgoingDegree()
     {
         return IntStream.of( types() ).map( this::outgoingDegree ).sum();
     }
 
-    /**
-     * @return the incoming degree, including loops (i.e. number of relationships on the specific node) or {@code 0} if no degree of that combination was found.
-     */
     default int incomingDegree()
     {
         return IntStream.of( types() ).map( this::incomingDegree ).sum();
     }
 
-    /**
-     * @return the degree (i.e. number of relationships on the specific node).
-     */
     default int totalDegree()
     {
         return IntStream.of( types() ).map( this::totalDegree ).sum();
