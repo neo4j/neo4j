@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -343,6 +342,6 @@ abstract class GBPTreeITBase<KEY,VALUE>
     @SuppressWarnings( "unused" )
     private void printNode( @SuppressWarnings( "SameParameterValue" ) int id ) throws IOException
     {
-        index.printNode( id, TRACER_SUPPLIER.get() );
+        index.printNode( id, NULL );
     }
 }

@@ -63,13 +63,11 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
-import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -94,7 +92,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -332,8 +329,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PagedFile pfA = cache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = cache.map( existingFile( "b" ), filePageSize );
 
-        dirtyManyPages( pfA, pagesToDirty, TRACER_SUPPLIER );
-        dirtyManyPages( pfB, pagesToDirty, TRACER_SUPPLIER );
+        dirtyManyPages( pfA, pagesToDirty );
+        dirtyManyPages( pfB, pagesToDirty );
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
@@ -357,7 +354,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PagedFile pf = cache.map( file( "a" ), filePageSize );
 
         // Dirty a bunch of data
-        dirtyManyPages( pf, pagesToDirty, TRACER_SUPPLIER );
+        dirtyManyPages( pf, pagesToDirty );
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
@@ -372,10 +369,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( ioCounter.get() ).isGreaterThanOrEqualTo( pagesToDirty - 30 ); // -30 because of the eviction thread
     }
 
-    private void dirtyManyPages( PagedFile pf, int pagesToDirty, PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
+    private void dirtyManyPages( PagedFile pf, int pagesToDirty ) throws IOException
     {
-        try ( PageCursorTracer cursorTracer = cursorTracerSupplier.get();
-              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        dirtyManyPages( pf, pagesToDirty, NULL );
+    }
+
+    private void dirtyManyPages( PagedFile pf, int pagesToDirty, PageCursorTracer cursorTracer ) throws IOException
+    {
+        try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
             for ( int i = 0; i < pagesToDirty; i++ )
             {
@@ -2581,7 +2582,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return super.beginPin( writeLock, filePageId, swapper );
             }
         };
-        ConfigurablePageCursorTracerSupplier<DefaultPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( pageCursorTracer );
         getPageCache( fs, maxPages, tracer );
 
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2591,8 +2591,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            try ( DefaultPageCursorTracer cursorTracer = cursorTracerSupplier.get();
-                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, pageCursorTracer ) )
             {
                 for ( int i = 0; i < pinsForRead; i++ )
                 {
@@ -2600,7 +2599,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            dirtyManyPages( pagedFile, pinsForWrite, cursorTracerSupplier );
+            dirtyManyPages( pagedFile, pinsForWrite, pageCursorTracer );
         }
 
         assertThat( readCount.get() ).as( "wrong read pin count" ).isEqualTo( pinsForRead );
@@ -2721,7 +2720,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
         assertThat( pagedFile.getLastPageId() ).isEqualTo( 9L );
-        dirtyManyPages( pagedFile, 15, TRACER_SUPPLIER );
+        dirtyManyPages( pagedFile, 15 );
         try
         {
             assertThat( pagedFile.getLastPageId() ).isEqualTo( 14L );
