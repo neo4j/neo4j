@@ -69,7 +69,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultNodeCursor cursor )
+    private void accept( DefaultNodeCursor cursor )
     {
         if ( nodeCursor != null )
         {
@@ -97,7 +97,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void acceptFullAccess( DefaultNodeCursor cursor )
+    private void acceptFullAccess( DefaultNodeCursor cursor )
     {
         if ( fullAccessNodeCursor != null )
         {
@@ -125,7 +125,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultRelationshipScanCursor cursor )
+    private void accept( DefaultRelationshipScanCursor cursor )
     {
         if ( relationshipScanCursor != null )
         {
@@ -140,7 +140,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     {
         if ( fullAccessRelationshipScanCursor == null )
         {
-            return trace( new FullAccessRelationshipScanCursor( this::accept, storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer ) );
+            return trace( new FullAccessRelationshipScanCursor( this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer ) );
         }
 
         try
@@ -153,14 +153,14 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( FullAccessRelationshipScanCursor cursor )
+    private void acceptFullAccess( DefaultRelationshipScanCursor cursor )
     {
         if ( fullAccessRelationshipScanCursor != null )
         {
             fullAccessRelationshipScanCursor.release();
         }
         cursor.removeTracer();
-        fullAccessRelationshipScanCursor = cursor;
+        fullAccessRelationshipScanCursor = (FullAccessRelationshipScanCursor) cursor;
     }
 
     @Override
@@ -182,7 +182,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultRelationshipTraversalCursor cursor )
+    void accept( DefaultRelationshipTraversalCursor cursor )
     {
         if ( relationshipTraversalCursor != null )
         {
@@ -210,7 +210,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultPropertyCursor cursor )
+    private void accept( DefaultPropertyCursor cursor )
     {
         if ( propertyCursor != null )
         {
@@ -238,7 +238,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void acceptFullAccess( DefaultPropertyCursor cursor )
+    private void acceptFullAccess( DefaultPropertyCursor cursor )
     {
         if ( fullAccessPropertyCursor != null )
         {
@@ -266,7 +266,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultRelationshipGroupCursor cursor )
+    private void accept( DefaultRelationshipGroupCursor cursor )
     {
         if ( relationshipGroupCursor != null )
         {
@@ -294,7 +294,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultNodeValueIndexCursor cursor )
+    private void accept( DefaultNodeValueIndexCursor cursor )
     {
         if ( nodeValueIndexCursor != null )
         {
@@ -322,7 +322,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultNodeLabelIndexCursor cursor )
+    private void accept( DefaultNodeLabelIndexCursor cursor )
     {
         if ( nodeLabelIndexCursor != null )
         {
@@ -350,7 +350,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    public void accept( DefaultRelationshipIndexCursor cursor )
+    private void accept( DefaultRelationshipIndexCursor cursor )
     {
         if ( relationshipIndexCursor != null )
         {
@@ -376,6 +376,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipScanCursor.release();
             relationshipScanCursor = null;
+        }
+        if ( fullAccessRelationshipScanCursor != null )
+        {
+            fullAccessRelationshipScanCursor.release();
+            fullAccessRelationshipScanCursor = null;
         }
         if ( relationshipTraversalCursor != null )
         {
@@ -406,6 +411,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeLabelIndexCursor.release();
             nodeLabelIndexCursor = null;
+        }
+        if ( relationshipIndexCursor != null )
+        {
+            relationshipIndexCursor.release();
+            relationshipIndexCursor = null;
         }
     }
 }
