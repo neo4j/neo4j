@@ -63,13 +63,13 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
   }
 
   test("should profile page cache stats of create with new label") {
-    val nodes = given {
+    given {
       uniqueIndex("M", "prop")
       nodePropertyGraph(SIZE, {
         case i => Map("prop" -> i)
       },"N", "M")
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
     }
-    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -78,7 +78,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
       .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
       .build()
 
-    val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime, inputValues(Array[Any](nodes.head)))
+    val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
 
     // then
