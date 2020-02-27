@@ -31,6 +31,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.service.Services;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 
 /**
  * Provides instances of {@link BatchInserter}.
@@ -72,14 +73,14 @@ public final class BatchInserters
             Config config, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserterImpl inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, extensions );
+        BatchInserterImpl inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, extensions, EMPTY );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( DatabaseLayout layout, FileSystemAbstraction fileSystem, Config config,
             Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
-        return new BatchInserterImpl( layout, fileSystem, config, extensions );
+        return new BatchInserterImpl( layout, fileSystem, config, extensions, EMPTY );
     }
 
     private static DefaultFileSystemAbstraction createFileSystem()
