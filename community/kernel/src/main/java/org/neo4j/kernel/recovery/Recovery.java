@@ -103,6 +103,7 @@ import org.neo4j.token.TokenHolders;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
+import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
@@ -161,6 +162,27 @@ public final class Recovery
         try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
             return isRecoveryRequired( fs, databaseLayout, config );
+        }
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * Transaction logs should be located in their default location.
+     * If recovery is not required nothing will be done to the the database or logs.
+     * Note: used by external tools.
+     * @param databaseLayout database to recover layout.
+     * @param tracers underlying events tracers.
+     * @throws Exception
+     */
+    public static void performRecovery( DatabaseLayout databaseLayout, DatabaseTracers tracers ) throws Exception
+    {
+        requireNonNull( databaseLayout );
+        Config config = defaults();
+        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
+        {
+            performRecovery( fs, pageCache, tracers, config, databaseLayout );
         }
     }
 
