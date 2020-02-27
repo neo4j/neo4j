@@ -42,10 +42,6 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
       case v if v eq Values.NO_VALUE => return Values.NO_VALUE
       case IsMap(m) => if (includeAllProps) m(state) else VirtualValues.EMPTY_MAP
     }
-    val builder = new MapValueBuilder(literalExpressions.size)
-    literalExpressions.foreach {
-      case (k, e) => builder.add(k, e(ctx, state))
-    }
 
     //in case we get a lazy map we need to make sure it has been loaded
     mapOfProperties match {
@@ -53,7 +49,15 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
       case _ =>
     }
 
-    mapOfProperties.updatedWith(builder.build())
+    if (literalExpressions.nonEmpty)
+    {
+      val builder = new MapValueBuilder(literalExpressions.size)
+      literalExpressions.foreach {
+        case (k, e) => builder.add(k, e(ctx, state))
+      }
+      return mapOfProperties.updatedWith(builder.build())
+    }
+    mapOfProperties
   }
 
   override def rewrite(f: Expression => Expression): Expression =

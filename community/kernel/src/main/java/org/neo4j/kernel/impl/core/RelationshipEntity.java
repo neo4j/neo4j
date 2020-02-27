@@ -51,9 +51,12 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class RelationshipEntity implements Relationship, RelationshipVisitor<RuntimeException>
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntity.class );
+
     private final InternalTransaction internalTransaction;
     private long id = NO_ID;
     private long startNode = NO_ID;

@@ -24,8 +24,14 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class LocalTimeArray extends TemporalArray<LocalTime, LocalTimeValue>
+import static org.neo4j.memory.HeapEstimator.LOCAL_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+
+public class LocalTimeArray extends TemporalArray<LocalTime>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LocalTimeArray.class );
+
     private final LocalTime[] value;
 
     LocalTimeArray( LocalTime[] value )
@@ -83,9 +89,8 @@ public class LocalTimeArray extends TemporalArray<LocalTime, LocalTimeValue>
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        //reference + size of LocalTime
-        return 4 + 24;
+        return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_TIME_SIZE, value.length );
     }
 }

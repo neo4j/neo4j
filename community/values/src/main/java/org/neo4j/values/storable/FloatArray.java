@@ -25,9 +25,13 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 public final class FloatArray extends FloatingPointArray
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( FloatArray.class );
+
     private final float[] value;
 
     FloatArray( float[] value )
@@ -146,8 +150,8 @@ public final class FloatArray extends FloatingPointArray
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        return Float.BYTES;
+        return SHALLOW_SIZE + sizeOf( value );
     }
 }

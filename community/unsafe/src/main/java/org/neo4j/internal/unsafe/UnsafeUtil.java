@@ -274,6 +274,14 @@ public final class UnsafeUtil
     }
 
     /**
+     * Get the object-relative field offset.
+     */
+    public static long getFieldOffset( Field field )
+    {
+        return unsafe.objectFieldOffset( field );
+    }
+
+    /**
      * Atomically add the given delta to the int field, and return its previous value.
      * <p>
      * This has the memory visibility semantics of a volatile read followed by a volatile write.

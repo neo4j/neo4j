@@ -24,8 +24,14 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public final class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
+import static org.neo4j.memory.HeapEstimator.ZONED_DATE_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+
+public final class DateTimeArray extends TemporalArray<ZonedDateTime>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DateTimeArray.class );
+
     private final ZonedDateTime[] value;
 
     DateTimeArray( ZonedDateTime[] value )
@@ -83,11 +89,8 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        //This is a rough estimate, the wrapped ZoneDateTime can be much larger but it shares a lot of it fields
-        //with other instances, small integers and ZoneId are shared across instances. On average this is roughly the
-        // measured size per item.
-        return 100;
+        return SHALLOW_SIZE + sizeOfObjectArray( ZONED_DATE_TIME_SIZE, value.length );
     }
 }

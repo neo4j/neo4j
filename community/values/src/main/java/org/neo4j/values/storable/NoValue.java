@@ -129,15 +129,8 @@ public final class NoValue extends Value
     }
 
     @Override
-    protected long estimatedPayloadSize()
-    {
-        return 0L;
-    }
-
-    @Override
     public long estimatedHeapUsage()
     {
-        //NO_VALUE is a singleton and doesn't add to heap usage
         return 0L;
     }
 }

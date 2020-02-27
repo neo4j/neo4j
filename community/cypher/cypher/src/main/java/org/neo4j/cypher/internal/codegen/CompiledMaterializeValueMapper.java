@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -38,6 +35,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeReference;
@@ -47,7 +45,6 @@ import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 public final class CompiledMaterializeValueMapper
 {
@@ -113,9 +110,9 @@ public final class CompiledMaterializeValueMapper
         @Override
         public AnyValue mapSequence( SequenceValue value )
         {
-            List<AnyValue> list = new ArrayList<>( value.length() );
-            value.forEach( v -> list.add( v.map( this ) ) );
-            return VirtualValues.fromList( list );
+            ListValueBuilder builder = ListValueBuilder.newListBuilder( value.length() );
+            value.forEach( v -> builder.add( v.map( this ) ) );
+            return builder.build();
         }
     }
 

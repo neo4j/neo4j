@@ -23,7 +23,7 @@ import org.neo4j.values.AnyValue;
 
 public abstract class NumberValue extends ScalarValue
 {
-    public static double safeCastFloatingPoint( String name, AnyValue value, double defaultValue )
+    static double safeCastFloatingPoint( String name, AnyValue value, double defaultValue )
     {
         if ( value == null )
         {

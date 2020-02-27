@@ -49,6 +49,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -413,26 +414,29 @@ public final class CypherCoercions
             }
             SequenceValue listValue = (SequenceValue) value;
             Coercer innerCoercer = CONVERTERS.get( innerType.getClass() );
-            AnyValue[] coercedValues = new AnyValue[listValue.length()];
             Neo4jTypes.AnyType nextInner = nextInner( innerType );
             if ( listValue.iterationPreference() == RANDOM_ACCESS )
             {
-                for ( int i = 0; i < coercedValues.length; i++ )
+                int length = listValue.length();
+                ListValueBuilder builder = ListValueBuilder.newListBuilder( length );
+                for ( int i = 0; i < length; i++ )
                 {
                     AnyValue nextItem = listValue.value( i );
-                    coercedValues[i] = nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( nextItem, nextInner, access, cursors );
+                    builder.add( nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( nextItem, nextInner, access, cursors ) );
                 }
+                return builder.build();
             }
             else
             {
+                ListValueBuilder builder = ListValueBuilder.newListBuilder();
                 int i = 0;
                 for ( AnyValue anyValue : listValue )
                 {
                     AnyValue nextItem = listValue.value( i );
-                    coercedValues[i++] = nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( anyValue, nextInner, access, cursors );
+                    builder.add( nextItem == NO_VALUE ? NO_VALUE : innerCoercer.apply( anyValue, nextInner, access, cursors ) );
                 }
+                return builder.build();
             }
-            return VirtualValues.list( coercedValues );
         }
     }
 

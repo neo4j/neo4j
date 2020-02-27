@@ -55,6 +55,8 @@ import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.ZONED_DATE_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
@@ -66,10 +68,29 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
-    public static final DateTimeValue MIN_VALUE =
-            new DateTimeValue( ZonedDateTime.of( LocalDateTime.MIN, ZoneOffset.MIN ) );
-    public static final DateTimeValue MAX_VALUE =
-            new DateTimeValue( ZonedDateTime.of( LocalDateTime.MAX, ZoneOffset.MAX ) );
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance( DateTimeValue.class ) + ZONED_DATE_TIME_SIZE;
+
+    public static final DateTimeValue MIN_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MIN, ZoneOffset.MIN ) );
+    public static final DateTimeValue MAX_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MAX, ZoneOffset.MAX ) );
+
+    private final ZonedDateTime value;
+    private final long epochSeconds;
+
+    private DateTimeValue( ZonedDateTime value )
+    {
+        ZoneId zone = value.getZone();
+        if ( zone instanceof ZoneOffset )
+        {
+            this.value = value;
+        }
+        else
+        {
+            // Do a 2-way lookup of the zone to make sure we only use the new name of renamed zones
+            ZoneId mappedZone = ZoneId.of( TimeZones.map( TimeZones.map( zone.getId() ) ) );
+            this.value = value.withZoneSameInstant( mappedZone );
+        }
+        this.epochSeconds = this.value.toEpochSecond();
+    }
 
     public static DateTimeValue datetime( DateValue date, LocalTimeValue time, ZoneId zone )
     {
@@ -411,25 +432,6 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         };
     }
 
-    private final ZonedDateTime value;
-    private final long epochSeconds;
-
-    private DateTimeValue( ZonedDateTime value )
-    {
-        ZoneId zone = value.getZone();
-        if ( zone instanceof ZoneOffset )
-        {
-            this.value = value;
-        }
-        else
-        {
-            // Do a 2-way lookup of the zone to make sure we only use the new name of renamed zones
-            ZoneId mappedZone = ZoneId.of( TimeZones.map( TimeZones.map( zone.getId() ) ) );
-            this.value = value.withZoneSameInstant( mappedZone );
-        }
-        this.epochSeconds = this.value.toEpochSecond();
-    }
-
     @Override
     ZonedDateTime temporal()
     {
@@ -458,12 +460,6 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
-    {
-        return value.getZone();
-    }
-
-    @Override
-    ZoneId getZoneId()
     {
         return value.getZone();
     }
@@ -619,17 +615,14 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //This is a rough estimate, the wrapped ZoneDateTime can be much larger but it shares a lot of it fields
-        //with other instances, small integers and ZoneId are shared across instances. On average this is roughly the
-        // measured size per item.
-        return 120;
+        return INSTANCE_SIZE;
     }
 
     private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     private static final Pattern PATTERN = Pattern.compile(
-            DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "\\])?" + ")?",
+            DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "])?" + ")?",
             Pattern.CASE_INSENSITIVE );
     private static final DateTimeFormatter ZONE_NAME_PARSER = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()

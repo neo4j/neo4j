@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.memory;
 
-/**
- * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
- * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
- */
-public enum VirtualValueGroup
+public interface Measurable
 {
-    MAP,
-    NODE,
-    EDGE,
-    LIST,
-    PATH,
-    ERROR
+    /**
+     * Gives an estimation of the heap usage in bytes for the given value.
+     *
+     * @return an estimation of how many bytes this value consumes.
+     */
+    long estimatedHeapUsage();
 }

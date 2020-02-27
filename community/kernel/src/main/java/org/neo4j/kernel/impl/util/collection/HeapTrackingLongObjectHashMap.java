@@ -33,9 +33,9 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongObjectHashMap.class );
-    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+    static final int DEFAULT_INITIAL_CAPACITY = 16;
 
-    private final MemoryTracker memoryTracker;
+    final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
     static <V> HeapTrackingLongObjectHashMap<V> createLongObjectHashMap( MemoryTracker memoryTracker )
@@ -44,7 +44,7 @@ class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> implements A
         return new HeapTrackingLongObjectHashMap<>( memoryTracker, DEFAULT_INITIAL_CAPACITY );
     }
 
-    private HeapTrackingLongObjectHashMap( MemoryTracker memoryTracker, int trackedCapacity )
+    HeapTrackingLongObjectHashMap( MemoryTracker memoryTracker, int trackedCapacity )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
         this.trackedCapacity = trackedCapacity;
@@ -68,7 +68,7 @@ class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> implements A
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    private static long arraysHeapSize( int arrayLength )
+    static long arraysHeapSize( int arrayLength )
     {
         long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
         long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );

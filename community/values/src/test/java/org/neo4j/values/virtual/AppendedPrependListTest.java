@@ -39,43 +39,26 @@ class AppendedPrependListTest
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
 
         // When
-        ListValue appended = inner.append( longValue( 12L ), longValue( 13L ), longValue( 14L ) );
+        ListValue appended = inner.append( longValue( 12L ) );
 
         // Then
         ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ),
-                longValue( 12L ), longValue( 13L ), longValue( 14L ));
+                longValue( 12L ) );
         assertListValuesEquals( appended, expected );
     }
 
     @Test
-    void shouldHandleEmptyAppend()
+    void shouldAppendNoValue()
     {
         // Given
-        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        ListValue inner = list( longValue( 5L ), longValue( 6L ) );
 
         // When
-        ListValue appended = inner.append( );
+        ListValue appended = inner.append( NO_VALUE );
 
         // Then
-        assertListValuesEquals( appended, inner );
-    }
-
-    @Test
-    void shouldAppendToListWithDroppedNull()
-    {
-        // Given
-        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), NO_VALUE, longValue( 9L ), longValue( 10L ), longValue( 11L ) );
-
-        // When
-        ListValue appended = inner.dropNoValues().append( longValue( 12L ), longValue( 13L ), longValue( 14L ) );
-
-        // Then
-        ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ),
-                longValue( 12L ), longValue( 13L ), longValue( 14L ));
+        ListValue expected = list( longValue( 5L ), longValue( 6L ), NO_VALUE );
         assertListValuesEquals( appended, expected );
     }
 
@@ -87,44 +70,26 @@ class AppendedPrependListTest
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
 
         // When
-        ListValue prepend = inner.prepend( longValue( 2L ), longValue( 3L ), longValue( 4L ) );
+        ListValue prepend = inner.prepend( longValue( 4L ) );
 
         // Then
-        ListValue expected = list( longValue( 2L ), longValue( 3L ), longValue( 4L ), longValue( 5L ), longValue( 6L ),
+        ListValue expected = list( longValue( 4L ), longValue( 5L ), longValue( 6L ),
                 longValue( 7L ),
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
         assertListValuesEquals( prepend, expected );
     }
 
     @Test
-    void shouldHandleEmptyPrepend()
+    void shouldPrependNoValue()
     {
         // Given
-        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        ListValue inner = list( longValue( 5L ), longValue( 6L ) );
 
         // When
-        ListValue prepend = inner.prepend( );
+        ListValue appended = inner.prepend( NO_VALUE );
 
         // Then
-        assertListValuesEquals( prepend, inner );
-    }
-
-    @Test
-    void shouldPrependToListWithDroppedNull()
-    {
-        // Given
-        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), NO_VALUE, longValue( 9L ), longValue( 10L ), longValue( 11L ) );
-
-        // When
-        ListValue appended = inner.dropNoValues().prepend( longValue( 2L ), longValue( 3L ), longValue( 4L ) );
-
-        // Then
-        ListValue expected = list( longValue( 2L ), longValue( 3L ), longValue( 4L ), longValue( 5L ), longValue( 6L ),
-                longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
-
+        ListValue expected = list( NO_VALUE, longValue( 5L ), longValue( 6L ) );
         assertListValuesEquals( appended, expected );
     }
 

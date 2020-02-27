@@ -23,8 +23,12 @@ import java.util.Comparator;
 
 import org.neo4j.values.virtual.VirtualValueGroup;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class MyVirtualValue extends VirtualValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( MyVirtualValue.class );
+
     private final int hashCode;
 
     MyVirtualValue( int hashCode )
@@ -80,8 +84,8 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Integer.BYTES;
+        return SHALLOW_SIZE;
     }
 }

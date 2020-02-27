@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /*
@@ -34,6 +36,8 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public final class UTF8StringValue extends StringValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( UTF8StringValue.class );
+
     /** Used for removing the high order bit from byte. */
     private static final int HIGH_BIT_MASK = 0b0111_1111;
     /** Used for detecting non-continuation bytes. For example {@code 0b10xx_xxxx}. */
@@ -108,9 +112,9 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return 28 + Byte.BYTES * bytes.length;
+        return SHALLOW_SIZE + sizeOf( bytes );
     }
 
     private static int numberOfCodePoints( byte[] bytes, int offset, int byteLength )
@@ -504,12 +508,7 @@ public final class UTF8StringValue extends StringValue
         return byteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
     }
 
-    public static int byteArrayCompare( byte[] value1, byte[] value2 )
-    {
-        return byteArrayCompare( value1, 0, value1.length, value2, 0, value2.length );
-    }
-
-    public static int byteArrayCompare( byte[] value1, int value1Offset, int value1Length,
+    private static int byteArrayCompare( byte[] value1, int value1Offset, int value1Length,
             byte[] value2, int value2Offset, int value2Length )
     {
         int lim = Math.min( value1Length, value2Length );
@@ -528,7 +527,7 @@ public final class UTF8StringValue extends StringValue
     @Override
     Matcher matcher( Pattern pattern )
     {
-        return pattern.matcher( value() ); // TODO: can we do better here?
+        return pattern.matcher( value() );
     }
 
     /**

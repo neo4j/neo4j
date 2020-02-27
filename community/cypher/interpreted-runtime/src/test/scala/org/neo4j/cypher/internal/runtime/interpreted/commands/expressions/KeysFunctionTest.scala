@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -30,7 +31,6 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 import org.neo4j.values.virtual.VirtualValues.list
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 
 import scala.collection.mutable
 
@@ -65,7 +65,6 @@ class KeysFunctionTest extends CypherFunSuite {
     val queryContext = mock[QueryContext]
     when(queryContext.nodePropertyIds(node.getId, null, null)).thenReturn(Array.empty[Int])
 
-
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = CypherRow(mutable.Map("n" -> node))
 
@@ -84,7 +83,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
     val function = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))
     // WHEN
-    val result = function(ctx, state).asInstanceOf[ListValue].asArray().sortWith( (a,b) => AnyValues.COMPARATOR.compare(a,b) >= 0)
+    val result = function(ctx, state).asInstanceOf[ListValue].asArray().sortWith((a, b) => AnyValues.COMPARATOR.compare(a, b) >= 0)
 
     result should equal(Array(stringValue("foo"), stringValue("baz"), stringValue("bar")))
   }

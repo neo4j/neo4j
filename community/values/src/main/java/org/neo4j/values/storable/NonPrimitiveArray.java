@@ -87,7 +87,7 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
         return NumberType.NO_NUMBER;
     }
 
-    protected final int compareToNonPrimitiveArray( NonPrimitiveArray<T> other )
+    final int compareToNonPrimitiveArray( NonPrimitiveArray<T> other )
     {
         int i = 0;
         int x = 0;

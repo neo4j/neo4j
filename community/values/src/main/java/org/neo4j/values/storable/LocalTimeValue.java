@@ -42,12 +42,23 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.LOCAL_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance( LocalTimeValue.class ) + LOCAL_TIME_SIZE;
+
     public static final LocalTimeValue MIN_VALUE = new LocalTimeValue( LocalTime.MIN );
     public static final LocalTimeValue MAX_VALUE = new LocalTimeValue( LocalTime.MAX );
+
+    private final LocalTime value;
+
+    private LocalTimeValue( LocalTime value )
+    {
+        this.value = value;
+    }
 
     public static LocalTimeValue localTime( LocalTime value )
     {
@@ -134,7 +145,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     static final LocalTime DEFAULT_LOCAL_TIME = LocalTime.of( TemporalFields.hour.defaultValue, TemporalFields.minute.defaultValue );
 
-    static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
+    private static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeValue.TimeBuilder<>( defaultZone )
         {
@@ -182,13 +193,6 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         };
     }
 
-    private final LocalTime value;
-
-    private LocalTimeValue( LocalTime value )
-    {
-        this.value = value;
-    }
-
     @Override
     int unsafeCompareTo( Value otherValue )
     {
@@ -231,12 +235,6 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
         return defaultZone.get();
-    }
-
-    @Override
-    ZoneId getZoneId()
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
@@ -312,10 +310,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //24 (LocalTime) + 4 reference
-        return 28;
+        return INSTANCE_SIZE;
     }
 
     static final String TIME_PATTERN = "(?:(?:(?<longHour>[0-9]{1,2})(?::(?<longMinute>[0-9]{1,2})"

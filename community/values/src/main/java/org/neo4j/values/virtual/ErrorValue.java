@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-
 import java.util.Comparator;
 
 import org.neo4j.exceptions.InvalidArgumentException;
@@ -30,12 +29,17 @@ import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+
 /**
  * The ErrorValue allow delaying errors in value creation until runtime, which is useful
  * if it turns out that the value is never used.
  */
 public final class ErrorValue extends VirtualValue
 {
+    private static final long INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE = shallowSizeOfInstance( InvalidArgumentException.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ErrorValue.class ) + INVALID_ARGUMENT_EXCEPTION_SHALLOW_SIZE;
     private final InvalidArgumentException e;
 
     ErrorValue( Exception e )
@@ -92,9 +96,8 @@ public final class ErrorValue extends VirtualValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //Rough estimate, or really just guess work.
-        return 100;
+        return SHALLOW_SIZE + sizeOf( e.getMessage() ); // We ignore stacktrace for now, ideally we should get rid of this whole class
     }
 }

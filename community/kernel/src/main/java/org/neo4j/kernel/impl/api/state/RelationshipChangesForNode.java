@@ -50,6 +50,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 public class RelationshipChangesForNode
 {
     private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RelationshipChangesForNode.class );
+
     /**
      * Allows this data structure to work both for tracking removals and additions.
      */

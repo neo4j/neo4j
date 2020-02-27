@@ -24,8 +24,14 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
+import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+
+public class TimeArray extends TemporalArray<OffsetTime>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( TimeArray.class );
+
     private final OffsetTime[] value;
 
     TimeArray( OffsetTime[] value )
@@ -83,10 +89,8 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        //Rough estimate OffsetTime can be a lot bigger but a lot of the internals are cached/reused
-        //on average this is approximately what it was measured to use.
-        return 50;
+        return SHALLOW_SIZE + sizeOfObjectArray( OFFSET_TIME_SIZE, value.length );
     }
 }

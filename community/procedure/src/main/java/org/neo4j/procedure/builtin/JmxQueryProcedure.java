@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -47,9 +46,9 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -155,8 +154,10 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 throw e;
             }
         }
-        return VirtualValues.map( new String[]{"description", "value"},
-                new AnyValue[]{stringValue( attribute.getDescription() ), value} );
+        MapValueBuilder builder = new MapValueBuilder( 2 );
+        builder.add( "description", stringValue( attribute.getDescription() ) );
+        builder.add( "value", value );
+        return builder.build();
     }
 
     private AnyValue toNeo4jValue( Object attributeValue )
@@ -211,7 +212,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 
     private ListValue toNeo4jValue( Object[] array )
     {
-        return VirtualValues.fromList( Arrays.stream(array).map( this::toNeo4jValue ).collect( Collectors.toList() ) );
+        return Arrays.stream(array).map( this::toNeo4jValue ).collect( ListValueBuilder.collector() );
     }
 
     private MapValue toNeo4jValue( CompositeData composite )

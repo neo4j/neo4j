@@ -22,13 +22,12 @@ package org.neo4j.values.storable;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
 public final class ShortValue extends IntegralValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ShortValue.class );
+
     private final short value;
 
     ShortValue( short value )
@@ -84,8 +83,8 @@ public final class ShortValue extends IntegralValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Short.BYTES;
+        return SHALLOW_SIZE;
     }
 }

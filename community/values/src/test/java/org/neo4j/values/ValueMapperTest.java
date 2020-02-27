@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -38,7 +39,6 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -71,7 +71,6 @@ import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.fromList;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -151,13 +150,18 @@ class ValueMapperTest
         }
         if ( obj instanceof List<?> )
         {
-            return fromList( ((List<?>) obj).stream().map( ValueMapperTest::valueOf ).collect( toList() ) );
+            return ((List<?>) obj).stream().map( ValueMapperTest::valueOf ).collect( ListValueBuilder.collector() );
         }
         if ( obj instanceof Map<?,?> )
         {
             @SuppressWarnings( "unchecked" )
             Map<String,?> map = (Map<String,?>) obj;
-            MapValueBuilder builder = new MapValueBuilder( map.size() );
+            int size = map.size();
+            if ( size == 0 )
+            {
+                return EMPTY_MAP;
+            }
+            MapValueBuilder builder = new MapValueBuilder( size );
             for ( Map.Entry<String,?> entry : map.entrySet() )
             {
                 builder.add( entry.getKey(), valueOf( entry.getValue() ) );

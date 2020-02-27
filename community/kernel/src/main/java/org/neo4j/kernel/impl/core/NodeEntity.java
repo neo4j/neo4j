@@ -65,10 +65,13 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public class NodeEntity implements Node, RelationshipFactory<Relationship>
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntity.class );
+
     private final InternalTransaction internalTransaction;
     private final long nodeId;
 

@@ -49,7 +49,6 @@ public final class CompiledEquivalenceUtils
      * @param rhs the right-hand sid to check
      * @return {@code true} if the two objects are equal otherwise {@code false}
      */
-    @SuppressWarnings( "unchecked" )
     public static boolean equals( Object lhs, Object rhs )
     {
         if ( lhs == rhs )
@@ -61,8 +60,8 @@ public final class CompiledEquivalenceUtils
             return false;
         }
 
-        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
-        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
+        AnyValue lhsValue = ValueUtils.of( lhs );
+        AnyValue rhsValue = ValueUtils.of( rhs );
 
         return lhsValue.equals( rhsValue );
     }

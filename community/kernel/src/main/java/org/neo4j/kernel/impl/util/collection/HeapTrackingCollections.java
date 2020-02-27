@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.kernel.impl.util.diffsets.RemovalsCountingDiffSets;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
 
 public final class HeapTrackingCollections
 {
@@ -76,5 +77,10 @@ public final class HeapTrackingCollections
     public static <T> MutableDiffSets<T> newMutableDiffSets( MemoryTracker memoryTracker )
     {
         return MutableDiffSetsImpl.newMutableDiffSets( memoryTracker );
+    }
+
+    static HeapTrackingLongObjectHashMap<Value> newValuesMap( MemoryTracker memoryTracker )
+    {
+        return HeapTrackingValuesMap.createValuesMap( memoryTracker );
     }
 }

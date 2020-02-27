@@ -24,8 +24,13 @@ import java.util.Arrays;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+
 public class DurationArray extends NonPrimitiveArray<DurationValue>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DurationArray.class );
+
     private final DurationValue[] value;
 
     DurationArray( DurationValue[] value )
@@ -94,9 +99,8 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        //4 bytes for the pointer + the size of the payload
-        return 4 + 48;
+        return SHALLOW_SIZE + sizeOfObjectArray( DurationValue.SHALLOW_SIZE, value.length );
     }
 }

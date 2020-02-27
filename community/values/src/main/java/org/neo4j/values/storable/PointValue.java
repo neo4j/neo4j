@@ -36,9 +36,15 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( PointValue.class );
+    static final long SIZE_2D = SHALLOW_SIZE + sizeOf( new double[2] );
+    private static final long SIZE_3D = SHALLOW_SIZE + sizeOf( new double[3] );
+
     // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added.
     public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );
     // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added.
@@ -307,16 +313,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return "Point";
     }
 
-    /**
-     * The string representation of this object when indexed in string-only indexes, like lucene, for equality search only. This should normally only
-     * happen when points are part of composite indexes, because otherwise they are indexed in the spatial index.
-     */
-    public String toIndexableString()
-    {
-        CoordinateReferenceSystem crs = getCoordinateReferenceSystem();
-        return format( "P:%d-%d%s", crs.getTable().getTableId(), crs.getCode(), Arrays.toString( coordinate ) );
-    }
-
     @Override
     public List<Coordinate> getCoordinates()
     {
@@ -330,16 +326,15 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //assume the crs is just a static and doesn't use extra space
         if ( coordinate.length == 2 )
         {
-            return 40;
+            return SIZE_2D;
         }
         else
         {
-            return 48;
+            return SIZE_3D;
         }
     }
 

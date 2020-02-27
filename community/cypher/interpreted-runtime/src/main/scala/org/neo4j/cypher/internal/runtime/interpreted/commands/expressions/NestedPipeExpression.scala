@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.ListValueBuilder
 
 /**
  * Expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
@@ -45,11 +43,11 @@ case class NestedPipeExpression(pipe: Pipe,
     val innerState = state.withInitialContext(initialContext).withDecorator(state.decorator.innerDecorator(owningPipe))
 
     val results = pipe.createResults(innerState)
-    val all = new util.ArrayList[AnyValue]()
+    val all = ListValueBuilder.newListBuilder()
     while (results.hasNext) {
       all.add(inner(results.next(), state))
     }
-    VirtualValues.fromList(all)
+    all.build()
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(NestedPipeExpression(pipe, inner.rewrite(f), availableExpressionVariables))

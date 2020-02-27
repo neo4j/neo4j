@@ -31,7 +31,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val ctx = state.newExecutionContext(executionContextFactory)
-    val relIds = relIdExpr.expressions(ctx, state).dropNoValues()
+    val relIds = relIdExpr.expressions(ctx, state)
     new DirectedRelationshipIdSeekIterator(
       ident,
       fromNode,

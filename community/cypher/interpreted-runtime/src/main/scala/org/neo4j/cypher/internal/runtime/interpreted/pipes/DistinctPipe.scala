@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.ListValueBuilder
 
 import scala.collection.mutable
 
@@ -49,7 +49,9 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
         ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
         i += 1
       }
-      val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
+      val builder = ListValueBuilder.newListBuilder(keyNames.length)
+      keyNames.foreach(name => builder.add(ctx.getByName(name)))
+      val groupingValue = builder.build()
       val added = seen.add(groupingValue)
       if (added) {
         state.memoryTracker.allocated(groupingValue, id.x)

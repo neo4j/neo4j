@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -43,13 +43,12 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValueUtils
@@ -68,6 +67,10 @@ public final class ValueUtils
     @SuppressWarnings( "unchecked" )
     public static AnyValue of( Object object )
     {
+        if ( object instanceof AnyValue )
+        {
+            return (AnyValue) object;
+        }
         Value value = Values.unsafeOf( object, true );
         if ( value != null )
         {
@@ -98,11 +101,11 @@ public final class ValueUtils
                 }
                 else if ( object instanceof List<?> )
                 {
-                    return asListValue( (List<?>) object );
+                    return asListValue( (List<Object>) object );
                 }
                 else
                 {
-                    return asListValue( (Iterable<?>) object );
+                    return asListValue( (Iterable<Object>) object );
                 }
             }
             else if ( object instanceof Map<?,?> )
@@ -111,23 +114,28 @@ public final class ValueUtils
             }
             else if ( object instanceof Iterator<?> )
             {
-                ArrayList<Object> objects = new ArrayList<>();
+                ListValueBuilder builder = ListValueBuilder.newListBuilder();
                 Iterator<?> iterator = (Iterator<?>) object;
                 while ( iterator.hasNext() )
                 {
-                    objects.add( iterator.next() );
+                    builder.add( ValueUtils.of( iterator.next() ) );
                 }
-                return asListValue( objects );
+                return builder.build();
             }
             else if ( object instanceof Object[] )
             {
                 Object[] array = (Object[]) object;
-                AnyValue[] anyValues = new AnyValue[array.length];
-                for ( int i = 0; i < array.length; i++ )
+                if ( array.length == 0 )
                 {
-                    anyValues[i] = ValueUtils.of( array[i] );
+                    return VirtualValues.EMPTY_LIST;
                 }
-                return VirtualValues.list( anyValues );
+
+                ListValueBuilder builder = ListValueBuilder.newListBuilder( array.length );
+                for ( Object o : array )
+                {
+                    builder.add( ValueUtils.of( o ) );
+                }
+                return builder.build();
             }
             else if ( object instanceof Stream<?> )
             {
@@ -136,10 +144,6 @@ public final class ValueUtils
             else if ( object instanceof Geometry )
             {
                 return asGeometryValue( (Geometry) object );
-            }
-            else if ( object instanceof VirtualNodeValue || object instanceof VirtualRelationshipValue )
-            {
-                return (AnyValue) object;
             }
             else
             {
@@ -183,22 +187,28 @@ public final class ValueUtils
 
     public static ListValue asListValue( List<?> collection )
     {
-        ArrayList<AnyValue> values = new ArrayList<>( collection.size() );
+        int size = collection.size();
+        if ( size == 0 )
+        {
+            return VirtualValues.EMPTY_LIST;
+        }
+
+        ListValueBuilder values = ListValueBuilder.newListBuilder( size );
         for ( Object o : collection )
         {
             values.add( ValueUtils.of( o ) );
         }
-        return VirtualValues.fromList( values );
+        return values.build();
     }
 
     public static ListValue asListValue( Iterable<?> collection )
     {
-        ArrayList<AnyValue> values = new ArrayList<>();
+        ListValueBuilder values = ListValueBuilder.newListBuilder();
         for ( Object o : collection )
         {
             values.add( ValueUtils.of( o ) );
         }
-        return VirtualValues.fromList( values );
+        return values.build();
     }
 
     public static AnyValue asNodeOrEdgeValue( Entity container )
@@ -226,18 +236,28 @@ public final class ValueUtils
 
     public static ListValue asListOfEdges( Relationship[] rels )
     {
-        RelationshipValue[] relValues = new RelationshipValue[rels.length];
-        for ( int i = 0; i < relValues.length; i++ )
+        if ( rels.length == 0 )
         {
-            relValues[i] = fromRelationshipEntity( rels[i] );
+            return VirtualValues.EMPTY_LIST;
         }
-        return VirtualValues.list( relValues );
+
+        ListValueBuilder relValues = ListValueBuilder.newListBuilder( rels.length );
+        for ( Relationship rel : rels )
+        {
+            relValues.add( fromRelationshipEntity( rel ) );
+        }
+        return relValues.build();
     }
 
     public static MapValue asMapValue( Map<String,?> map )
     {
-        //use a slightly bigger capacity to avoid resizing
-        MapValueBuilder builder = new MapValueBuilder( (int) (map.size() * 1.33) );
+        int size = map.size();
+        if ( size == 0 )
+        {
+            return VirtualValues.EMPTY_MAP;
+        }
+
+        MapValueBuilder builder = new MapValueBuilder( size );
         for ( Map.Entry<String,?> entry : map.entrySet() )
         {
             builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
@@ -247,7 +267,13 @@ public final class ValueUtils
 
     public static MapValue asParameterMapValue( Map<String,Object> map )
     {
-        MapValueBuilder builder = new MapValueBuilder( map.size() );
+        int size = map.size();
+        if ( size == 0 )
+        {
+            return VirtualValues.EMPTY_MAP;
+        }
+
+        MapValueBuilder builder = new MapValueBuilder( size );
         for ( Map.Entry<String,Object> entry : map.entrySet() )
         {
             try
@@ -308,6 +334,7 @@ public final class ValueUtils
         return ValueUtils.of( value );
     }
 
+    @CalledFromGeneratedCode
     public static NodeValue asNodeValue( Object object )
     {
         if ( object instanceof NodeValue )
@@ -322,6 +349,7 @@ public final class ValueUtils
                 "Cannot produce a node from " + object.getClass().getName() );
     }
 
+    @CalledFromGeneratedCode
     public static RelationshipValue asRelationshipValue( Object object )
     {
         if ( object instanceof RelationshipValue )
@@ -336,6 +364,7 @@ public final class ValueUtils
                 "Cannot produce a relationship from " + object.getClass().getName() );
     }
 
+    @CalledFromGeneratedCode
     public static LongValue asLongValue( Object object )
     {
         if ( object instanceof LongValue )
@@ -350,6 +379,7 @@ public final class ValueUtils
                 "Cannot produce a long from " + object.getClass().getName() );
     }
 
+    @CalledFromGeneratedCode
     public static DoubleValue asDoubleValue( Object object )
     {
         if ( object instanceof DoubleValue )
@@ -364,6 +394,7 @@ public final class ValueUtils
                 "Cannot produce a double from " + object.getClass().getName() );
     }
 
+    @CalledFromGeneratedCode
     public static BooleanValue asBooleanValue( Object object )
     {
         if ( object instanceof BooleanValue )
@@ -378,6 +409,7 @@ public final class ValueUtils
                 "Cannot produce a boolean from " + object.getClass().getName() );
     }
 
+    @CalledFromGeneratedCode
     public static TextValue asTextValue( Object object )
     {
         if ( object instanceof TextValue )

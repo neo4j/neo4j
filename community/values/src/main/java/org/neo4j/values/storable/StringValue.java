@@ -19,16 +19,15 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
@@ -90,8 +89,7 @@ public abstract class StringValue extends TextValue
             return VirtualValues.fromArray( Values.charArray( asString.toCharArray() ) );
         }
 
-        List<AnyValue> split = splitNonRegex( asString, separator );
-        return VirtualValues.fromList( split );
+        return splitNonRegex( asString, separator );
     }
 
     @Override
@@ -120,8 +118,7 @@ public abstract class StringValue extends TextValue
             return VirtualValues.fromArray( Values.charArray( reduced.toCharArray() ) );
         }
 
-        List<AnyValue> split = splitNonRegex( asString, separators );
-        return VirtualValues.fromList( split );
+        return splitNonRegex( asString, separators );
     }
 
     /**
@@ -131,9 +128,9 @@ public abstract class StringValue extends TextValue
      * @param delim delimiter, must not be not empty
      * @return the split string as a List of TextValues
      */
-    private static List<AnyValue> splitNonRegex( String input, String delim )
+    private static ListValue splitNonRegex( String input, String delim )
     {
-        List<AnyValue> substrings = new ArrayList<>();
+        ListValueBuilder substrings = ListValueBuilder.newListBuilder();
         int offset = 0;
         int index;
 
@@ -143,7 +140,7 @@ public abstract class StringValue extends TextValue
             offset = updateSubstringsAndOffset( substrings, offset, input, index, delim );
         }
         while ( index != -1 );
-        return substrings;
+        return substrings.build();
     }
 
     /**
@@ -153,9 +150,9 @@ public abstract class StringValue extends TextValue
      * @param delims delimiters, must not be not empty
      * @return the split string as a List of TextValues
      */
-    private static List<AnyValue> splitNonRegex( String input, List<String> delims )
+    private static ListValue splitNonRegex( String input, List<String> delims )
     {
-        List<AnyValue> substrings = new ArrayList<>();
+        ListValueBuilder substrings = ListValueBuilder.newListBuilder();
         int offset = 0;
         Pair<Integer,String> nextSubstring;
 
@@ -165,14 +162,14 @@ public abstract class StringValue extends TextValue
             offset = updateSubstringsAndOffset( substrings, offset, input, nextSubstring.first(), nextSubstring.other() );
         }
         while ( nextSubstring.first() != -1 );
-        return substrings;
+        return substrings.build();
     }
 
     /**
      * Make decisions based on whether the specified delimiter had been found or not.
      * If found, add a new substring to the collection, and return a new offset after the delimiter.
      */
-    private static int updateSubstringsAndOffset( List<AnyValue> substrings, int offset, String input, int index, String delim )
+    private static int updateSubstringsAndOffset( ListValueBuilder substrings, int offset, String input, int index, String delim )
     {
         if ( index == -1 )
         {
@@ -386,12 +383,6 @@ public abstract class StringValue extends TextValue
         String value()
         {
             return "";
-        }
-
-        @Override
-        protected long estimatedPayloadSize()
-        {
-            return 0;
         }
 
         @Override

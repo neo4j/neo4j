@@ -19,10 +19,11 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.memory.Measurable;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.NumberValue;
 
-public abstract class AnyValue
+public abstract class AnyValue implements Measurable
 {
     private int hash;
 
@@ -63,40 +64,6 @@ public abstract class AnyValue
     public abstract <T> T map( ValueMapper<T> mapper );
 
     public abstract String getTypeName();
-
-    /**
-     * Estimation of the bytes used for whatever payload the AnyValue is wrapping.
-     *<p>
-     *For example a <code>LongValue</code> wraps a long that consumes 4 bytes.
-     * @return The number of bytes the internal value consumes.
-     */
-    protected abstract long estimatedPayloadSize();
-
-    /**
-     * Gives an estimation of the heap usage in bytes for the given value.
-     * <p>
-     * The estimation assumes a 64bit JVM with 32 bit references (-XX:+UseCompressedOops) but is fairly accurate
-     * for simple values even without these assumptions. However for complicated types such as lists and maps these
-     * values are very crude estimates, typically something like <code>size * NUMBER</code> since we don't want to pay the
-     * price of (potentially recursively) iterate over the individual elements.
-     *
-     * @return an estimation of how many bytes this value consumes.
-     */
-    public long estimatedHeapUsage()
-    {
-        //Each AnyValue has a 12 bit header and stores a 4 byte int for the hash
-        return pad( 16 + estimatedPayloadSize() );
-    }
-
-    /**
-     * pads the value to nearest next multiple of 8
-     * @param value the value to pad
-     * @return the value padded to the nearest multiple of 8
-     */
-    public static long pad( long value )
-    {
-        return ((value + 7) / 8) * 8;
-    }
 
     /**
      * @return {@code true} if at least one operand is NaN and the other is a number

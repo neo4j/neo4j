@@ -24,10 +24,6 @@ import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
 public abstract class BooleanValue extends ScalarValue
 {
 
@@ -74,15 +70,8 @@ public abstract class BooleanValue extends ScalarValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
-    {
-        return 0L;
-    }
-
-    @Override
     public long estimatedHeapUsage()
     {
-        //BOOLEANS are singletons and doesn't add to heap usage
         return 0L;
     }
 
@@ -103,7 +92,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public int computeHash()
         {
-            return Boolean.hashCode( Boolean.TRUE );
+            return Boolean.hashCode( true );
         }
 
         @Override
@@ -161,7 +150,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public int computeHash()
         {
-            return Boolean.hashCode( Boolean.FALSE );
+            return Boolean.hashCode( false );
         }
 
         @Override

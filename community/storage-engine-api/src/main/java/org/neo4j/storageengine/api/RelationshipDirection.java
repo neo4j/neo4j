@@ -41,8 +41,7 @@ public enum RelationshipDirection
 {
     OUTGOING,
     INCOMING,
-    LOOP,
-    ERROR; // NOOP value for state machines et.c.
+    LOOP;
 
     public static RelationshipDirection directionOfStrict( long nodeReference, long sourceNodeReference, long targetNodeReference )
     {

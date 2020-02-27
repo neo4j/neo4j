@@ -32,8 +32,12 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class RelationshipEntityWrappingValue extends RelationshipValue
 {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntityWrappingValue.class ) + RelationshipEntity.SHALLOW_SIZE;
+
     private final Relationship relationship;
     private volatile TextValue type;
     private volatile MapValue properties;
@@ -88,10 +92,10 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
         //5 references (20) plus the relationship is assumed to use 48 bytes
-        long size = 68;
+        long size = SHALLOW_SIZE;
         if ( type != null )
         {
             size += type.estimatedHeapUsage();

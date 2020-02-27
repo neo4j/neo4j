@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Numeri
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -50,12 +51,15 @@ abstract class IdSeekIterator[T, CURSOR]
 
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
-      val maybeEntity = for {
-        id <- NumericHelper.asLongEntityId(entityIds.next())
-        entity <- operations.getByIdIfExists(id)
-      } yield entity
+      val value = entityIds.next()
+      if (value != Values.NO_VALUE) {
+        val maybeEntity = for {
+          id <- NumericHelper.asLongEntityId(value)
+          entity <- operations.getByIdIfExists(id)
+        } yield entity
 
-      if(maybeEntity.isDefined) return maybeEntity.get
+        if (maybeEntity.isDefined) return maybeEntity.get
+      }
     }
     null.asInstanceOf[T]
   }

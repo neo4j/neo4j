@@ -669,12 +669,6 @@ public final class Values
                 .toArray( Value[]::new );
     }
 
-    @Deprecated
-    public static Object asObject( Value value )
-    {
-        return value == null ? null : value.asObject();
-    }
-
     public static Object[] asObjects( Value[] propertyValues )
     {
         Object[] legacy = new Object[propertyValues.length];

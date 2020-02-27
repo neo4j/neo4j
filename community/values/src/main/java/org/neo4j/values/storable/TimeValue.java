@@ -29,7 +29,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +44,8 @@ import org.neo4j.values.virtual.MapValue;
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
@@ -52,8 +53,19 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance( TimeValue.class ) + OFFSET_TIME_SIZE;
+
     public static final TimeValue MIN_VALUE = new TimeValue( OffsetTime.MIN );
     public static final TimeValue MAX_VALUE = new TimeValue( OffsetTime.MAX );
+
+    private final OffsetTime value;
+    private final long nanosOfDayUTC;
+
+    private TimeValue( OffsetTime value )
+    {
+        this.value = value;
+        this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
+    }
 
     public static TimeValue time( OffsetTime time )
     {
@@ -182,14 +194,14 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         }
     }
 
-    static OffsetTime defaultTime( ZoneId zoneId )
+    private static OffsetTime defaultTime( ZoneId zoneId )
     {
         return OffsetTime.of( TemporalFields.hour.defaultValue, TemporalFields.minute.defaultValue,
                 TemporalFields.second.defaultValue, TemporalFields.nanosecond.defaultValue,
                 assertValidZone( () -> ZoneOffset.of( zoneId.toString() ) ) );
     }
 
-    static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
+    private static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeBuilder<>( defaultZone )
         {
@@ -270,15 +282,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         };
     }
 
-    private final OffsetTime value;
-    private final long nanosOfDayUTC;
-
-    private TimeValue( OffsetTime value )
-    {
-        this.value = value;
-        this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
-    }
-
     @Override
     int unsafeCompareTo( Value otherValue )
     {
@@ -319,12 +322,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
         return value.getOffset();
-    }
-
-    @Override
-    ZoneId getZoneId()
-    {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
     }
 
     @Override
@@ -394,10 +391,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //rough estimate
-        return 50;
+        return INSTANCE_SIZE;
     }
 
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";

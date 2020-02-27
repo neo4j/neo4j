@@ -48,6 +48,8 @@ import static java.time.Instant.ofEpochSecond;
 import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_TIME_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
@@ -57,8 +59,19 @@ import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
 public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalDateTimeValue>
 {
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance( LocalDateTimeValue.class ) + LOCAL_DATE_TIME_SIZE;
+
     public static final LocalDateTimeValue MIN_VALUE = new LocalDateTimeValue( LocalDateTime.MIN );
     public static final LocalDateTimeValue MAX_VALUE = new LocalDateTimeValue( LocalDateTime.MAX );
+
+    private final LocalDateTime value;
+    private final long epochSecondsInUTC;
+
+    private LocalDateTimeValue( LocalDateTime value )
+    {
+        this.value = value;
+        this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
+    }
 
     public static LocalDateTimeValue localDateTime( DateValue date, LocalTimeValue time )
     {
@@ -120,7 +133,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     {
         return builder( defaultZone ).selectDateTime( from );
     }
-
     public static LocalDateTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -155,12 +167,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         }
     }
 
-    static final LocalDateTime DEFAULT_LOCAL_DATE_TIME =
+    private static final LocalDateTime DEFAULT_LOCAL_DATE_TIME =
             LocalDateTime.of( TemporalFields.year.defaultValue, TemporalFields.month.defaultValue,
                     TemporalFields.day.defaultValue, TemporalFields.hour.defaultValue,
                     TemporalFields.minute.defaultValue );
 
-    static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    private static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateTimeValue.DateTimeBuilder<>( defaultZone )
         {
@@ -271,15 +283,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         };
     }
 
-    private final LocalDateTime value;
-    private final long epochSecondsInUTC;
-
-    private LocalDateTimeValue( LocalDateTime value )
-    {
-        this.value = value;
-        this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
-    }
-
     @Override
     int unsafeCompareTo( Value other )
     {
@@ -327,12 +330,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
         return defaultZone.get();
-    }
-
-    @Override
-    ZoneId getZoneId()
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
@@ -408,10 +405,9 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //8 bytes (long) + 4 bytes reference to a 72 bytes LocalDateTime
-        return 84;
+        return INSTANCE_SIZE;
     }
 
     private static final Pattern PATTERN = Pattern.compile(

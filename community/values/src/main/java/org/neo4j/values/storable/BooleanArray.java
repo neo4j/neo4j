@@ -26,9 +26,13 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 public final class BooleanArray extends ArrayValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( BooleanArray.class );
+
     private final boolean[] value;
 
     BooleanArray( boolean[] value )
@@ -142,8 +146,8 @@ public final class BooleanArray extends ArrayValue
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        return 1L;
+        return SHALLOW_SIZE + sizeOf( value );
     }
 }

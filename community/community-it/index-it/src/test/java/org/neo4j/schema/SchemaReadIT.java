@@ -32,7 +32,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.read;
-import static org.neo4j.kernel.impl.util.ValueUtils.asBooleanValue;
+import static org.neo4j.values.storable.BooleanValue.FALSE;
 
 @DbmsExtension
 class SchemaReadIT
@@ -59,7 +59,7 @@ class SchemaReadIT
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.pins() ).isZero();
 
-            tx.schemaRead().nodesCountIndexed( indexDescriptor, 0, 0, asBooleanValue( false ) );
+            tx.schemaRead().nodesCountIndexed( indexDescriptor, 0, 0, FALSE );
 
             assertThat( cursorTracer.faults() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();

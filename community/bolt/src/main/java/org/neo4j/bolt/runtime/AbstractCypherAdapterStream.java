@@ -20,9 +20,7 @@
 package org.neo4j.bolt.runtime;
 
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -35,6 +33,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
@@ -42,7 +41,6 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 public abstract class AbstractCypherAdapterStream implements BoltResult
@@ -161,7 +159,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         Iterable<Notification> notifications = queryExecution.getNotifications();
         if ( notifications.iterator().hasNext() )
         {
-            recordConsumer.addMetadata( NOTIFICATIONS, NotificationConverter.convert( notifications ) );
+            recordConsumer.addMetadata( NOTIFICATIONS, convertNotifications( notifications ) );
         }
     }
 
@@ -240,36 +238,33 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         }
     }
 
-    private static class NotificationConverter
+    private static AnyValue convertNotifications( Iterable<Notification> notifications )
     {
-        public static AnyValue convert( Iterable<Notification> notifications )
+        ListValueBuilder listValueBuilder = ListValueBuilder.newListBuilder();
+        for ( Notification notification : notifications )
         {
-            List<AnyValue> out = new ArrayList<>();
-            for ( Notification notification : notifications )
+            InputPosition pos = notification.getPosition(); // position is optional
+            boolean includePosition = !pos.equals( InputPosition.empty );
+            int size = includePosition ? 5 : 4;
+            MapValueBuilder builder = new MapValueBuilder( size );
+
+            builder.add( "code", utf8Value( notification.getCode() ) );
+            builder.add( "title", utf8Value( notification.getTitle() ) );
+            builder.add( "description", utf8Value( notification.getDescription() ) );
+            builder.add( "severity", utf8Value( notification.getSeverity().toString() ) );
+
+            if ( includePosition )
             {
-                InputPosition pos = notification.getPosition(); // position is optional
-                boolean includePosition = !pos.equals( InputPosition.empty );
-                int size = includePosition ? 5 : 4;
-                MapValueBuilder builder = new MapValueBuilder( size );
-
-                builder.add( "code", utf8Value( notification.getCode() ) );
-                builder.add( "title", utf8Value( notification.getTitle() ) );
-                builder.add( "description", utf8Value( notification.getDescription() ) );
-                builder.add( "severity", utf8Value( notification.getSeverity().toString() ) );
-
-                if ( includePosition )
-                {
-                    // only add the position if it is not empty
-                    builder.add( "position", VirtualValues.map( new String[]{"offset", "line", "column"},
-                            new AnyValue[]{
-                                    intValue( pos.getOffset() ),
-                                    intValue( pos.getLine() ),
-                                    intValue( pos.getColumn() )} ) );
-                }
-
-                out.add( builder.build() );
+                // only add the position if it is not empty
+                builder.add( "position", VirtualValues.map( new String[]{"offset", "line", "column"},
+                        new AnyValue[]{
+                                intValue( pos.getOffset() ),
+                                intValue( pos.getLine() ),
+                                intValue( pos.getColumn() )} ) );
             }
-            return VirtualValues.fromList( out );
+
+            listValueBuilder.add( builder.build() );
         }
+        return listValueBuilder.build();
     }
 }

@@ -37,6 +37,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -83,18 +84,22 @@ class TruncatedQuerySnapshot
 
     private static MapValue truncateParameters( MapValue parameters )
     {
-        String[] keys = new String[parameters.size()];
-        AnyValue[] values = new AnyValue[keys.length];
-
-        int i = 0;
-        for ( String key : parameters.keySet() )
+        int size = parameters.size();
+        if ( size == 0 )
         {
-            keys[i] = key.length() <= MAX_PARAMETER_KEY_LENGTH ? key : key.substring( 0, MAX_PARAMETER_KEY_LENGTH );
-            values[i] = parameters.get( key ).map( VALUE_TRUNCATER );
-            i++;
+            return VirtualValues.EMPTY_MAP;
         }
+        MapValueBuilder mapValueBuilder = new MapValueBuilder( size );
 
-        return VirtualValues.map( keys, values );
+        parameters.foreach( ( key, value ) ->
+        {
+            mapValueBuilder.add(
+                    key.length() <= MAX_PARAMETER_KEY_LENGTH ? key : key.substring( 0, MAX_PARAMETER_KEY_LENGTH ),
+                    value.map( VALUE_TRUNCATER )
+            );
+        } );
+
+        return mapValueBuilder.build();
     }
 
     private static final ValueTruncater VALUE_TRUNCATER = new ValueTruncater();

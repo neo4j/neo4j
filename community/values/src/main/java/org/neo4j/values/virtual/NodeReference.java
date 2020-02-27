@@ -22,9 +22,12 @@ package org.neo4j.values.virtual;
 import org.neo4j.values.AnyValueWriter;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class NodeReference extends VirtualNodeValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeReference.class );
+
     private final long id;
 
     NodeReference( long id )
@@ -57,8 +60,8 @@ public class NodeReference extends VirtualNodeValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Long.BYTES;
+        return SHALLOW_SIZE;
     }
 }

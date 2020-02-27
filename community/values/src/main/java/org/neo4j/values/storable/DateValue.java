@@ -37,21 +37,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
 {
+    private static final long INSTANCE_SIZE = shallowSizeOfInstance( DateValue.class ) + LOCAL_DATE_SIZE;
+
     public static final DateValue MIN_VALUE = new DateValue( LocalDate.MIN );
     public static final DateValue MAX_VALUE = new DateValue( LocalDate.MAX );
+
+    private final LocalDate value;
+
+    private DateValue( LocalDate value )
+    {
+        this.value = value;
+    }
 
     public static DateValue date( LocalDate value )
     {
@@ -186,16 +197,9 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         }
     }
 
-    static DateBuilder builder( Supplier<ZoneId> defaultZone )
+    private static DateBuilder builder( Supplier<ZoneId> defaultZone )
     {
         return new DateBuilder( defaultZone );
-    }
-
-    private final LocalDate value;
-
-    private DateValue( LocalDate value )
-    {
-        this.value = value;
     }
 
     @Override
@@ -239,12 +243,6 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
         throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time zone of: %s", this ) );
-    }
-
-    @Override
-    ZoneId getZoneId()
-    {
-        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
@@ -571,9 +569,8 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //8 bytes for the reference + the size of LocalDate (24)
-        return 32L;
+        return INSTANCE_SIZE;
     }
 }

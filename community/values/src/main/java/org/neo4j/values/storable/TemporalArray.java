@@ -24,7 +24,7 @@ import java.time.temporal.Temporal;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 
-public abstract class TemporalArray<T extends Temporal & Comparable<? super T>, V extends TemporalValue<T,V>> extends NonPrimitiveArray<T>
+public abstract class TemporalArray<T extends Temporal & Comparable<? super T>> extends NonPrimitiveArray<T>
 {
 
     @Override

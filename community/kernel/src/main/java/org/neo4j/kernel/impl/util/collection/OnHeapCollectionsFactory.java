@@ -50,7 +50,7 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     @Override
     public MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker )
     {
-        return HeapTrackingCollections.newLongObjectMap( memoryTracker );
+        return HeapTrackingCollections.newValuesMap( memoryTracker );
     }
 
     @Override

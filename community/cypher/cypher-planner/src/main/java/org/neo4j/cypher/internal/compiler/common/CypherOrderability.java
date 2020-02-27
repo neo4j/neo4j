@@ -116,13 +116,11 @@ public class CypherOrderability
         }
         else if ( lhs instanceof AnyValue )
         {
-            AnyValue rhsValue = (rhs instanceof AnyValue) ? (AnyValue) rhs : ValueUtils.of( rhs );
-            return AnyValues.COMPARATOR.compare( (AnyValue) lhs, rhsValue );
+            return AnyValues.COMPARATOR.compare( (AnyValue) lhs, ValueUtils.of( rhs ) );
         }
         else if ( rhs instanceof AnyValue )
         {
-            AnyValue lhsValue = ValueUtils.of( lhs );
-            return AnyValues.COMPARATOR.compare( lhsValue, (AnyValue) rhs );
+            return AnyValues.COMPARATOR.compare( ValueUtils.of( lhs ), (AnyValue) rhs );
         }
         // Compare the types
         // TODO: Test coverage for the Orderability CIP

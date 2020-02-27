@@ -26,9 +26,14 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
 public class StringArray extends TextArray
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( StringArray.class );
+
     private final String[] value;
 
     StringArray( String[] value )
@@ -134,8 +139,9 @@ public class StringArray extends TextArray
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        return value.length > 0 ? AnyValue.pad( 12 + Character.BYTES * value[0].length() ) : 0;
+        int length = value.length;
+        return SHALLOW_SIZE + (length == 0 ? 0 : sizeOfObjectArray( sizeOf( value[0] ), length ) ); // Use first element as probe
     }
 }

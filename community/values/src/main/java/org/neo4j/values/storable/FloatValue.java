@@ -22,9 +22,12 @@ package org.neo4j.values.storable;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public final class FloatValue extends FloatingPointValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( FloatValue.class );
+
     private final float value;
 
     FloatValue( float value )
@@ -80,8 +83,8 @@ public final class FloatValue extends FloatingPointValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Float.BYTES;
+        return SHALLOW_SIZE;
     }
 }

@@ -94,6 +94,7 @@ class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: 
     if (allProps != null) this
     else throw new InternalException("properties must be loadable at this instant")
 
+  override def estimatedHeapUsage(): Long = 0 // Turns out programmers are lazy too
 }
 
 object MapSupport {

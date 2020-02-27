@@ -53,6 +53,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
@@ -210,8 +211,8 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
-        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
+        AnyValue lhsValue = ValueUtils.of( lhs );
+        AnyValue rhsValue = ValueUtils.of( rhs );
 
         Equality equality = lhsValue.ternaryEquals( rhsValue );
         switch ( equality )
@@ -289,13 +290,17 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof List )
         {
-            return VirtualValues.fromList( (List<AnyValue>) (((List) anyValue).stream()
-                    .map( v -> materializeAnyResult( proxySpi, v ) ).collect( Collectors.toList() ) ) );
+            return ((List<Object>) anyValue).stream().map( v -> materializeAnyResult( proxySpi, v ) ).collect( ListValueBuilder.collector() );
         }
         else if ( anyValue instanceof Map )
         {
             Map<String,?> incoming = (Map<String,?>) anyValue;
-            MapValueBuilder builder = new MapValueBuilder( incoming.size() );
+            int size = incoming.size();
+            if ( size == 0 )
+            {
+                return VirtualValues.EMPTY_MAP;
+            }
+            MapValueBuilder builder = new MapValueBuilder( size );
             for ( Map.Entry<String,?> entry : incoming.entrySet() )
             {
                 builder.add( entry.getKey(), materializeAnyResult( proxySpi, entry.getValue() ) );
@@ -304,15 +309,15 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof PrimitiveNodeStream )
         {
-            return VirtualValues.fromList( ((PrimitiveNodeStream) anyValue).longStream()
+            return ((PrimitiveNodeStream) anyValue).longStream()
                     .mapToObj( id -> (AnyValue) ValueUtils.fromNodeEntity( proxySpi.newNodeEntity( id ) ) )
-                    .collect( Collectors.toList() ) );
+                    .collect( ListValueBuilder.collector() );
         }
         else if ( anyValue instanceof PrimitiveRelationshipStream )
         {
-            return VirtualValues.fromList( ((PrimitiveRelationshipStream) anyValue).longStream()
+            return ((PrimitiveRelationshipStream) anyValue).longStream()
                     .mapToObj( id -> (AnyValue) ValueUtils.fromRelationshipEntity( proxySpi.newRelationshipEntity( id ) ) )
-                    .collect( Collectors.toList() ) );
+                    .collect( ListValueBuilder.collector() );
         }
         else if ( anyValue instanceof LongStream )
         {
@@ -327,7 +332,7 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof IntStream )
         {
             // IntStream is only used for list of primitive booleans
-            return VirtualValues.fromList( ((IntStream) anyValue).mapToObj( i -> Values.booleanValue( i != 0 ) ).collect( Collectors.toList() ) );
+            return ((IntStream) anyValue).mapToObj( i -> Values.booleanValue( i != 0 ) ).collect( ListValueBuilder.collector() );
         }
         else if ( anyValue.getClass().isArray() )
         {
@@ -347,12 +352,12 @@ public abstract class CompiledConversionUtils
             }
             else
             {
-                AnyValue[] copy = new AnyValue[length];
+                ListValueBuilder builder = ListValueBuilder.newListBuilder( length );
                 for ( int i = 0; i < length; i++ )
                 {
-                    copy[i] = materializeAnyResult( proxySpi, Array.get( anyValue, i ) );
+                    builder.add( materializeAnyResult( proxySpi, Array.get( anyValue, i ) ) );
                 }
-                return VirtualValues.list( copy );
+                return builder.build();
             }
         }
         else
@@ -614,8 +619,7 @@ public abstract class CompiledConversionUtils
     //we are using sending values down to the store or to an index.
     public static Object makeValueNeoSafe( Object object )
     {
-        AnyValue value = object instanceof AnyValue ? ((AnyValue) object) : ValueUtils.of( object );
-        return org.neo4j.cypher.internal.runtime.makeValueNeoSafe.apply( value );
+        return org.neo4j.cypher.internal.runtime.makeValueNeoSafe.apply( ValueUtils.of( object ) );
     }
 
     @SuppressWarnings( "unchecked" )

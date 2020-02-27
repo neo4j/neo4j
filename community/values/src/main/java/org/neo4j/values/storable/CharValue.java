@@ -28,11 +28,14 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 public final class CharValue extends TextValue
 {
-    final char value;
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( CharValue.class );
+
+    private final char value;
 
     CharValue( char value )
     {
@@ -251,7 +254,7 @@ public final class CharValue extends TextValue
     @Override
     Matcher matcher( Pattern pattern )
     {
-        return pattern.matcher( "" + value ); // TODO: we should be able to do this without allocation
+        return pattern.matcher( String.valueOf( value ) );
     }
 
     @Override
@@ -267,8 +270,8 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Character.BYTES;
+        return SHALLOW_SIZE;
     }
 }

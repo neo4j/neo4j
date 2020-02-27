@@ -146,11 +146,11 @@ public abstract class PathValue extends VirtualValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
         int length = size();
         //nodes are assumed to be 32 bytes and relationships 48
-        return 4 + length * 48 + (length + 1) * 32;
+        return 4 + length * 48 + (length + 1) * 32; // TODO: Left as an exercise for the reader
     }
 
     public ListValue asList()
@@ -158,19 +158,19 @@ public abstract class PathValue extends VirtualValue
         NodeValue[] nodes = nodes();
         RelationshipValue[] relationships = relationships();
         int size = nodes.length + relationships.length;
-        AnyValue[] anyValues = new AnyValue[size];
+        ListValueBuilder builder = ListValueBuilder.newListBuilder( size );
         for ( int i = 0; i < size; i++ )
         {
             if ( i % 2 == 0 )
             {
-                anyValues[i] = nodes[i / 2];
+                builder.add( nodes[i / 2] );
             }
             else
             {
-                anyValues[i] = relationships[i / 2];
+                builder.add( relationships[i / 2] );
             }
         }
-        return VirtualValues.list( anyValues );
+        return builder.build();
     }
 
     public int size()

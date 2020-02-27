@@ -31,6 +31,7 @@ import org.neo4j.exceptions.ParameterWrongTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -323,6 +324,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static ListValue range( AnyValue startValue, AnyValue endValue )
     {
         return VirtualValues.range( asLong( startValue ), asLong( endValue ), 1L );
@@ -339,6 +341,7 @@ public final class CypherFunctions
         return VirtualValues.range( asLong( startValue ), asLong( endValue ), step );
     }
 
+    @CalledFromGeneratedCode
     public static LongValue signum( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -429,6 +432,7 @@ public final class CypherFunctions
         return access.nodeById( cursor.targetNodeReference() );
     }
 
+    @CalledFromGeneratedCode
     public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -463,6 +467,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static BooleanValue propertyExists( String key,
                                                AnyValue container,
                                                DbAccess dbAccess,
@@ -492,6 +497,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue propertyGet( String key,
                                         AnyValue container,
                                         DbAccess dbAccess,
@@ -579,6 +585,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue head( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -598,6 +605,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static ListValue tail( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -615,6 +623,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue last( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -859,6 +868,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access, NodeCursor nodeCursor )
     {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -1191,7 +1201,6 @@ public final class CypherFunctions
 
     public static ListValue asList( AnyValue collection )
     {
-        ListValue list;
         if ( collection == NO_VALUE )
         {
             return VirtualValues.EMPTY_LIST;
@@ -1210,6 +1219,7 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static TextValue asTextValue( AnyValue value )
     {
         if ( !(value instanceof TextValue) )
@@ -1346,11 +1356,10 @@ public final class CypherFunctions
 
     private static AnyValue mapAccess( MapValue container, AnyValue index )
     {
-
         return container.get( asString( index ) );
     }
 
-    static String asString( AnyValue value )
+    private static String asString( AnyValue value )
     {
         return asTextValue( value ).stringValue();
     }

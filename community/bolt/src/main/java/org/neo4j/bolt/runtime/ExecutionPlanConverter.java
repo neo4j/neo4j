@@ -19,20 +19,15 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /** Takes execution plans and converts them to the subset of types used in the Neo4j type system */
@@ -78,11 +73,11 @@ class ExecutionPlanConverter
 
     private static ListValue children( ExecutionPlanDescription plan )
     {
-        List<AnyValue> children = new LinkedList<>();
+        ListValueBuilder builder = ListValueBuilder.newListBuilder();
         for ( ExecutionPlanDescription child : plan.getChildren() )
         {
-            children.add( convert( child ) );
+            builder.add( convert( child ) );
         }
-        return VirtualValues.fromList( children );
+        return builder.build();
     }
 }

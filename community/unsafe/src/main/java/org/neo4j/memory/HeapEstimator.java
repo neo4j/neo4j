@@ -22,14 +22,20 @@ package org.neo4j.memory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
+
 import static com.sun.jna.Platform.is64Bit;
+import static java.lang.Math.max;
 
 public final class HeapEstimator
 {
@@ -57,6 +63,12 @@ public final class HeapEstimator
      * space.
      */
     public static final int OBJECT_ALIGNMENT_BYTES;
+
+    public static final long LOCAL_TIME_SIZE;
+    public static final long LOCAL_DATE_SIZE;
+    public static final long OFFSET_TIME_SIZE;
+    public static final long LOCAL_DATE_TIME_SIZE;
+    public static final long ZONED_DATE_TIME_SIZE;
 
     /**
      * Sizes of primitive classes.
@@ -111,6 +123,15 @@ public final class HeapEstimator
                             "  STRING_SIZE=%d%n", HeapEstimator.class.getName(), OBJECT_ALIGNMENT_BYTES, OBJECT_REFERENCE_BYTES, OBJECT_HEADER_BYTES,
                     ARRAY_HEADER_BYTES, LONG_SIZE, STRING_SIZE ) );
         }
+
+        // Calculate common used sizes
+        LOCAL_TIME_SIZE = shallowSizeOfInstance( LocalTime.class );
+        LOCAL_DATE_SIZE = shallowSizeOfInstance( LocalDate.class );
+        OFFSET_TIME_SIZE = shallowSizeOfInstance( OffsetTime.class ) + LOCAL_TIME_SIZE; // We ignore ZoneOffset since it's cached
+        LOCAL_DATE_TIME_SIZE = shallowSizeOfInstance( LocalDateTime.class ) + LOCAL_DATE_SIZE + LOCAL_TIME_SIZE;
+        ZONED_DATE_TIME_SIZE = shallowSizeOfInstance( ZonedDateTime.class ) +
+                LOCAL_DATE_TIME_SIZE +
+                alignObjectSize( OBJECT_HEADER_BYTES + OBJECT_REFERENCE_BYTES * 2 ); // ZoneRegion size, not accessible
     }
 
     /**
@@ -131,6 +152,12 @@ public final class HeapEstimator
             return 0;
         }
         return LONG_SIZE;
+    }
+
+    public static long sizeOfObjectArray( long elementSize, int size )
+    {
+        return alignObjectSize( (long) ARRAY_HEADER_BYTES + (long) OBJECT_REFERENCE_BYTES * size ) + // Shallow size
+                elementSize * size; // Element size
     }
 
     /**
@@ -219,15 +246,6 @@ public final class HeapEstimator
      */
     private static final int MAX_DEPTH = 1;
 
-    /**
-     * Returns the size in bytes of a Map object, including sizes of its keys and values, supplying default object size when object type is not well known. This
-     * method recurses up to {@link #MAX_DEPTH}.
-     */
-    public static long sizeOfMap( Map<?,?> map, long defSize )
-    {
-        return sizeOfMap( map, 0, defSize );
-    }
-
     private static long sizeOfMap( Map<?,?> map, int depth, long defSize )
     {
         if ( map == null )
@@ -253,15 +271,6 @@ public final class HeapEstimator
         return alignObjectSize( size );
     }
 
-    /**
-     * Returns the size in bytes of a Collection object, including sizes of its values, supplying default object size when object type is not well known. This
-     * method recurses up to {@link #MAX_DEPTH}.
-     */
-    public static long sizeOfCollection( Collection<?> collection, long defSize )
-    {
-        return sizeOfCollection( collection, 0, defSize );
-    }
-
     private static long sizeOfCollection( Collection<?> collection, int depth, long defSize )
     {
         if ( collection == null )
@@ -280,16 +289,6 @@ public final class HeapEstimator
             size += sizeOfObject( o, depth, defSize );
         }
         return alignObjectSize( size );
-    }
-
-    /**
-     * Best effort attempt to estimate the size in bytes of an undetermined object. Known types will be estimated according to their formulas, and all other
-     * object sizes will be estimated using {@link #shallowSizeOf(Object)}, or using the supplied <code>defSize</code> parameter if its value is greater than
-     * 0.
-     */
-    public static long sizeOfObject( Object o, long defSize )
-    {
-        return sizeOfObject( o, 0, defSize );
     }
 
     private static long sizeOfObject( Object o, int depth, long defSize )
@@ -435,12 +434,13 @@ public final class HeapEstimator
         // Walk type hierarchy
         for ( ; clazz != null; clazz = clazz.getSuperclass() )
         {
-            final Field[] fields = AccessController.doPrivileged( (PrivilegedAction<Field[]>) clazz::getDeclaredFields );
-            for ( Field f : fields )
+            for ( Field f : clazz.getDeclaredFields() )
             {
                 if ( !Modifier.isStatic( f.getModifiers() ) )
                 {
-                    size = adjustForField( size, f );
+                    Class<?> type = f.getType();
+                    int fieldSize = type.isPrimitive() ? PRIMITIVE_SIZES.get( type ) : OBJECT_REFERENCE_BYTES;
+                    size = max( size, UnsafeUtil.getFieldOffset( f ) + fieldSize );
                 }
             }
         }
@@ -467,20 +467,5 @@ public final class HeapEstimator
             }
         }
         return alignObjectSize( size );
-    }
-
-    /**
-     * This method returns the maximum representation size of an object. <code>sizeSoFar</code> is the object's size measured so far. <code>f</code> is the
-     * field being probed.
-     *
-     * <p>The returned offset will be the maximum of whatever was measured so far and
-     * <code>f</code> field's offset and representation size (unaligned).
-     */
-    static long adjustForField( long sizeSoFar, final Field f )
-    {
-        final Class<?> type = f.getType();
-        final int fsize = type.isPrimitive() ? PRIMITIVE_SIZES.get( type ) : OBJECT_REFERENCE_BYTES;
-        // TODO: No alignments based on field type/ subclass fields alignments?
-        return sizeSoFar + fsize;
     }
 }

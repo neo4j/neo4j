@@ -22,9 +22,12 @@ package org.neo4j.values.storable;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public final class LongValue extends IntegralValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongValue.class );
+
     private final long value;
 
     LongValue( long value )
@@ -80,8 +83,8 @@ public final class LongValue extends IntegralValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        return Long.BYTES;
+        return SHALLOW_SIZE;
     }
 }

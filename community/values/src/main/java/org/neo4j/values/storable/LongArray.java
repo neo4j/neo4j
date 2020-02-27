@@ -25,9 +25,13 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 public final class LongArray extends IntegralArray
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongArray.class );
+
     private final long[] value;
 
     LongArray( long[] value )
@@ -146,8 +150,8 @@ public final class LongArray extends IntegralArray
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        return Long.BYTES;
+        return SHALLOW_SIZE + sizeOf( value );
     }
 }

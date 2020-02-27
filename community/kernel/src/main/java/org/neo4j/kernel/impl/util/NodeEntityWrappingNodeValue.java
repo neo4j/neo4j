@@ -33,8 +33,12 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class NodeEntityWrappingNodeValue extends NodeValue
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntityWrappingNodeValue.class ) + NodeEntity.SHALLOW_SIZE;
+
     private final Node node;
     private volatile TextArray labels;
     private volatile MapValue properties;
@@ -139,10 +143,9 @@ public class NodeEntityWrappingNodeValue extends NodeValue
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //3 reference pointers, and the Node is assumed 32 bytes
-        long size = 44;
+        long size = SHALLOW_SIZE;
         if ( labels != null )
         {
             size += labels.estimatedHeapUsage();

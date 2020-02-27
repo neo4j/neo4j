@@ -55,6 +55,7 @@ import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 import static org.neo4j.values.utils.TemporalUtil.AVG_NANOS_PER_MONTH;
@@ -69,8 +70,47 @@ import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
  */
 public final class DurationValue extends ScalarValue implements TemporalAmount, Comparable<DurationValue>
 {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance( DurationValue.class );
+
     public static final DurationValue MIN_VALUE = duration( 0, 0, Long.MIN_VALUE, 0 );
     public static final DurationValue MAX_VALUE = duration( 0, 0, Long.MAX_VALUE, 999_999_999 );
+
+    public static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
+    private static final List<TemporalUnit> UNITS = List.of( MONTHS, DAYS, SECONDS, NANOS );
+    // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
+    private static final Comparator<DurationValue> COMPARATOR =
+            Comparator.comparingLong( DurationValue::getAverageLengthInSeconds )
+                    .thenComparingLong( d -> d.nanos ) // nanos are guaranteed to be smaller than NANOS_PER_SECOND
+                    .thenComparingLong( d -> d.months )// At this point, the durations have the same length and we compare by the individual fields.
+                    .thenComparingLong( d -> d.days )
+                    .thenComparingLong( d -> d.seconds );
+    private final long months;
+    private final long days;
+    private final long seconds;
+    private final int nanos;
+
+    private DurationValue( long months, long days, long seconds, long nanos )
+    {
+        assertNoOverflow( months, days, seconds, nanos );
+        seconds = secondsWithNanos( seconds, nanos );
+        nanos %= NANOS_PER_SECOND;
+        // normalize nanos to be between 0 and NANOS_PER_SECOND-1
+        if ( nanos < 0 )
+        {
+            seconds -= 1;
+            nanos += NANOS_PER_SECOND;
+        }
+        this.months = months;
+        this.days = days;
+        this.seconds = seconds;
+        this.nanos = (int) nanos;
+    }
+
+    private static DurationValue newDuration( long months, long days, long seconds, long nanos )
+    {
+        return seconds == 0 && days == 0 && months == 0 && nanos == 0 // ordered by probability of non-zero
+                ? ZERO : new DurationValue( months, days, seconds, nanos );
+    }
 
     public static DurationValue duration( Duration value )
     {
@@ -173,45 +213,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         };
     }
 
-    public static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
-    private static final List<TemporalUnit> UNITS = List.of( MONTHS, DAYS, SECONDS, NANOS );
-    // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
-    private static final Comparator<DurationValue> COMPARATOR =
-            Comparator.comparingLong( DurationValue::getAverageLengthInSeconds )
-                    // nanos are guaranteed to be smaller than NANOS_PER_SECOND
-                    .thenComparingLong( d -> d.nanos )
-                    // At this point, the durations have the same length and we compare by the individual fields.
-                    .thenComparingLong( d -> d.months )
-                    .thenComparingLong( d -> d.days )
-                    .thenComparingLong( d -> d.seconds );
-    private final long months;
-    private final long days;
-    private final long seconds;
-    private final int nanos;
-
-    private static DurationValue newDuration( long months, long days, long seconds, long nanos )
-    {
-        return seconds == 0 && days == 0 && months == 0 && nanos == 0 // ordered by probability of non-zero
-                ? ZERO : new DurationValue( months, days, seconds, nanos );
-    }
-
-    private DurationValue( long months, long days, long seconds, long nanos )
-    {
-        assertNoOverflow( months, days, seconds, nanos );
-        seconds = secondsWithNanos( seconds, nanos );
-        nanos %= NANOS_PER_SECOND;
-        // normalize nanos to be between 0 and NANOS_PER_SECOND-1
-        if ( nanos < 0 )
-        {
-            seconds -= 1;
-            nanos += NANOS_PER_SECOND;
-        }
-        this.months = months;
-        this.days = days;
-        this.seconds = seconds;
-        this.nanos = (int) nanos;
-    }
-
     @Override
     public int compareTo( DurationValue other )
     {
@@ -239,10 +240,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
-    protected long estimatedPayloadSize()
+    public long estimatedHeapUsage()
     {
-        //4 longs (months, days, seconds, nanos)
-        return 32L;
+        return SHALLOW_SIZE;
     }
 
     private long getAverageLengthInSeconds()

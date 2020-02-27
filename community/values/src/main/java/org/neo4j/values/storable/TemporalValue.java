@@ -49,15 +49,14 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.exceptions.ArithmeticException;
+import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.TemporalParseException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
-
-import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.exceptions.ArithmeticException;
-import org.neo4j.exceptions.TemporalParseException;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -77,9 +76,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         // (therefore the type itself is public)
     }
 
-    public abstract TemporalValue add( DurationValue duration );
+    public abstract TemporalValue<T,V> add( DurationValue duration );
 
-    public abstract TemporalValue sub( DurationValue duration );
+    public abstract TemporalValue<T,V> sub( DurationValue duration );
 
     abstract T temporal();
 
@@ -103,12 +102,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
      * @throws UnsupportedTemporalUnitException if time is not supported
      */
     abstract ZoneId getZoneId( Supplier<ZoneId> defaultZone );
-
-    /**
-     * @return the zone id, if this temporal has a timezone.
-     * @throws UnsupportedTemporalUnitException if this does not have a timezone
-     */
-    abstract ZoneId getZoneId();
 
     /**
      * @return the zone offset, if this temporal has a zone offset.
@@ -1395,7 +1388,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         throw new UnsupportedOperationException( "Cannot convert to ZoneId: " + timezone );
     }
 
-    static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+    private static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
     {
         long ms = safeCastIntegral( "millisecond", millisecond, TemporalFields.millisecond.defaultValue );
         long us = safeCastIntegral( "microsecond", microsecond, TemporalFields.microsecond.defaultValue );

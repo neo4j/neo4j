@@ -110,13 +110,4 @@ public abstract class ArrayValue extends Value implements SequenceValue
     {
         return true;
     }
-
-    @Override
-    protected long estimatedPayloadSize()
-    {
-        // 16 (array header) + 4 (length field) + 4 bytes (reference to array object)
-        return 24 + length() * sizePerItem();
-    }
-
-    abstract long sizePerItem();
 }

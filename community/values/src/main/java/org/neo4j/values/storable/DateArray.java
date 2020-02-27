@@ -24,8 +24,14 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public final class DateArray extends TemporalArray<LocalDate,DateValue>
+import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+
+public final class DateArray extends TemporalArray<LocalDate>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DateArray.class );
+
     private final LocalDate[] value;
 
     DateArray( LocalDate[] value )
@@ -83,9 +89,8 @@ public final class DateArray extends TemporalArray<LocalDate,DateValue>
     }
 
     @Override
-    long sizePerItem()
+    public long estimatedHeapUsage()
     {
-        //4 bytes for the pointer + the size of the payload
-        return 4 + 24;
+        return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_DATE_SIZE, value.length );
     }
 }

@@ -199,18 +199,6 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
         return type.hashCode() & schema().hashCode();
     }
 
-    private String escapeLabelOrRelTyp( String name )
-    {
-        if ( name.contains( ":" ) )
-        {
-            return "`" + name + "`";
-        }
-        else
-        {
-            return name;
-        }
-    }
-
     @Override
     public long getId()
     {
