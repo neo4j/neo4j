@@ -5,14 +5,14 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.0.2-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>neo4j-exceptions</artifactId>
     <packaging>jar</packaging>
-    <version>4.0.1-SNAPSHOT</version>
+    <version>4.0.2-SNAPSHOT</version>
     <name>Neo4j - Exceptions</name>
 
     <description>Neo4j exceptions</description>

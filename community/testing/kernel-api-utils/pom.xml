@@ -25,11 +25,11 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>testing-parent</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>kernel-api-test-utils</artifactId>
-    <version>4.0.1-SNAPSHOT</version>
+    <version>4.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
