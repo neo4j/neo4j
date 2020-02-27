@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -51,7 +52,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union single node variable") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(Math.sqrt(sizeHint).toInt) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -69,7 +70,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union node and non-node variable") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(sizeHint / 2) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -92,7 +93,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union node and relationship variables") {
     // given
-    val (_, rels) = circleGraph(sizeHint)
+    val (_, rels) = given { circleGraph(sizeHint / 2) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -114,8 +115,9 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union nodes with other values") {
+    val size = sizeHint / 2
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -126,7 +128,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val random = RandomValues.create()
-    val input = inputValues((0 until sizeHint).map(_ => Array[Any](random.nextValue())):_*)
+    val input = inputValues((0 until size).map(_ => Array[Any](random.nextValue())):_*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -176,26 +178,282 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union cached properties") {
-    // given
-    nodePropertyGraph(sizeHint, { case i => Map("prop" -> i)})
+    val size = sizeHint / 2
+    given { nodePropertyGraph(size, { case i => Map("prop" -> i)}) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("cache[x.prop] AS prop")
       .union()
-      .|.cacheProperties("x.prop")
+      .|.cacheProperties("cache[x.prop]")
       .|.allNodeScan("x")
-      .cacheProperties("x.prop")
+      .cacheProperties("cache[x.prop]")
       .allNodeScan("x")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("prop").withRows(singleColumn((0 until sizeHint) ++ (0 until sizeHint)))
+    runtimeResult should beColumns("prop").withRows(singleColumn((0 until size) ++ (0 until size)))
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
+  }
+
+  test("should unwind after union") {
+    val size = sizeHint / 2
+    // given
+    val nodes = given {
+      nodeGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "n")
+      .unwind("[1, 2, 3, 4, 5] AS n")
+      .union()
+      .|.allNodeScan("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val random = RandomValues.create()
+    val inputVals = (0 until size).map(_ => random.nextValue())
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = for {
+      x <- nodes ++ inputVals
+      n <- Seq(1, 2, 3, 4, 5)
+    } yield Array(x, n)
+
+    runtimeResult should beColumns("x", "n").withRows(expected)
+  }
+
+  test("should distinct after union") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .distinct("res AS res")
+      .union()
+      .|.projection("y AS res")
+      .|.unwind("[1, 2, 3, 4, 2, 5, 6, 7, 1] AS y")
+      .|.argument()
+      .projection("x AS res")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      res <- nodes ++ Seq(1, 2, 3, 4, 5, 6, 7)
+    } yield Array(res)
+
+    runtimeResult should beColumns("res").withRows(expected)
+  }
+
+
+  test("should work with limit on RHS") {
+    val size = sizeHint / 2
+    given { nodeGraph(size)}
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.limit(1)
+      .|.allNodeScan("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val random = RandomValues.create()
+    val inputVals = (0 until size).map(_ => random.nextValue())
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(size + 1))
+  }
+
+  test("should work with limit on LHS") {
+    val size = sizeHint / 2
+    given { nodeGraph(size)}
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.allNodeScan("x")
+      .limit(1)
+      .input(variables = Seq("x"))
+      .build()
+
+    val random = RandomValues.create()
+    val inputVals = (0 until size).map(_ => random.nextValue())
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(size + 1))
+  }
+
+  test("should work with limit on top") {
+    val size = sizeHint / 2
+    // given
+    val nodes = given {
+      nodeGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(1)
+      .union()
+      .|.allNodeScan("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val random = RandomValues.create()
+    val inputVals = (0 until size).map(_ => random.nextValue())
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(1))
+  }
+
+  test("should union under apply") {
+    val size = Math.sqrt(sizeHint).toInt
+    // given
+    val nodes = given {
+      nodeGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res2")
+      .apply()
+      .|.projection("res AS res2")
+      .|.union()
+      .|.|.projection("x AS res")
+      .|.|.argument("x")
+      .|.projection("y AS res")
+      .|.allNodeScan("y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val random = RandomValues.create()
+    val inputVals = (0 until size).map(_ => random.nextValue())
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = for {
+      x <- inputVals
+      res <- x +: nodes
+    } yield Array(res)
+
+    runtimeResult should beColumns("res2").withRows(expected)
+  }
+
+  test("should union under apply with long slot aliases") {
+    val size = Math.sqrt(sizeHint).toInt
+    // given
+    val nodes = given {
+      nodeGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res2")
+      .apply()
+      .|.projection("res AS res2")
+      .|.union()
+      .|.|.projection("x AS res")
+      .|.|.argument("x")
+      .|.projection("x AS res")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      node <- nodes
+      res2 <- Seq(node, node)
+    } yield Array(res2)
+
+    runtimeResult should beColumns("res2").withRows(expected)
+  }
+
+  test("should union under apply with follow-up operator") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .apply()
+      .|.distinct("res AS res")
+      .|.union()
+      .|.|.projection("y AS res")
+      .|.|.unwind("[1, 2, 3, 4, 2, 5, 6, 7, 1] AS y")
+      .|.|.argument()
+      .|.projection("x AS res")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      x <- nodes
+      res <- x +: Seq(1, 2, 3, 4, 5, 6, 7)
+    } yield Array(res)
+
+    runtimeResult should beColumns("res").withRows(expected)
+  }
+
+  test("should union under cartesian product with follow-up operator") {
+    val size = 5 // Math.sqrt(sizeHint).toInt
+    // given
+    val nodes = given {
+      nodeGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "res")
+      .cartesianProduct()
+      .|.distinct("res AS res")
+      .|.union()
+      .|.|.projection("y AS res")
+      .|.|.unwind("[1, 2, 3, 4, 2, 5, 6, 7, 1] AS y")
+      .|.|.argument()
+      .|.projection("n AS res")
+      .|.allNodeScan("n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      x <- nodes
+      res <- nodes ++ Seq(1, 2, 3, 4, 5, 6, 7)
+    } yield Array(x, res)
+
+    runtimeResult should beColumns("x", "res").withRows(expected)
   }
 
   test("should union with alias on RHS") {
@@ -247,4 +505,119 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes.map(n => Array(n, 1)) ++ nodes.map(n => Array(n, 2))
     runtimeResult should beColumns("a", "x").withRows(expected)
   }
+
+  test("union with apply on RHS") {
+    val size = sizeHint / 2
+    // given
+    val nodes = given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.apply()
+      .|.|.projection("y AS x")
+      .|.|.argument("y")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      node <- nodes
+      x <- Seq(node, node)
+    } yield Array(x)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("union with apply on LHS") {
+    val size = sizeHint / 2
+    // given
+    val nodes = given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.allNodeScan("x")
+      .apply()
+      .|.projection("y AS x")
+      .|.argument("y")
+      .allNodeScan("y")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      node <- nodes
+      x <- Seq(node, node)
+    } yield Array(x)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+    test("should union on the RHS of a hash join") {
+      val size = sizeHint / 3
+      // given
+      val (as, bs) = given {
+        val as = nodeGraph(size, "A")
+        val bs = nodeGraph(size, "B")
+        nodeGraph(size, "C")
+        (as, bs)
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .nodeHashJoin("x")
+        .|.union()
+        .|.|.nodeByLabelScan("x", "B")
+        .|.nodeByLabelScan("x", "A")
+        .allNodeScan("x")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = for {
+        x <- as ++ bs
+      } yield Array(x)
+
+      runtimeResult should beColumns("x").withRows(expected)
+    }
+
+    test("should union with reducers") {
+      val size = sizeHint / 3
+      // given
+      val (as, bs) = given {
+        val as = nodeGraph(size, "A")
+        val bs = nodeGraph(size, "B")
+        nodeGraph(size, "C")
+        (as, bs)
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .sort(Seq(Ascending("x")))
+        .union()
+        .|.sort(Seq(Ascending("x")))
+        .|.nodeByLabelScan("x", "B")
+        .sort(Seq(Ascending("x")))
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = for {
+        x <- (as ++ bs).sortBy(_.getId)
+      } yield Array(x)
+
+      runtimeResult should beColumns("x").withRows(inOrder(expected))
+    }
 }
