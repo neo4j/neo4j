@@ -924,6 +924,27 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe numberOfChunks * size // all node scan b
     result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan a
   }
+
+  test("should profile rows of union") {
+    val size = Math.sqrt(sizeHint).toInt
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .union()
+      .|.allNodeScan("a")
+      .allNodeScan("a")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * 2 // union
+    result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe size // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan
+  }
 }
 
 trait ProcedureCallRowsTestBase[CONTEXT <: RuntimeContext] {

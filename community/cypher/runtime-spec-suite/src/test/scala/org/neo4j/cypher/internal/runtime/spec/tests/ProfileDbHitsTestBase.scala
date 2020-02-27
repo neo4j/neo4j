@@ -454,6 +454,29 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // skip
     queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1))  //allNodesScan
   }
+
+  test("should profile dbHits of union") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .union()
+      .|.allNodeScan("a")
+      .allNodeScan("a")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // union
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (size) or be (size + 1)) // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan
+  }
 }
 
 trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
