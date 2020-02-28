@@ -26,9 +26,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class StageTest
 {
@@ -105,7 +107,7 @@ class StageTest
         ReceiveOrderAssertingStep( StageControl control, String name, Configuration config,
                 long processingTime, boolean endOfLine )
         {
-            super( control, name, config, 1 );
+            super( control, name, config, 1, NULL );
             this.processingTime = processingTime;
             this.endOfLine = endOfLine;
         }
@@ -118,7 +120,7 @@ class StageTest
         }
 
         @Override
-        protected void process( Object batch, BatchSender sender )
+        protected void process( Object batch, BatchSender sender, PageCursorTracer cursorTracer )
         {
             try
             {

@@ -23,12 +23,14 @@ import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -36,21 +38,24 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord[]>
 {
+    private static final String SET_FIRST_GROUP_STEP_TAG = "setFirstGroupStep";
     private final int batchSize;
     private final ByteArray cache;
     private final NodeStore nodeStore;
     private final PageCursor nodeCursor;
+    private final PageCursorTracer cursorTracer;
 
     private NodeRecord[] current;
     private int cursor;
 
-    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache )
+    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache, PageCacheTracer pageCacheTracer )
     {
-        super( control, "FIRST", config, 1 );
+        super( control, "FIRST", config, 1, pageCacheTracer );
         this.cache = cache;
         this.batchSize = config.batchSize();
         this.nodeStore = nodeStore;
-        this.nodeCursor = nodeStore.openPageCursorForReading( 0, TRACER_SUPPLIER.get() );
+        this.cursorTracer = pageCacheTracer.createPageCursorTracer( SET_FIRST_GROUP_STEP_TAG );
+        this.nodeCursor = nodeStore.openPageCursorForReading( 0, cursorTracer );
         newBatch();
     }
 
@@ -67,7 +72,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
     {
         for ( RelationshipGroupRecord group : batch )
         {
@@ -108,7 +113,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     @Override
     public void close() throws Exception
     {
-        nodeCursor.close();
+        IOUtils.closeAll( nodeCursor, cursorTracer );
         super.close();
     }
 }

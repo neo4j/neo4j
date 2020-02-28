@@ -130,7 +130,7 @@ class BatchingNeoStoresTest
             {
                 RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
                 try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
-                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
+                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
                 {
                     store.createNew();
                 }
@@ -154,7 +154,7 @@ class BatchingNeoStoresTest
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
-              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler ) )
+              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL ) )
         {
             store.createNew();
 

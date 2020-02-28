@@ -23,6 +23,7 @@ import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -35,10 +36,11 @@ public class RelationshipGroupStage extends Stage
 {
     public static final String NAME = "RelationshipGroup";
 
-    RelationshipGroupStage( String topic, Configuration config, RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
+    RelationshipGroupStage( String topic, Configuration config, RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache,
+            PageCacheTracer pageCacheTracer )
     {
         super( NAME, topic, config, Step.RECYCLE_BATCHES );
-        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence() ) );
+        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache, pageCacheTracer ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence(), pageCacheTracer ) );
     }
 }

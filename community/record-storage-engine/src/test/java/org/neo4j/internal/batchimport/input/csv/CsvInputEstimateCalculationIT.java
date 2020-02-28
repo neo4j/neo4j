@@ -127,7 +127,7 @@ class CsvInputEstimateCalculationIT
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT, NullLogService.getInstance(),
+            new ParallelBatchImporter( databaseLayout, fs, null, PageCacheTracer.NULL, Configuration.DEFAULT, NullLogService.getInstance(),
                     invisible(), EMPTY, config, format, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     EmptyLogFilesInitializer.INSTANCE ).doImport( input );
 

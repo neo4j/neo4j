@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.function.LongConsumer;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdRangeIterator;
 import org.neo4j.internal.id.IdSequence;
@@ -33,14 +32,13 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
  * It makes use of {@link IdSequence#nextIdBatch(int, PageCursorTracer)} (with default batch size the number of records per page)
- * and caches that batch, exhausting it in {@link #next()} before getting next batch.
+ * and caches that batch, exhausting it in {@link #nextId(PageCursorTracer)} before getting next batch.
  */
-public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements IdSequence
+public class BatchingIdGetter implements IdSequence
 {
     private final IdSequence source;
     private IdRangeIterator batch;
@@ -55,12 +53,6 @@ public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitive
     {
         this.source = source;
         this.batchSize = batchSize;
-    }
-
-    @Override
-    protected boolean fetchNext()
-    {
-        return next( nextId( TRACER_SUPPLIER.get() ) );
     }
 
     @Override
@@ -86,12 +78,12 @@ public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitive
         throw new UnsupportedOperationException();
     }
 
-    void visitUnused( LongConsumer visitor )
+    void visitUnused( LongConsumer visitor, PageCursorTracer cursorTracer )
     {
         if ( batch != null )
         {
             long unusedId;
-            while ( (unusedId = batch.nextId( TRACER_SUPPLIER.get() )) != VALUE_REPRESENTING_NULL )
+            while ( (unusedId = batch.nextId( cursorTracer )) != VALUE_REPRESENTING_NULL )
             {
                 visitor.accept( unusedId );
             }

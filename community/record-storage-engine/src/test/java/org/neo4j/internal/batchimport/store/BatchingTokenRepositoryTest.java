@@ -126,24 +126,23 @@ class BatchingTokenRepositoryTest
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
             int tokensPerRound = 4;
-            try ( BatchingPropertyKeyTokenRepository repo = new BatchingPropertyKeyTokenRepository( tokenStore ) )
+            BatchingPropertyKeyTokenRepository repo = new BatchingPropertyKeyTokenRepository( tokenStore );
+            // when first creating some tokens
+            int expectedId = 0;
+            int tokenNameAsInt = 0;
+            for ( int round = 0; round < rounds; round++ )
             {
-                // when first creating some tokens
-                int expectedId = 0;
-                int tokenNameAsInt = 0;
-                for ( int round = 0; round < rounds; round++ )
+                for ( int i = 0; i < tokensPerRound; i++ )
                 {
-                    for ( int i = 0; i < tokensPerRound; i++ )
-                    {
-                        int tokenId = repo.getOrCreateId( String.valueOf( tokenNameAsInt++ ) );
-                        assertEquals( expectedId + i, tokenId );
-                    }
-                    assertEquals( expectedId, tokenStore.getHighId() );
-                    repo.flush();
-                    assertEquals( expectedId + tokensPerRound, tokenStore.getHighId() );
-                    expectedId += tokensPerRound;
+                    int tokenId = repo.getOrCreateId( String.valueOf( tokenNameAsInt++ ) );
+                    assertEquals( expectedId + i, tokenId );
                 }
+                assertEquals( expectedId, tokenStore.getHighId() );
+                repo.flush( NULL );
+                assertEquals( expectedId + tokensPerRound, tokenStore.getHighId() );
+                expectedId += tokensPerRound;
             }
+            repo.flush( NULL );
 
             List<NamedToken> tokens = tokenStore.getTokens( NULL );
             assertEquals( tokensPerRound * rounds, tokens.size() );

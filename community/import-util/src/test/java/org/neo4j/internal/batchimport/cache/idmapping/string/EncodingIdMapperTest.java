@@ -38,12 +38,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
+import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -62,6 +65,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @RunWith( Parameterized.class )
 public class EncodingIdMapperTest
@@ -82,6 +86,10 @@ public class EncodingIdMapperTest
 
     private final int processors;
     private final Groups groups = new Groups();
+    @Rule
+    public final RandomRule random = new RandomRule();
+    @Rule
+    public final RepeatRule repeater = new RepeatRule();
 
     public EncodingIdMapperTest( int processors )
     {
@@ -93,13 +101,13 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
-        LongFunction<Object> inputIdLookup = String::valueOf;
+        PropertyValueLookup inputIdLookup = ( id, cursorTracer ) -> String.valueOf( id );
         int count = 300_000;
 
         // WHEN
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            idMapper.put( inputIdLookup.apply( nodeId ), nodeId, Group.GLOBAL );
+            idMapper.put( inputIdLookup.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
         }
         idMapper.prepare( inputIdLookup, mock( Collector.class ), NONE );
 
@@ -107,7 +115,7 @@ public class EncodingIdMapperTest
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
             // the UUIDs here will be generated in the same sequence as above because we reset the random
-            Object id = inputIdLookup.apply( nodeId );
+            Object id = inputIdLookup.lookupProperty( nodeId, NULL );
             if ( idMapper.get( id, Group.GLOBAL ) == IdMapper.ID_NOT_FOUND )
             {
                 fail( "Couldn't find " + id + " even though I added it just previously" );
@@ -174,7 +182,7 @@ public class EncodingIdMapperTest
         ValueGenerator values = new ValueGenerator( type.data( random.random() ) );
         for ( int nodeId = 0; nodeId < size; nodeId++ )
         {
-            mapper.put( values.apply( nodeId ), nodeId, Group.GLOBAL );
+            mapper.put( values.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
         }
         mapper.prepare( values, mock( Collector.class ), NONE );
 
@@ -191,10 +199,10 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
-        LongFunction<Object> values = values( "10", "9", "10" );
+        PropertyValueLookup values = values( "10", "9", "10" );
         for ( int i = 0; i < 3; i++ )
         {
-            mapper.put( values.apply( i ), i, Group.GLOBAL );
+            mapper.put( values.lookupProperty( i, NULL ), i, Group.GLOBAL );
         }
 
         // WHEN
@@ -214,10 +222,10 @@ public class EncodingIdMapperTest
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
         IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
-        LongFunction<Object> ids = values( "10", "9" );
+        PropertyValueLookup ids = values( "10", "9" );
         for ( int i = 0; i < 2; i++ )
         {
-            mapper.put( ids.apply( i ), i, Group.GLOBAL );
+            mapper.put( ids.lookupProperty( i, NULL ), i, Group.GLOBAL );
         }
 
         // WHEN
@@ -257,7 +265,7 @@ public class EncodingIdMapperTest
         Group groupA = groups.getOrCreate( "A" );
         Group groupB = groups.getOrCreate( "B" );
         IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
-        LongFunction<Object> ids = values( "a", "b", "c", "a", "e", "f" );
+        PropertyValueLookup ids = values( "a", "b", "c", "a", "e", "f" );
         Group[] groups = new Group[] {groupA, groupA, groupA, groupB, groupB, groupB};
 
         // a/A --> 1
@@ -270,7 +278,7 @@ public class EncodingIdMapperTest
         // WHEN
         for ( int i = 0; i < 6; i++ )
         {
-            mapper.put( ids.apply( i ), i, groups[i] );
+            mapper.put( ids.lookupProperty( i, NULL ), i, groups[i] );
         }
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, mock( ProgressListener.class ) );
@@ -293,13 +301,13 @@ public class EncodingIdMapperTest
         Group firstGroup = groups.getOrCreate( "first" );
         Group secondGroup = groups.getOrCreate( "second" );
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
-        LongFunction<Object> ids = values( "10", "9", "10" );
+        PropertyValueLookup ids = values( "10", "9", "10" );
         int id = 0;
         // group 0
-        mapper.put( ids.apply( id ), id++, firstGroup );
-        mapper.put( ids.apply( id ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
         // group 1
-        mapper.put( ids.apply( id ), id, secondGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id, secondGroup );
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, NONE );
 
@@ -320,11 +328,11 @@ public class EncodingIdMapperTest
         Group secondGroup = groups.getOrCreate( "second" );
         Group thirdGroup = groups.getOrCreate( "third" );
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
-        LongFunction<Object> ids = values( "8", "9", "10" );
+        PropertyValueLookup ids = values( "8", "9", "10" );
         int id = 0;
-        mapper.put( ids.apply( id ), id++, firstGroup );
-        mapper.put( ids.apply( id ), id++, secondGroup );
-        mapper.put( ids.apply( id ), id, thirdGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id++, secondGroup );
+        mapper.put( ids.lookupProperty( id, NULL ), id, thirdGroup );
         mapper.prepare( ids, mock( Collector.class ), NONE );
 
         // WHEN/THEN
@@ -381,7 +389,7 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
                 numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions ) );
         final AtomicReference<Group> group = new AtomicReference<>();
-        LongFunction<Object> ids = nodeId ->
+        PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
         {
             int groupId = toIntExact( nodeId / idsPerGroup );
             if ( groupId == groupCount )
@@ -408,7 +416,7 @@ public class EncodingIdMapperTest
         int count = idsPerGroup * groupCount;
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            mapper.put( ids.apply( nodeId ), nodeId, group.get() );
+            mapper.put( ids.lookupProperty( nodeId, NULL ), nodeId, group.get() );
         }
         Collector collector = mock( Collector.class );
 
@@ -418,7 +426,7 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            assertEquals( nodeId, mapper.get( ids.apply( nodeId ), group.get() ) );
+            assertEquals( nodeId, mapper.get( ids.lookupProperty( nodeId, NULL ), group.get() ) );
         }
         verifyNoMoreInteractions( collector );
         assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
@@ -522,7 +530,7 @@ public class EncodingIdMapperTest
         AtomicLong highNodeId = new AtomicLong();
         int batchSize = 1234;
         Race race = new Race();
-        LongFunction<Object> inputIdLookup = String::valueOf;
+        PropertyValueLookup inputIdLookup = ( id, cursorTracer ) -> String.valueOf( id );
         int countPerThread = 30_000;
         race.addContestants( processors, () ->
         {
@@ -538,7 +546,7 @@ public class EncodingIdMapperTest
                 long nodeId = nextNodeId++;
                 cursor++;
 
-                idMapper.put( inputIdLookup.apply( nodeId ), nodeId, Group.GLOBAL );
+                idMapper.put( inputIdLookup.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
             }
         } );
 
@@ -552,7 +560,7 @@ public class EncodingIdMapperTest
         int correctHits = 0;
         for ( long nodeId = 0; nodeId < countWithGapsWorstCase; nodeId++ )
         {
-            long result = idMapper.get( inputIdLookup.apply( nodeId ), Group.GLOBAL );
+            long result = idMapper.get( inputIdLookup.lookupProperty( nodeId, NULL ), Group.GLOBAL );
             if ( result != -1 )
             {
                 assertEquals( nodeId, result );
@@ -562,9 +570,9 @@ public class EncodingIdMapperTest
         assertEquals( count, correctHits );
     }
 
-    private LongFunction<Object> values( Object... values )
+    private PropertyValueLookup values( Object... values )
     {
-        return value -> values[toIntExact( value )];
+        return ( value, cursor ) -> values[toIntExact( value )];
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
@@ -581,7 +589,7 @@ public class EncodingIdMapperTest
             LongFunction<CollisionValues> collisionValuesFactory )
     {
         return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
-                collisionValuesFactory, 1_000, processors, comparator );
+                collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL );
     }
 
     private LongFunction<CollisionValues> autoDetect( Encoder encoder )
@@ -597,7 +605,7 @@ public class EncodingIdMapperTest
                     ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
                     : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
 
-    private class ValueGenerator implements LongFunction<Object>
+    private static class ValueGenerator implements PropertyValueLookup
     {
         private final Factory<Object> generator;
         private final List<Object> values = new ArrayList<>();
@@ -609,7 +617,7 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public Object apply( long nodeId )
+        public Object lookupProperty( long nodeId, PageCursorTracer cursorTracer )
         {
             while ( true )
             {
@@ -667,7 +675,7 @@ public class EncodingIdMapperTest
         },
         VERY_LONG_STRINGS
         {
-            char[] CHARS = "½!\"#¤%&/()=?`´;:,._-<>".toCharArray();
+            final char[] CHARS = "½!\"#¤%&/()=?`´;:,._-<>".toCharArray();
 
             @Override
             Encoder encoder()
@@ -736,11 +744,6 @@ public class EncodingIdMapperTest
 
         abstract Factory<Object> data( Random random );
     }
-
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final RepeatRule repeater = new RepeatRule();
 
     private static class CountingCollector implements Collector
     {

@@ -52,7 +52,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -262,14 +261,13 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
-            Config dbConfig, JobScheduler jobScheduler )
+            Config dbConfig, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
-        final PageCacheTracer tracer = new DefaultPageCacheTracer();
-        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, tracer, jobScheduler );
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, pageCacheTracer, jobScheduler );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
-                initialIds, false, tracer::bytesWritten, tracer );
+                initialIds, false, pageCacheTracer::bytesWritten, pageCacheTracer );
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
@@ -386,9 +384,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             flushAndForce( cursorTracer );
         }
 
-        // Flush out all pending changes
-        closeAll( propertyKeyRepository, labelRepository, relationshipTypeRepository );
-
         // Close the neo store
         life.shutdown();
         closeAll( neoStores, temporaryNeoStores );
@@ -469,11 +464,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         visitor.offHeapUsage( pageCache.maxCachedPages() * pageCache.pageSize() );
     }
 
-    public PageCacheTracer getPageCacheTracer()
-    {
-        return pageCacheTracer;
-    }
-
     public PageCache getPageCache()
     {
         return pageCache;
@@ -483,15 +473,15 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         if ( propertyKeyRepository != null )
         {
-            propertyKeyRepository.flush();
+            propertyKeyRepository.flush( cursorTracer );
         }
         if ( labelRepository != null )
         {
-            labelRepository.flush();
+            labelRepository.flush( cursorTracer );
         }
         if ( relationshipTypeRepository != null )
         {
-            relationshipTypeRepository.flush();
+            relationshipTypeRepository.flush( cursorTracer );
         }
         if ( neoStores != null )
         {

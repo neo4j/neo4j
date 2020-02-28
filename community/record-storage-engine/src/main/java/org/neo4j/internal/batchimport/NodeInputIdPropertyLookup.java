@@ -19,13 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.LongFunction;
-
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -36,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  * of the input id in memory. The input ids are stored as properties on the nodes to be able to retrieve
  * them for such an event. This class can look up those input id properties for arbitrary nodes.
  */
-class NodeInputIdPropertyLookup implements LongFunction<Object>
+class NodeInputIdPropertyLookup implements PropertyValueLookup
 {
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
@@ -48,13 +46,13 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
     }
 
     @Override
-    public Object apply( long nodeId )
+    public Object lookupProperty( long nodeId, PageCursorTracer cursorTracer )
     {
-        propertyStore.getRecord( nodeId, propertyRecord, CHECK, TRACER_SUPPLIER.get() );
+        propertyStore.getRecord( nodeId, propertyRecord, CHECK, cursorTracer );
         if ( !propertyRecord.inUse() )
         {
             return null;
         }
-        return propertyRecord.iterator().next().newPropertyValue( propertyStore, TRACER_SUPPLIER.get() ).asObject();
+        return propertyRecord.iterator().next().newPropertyValue( propertyStore, cursorTracer ).asObject();
     }
 }

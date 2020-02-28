@@ -24,6 +24,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -32,27 +33,29 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
+    private static final String DELETE_DUPLICATE_IMPORT_STEP_TAG = "deleteDuplicateImportStep";
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
     private final LongIterator nodeIds;
     private final DataImporter.Monitor storeMonitor;
+    private final PageCacheTracer pageCacheTracer;
 
     private long nodesRemoved;
     private long propertiesRemoved;
 
     public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NodeStore nodeStore,
-            PropertyStore propertyStore, DataImporter.Monitor storeMonitor )
+            PropertyStore propertyStore, DataImporter.Monitor storeMonitor, PageCacheTracer pageCacheTracer )
     {
         super( control, "DEDUP", config );
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.nodeIds = nodeIds;
         this.storeMonitor = storeMonitor;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -60,8 +63,8 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        var cursorTracer = TRACER_SUPPLIER.get();
-        try ( PageCursor cursor = nodeStore.openPageCursorForReading( 0, cursorTracer );
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( DELETE_DUPLICATE_IMPORT_STEP_TAG );
+              PageCursor cursor = nodeStore.openPageCursorForReading( 0, cursorTracer );
               PageCursor propertyCursor = propertyStore.openPageCursorForReading( 0, cursorTracer ) )
         {
             while ( nodeIds.hasNext() )

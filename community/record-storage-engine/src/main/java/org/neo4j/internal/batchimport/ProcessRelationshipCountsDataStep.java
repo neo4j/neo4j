@@ -30,6 +30,8 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.lang.Math.max;
@@ -52,9 +54,9 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
             highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter )
+            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer )
     {
-        super( control, "COUNT", config, numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ) );
+        super( control, "COUNT", config, numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), pageCacheTracer );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
@@ -88,14 +90,14 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     }
 
     @Override
-    protected void process( RelationshipRecord[] batch, BatchSender sender )
+    protected void process( RelationshipRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
     {
         RelationshipCountsProcessor processor = processor();
         for ( RelationshipRecord record : batch )
         {
             if ( record.inUse() )
             {
-                processor.process( record );
+                processor.process( record, cursorTracer );
             }
         }
         progressMonitor.progress( batch.length );

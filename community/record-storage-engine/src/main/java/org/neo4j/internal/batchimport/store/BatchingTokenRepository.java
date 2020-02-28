@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,16 +38,14 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
- * to storage as part of {@link #close() closing}. Instances of this class are thread safe
+ * to storage as part of {@link #flush(PageCursorTracer) flush}. Instances of this class are thread safe
  * to call {@link #getOrCreateId(String)} methods on.
  */
-public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
-        implements ToIntFunction<Object>, Closeable
+public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implements ToIntFunction<Object>
 {
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD> store;
@@ -165,19 +162,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
         return highId;
     }
 
-    /**
-     * Closes this repository and writes all created tokens to the underlying store.
-     */
-    @Override
-    public void close()
-    {
-        flush();
-    }
-
-    public void flush()
+    public void flush( PageCursorTracer cursorTracer )
     {
         int highest = highestCreatedId;
-        var cursorTracer = TRACER_SUPPLIER.get();
         for ( Map.Entry<Integer,String> tokenToCreate : sortCreatedTokensById() )
         {
             if ( tokenToCreate.getKey() > highestCreatedId )

@@ -444,7 +444,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDirectoryStructure,
-                    fileSystem, pageCache, importConfig, logService,
+                    fileSystem, pageCache, cacheTracer, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector,
                     EmptyLogFilesInitializer.INSTANCE );

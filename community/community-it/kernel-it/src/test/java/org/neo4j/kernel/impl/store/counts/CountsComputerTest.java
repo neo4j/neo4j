@@ -385,7 +385,7 @@ class CountsComputerTest
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
                     lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
-                    progressReporter );
+                    progressReporter, PageCacheTracer.NULL );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
                 countsStore.start( NULL );

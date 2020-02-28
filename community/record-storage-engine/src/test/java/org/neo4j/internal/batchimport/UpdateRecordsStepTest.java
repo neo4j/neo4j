@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class UpdateRecordsStepTest
 {
@@ -54,14 +56,14 @@ class UpdateRecordsStepTest
 
         Configuration configuration = mock( Configuration.class );
         StageControl stageControl = mock( StageControl.class );
-        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence() );
+        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence(), PageCacheTracer.NULL );
 
         NodeRecord record = new NodeRecord( 1 );
         record.setInUse( true );
         NodeRecord[] batch = new NodeRecord[11];
         Arrays.fill( batch, record );
 
-        step.process( batch, mock( BatchSender.class ) );
+        step.process( batch, mock( BatchSender.class ), NULL );
 
         Stat stat = step.stat( Keys.io_throughput );
 
@@ -74,7 +76,7 @@ class UpdateRecordsStepTest
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store,
-                new StorePrepareIdSequence() );
+                new StorePrepareIdSequence(), PageCacheTracer.NULL );
 
         NodeRecord node1 = new NodeRecord( 1 );
         node1.setInUse( true );
@@ -83,7 +85,7 @@ class UpdateRecordsStepTest
         NodeRecord nodeWithReservedId = new NodeRecord( INTEGER_MINUS_ONE );
         NodeRecord[] batch = {node1, node2, nodeWithReservedId};
 
-        step.process( batch, mock( BatchSender.class ) );
+        step.process( batch, mock( BatchSender.class ), NULL );
 
         verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ), any( PageCursorTracer.class ) );
         verify( store ).updateRecord( eq( node1 ), any(), any() );

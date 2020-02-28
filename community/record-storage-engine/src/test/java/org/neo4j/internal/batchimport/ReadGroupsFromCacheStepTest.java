@@ -31,6 +31,8 @@ import org.neo4j.internal.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,12 +105,12 @@ class ReadGroupsFromCacheStepTest
 
         VerifierStep( StageControl control, Configuration config, AtomicInteger processCounter )
         {
-            super( control, "Verifier", config, 1 );
+            super( control, "Verifier", config, 1, PageCacheTracer.NULL );
             this.processCounter = processCounter;
         }
 
         @Override
-        protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
+        protected void process( RelationshipGroupRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
         {
             long lastOwningNode = lastBatchLastOwningNode;
             for ( RelationshipGroupRecord record : batch )

@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -60,15 +61,15 @@ class EncodeGroupsStepTest
             return null;
         } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( PageCursorTracer.class ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
-        EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store );
+        EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, PageCacheTracer.NULL );
 
         // WHEN
         encoder.start( Step.ORDER_SEND_DOWNSTREAM );
         Catcher catcher = new Catcher();
-        encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher );
-        encoder.process( batch( new Group( 4, 2 ), new Group( 5, 10 ) ), catcher );
-        encoder.process( batch( new Group( 6, 35 ) ), catcher );
-        encoder.process( batch( new Group( 7, 2 ) ), catcher );
+        encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, NULL );
+        encoder.process( batch( new Group( 4, 2 ), new Group( 5, 10 ) ), catcher, NULL );
+        encoder.process( batch( new Group( 6, 35 ) ), catcher, NULL );
+        encoder.process( batch( new Group( 7, 2 ) ), catcher, NULL );
         encoder.endOfUpstream();
         encoder.awaitCompleted();
         encoder.close();

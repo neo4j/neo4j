@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -43,13 +44,13 @@ public class SparseNodeFirstRelationshipStage extends Stage
 {
     public static final String NAME = "Node --> Relationship";
 
-    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache )
+    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache, PageCacheTracer pageCacheTracer )
     {
         super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
         add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
-        add( new ReadRecordsStep<>( control(), config, true, nodeStore ) );
+        add( new ReadRecordsStep<>( control(), config, true, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new SparseNodeFirstRelationshipProcessor( cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence() ) );
+                new SparseNodeFirstRelationshipProcessor( cache ), false, pageCacheTracer ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), pageCacheTracer ) );
     }
 }

@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class RelationshipCountsProcessorTest
 {
@@ -89,8 +90,8 @@ class RelationshipCountsProcessorTest
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
                 relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
 
-        countsProcessor.process( record( 1, 0, 3 ) );
-        countsProcessor.process( record( 2, 1, 4 ) );
+        countsProcessor.process( record( 1, 0, 3 ), NULL );
+        countsProcessor.process( record( 2, 1, 4 ), NULL );
 
         countsProcessor.done();
 
@@ -108,7 +109,7 @@ class RelationshipCountsProcessorTest
         verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1L );
     }
 
-    private class IsNonNegativeLong implements ArgumentMatcher<Long>
+    private static class IsNonNegativeLong implements ArgumentMatcher<Long>
     {
         @Override
         public boolean matches( Long argument )

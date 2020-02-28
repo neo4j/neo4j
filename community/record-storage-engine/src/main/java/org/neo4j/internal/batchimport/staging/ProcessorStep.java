@@ -26,6 +26,8 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.AsyncApply;
 
@@ -35,7 +37,7 @@ import static java.lang.System.nanoTime;
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
- * Subclasses implement {@link #process(Object, BatchSender)} receiving the batch to process
+ * Subclasses implement {@link #process(Object, BatchSender, PageCursorTracer)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
  *
  */
@@ -44,16 +46,18 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private TaskExecutor<Sender> executor;
     // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
+    private final PageCacheTracer pageCacheTracer;
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
+    protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors, PageCacheTracer pageCacheTracer,
             StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, additionalStatsProviders );
         this.maxProcessors = maxProcessors;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -73,10 +77,10 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             assertHealthy();
             sender.initialize( ticket );
-            try
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( name() ) )
             {
                 long startTime = nanoTime();
-                process( batch, sender );
+                process( batch, sender, cursorTracer );
                 if ( downstream == null )
                 {
                     // No batches were emitted so we couldn't track done batches in that way.
@@ -133,8 +137,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
      *
      * @param batch batch to process.
      * @param sender {@link BatchSender} for sending zero or more batches downstream.
+     * @param cursorTracer underlying page cursor tracer
      */
-    protected abstract void process( T batch, BatchSender sender ) throws Throwable;
+    protected abstract void process( T batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable;
 
     @Override
     public void close() throws Exception

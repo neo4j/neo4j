@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 
 import static org.neo4j.internal.batchimport.RecordIdIterator.forwards;
@@ -38,11 +39,11 @@ public class NodeDegreeCountStage extends Stage
     public static final String NAME = "Node Degrees";
 
     public NodeDegreeCountStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache,
-            StatsProvider memoryUsageStatsProvider )
+            StatsProvider memoryUsageStatsProvider, PageCacheTracer pageCacheTracer )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store ) );
+        add( new ReadRecordsStep<>( control(), config, false, store, pageCacheTracer ) );
         add( new CalculateDenseNodesStep( control(), config, cache, memoryUsageStatsProvider ) );
     }
 }

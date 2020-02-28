@@ -60,6 +60,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.LogProvider;
@@ -169,6 +170,7 @@ class CsvImporter implements Importer
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
                     fileSystem,
                     null, // no external page cache
+                    PageCacheTracer.NULL,
                     importConfig,
                     new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
                     executionMonitor,

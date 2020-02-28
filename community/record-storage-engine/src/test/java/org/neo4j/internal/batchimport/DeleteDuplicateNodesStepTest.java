@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -56,6 +55,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -109,7 +109,7 @@ class DeleteDuplicateNodesStepTest
         long[] duplicateNodeIds = randomNodes( ids );
         SimpleStageControl control = new SimpleStageControl();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                PrimitiveLongCollections.iterator( duplicateNodeIds ), neoStores.getNodeStore(), neoStores.getPropertyStore(), monitor ) )
+                iterator( duplicateNodeIds ), neoStores.getNodeStore(), neoStores.getPropertyStore(), monitor, PageCacheTracer.NULL ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );

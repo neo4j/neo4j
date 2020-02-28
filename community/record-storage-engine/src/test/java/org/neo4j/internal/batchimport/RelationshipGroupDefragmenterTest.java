@@ -35,6 +35,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
@@ -93,7 +94,7 @@ class RelationshipGroupDefragmenterTest
         this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
         stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, format, CONFIG, NullLogService.getInstance(),
-            AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
+            AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL );
         stores.createNew();
     }
 
@@ -199,7 +200,7 @@ class RelationshipGroupDefragmenterTest
     {
         RelationshipGroupDefragmenter.Monitor monitor = mock( RelationshipGroupDefragmenter.Monitor.class );
         RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
-            ExecutionMonitors.invisible(), monitor, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
+            ExecutionMonitors.invisible(), monitor, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, PageCacheTracer.NULL );
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want

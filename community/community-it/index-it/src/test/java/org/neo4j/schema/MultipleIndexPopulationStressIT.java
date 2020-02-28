@@ -59,6 +59,7 @@ import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -296,7 +297,7 @@ public class MultipleIndexPopulationStressIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             DatabaseLayout layout = Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
-            BatchImporter importer = new ParallelBatchImporter( layout, fileSystemRule.get(), null, DEFAULT,
+            BatchImporter importer = new ParallelBatchImporter( layout, fileSystemRule.get(), null, PageCacheTracer.NULL, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogsInitializer.INSTANCE );
             importer.doImport( input );

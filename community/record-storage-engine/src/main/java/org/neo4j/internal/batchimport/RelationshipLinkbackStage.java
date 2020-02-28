@@ -30,6 +30,7 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -56,13 +57,13 @@ public class RelationshipLinkbackStage extends Stage
 
     public RelationshipLinkbackStage( String topic, Configuration config, BatchingNeoStores stores,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
-            Predicate<RelationshipRecord> changeFilter, int nodeTypes, StatsProvider... additionalStatsProvider )
+            Predicate<RelationshipRecord> changeFilter, int nodeTypes, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProvider )
     {
         super( NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
         RelationshipStore store = stores.getRelationshipStore();
         add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter ), true ) );
+        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter ), true, pageCacheTracer ) );
         add( new RelationshipLinkbackStep( control(), config, cache, changeFilter, nodeTypes, additionalStatsProvider ) );
-        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ) ) );
+        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ), pageCacheTracer ) );
     }
 }

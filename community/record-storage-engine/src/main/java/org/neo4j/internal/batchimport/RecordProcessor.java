@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -30,10 +31,10 @@ public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoClose
 {
     /**
      * Processes an item.
-     *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return {@code true} if processing this item resulted in changes that should be updated back to the source.
      */
-    boolean process( T item );
+    boolean process( T item, PageCursorTracer cursorTracer );
 
     void done();
 

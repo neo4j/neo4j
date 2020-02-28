@@ -43,6 +43,7 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
@@ -162,7 +163,9 @@ public class QuickImport
             {
                 System.out.println( "Seed " + randomSeed );
                 final JobScheduler jobScheduler = life.add( createScheduler() );
-                consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.ofFlat( dir ), fileSystem, null, importConfig,
+                consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.ofFlat( dir ), fileSystem, null,
+                        PageCacheTracer.NULL,
+                        importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
                         TransactionLogsInitializer.INSTANCE );

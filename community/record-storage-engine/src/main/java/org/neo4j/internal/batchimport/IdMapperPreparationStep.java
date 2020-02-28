@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.LongFunction;
-
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
@@ -30,18 +28,18 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
- * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(LongFunction, Collector, ProgressListener)}
+ * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)}
  * under running as a normal {@link Step} so that normal execution monitoring can be applied.
  * Useful since preparing an {@link IdMapper} can take a significant amount of time.
  */
 public class IdMapperPreparationStep extends LonelyProcessingStep
 {
     private final IdMapper idMapper;
-    private final LongFunction<Object> allIds;
+    private final PropertyValueLookup allIds;
     private final Collector collector;
 
     public IdMapperPreparationStep( StageControl control, Configuration config,
-            IdMapper idMapper, LongFunction<Object> allIds, Collector collector,
+            IdMapper idMapper, PropertyValueLookup allIds, Collector collector,
             StatsProvider... additionalStatsProviders )
     {
         super( control, "" /*named later in the progress listener*/, config, additionalStatsProviders );

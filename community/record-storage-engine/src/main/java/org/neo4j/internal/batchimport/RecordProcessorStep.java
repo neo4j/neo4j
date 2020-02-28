@@ -24,6 +24,8 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -35,21 +37,21 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     private final boolean endOfLine;
 
     public RecordProcessorStep( StageControl control, String name, Configuration config,
-            RecordProcessor<T> processor, boolean endOfLine, StatsProvider... additionalStatsProviders )
+            RecordProcessor<T> processor, boolean endOfLine, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
     {
-        super( control, name, config, 1, additionalStatsProviders );
+        super( control, name, config, 1, pageCacheTracer, additionalStatsProviders );
         this.processor = processor;
         this.endOfLine = endOfLine;
     }
 
     @Override
-    protected void process( T[] batch, BatchSender sender )
+    protected void process( T[] batch, BatchSender sender, PageCursorTracer cursorTracer )
     {
         for ( T item : batch )
         {
             if ( item != null && item.inUse() )
             {
-                if ( !processor.process( item ) )
+                if ( !processor.process( item, cursorTracer ) )
                 {
                     // No change for this record
                     item.setInUse( false );

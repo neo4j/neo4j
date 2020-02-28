@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StepStats;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.io.IOUtils.closeAllSilently;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class ForkedProcessorStepTest
 {
@@ -343,10 +345,10 @@ class ForkedProcessorStepTest
                     return ticket < batches ? ticket : null;
                 }
             } );
-            add( new ProcessorStep<Long>( control(), "Yeah", config, 3 )
+            add( new ProcessorStep<Long>( control(), "Yeah", config, 3, NULL )
             {
                 @Override
-                protected void process( Long batch, BatchSender sender ) throws Throwable
+                protected void process( Long batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
                 {
                     Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
                     sender.send( batch );

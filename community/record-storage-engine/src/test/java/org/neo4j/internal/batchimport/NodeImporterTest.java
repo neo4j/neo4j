@@ -29,7 +29,6 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,6 +45,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -67,7 +67,7 @@ class NodeImporterTest
         IdMapper idMapper = mock( IdMapper.class );
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
-              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, PageCacheTracer.NULL, layout,
+              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
                       Standard.LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -75,7 +75,7 @@ class NodeImporterTest
             // when
             int numberOfLabels = 50;
             long nodeId = 0;
-            try ( NodeImporter importer = new NodeImporter( stores, idMapper, new DataImporter.Monitor() ) )
+            try ( NodeImporter importer = new NodeImporter( stores, idMapper, new DataImporter.Monitor(), NULL ) )
             {
                 importer.id( nodeId );
                 String[] labels = new String[numberOfLabels];

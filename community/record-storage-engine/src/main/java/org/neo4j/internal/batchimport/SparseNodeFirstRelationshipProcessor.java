@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 /**
@@ -37,7 +38,7 @@ public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<Nod
     }
 
     @Override
-    public boolean process( NodeRecord node )
+    public boolean process( NodeRecord node, PageCursorTracer cursorTracer )
     {
         long nodeId = node.getId();
         long firstRel = cache.getFirstRel( nodeId, NodeRelationshipCache.NO_GROUP_VISITOR );

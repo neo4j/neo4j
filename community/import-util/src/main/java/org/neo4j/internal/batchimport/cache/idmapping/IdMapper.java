@@ -21,8 +21,7 @@ package org.neo4j.internal.batchimport.cache.idmapping;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import java.util.function.LongFunction;
-
+import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -49,7 +48,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
     void put( Object inputId, long actualId, Group group );
 
     /**
-     * @return whether or not a call to {@link #prepare(LongFunction, Collector, ProgressListener)} needs to commence after all calls to
+     * @return whether or not a call to {@link #prepare(PropertyValueLookup, Collector, ProgressListener)} needs to commence after all calls to
      * {@link #put(Object, long, Group)} and before any call to {@link #get(Object, Group)}. I.e. whether or not all ids
      * needs to be put before making any call to {@link #get(Object, Group)}.
      */
@@ -58,18 +57,17 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
     /**
      * After all mappings have been {@link #put(Object, long, Group)} call this method to prepare for
      * {@link #get(Object, Group)}.
-     *
-     * @param inputIdLookup can return input id of supplied node id. Used in the event of difficult collisions
+     *  @param inputIdLookup can return input id of supplied node id. Used in the event of difficult collisions
      * so that more information have to be read from the input data again, data that normally isn't necessary
      * and hence discarded.
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
      * @param progress reports preparation progress.
      */
-    void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress );
+    void prepare( PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress );
 
     /**
      * Returns an actual node id representing {@code inputId}.
-     * For this call to work {@link #prepare(LongFunction, Collector, ProgressListener)} must have
+     * For this call to work {@link #prepare(PropertyValueLookup, Collector, ProgressListener)} must have
      * been called after all calls to {@link #put(Object, long, Group)} have been made,
      * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
      * {@link #put(Object, long, Group) being put}

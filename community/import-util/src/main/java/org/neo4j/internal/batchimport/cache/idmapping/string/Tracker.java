@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import java.util.function.LongFunction;
-
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -31,7 +29,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
  * {@link EncodingIdMapper} is an index where arbitrary ids, be it {@link String} or {@code long} or whatever
  * can be added and mapped to an internal (node) {@code long} id. The order in which ids are added can be
  * any order and so in the end when all ids have been added the index goes through a
- * {@link IdMapper#prepare(LongFunction, Collector, ProgressListener) prepare phase} where these ids are sorted
+ * {@link IdMapper#prepare(org.neo4j.internal.batchimport.PropertyValueLookup, Collector, ProgressListener) prepare phase} where these ids are sorted
  * so that {@link IdMapper#get(Object, Group)} can execute efficiently later on.
  * <p>
  * In that sorting the ids aren't moved, but instead a {@link Tracker} created where these moves are recorded

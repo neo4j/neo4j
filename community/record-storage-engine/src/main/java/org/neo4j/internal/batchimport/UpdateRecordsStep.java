@@ -33,10 +33,11 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
@@ -52,16 +53,16 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     private final LongAdder recordsUpdated = new LongAdder();
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrepareIdSequence prepareIdSequence )
+            PrepareIdSequence prepareIdSequence, PageCacheTracer pageCacheTracer )
     {
-        super( control, "v", config, config.parallelRecordWrites() ? 0 : 1 );
+        super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, pageCacheTracer );
         this.store = store;
         this.prepareIdSequence = prepareIdSequence;
         this.recordSize = store.getRecordSize();
     }
 
     @Override
-    protected void process( RECORD[] batch, BatchSender sender )
+    protected void process( RECORD[] batch, BatchSender sender, PageCursorTracer cursorTracer )
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
@@ -69,10 +70,10 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         {
             if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
-                store.prepareForCommit( record, idSequence.apply( record.getId() ), TRACER_SUPPLIER.get() );
+                store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorTracer );
                 // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                 // instead just note the highId. It will be mostly correct in the end.
-                store.updateRecord( record, IGNORE, TRACER_SUPPLIER.get() );
+                store.updateRecord( record, IGNORE, cursorTracer );
                 recordsUpdatedInThisBatch++;
             }
         }

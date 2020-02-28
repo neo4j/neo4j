@@ -17,22 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.staging;
+package org.neo4j.internal.batchimport;
 
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-
-public class DeadEndStep extends ProcessorStep<Object>
+@FunctionalInterface
+public interface PropertyValueLookup
 {
-    public DeadEndStep( StageControl control )
-    {
-        super( control, "END", Configuration.DEFAULT, 1, NULL );
-    }
-
-    @Override
-    protected void process( Object batch, BatchSender sender, PageCursorTracer cursorTracer )
-    {
-    }
+    Object lookupProperty( long nodeId, PageCursorTracer cursorTracer );
 }

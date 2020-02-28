@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.OtherThreadRule;
 
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class ProcessorStepTest
 {
@@ -144,12 +146,12 @@ class ProcessorStepTest
         BlockingProcessorStep( StageControl control, Configuration configuration,
                 int maxProcessors, CountDownLatch latch )
         {
-            super( control, "test", configuration, maxProcessors );
+            super( control, "test", configuration, maxProcessors, NULL );
             this.latch = latch;
         }
 
         @Override
-        protected void process( Void batch, BatchSender sender ) throws Throwable
+        protected void process( Void batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
         {
             latch.await();
         }
@@ -161,11 +163,11 @@ class ProcessorStepTest
 
         private MyProcessorStep( StageControl control, int maxProcessors )
         {
-            super( control, "test", Configuration.DEFAULT, maxProcessors );
+            super( control, "test", Configuration.DEFAULT, maxProcessors, NULL );
         }
 
         @Override
-        protected void process( Integer batch, BatchSender sender )
+        protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer )
         {   // No processing in this test
             nextExpected.incrementAndGet();
         }

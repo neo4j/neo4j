@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.function.LongFunction;
-
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
@@ -28,14 +26,14 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
- * Performs {@link IdMapper#prepare(LongFunction, Collector, ProgressListener)}
+ * Performs {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)}
  * embedded in a {@link Stage} as to take advantage of statistics and monitoring provided by that framework.
  */
 public class IdMapperPreparationStage extends Stage
 {
     public static final String NAME = "Prepare node index";
 
-    public IdMapperPreparationStage( Configuration config, IdMapper idMapper, LongFunction<Object> inputIdLookup,
+    public IdMapperPreparationStage( Configuration config, IdMapper idMapper, PropertyValueLookup inputIdLookup,
             Collector collector, StatsProvider memoryUsageStats )
     {
         super( NAME, null, config, 0 );

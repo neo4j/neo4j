@@ -28,12 +28,13 @@ import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.ProducerStep;
 import org.neo4j.internal.batchimport.staging.RecordDataAssembler;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.lang.System.nanoTime;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
@@ -41,21 +42,25 @@ import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSuppl
  */
 public class ReadGroupRecordsByCacheStep extends ProducerStep
 {
+    private static final String READ_RELATIONSHIP_GROUPS_STEP_TAG = "readRelationshipGroupsStep";
     private final RecordStore<RelationshipGroupRecord> store;
     private final NodeRelationshipCache cache;
+    private final PageCacheTracer pageCacheTracer;
 
     public ReadGroupRecordsByCacheStep( StageControl control, Configuration config,
-            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
+            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache, PageCacheTracer pageCacheTracer )
     {
         super( control, config );
         this.store = store;
         this.cache = cache;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
     protected void process()
     {
-        try ( NodeVisitor visitor = new NodeVisitor() )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( READ_RELATIONSHIP_GROUPS_STEP_TAG );
+              NodeVisitor visitor = new NodeVisitor( cursorTracer ) )
         {
             cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
         }
@@ -64,9 +69,15 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, NodeRelationshipCache.GroupVisitor, Supplier<RelationshipGroupRecord[]>
     {
         private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord );
+        private final PageCursorTracer cursorTracer;
         private RelationshipGroupRecord[] batch = get();
         private int cursor;
         private long time = nanoTime();
+
+        NodeVisitor( PageCursorTracer cursorTracer )
+        {
+            this.cursorTracer = cursorTracer;
+        }
 
         @Override
         public void change( long nodeId, ByteArray array )
@@ -77,7 +88,7 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         @Override
         public long visit( long nodeId, int typeId, long out, long in, long loop )
         {
-            long id = store.nextId( TRACER_SUPPLIER.get() );
+            long id = store.nextId( cursorTracer );
             RelationshipGroupRecord record = batch[cursor++];
             record.setId( id );
             record.initialize( true, typeId, out, in, loop, nodeId, loop );
