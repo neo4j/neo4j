@@ -26,40 +26,6 @@ import org.neo4j.values.storable.Values.intValue
 
 class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
-  test("should only let through the one that not matches when negated") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-
-    val rhs = pipeWithResults((state: QueryState) => {
-      val initialContext = state.initialContext.get
-      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
-    })
-
-    val result = AntiSemiApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(List(Map("a" -> 2)))
-  }
-
-  test("should let everything through if rhs is empty and negated") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-    val rhs = new FakePipe(Iterator.empty)
-
-    val result = AntiSemiApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(lhsData)
-  }
-
-  test("should let nothing through if rhs is nonEmpty and negated") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
-
-    val result = AntiSemiApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
-
-    result should be(empty)
-  }
-
   test("if lhs is empty, rhs should not be touched regardless if it is negated or not") {
     val rhs = pipeWithResults(_ => fail("should not use this"))
 
