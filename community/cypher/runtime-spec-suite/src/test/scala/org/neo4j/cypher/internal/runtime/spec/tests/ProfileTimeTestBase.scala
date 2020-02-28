@@ -78,7 +78,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .filter(s"x.prop < ${size / 4}")
+      .skip(size / 4)
       .apply()
       .|.filter("y.prop % 2 = 0")
       .|.allNodeScan("y", "x")
@@ -91,7 +91,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be > 0L // filter
+    queryProfile.operatorProfile(1).time() should be > 0L // skip
     queryProfile.operatorProfile(2).time() should be > 0L // apply -  time of the output task of the previous pipeline gets attributed here
     queryProfile.operatorProfile(3).time() should be > 0L // filter
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan

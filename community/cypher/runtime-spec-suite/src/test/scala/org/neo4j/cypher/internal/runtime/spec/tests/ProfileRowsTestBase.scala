@@ -170,6 +170,51 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() should be >= limitSize // all node scan
   }
 
+  test("should profile rows of skip") {
+    given { nodeGraph(sizeHint) }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .skip(sizeHint - 10)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 10 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 10 // skip
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // all node scan
+  }
+
+  test("should profile rows with skip + expand") {
+    given {
+      circleGraph(sizeHint * 10)
+    }
+
+    //when
+    val skipSize = sizeHint * 2L
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expand("(x)-->(y)")
+      .skip(skipSize)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 8 * sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 8 * sizeHint // expand
+    queryProfile.operatorProfile(2).rows() shouldBe 8 * sizeHint // skip
+    queryProfile.operatorProfile(3).rows() should be >= skipSize // all node scan
+  }
+
   test("should profile rows with optional expand all") {
     // given
     val nodesPerLabel = 100

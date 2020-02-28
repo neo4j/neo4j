@@ -429,6 +429,31 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (numberOfChunks * size) or be (numberOfChunks * (size + 1))) // all node scan b
     result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan a
   }
+
+  test("should profile dbHits of skip") {
+    given {
+      nodePropertyGraph(sizeHint, { case i => Map("p" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .projection("n.p AS x")
+      .skip(sizeHint - 1)
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val propCost = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce result
+    queryProfile.operatorProfile(1).dbHits() shouldBe 1 + propCost// projection
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // skip
+    queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1))  //allNodesScan
+  }
 }
 
 trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
