@@ -174,7 +174,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.planningAttributes.providedOrders,
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
-      logicalPlanResult.plannerContext.logicalPlanIdGen)
+      new SequentialIdGen(planState.planningAttributes.cardinalities.size))
 
     val securityContext = transactionalContext.securityContext()
     val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, securityContext)
