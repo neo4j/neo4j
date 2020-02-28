@@ -116,71 +116,74 @@ public final class FileUtils
     public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
     {
 
-        Files.walkFileTree( path, new SimpleFileVisitor<>()
+        windowsSafeIOOperation( () ->
         {
-            private int skippedFiles;
-
-            @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            Files.walkFileTree( path, new SimpleFileVisitor<>()
             {
-                if ( removeFilePredicate.test( file ) )
-                {
-                    deleteFile( file );
-                }
-                else
-                {
-                    skippedFiles++;
-                }
-                return FileVisitResult.CONTINUE;
-            }
+                private int skippedFiles;
 
-            @Override
-            public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
-            {
-                if ( e != null )
+                @Override
+                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
                 {
-                    throw e;
-                }
-                try
-                {
-                    if ( skippedFiles == 0 )
+                    if ( removeFilePredicate.test( file ) )
                     {
-                        Files.delete( dir );
-                        return FileVisitResult.CONTINUE;
+                        Files.delete( file );
                     }
-                    if ( isDirectoryEmpty( dir ) )
+                    else
                     {
-                        Files.delete( dir );
+                        skippedFiles++;
                     }
                     return FileVisitResult.CONTINUE;
                 }
-                catch ( DirectoryNotEmptyException notEmpty )
-                {
-                    String reason = notEmptyReason( dir, notEmpty );
-                    throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
-                }
-            }
 
-            private boolean isDirectoryEmpty( Path dir ) throws IOException
-            {
-                try ( Stream<Path> list = Files.list( dir ) )
+                @Override
+                public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
                 {
-                    return list.noneMatch( alwaysTrue() );
+                    if ( e != null )
+                    {
+                        throw e;
+                    }
+                    try
+                    {
+                        if ( skippedFiles == 0 )
+                        {
+                            Files.delete( dir );
+                            return FileVisitResult.CONTINUE;
+                        }
+                        if ( isDirectoryEmpty( dir ) )
+                        {
+                            Files.delete( dir );
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                    catch ( DirectoryNotEmptyException notEmpty )
+                    {
+                        String reason = notEmptyReason( dir, notEmpty );
+                        throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
+                    }
                 }
-            }
 
-            private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
-            {
-                try ( Stream<Path> list = Files.list( dir ) )
+                private boolean isDirectoryEmpty( Path dir ) throws IOException
                 {
-                    return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
+                    try ( Stream<Path> list = Files.list( dir ) )
+                    {
+                        return list.noneMatch( alwaysTrue() );
+                    }
                 }
-                catch ( Exception e )
+
+                private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
                 {
-                    notEmpty.addSuppressed( e );
-                    return "(could not list directory: " + e.getMessage() + ")";
+                    try ( Stream<Path> list = Files.list( dir ) )
+                    {
+                        return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
+                    }
+                    catch ( Exception e )
+                    {
+                        notEmpty.addSuppressed( e );
+                        return "(could not list directory: " + e.getMessage() + ")";
+                    }
                 }
-            }
+            } );
         } );
     }
 
@@ -588,11 +591,6 @@ public final class FileUtils
             }
         }
         throw requireNonNull( storedIoe );
-    }
-
-    private static void deleteFile( Path path ) throws IOException
-    {
-        windowsSafeIOOperation( () -> Files.delete( path ) );
     }
 
     /**
