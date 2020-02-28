@@ -37,8 +37,10 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexScanUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexSeekUsage
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planning.CypherPlanner
@@ -151,6 +153,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case fullyParsedQuery: FullyParsedQuery => planner.plan(fullyParsedQuery, tracer, transactionalContext, params, runtime)
       case preParsedQuery: PreParsedQuery => planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime)
     }
+
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(logicalPlanResult.logicalPlanState.planningAttributes match {
+      case PlanningAttributes(solveds, cardinalities, providedOrders) =>
+        providedOrders.size == cardinalities.size && providedOrders.size == solveds.size
+    }, "All planning attributes should contain the same plans")
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)

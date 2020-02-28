@@ -76,7 +76,6 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val otherAttributes = Attributes[LogicalPlan](idGen)
     val rewritten = from.logicalPlan.endoRewrite(
       instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, from.planningAttributes.providedOrders, otherAttributes))
-    assert(from.planningAttributes.providedOrders.size == from.planningAttributes.cardinalities.size, "All planning attributes should contain the same plans")
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }
