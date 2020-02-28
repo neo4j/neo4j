@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
@@ -146,8 +145,8 @@ import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.InputPosition
 
+//noinspection DuplicatedCode
 case class Prettifier(expr: ExpressionStringifier) {
 
   private val NL = System.lineSeparator()
@@ -335,19 +334,19 @@ case class Prettifier(expr: ExpressionStringifier) {
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ GrantPrivilege(_, resource, dbScope, qualifier, roleNames) =>
+    case x @ GrantPrivilege(_, Some(resource), dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ DenyPrivilege(_, resource, dbScope, qualifier, roleNames) =>
+    case x @ DenyPrivilege(_, Some(resource), dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames, _) =>
+    case x @ RevokePrivilege(_, Some(resource), dbScope, qualifier, roleNames, _) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ ShowPrivileges(scope) =>
+    case ShowPrivileges(scope) =>
       s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
 
     case x: ShowDatabases =>
@@ -383,12 +382,12 @@ case class Prettifier(expr: ExpressionStringifier) {
       val graphName = catalogName.parts.mkString(".")
       s"${x.name} $graphName"
 
-    case x @ CreateView(catalogName, params, query, innerQuery) =>
+    case CreateView(catalogName, params, query, _) =>
       val graphName = catalogName.parts.mkString(".")
       val paramString = params.map(p => "$" + p.name).mkString("(", ", ", ")")
       s"CATALOG CREATE VIEW $graphName$paramString {$NL${queryPart(query)}$NL}"
 
-    case x @ DropView(catalogName) =>
+    case DropView(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
       s"CATALOG DROP VIEW $graphName"
   }
@@ -628,16 +627,12 @@ object Prettifier {
     }
   }
 
-  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = {
-    val (r, d, q) = extractScope(AllResource()(InputPosition.NONE), dbScope, qualifier)
-    (d, q)
-  }
+  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = (extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
 
   def extractScope(resource: ActionResource, dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String, String) = {
     val resourceName = resource match {
       case PropertyResource(name) => escapeName(name)
       case PropertiesResource(names) => names.map(escapeName).mkString(", ")
-      case NoResource() => ""
       case AllResource() => "*"
       case _ => "<unknown>"
     }

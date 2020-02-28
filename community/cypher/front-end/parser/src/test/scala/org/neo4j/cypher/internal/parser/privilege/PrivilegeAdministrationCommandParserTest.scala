@@ -109,18 +109,18 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
 
   // Granting/denying/revoking read and match to/from role
   Seq(
-    (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
-    (ast.ReadPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
-    (ast.ReadPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
-    (ast.ReadPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: privilegeFunc),
-    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revokeBoth: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revokeBoth: privilegeFunc)
+    (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: resourcePrivilegeFunc),
+    (ast.ReadPrivilege()(pos), "DENY", "TO", deny: resourcePrivilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: resourcePrivilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: resourcePrivilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revokeBoth: resourcePrivilegeFunc),
+    (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: resourcePrivilegeFunc),
+    (ast.MatchPrivilege()(pos), "DENY", "TO", deny: resourcePrivilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: resourcePrivilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: resourcePrivilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revokeBoth: resourcePrivilegeFunc)
   ).foreach {
-    case (privilege: ast.PrivilegeType, command: String, preposition: String, func: privilegeFunc) =>
+    case (privilege: ast.PrivilegeType, command: String, preposition: String, func: resourcePrivilegeFunc) =>
 
       Seq("GRAPH", "GRAPHS").foreach {
         graphKeyword =>

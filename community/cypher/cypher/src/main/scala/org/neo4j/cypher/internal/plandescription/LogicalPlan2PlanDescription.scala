@@ -505,15 +505,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), NoChildren,
           Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case GrantWrite(_, _, database, qualifier, roleName) =>
+      case GrantWrite(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, "GrantWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case DenyWrite(_, _, database, qualifier, roleName) =>
+      case DenyWrite(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case RevokeWrite(_, _, database, qualifier, roleName, revokeType) =>
+      case RevokeWrite(_, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), NoChildren, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
@@ -864,15 +864,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children,
           Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case GrantWrite(_, _, database, qualifier, roleName) =>
+      case GrantWrite(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, "GrantWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case DenyWrite(_, _, database, qualifier, roleName) =>
+      case DenyWrite(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, "DenyWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case RevokeWrite(_, _, database, qualifier, roleName, revokeType) =>
+      case RevokeWrite(_, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 

@@ -35,13 +35,17 @@ class AdministrationCommandParserTestBase
 
   implicit val parser: Rule1[ast.Statement] = Statement
 
-  type privilegeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
+  type resourcePrivilegeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
+  type noResourcePrivilegeFunc = (PrivilegeType, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
   type databasePrivilegeFunc = (DatabaseAction, GraphScope, Seq[String]) => InputPosition => ast.Statement
   type transactionPrivilegeFunc = (DatabaseAction, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
   type dbmsPrivilegeFunc = (AdminAction, Seq[String]) => InputPosition => ast.Statement
 
   def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.GrantPrivilege(p, a, s, q, r)
+    ast.GrantPrivilege(p, Some(a), s, q, r)
+
+  def grant(p: PrivilegeType, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.GrantPrivilege(p, None, s, q, r)
 
   def grantDatabasePrivilege(d: DatabaseAction, s: GraphScope, r: Seq[String]): InputPosition => ast.Statement =
     ast.GrantPrivilege.databaseAction(d, s, r)
@@ -53,7 +57,10 @@ class AdministrationCommandParserTestBase
     ast.GrantPrivilege.dbmsAction(a, r)
 
   def deny(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.DenyPrivilege(p, a, s, q, r)
+    ast.DenyPrivilege(p, Some(a), s, q, r)
+
+  def deny(p: PrivilegeType, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.DenyPrivilege(p, None, s, q, r)
 
   def denyDatabasePrivilege(d: DatabaseAction, s: GraphScope, r: Seq[String]): InputPosition => ast.Statement =
     ast.DenyPrivilege.databaseAction(d, s, r)
@@ -65,7 +72,10 @@ class AdministrationCommandParserTestBase
     ast.DenyPrivilege.dbmsAction(a, r)
 
   def revokeGrant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.RevokePrivilege(p, a, s, q, r, RevokeGrantType()(pos))
+    ast.RevokePrivilege(p, Some(a), s, q, r, RevokeGrantType()(pos))
+
+  def revokeGrant(p: PrivilegeType, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, None, s, q, r, RevokeGrantType()(pos))
 
   def revokeGrantDatabasePrivilege(d: DatabaseAction, s: GraphScope, r: Seq[String]): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseGrantedAction(d, s, r)
@@ -77,7 +87,10 @@ class AdministrationCommandParserTestBase
     ast.RevokePrivilege.grantedDbmsAction(a, r)
 
   def revokeDeny(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.RevokePrivilege(p, a, s, q, r, RevokeDenyType()(pos))
+    ast.RevokePrivilege(p, Some(a), s, q, r, RevokeDenyType()(pos))
+
+  def revokeDeny(p: PrivilegeType, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, None, s, q, r, RevokeDenyType()(pos))
 
   def revokeDenyDatabasePrivilege(d: DatabaseAction, s: GraphScope, r: Seq[String]): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseDeniedAction(d, s, r)
@@ -89,7 +102,10 @@ class AdministrationCommandParserTestBase
     ast.RevokePrivilege.deniedDbmsAction(a, r)
 
   def revokeBoth(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.RevokePrivilege(p, a, s, q, r, RevokeBothType()(pos))
+    ast.RevokePrivilege(p, Some(a), s, q, r, RevokeBothType()(pos))
+
+  def revokeBoth(p: PrivilegeType, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, None, s, q, r, RevokeBothType()(pos))
 
   def revokeDatabasePrivilege(d: DatabaseAction, s: GraphScope, r: Seq[String]): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, s, r)
