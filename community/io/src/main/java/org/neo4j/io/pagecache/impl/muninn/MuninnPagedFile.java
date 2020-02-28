@@ -150,7 +150,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
         long lastPageId = swapper.getLastPageId();
 
-        int initialChunks = 1 + computeChunkId( lastPageId );
+        int initialChunks = Math.max( 1 + computeChunkId( lastPageId ), 1 ); // At least one initial chunk. Always enough for the whole file.
         int[][] tt = new int[initialChunks][];
         for ( int i = 0; i < initialChunks; i++ )
         {
