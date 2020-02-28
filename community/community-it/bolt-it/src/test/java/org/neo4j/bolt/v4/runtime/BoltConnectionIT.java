@@ -119,7 +119,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         // Then I should see a failure
         assertThat( recorder.nextResponse() ).satisfies( failedWithStatus( Status.Statement.SyntaxError ) );
         // This result in an illegal state change, and closes all open statement by default.
-        assertFalse( machine.statementProcessor().hasOpenStatement() );
+        assertFalse( machine.hasOpenStatement() );
 
         // And when I reset that failure, and the tx should be rolled back
         recorder.reset();
@@ -127,7 +127,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
 
         // Then both operations should succeed
         assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertFalse( machine.statementProcessor().hasOpenStatement() );
+        assertFalse( machine.hasOpenStatement() );
     }
 
     @Test

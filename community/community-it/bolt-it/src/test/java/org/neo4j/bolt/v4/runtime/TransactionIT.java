@@ -312,7 +312,7 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
 
         // When
         verifyKillsConnection( () -> machine.process( commit(), nullResponseHandler() ) );
-        assertFalse( machine.statementProcessor().hasOpenStatement() );
+        assertFalse( machine.hasOpenStatement() );
         assertNull( machine.state() );
     }
 

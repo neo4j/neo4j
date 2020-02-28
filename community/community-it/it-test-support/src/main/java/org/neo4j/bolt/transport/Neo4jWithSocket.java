@@ -126,7 +126,7 @@ public class Neo4jWithSocket extends ExternalResource
                 }
                 finally
                 {
-                    shutdownManagementService();
+                    shutdownDatabase();
                 }
             }
         };
@@ -146,7 +146,7 @@ public class Neo4jWithSocket extends ExternalResource
         return connectorRegister.getLocalAddress( BoltConnector.NAME );
     }
 
-    public void shutdownManagementService()
+    public void shutdownDatabase()
     {
         try
         {
