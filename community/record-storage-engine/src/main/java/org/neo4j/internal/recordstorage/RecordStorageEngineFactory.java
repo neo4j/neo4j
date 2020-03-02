@@ -92,9 +92,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 {
     @Override
     public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            LogService logService )
+            LogService logService, PageCacheTracer pageCacheTracer )
     {
-        return new RecordStoreVersionCheck( fs, pageCache, databaseLayout, logService.getInternalLogProvider(), config );
+        return new RecordStoreVersionCheck( fs, pageCache, databaseLayout, logService.getInternalLogProvider(), config, pageCacheTracer );
     }
 
     @Override
@@ -143,33 +143,34 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache )
-            throws IOException
+    public TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache,
+            PageCursorTracer cursorTracer ) throws IOException
     {
-        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, databaseLayout );
+        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, databaseLayout, cursorTracer );
     }
 
     @Override
-    public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
+    public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer )
+            throws IOException
     {
-        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout );
+        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorTracer );
     }
 
     @Override
     public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             PageCacheTracer cacheTracer )
     {
-        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
+        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, recordFormats,
                 NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 
     @Override
-    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
+    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
     {
         File neoStoreFile = databaseLayout.metadataStore();
-        return MetaDataStore.getStoreId( pageCache, neoStoreFile );
+        return MetaDataStore.getStoreId( pageCache, neoStoreFile, cursorTracer );
     }
 
     @Override

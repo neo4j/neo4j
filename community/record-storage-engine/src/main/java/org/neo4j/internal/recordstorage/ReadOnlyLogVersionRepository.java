@@ -34,10 +34,10 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     private final long logVersion;
     private volatile boolean incrementVersionCalled;
 
-    public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
+    public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
     {
         File neoStore = databaseLayout.metadataStore();
-        this.logVersion = readLogVersion( pageCache, neoStore );
+        this.logVersion = readLogVersion( pageCache, neoStore, cursorTracer );
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public long incrementAndGetVersion()
+    public long incrementAndGetVersion( PageCursorTracer cursorTracer )
     {   // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
         if ( incrementVersionCalled )
@@ -72,11 +72,11 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return logVersion;
     }
 
-    private static long readLogVersion( PageCache pageCache, File neoStore ) throws IOException
+    private static long readLogVersion( PageCache pageCache, File neoStore, PageCursorTracer cursorTracer ) throws IOException
     {
         try
         {
-            return MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
+            return MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, cursorTracer );
         }
         catch ( NoSuchFileException ignore )
         {

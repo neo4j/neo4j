@@ -33,12 +33,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
@@ -111,6 +111,6 @@ class TransactionLogChannelAllocatorIT
                 new VersionAwareLogEntryReader(), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
-                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.UNKNOWN, NativeAccessProvider.getNativeAccess() );
+                NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN, NativeAccessProvider.getNativeAccess() );
     }
 }

@@ -56,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
@@ -93,7 +94,8 @@ public class StoreUpgradeOnStartupTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingHomeDir = testDir.homeDir( "working_" + version );
         workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
-        check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(), Config.defaults() );
+        check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
+                Config.defaults(), NULL );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
     }

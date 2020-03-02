@@ -280,7 +280,7 @@ public class BatchInserterImpl implements BatchInserter
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
-                pageCache, internalLogProvider );
+                pageCache, internalLogProvider, pageCacheTracer );
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider, pageCacheTracer, immutable.empty() );
 

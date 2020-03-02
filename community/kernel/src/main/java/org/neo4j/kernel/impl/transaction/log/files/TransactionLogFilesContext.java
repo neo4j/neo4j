@@ -26,9 +26,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -44,14 +44,14 @@ class TransactionLogFilesContext
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
-    private final DatabaseTracer databaseTracer;
+    private final DatabaseTracers databaseTracers;
     private final Supplier<StoreId> storeId;
     private final NativeAccess nativeAccess;
 
     TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
             Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
-            LogProvider logProvider, DatabaseTracer databaseTracer, Supplier<StoreId> storeId, NativeAccess nativeAccess )
+            LogProvider logProvider, DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -62,7 +62,7 @@ class TransactionLogFilesContext
         this.logVersionRepositorySupplier = logVersionRepositorySupplier;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
-        this.databaseTracer = databaseTracer;
+        this.databaseTracers = databaseTracers;
         this.storeId = storeId;
         this.nativeAccess = nativeAccess;
     }
@@ -117,9 +117,9 @@ class TransactionLogFilesContext
         return nativeAccess;
     }
 
-    DatabaseTracer getDatabaseTracer()
+    DatabaseTracers getDatabaseTracers()
     {
-        return databaseTracer;
+        return databaseTracers;
     }
 
     public StoreId getStoreId()

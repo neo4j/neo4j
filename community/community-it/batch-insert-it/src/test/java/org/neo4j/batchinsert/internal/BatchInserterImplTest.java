@@ -120,9 +120,9 @@ class BatchInserterImplTest
             }
         }
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 314 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 314 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 295 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 316 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 316 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 297 );
         assertThat( pageCacheTracer.faults() ).isEqualTo( 19 );
         assertThat( pageCacheTracer.flushes() ).isEqualTo( 235 );
     }

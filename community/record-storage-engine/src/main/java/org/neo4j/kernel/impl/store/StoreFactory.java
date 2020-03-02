@@ -60,7 +60,7 @@ public class StoreFactory
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider ),
+                selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider, cacheTracer ),
                 logProvider, cacheTracer, immutable.empty() );
     }
 

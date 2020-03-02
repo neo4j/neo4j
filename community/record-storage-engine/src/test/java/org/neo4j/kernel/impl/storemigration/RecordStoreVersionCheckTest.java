@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -64,7 +66,7 @@ class RecordStoreVersionCheckTest
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version", NULL );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
@@ -80,7 +82,7 @@ class RecordStoreVersionCheckTest
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version", NULL );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
@@ -94,11 +96,11 @@ class RecordStoreVersionCheckTest
         // given
         File neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V2" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V2", NULL );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
@@ -113,11 +115,11 @@ class RecordStoreVersionCheckTest
         File neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = MetaDataStore.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, NULL );
 
         // then
         assertTrue( result.outcome.isSuccessful() );
@@ -145,6 +147,7 @@ class RecordStoreVersionCheckTest
 
     private RecordStoreVersionCheck newStoreVersionCheck()
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults() );
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(),
+                PageCacheTracer.NULL );
     }
 }

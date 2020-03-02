@@ -967,7 +967,7 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public long incrementAndGetVersion()
+        public long incrementAndGetVersion( PageCursorTracer cursorTracer )
         {
             version++;
             return version;

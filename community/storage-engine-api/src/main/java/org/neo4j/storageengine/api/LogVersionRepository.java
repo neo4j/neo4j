@@ -42,5 +42,5 @@ public interface LogVersionRepository
      * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
      * It does so atomically and can potentially block.
      */
-    long incrementAndGetVersion();
+    long incrementAndGetVersion( PageCursorTracer cursorTracer );
 }

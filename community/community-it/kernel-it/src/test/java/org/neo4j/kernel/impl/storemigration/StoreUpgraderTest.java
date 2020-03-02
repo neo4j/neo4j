@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -201,7 +202,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         String versionToMigrateTo = check.configuredVersion();
-        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion() );
+        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion(), PageCursorTracer.NULL );
         assertTrue( upgradeResult.outcome.isSuccessful() );
         String versionToMigrateFrom = upgradeResult.actualVersion;
 
@@ -429,7 +430,7 @@ public class StoreUpgraderTest
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig() );
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig(), NULL );
     }
 
     private static StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )

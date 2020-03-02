@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -321,7 +322,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             PagedFile pf = store.pagedFile;
-            store.setUpgradeTransaction( 0, 0, 0 );
+            store.setUpgradeTransaction( 0, 0, 0, NULL );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -339,7 +340,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.setUpgradeTransaction( count, (int) count, count );
+                store.setUpgradeTransaction( count, (int) count, count, NULL );
             } );
 
             // file readers
@@ -385,7 +386,7 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            long initialVersion = store.incrementAndGetVersion();
+            long initialVersion = store.incrementAndGetVersion( NULL );
             int threads = Runtime.getRuntime().availableProcessors();
             int iterations = 500;
             Race race = new Race();
@@ -393,11 +394,11 @@ class MetaDataStoreTest
             {
                 for ( int i = 0; i < iterations; i++ )
                 {
-                    store.incrementAndGetVersion();
+                    store.incrementAndGetVersion( NULL );
                 }
             } );
             race.go();
-            assertThat( store.incrementAndGetVersion() ).isEqualTo( initialVersion + (threads * iterations) + 1 );
+            assertThat( store.incrementAndGetVersion( NULL ) ).isEqualTo( initialVersion + (threads * iterations) + 1 );
         }
     }
 
@@ -546,7 +547,7 @@ class MetaDataStoreTest
 
         List<Long> expectedValues = Arrays.stream( positions ).map( p ->
         {
-            if ( p == MetaDataStore.Position.STORE_VERSION )
+            if ( p == STORE_VERSION )
             {
                 return storeVersion;
             }
@@ -596,7 +597,7 @@ class MetaDataStoreTest
 
         List<Long> expectedValues = Arrays.stream( positions ).map( p ->
         {
-            if ( p == MetaDataStore.Position.STORE_VERSION )
+            if ( p == STORE_VERSION )
             {
                 return storeVersion;
             }
@@ -615,7 +616,7 @@ class MetaDataStoreTest
         for ( MetaDataStore.Position position : positions )
         {
             record.setId( position.id() );
-            if ( position == MetaDataStore.Position.STORE_VERSION )
+            if ( position == STORE_VERSION )
             {
                 record.initialize( true, storeVersion );
             }
@@ -632,18 +633,17 @@ class MetaDataStoreTest
     {
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.STORE_VERSION, 4242 ) );
+                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), STORE_VERSION, 4242, NULL ) );
     }
 
     @Test
     void staticGetRecordMustThrowOnPageOverflow() throws Exception
     {
         File metaDataFile = createMetaDataFile();
-        MetaDataStore.setRecord(
-                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.STORE_VERSION, 4242 );
+        MetaDataStore.setRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, 4242, NULL );
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.STORE_VERSION ) );
+                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, NULL ) );
 
     }
 
@@ -653,7 +653,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             fakePageCursorOverflow = true;
-            assertThrows( UnderlyingStorageException.class, store::incrementAndGetVersion );
+            assertThrows( UnderlyingStorageException.class, () -> store.incrementAndGetVersion( NULL ) );
             fakePageCursorOverflow = false;
         }
     }
@@ -689,7 +689,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             fakePageCursorOverflow = true;
-            assertThrows( UnderlyingStorageException.class, () -> store.setUpgradeTransaction( 13, 42, 42 ) );
+            assertThrows( UnderlyingStorageException.class, () -> store.setUpgradeTransaction( 13, 42, 42, NULL ) );
             fakePageCursorOverflow = false;
         }
     }
@@ -732,7 +732,7 @@ class MetaDataStoreTest
         // when
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp );
+            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp, NULL );
         }
 
         // then

@@ -92,7 +92,7 @@ class TransactionLogFileTest
         life.start();
 
         // simulate new file without header presence
-        logVersionRepository.incrementAndGetVersion();
+        logVersionRepository.incrementAndGetVersion( NULL );
         fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
         transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL );
 

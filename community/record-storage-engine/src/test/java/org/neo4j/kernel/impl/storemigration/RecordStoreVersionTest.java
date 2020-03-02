@@ -47,6 +47,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 
@@ -72,7 +73,7 @@ class RecordStoreVersionTest
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
         {
-            return check.checkUpgrade( check.configuredVersion() ).outcome.isSuccessful();
+            return check.checkUpgrade( check.configuredVersion(), NULL ).outcome.isSuccessful();
         }
 
         @Test
@@ -94,7 +95,7 @@ class RecordStoreVersionTest
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
             // when
-            Optional<String> version = check.storeVersion();
+            Optional<String> version = check.storeVersion( NULL );
             assertTrue( version.isPresent() );
             boolean currentVersion = version.get().equalsIgnoreCase( check.configuredVersion() );
 
@@ -119,7 +120,7 @@ class RecordStoreVersionTest
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
             changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
             File metadataStore = databaseLayout.metadataStore();
-            MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
+            MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
         }
 
     @ParameterizedTest
@@ -131,7 +132,7 @@ class RecordStoreVersionTest
             final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            Optional<String> storeVersion = check.storeVersion();
+            Optional<String> storeVersion = check.storeVersion( NULL );
             assertTrue( storeVersion.isPresent() );
             boolean currentVersion = storeVersion.get().equals( check.configuredVersion() );
 
@@ -149,7 +150,7 @@ class RecordStoreVersionTest
         final RecordStoreVersionCheck check = getVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
+        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
         assertFalse( result.outcome.isSuccessful() );
         assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome );
     }

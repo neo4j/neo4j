@@ -33,10 +33,10 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -63,6 +63,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
  */
 public class LogFilesBuilder
 {
+    private static final String READ_ONLY_TRANSACTION_STORE_READER_TAG = "readOnlyTransactionStoreReader";
+    private static final String READ_ONLY_LOG_VERSION_READER_TAG = "readOnlyLogVersionReader";
+
     private boolean readOnly;
     private PageCache pageCache;
     private DatabaseLayout databaseLayout;
@@ -79,7 +82,7 @@ public class LogFilesBuilder
     private Supplier<LogPosition> lastClosedPositionSupplier;
     private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
-    private DatabaseTracer databaseTracer = DatabaseTracer.NULL;
+    private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
     private StoreId storeId;
     private NativeAccess nativeAccess;
 
@@ -193,9 +196,9 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withDatabaseTracer( DatabaseTracer databaseTracer )
+    public LogFilesBuilder withDatabaseTracers( DatabaseTracers databaseTracers )
     {
-        this.databaseTracer = databaseTracer;
+        this.databaseTracers = databaseTracers;
         return this;
     }
 
@@ -252,7 +255,7 @@ public class LogFilesBuilder
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
-                logProvider, databaseTracer, storeIdSupplier, nativeAccess );
+                logProvider, databaseTracers, storeIdSupplier, nativeAccess );
     }
 
     private NativeAccess getNativeAccess()
@@ -458,13 +461,21 @@ public class LogFilesBuilder
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        return storageEngineFactory.readOnlyTransactionIdStore( fileSystem, databaseLayout, pageCache );
+        var pageCacheTracer = databaseTracers.getPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( READ_ONLY_TRANSACTION_STORE_READER_TAG ) )
+        {
+            return storageEngineFactory.readOnlyTransactionIdStore( fileSystem, databaseLayout, pageCache, cursorTracer );
+        }
     }
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        return storageEngineFactory.readOnlyLogVersionRepository( databaseLayout, pageCache );
+        var pageCacheTracer = databaseTracers.getPageCacheTracer();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( READ_ONLY_LOG_VERSION_READER_TAG ) )
+        {
+            return storageEngineFactory.readOnlyLogVersionRepository( databaseLayout, pageCache, cursorTracer );
+        }
     }
 
     private <T> T resolveDependency( Class<T> clazz )

@@ -31,6 +31,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.internal.NullLogService;
@@ -70,8 +72,8 @@ public class StoreInfoCommand extends AbstractCommand
         {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( ctx.fs(), databaseLayout, Config.defaults(), pageCache,
-                    NullLogService.getInstance() );
-            String storeVersion = storeVersionCheck.storeVersion()
+                    NullLogService.getInstance(), PageCacheTracer.NULL );
+            String storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
                     .orElseThrow( () -> new CommandFailedException( format( "Could not find version metadata in store '%s'", storePath ) ) );
 
             final String fmt = "%-30s%s";

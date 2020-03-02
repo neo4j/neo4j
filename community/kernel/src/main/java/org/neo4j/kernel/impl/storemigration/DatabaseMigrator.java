@@ -76,13 +76,14 @@ public class DatabaseMigrator
      */
     public void migrate() throws IOException
     {
-        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService );
+        var pageCacheTracer = NULL;
+        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
                 new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
                 tailScanner, legacyLogsLocator );
 
         // Get all the participants from the storage engine and add them where they want to be
-        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, NULL );
+        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,

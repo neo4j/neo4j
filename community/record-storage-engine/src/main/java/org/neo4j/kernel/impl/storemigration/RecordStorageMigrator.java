@@ -90,7 +90,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -125,6 +124,16 @@ import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -175,7 +184,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         // Extract information about the last transaction from legacy neostore
         File neoStore = directoryLayout.metadataStore();
-        long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId );
         // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
@@ -341,9 +351,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId )
             throws IOException
     {
-        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
-        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore,
-                Position.LAST_TRANSACTION_COMMIT_TIMESTAMP );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
+        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, cursorTracer );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
         {
             return new TransactionId( lastTransactionId, checksum, commitTimestamp );
@@ -377,10 +387,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     LogPosition extractTransactionLogPosition( File neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId ) throws IOException
     {
-        long lastClosedTxLogVersion =
-                MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
-        long lastClosedTxLogByteOffset =
-                MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+        var cursorTracer = TRACER_SUPPLIER.get();
+        long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
+        long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, cursorTracer );
         if ( lastClosedTxLogVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT &&
              lastClosedTxLogByteOffset != MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
@@ -638,15 +647,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition ) throws IOException
     {
+        var cursorTracer = TRACER_SUPPLIER.get();
         final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final File migrationDirNeoStore = migrationStructure.metadataStore();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure,
                 migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
                 ExistingTargetStrategy.SKIP );
 
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
-                MetaDataStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
+                MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, cursorTracer ), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TIME, System.currentTimeMillis(), cursorTracer );
 
         // Store the checksum of the transaction id the upgrade is at right now. Store it both as
         // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
@@ -662,25 +672,20 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         //    problematic as long as we don't migrate and translate old logs.
         TransactionId lastTxInfo = readLastTxInformation( migrationStructure );
 
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM,
-                lastTxInfo.checksum() );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_CHECKSUM,
-                lastTxInfo.checksum() );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP,
-                lastTxInfo.commitTimestamp() );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
-                lastTxInfo.commitTimestamp() );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), cursorTracer );
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
-                lastClosedTxLogPosition.getLogVersion() );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                lastClosedTxLogPosition.getByteOffset() );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION,
+                lastClosedTxLogPosition.getLogVersion(), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                lastClosedTxLogPosition.getByteOffset(), cursorTracer );
 
         // Upgrade version in NeoStore
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.STORE_VERSION,
-                MetaDataStore.versionStringToLong( versionToMigrateTo ) );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), cursorTracer );
     }
 
     private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )

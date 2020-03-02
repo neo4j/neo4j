@@ -59,7 +59,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -92,6 +91,7 @@ import org.neo4j.token.TokenHolders;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -314,13 +314,13 @@ class RecordStorageMigratorIT
         File idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
                 immutable.empty() );
-        schemaStore35.initialise( false, PageCursorTracer.NULL );
+        schemaStore35.initialise( false, NULL );
         SplittableRandom rng = new SplittableRandom();
         LongHashSet indexes = new LongHashSet();
         LongHashSet constraints = new LongHashSet();
         for ( int i = 0; i < 10; i++ )
         {
-            long id = schemaStore35.nextId( PageCursorTracer.NULL );
+            long id = schemaStore35.nextId( NULL );
             MutableLongSet target = rng.nextInt( 3 ) < 2 ? indexes : constraints;
             target.add( id );
         }
@@ -344,10 +344,10 @@ class RecordStorageMigratorIT
                 }
                 randomSchema.commit();
                 generatedRules.add( schemaRule );
-                List<DynamicRecord> dynamicRecords = schemaStore35.allocateFrom( schemaRule, PageCursorTracer.NULL );
+                List<DynamicRecord> dynamicRecords = schemaStore35.allocateFrom( schemaRule, NULL );
                 for ( DynamicRecord dynamicRecord : dynamicRecords )
                 {
-                    schemaStore35.updateRecord( dynamicRecord, PageCursorTracer.NULL );
+                    schemaStore35.updateRecord( dynamicRecord, NULL );
                 }
             }
             catch ( NoSuchElementException ignore )
@@ -355,7 +355,7 @@ class RecordStorageMigratorIT
                 // We're starting to run low on ids, but just ignore this and loop as along as there are still some left.
             }
         }
-        schemaStore35.flush( PageCursorTracer.NULL );
+        schemaStore35.flush( NULL );
         schemaStore35.close();
 
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -376,10 +376,10 @@ class RecordStorageMigratorIT
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, PageCursorTracer.NULL );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, NULL );
             SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders );
             List<SchemaRule> migratedRules = new ArrayList<>();
-            storage.getAll( PageCursorTracer.NULL ).iterator().forEachRemaining( migratedRules::add );
+            storage.getAll( NULL ).iterator().forEachRemaining( migratedRules::add );
 
             // Nerf the rule names, since migration may change those around.
             migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
@@ -400,22 +400,22 @@ class RecordStorageMigratorIT
         for ( int i = 1; i <= tokenCount; i++ )
         {
             String name = prefix + i;
-            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), PageCursorTracer.NULL );
+            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             record.addNameRecords( nameRecords );
-            record.setId( tokenStore.nextId( PageCursorTracer.NULL ) );
+            record.setId( tokenStore.nextId( NULL ) );
             long maxId = 0;
             for ( DynamicRecord nameRecord : nameRecords )
             {
-                nameStore.updateRecord( nameRecord, PageCursorTracer.NULL );
+                nameStore.updateRecord( nameRecord, NULL );
                 maxId = Math.max( nameRecord.getId(), maxId );
             }
-            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( PageCursorTracer.NULL ) ) );
-            tokenStore.updateRecord( record, PageCursorTracer.NULL );
-            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( PageCursorTracer.NULL ) ) );
+            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL ) ) );
+            tokenStore.updateRecord( record, NULL );
+            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL ) ) );
         }
-        nameStore.flush( PageCursorTracer.NULL );
-        tokenStore.flush( PageCursorTracer.NULL );
+        nameStore.flush( NULL );
+        tokenStore.flush( NULL );
     }
 
     private static class RealIdsRandomSchema extends RandomSchema
@@ -536,7 +536,7 @@ class RecordStorageMigratorIT
 
     private String getVersionToMigrateFrom( RecordStoreVersionCheck check )
     {
-        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
+        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
         assertTrue( result.outcome.isSuccessful() );
         return result.actualVersion;
     }

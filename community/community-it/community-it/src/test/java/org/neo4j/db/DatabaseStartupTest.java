@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
@@ -90,7 +91,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ) );
+                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
@@ -133,7 +134,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
-                    MetaDataStore.versionStringToLong( badStoreVersion ) );
+                    MetaDataStore.versionStringToLong( badStoreVersion ), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
@@ -175,7 +176,7 @@ class DatabaseStartupTest
                 PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime );
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, NULL );
         }
 
         // Try to start

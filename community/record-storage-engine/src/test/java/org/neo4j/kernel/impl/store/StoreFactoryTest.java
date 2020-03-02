@@ -81,7 +81,7 @@ class StoreFactoryTest
     private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider );
+        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider, NULL );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, pageCacheTracer, openOptions );
     }
 

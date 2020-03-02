@@ -185,7 +185,7 @@ public class NeoStores implements AutoCloseable
             // if we have createIfNotExists set, but don't have the meta data store in the list of stores to open
             try
             {
-                existingFormat = MetaDataStore.getRecord( pageCache, layout.metadataStore(), STORE_VERSION );
+                existingFormat = MetaDataStore.getRecord( pageCache, layout.metadataStore(), STORE_VERSION, cursorTracer );
             }
             catch ( NoSuchFileException e )
             {
@@ -522,7 +522,7 @@ public class NeoStores implements AutoCloseable
     {
         return initialize(
                 new MetaDataStore( layout.metadataStore(), layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
-                        recordFormats.metaData(), recordFormats.storeVersion(), openOptions ), cursorTracer );
+                        recordFormats.metaData(), recordFormats.storeVersion(), pageCacheTracer, openOptions ), cursorTracer );
     }
 
     private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, PageCursorTracer cursorTracer )

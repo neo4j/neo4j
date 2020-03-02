@@ -173,6 +173,7 @@ import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 
 public class Database extends LifecycleAdapter
 {
+    private static final String STORE_ID_VALIDATOR_TAG = "storeIdValidator";
     private final Monitors parentMonitors;
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
@@ -346,13 +347,15 @@ public class Database extends LifecycleAdapter
                     .withConfig( databaseConfig )
                     .withDependencies( databaseDependencies )
                     .withLogProvider( internalLogProvider )
-                    .withDatabaseTracer( tracers.getDatabaseTracer() )
+                    .withDatabaseTracers( tracers )
                     .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
+
+            var pageCacheTracer = tracers.getPageCacheTracer();
             LogTailScanner tailScanner =
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
@@ -360,7 +363,7 @@ public class Database extends LifecycleAdapter
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             if ( storageExists )
             {
-                validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache ) );
+                checkStoreId( pageCacheTracer, tailScanner );
             }
 
             performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
@@ -372,7 +375,6 @@ public class Database extends LifecycleAdapter
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            var pageCacheTracer = tracers.getPageCacheTracer();
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
                     recoveryCleanupWorkCollector, pageCacheTracer, !storageExists );
@@ -472,6 +474,14 @@ public class Database extends LifecycleAdapter
          */
         databaseHealth.healed();
         started = true;
+    }
+
+    private void checkStoreId( PageCacheTracer pageCacheTracer, LogTailScanner tailScanner ) throws IOException
+    {
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) )
+        {
+            validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ) );
+        }
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )

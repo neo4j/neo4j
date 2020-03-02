@@ -54,7 +54,7 @@ class TransactionLogChannelAllocator
     {
         this.logFilesContext = logFilesContext;
         this.fileSystem = logFilesContext.getFileSystem();
-        this.databaseTracer = logFilesContext.getDatabaseTracer();
+        this.databaseTracer = logFilesContext.getDatabaseTracers().getDatabaseTracer();
         this.fileHelper = fileHelper;
         this.logHeaderCache = logHeaderCache;
         this.nativeChannelAccessor = nativeChannelAccessor;

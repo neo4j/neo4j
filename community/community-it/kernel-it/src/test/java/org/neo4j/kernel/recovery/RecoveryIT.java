@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -79,6 +78,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
@@ -171,10 +171,10 @@ class RecoveryIT
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
         recoverDatabase( tracers );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 222 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 222 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 143 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 79 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 224 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 224 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 144 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 80 );
 
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction tx = recoveredDatabase.beginTx() )
@@ -371,7 +371,7 @@ class RecoveryIT
         PageCache pageCache = getDatabasePageCache( database );
         generateSomeData( database );
 
-        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) );
+        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
 
         managementService.shutdown();
 
@@ -753,7 +753,7 @@ class RecoveryIT
         try
         {
             PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
-            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP );
+            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL );
             assertThat( record ).isGreaterThan( 0L );
         }
         finally

@@ -35,6 +35,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -61,6 +62,7 @@ import static org.neo4j.kernel.impl.store.format.FormatFamily.isSameFamily;
  */
 public class RecordFormatSelector
 {
+    private static final String STORE_SELECTION_TAG = "storeSelection";
     private static final RecordFormats DEFAULT_FORMAT = Standard.LATEST_RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
@@ -137,18 +139,20 @@ public class RecordFormatSelector
      * @param databaseLayout directory with the store
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
+     * @param pageCacheTracer underlying page cache operations tracer.
      * @return record format of the given store or <code>null</code> if {@link DatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
     @Nullable
-    public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
+            PageCacheTracer pageCacheTracer )
     {
         File neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
         {
-            try
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )
             {
-                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION );
+                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, cursorTracer );
                 if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
                 {
                     String storeVersion = MetaDataStore.versionLongToString( value );
@@ -179,17 +183,18 @@ public class RecordFormatSelector
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
+     * @param pageCacheTracer underlying page cache operations tracer.
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @throws IllegalArgumentException when configured format is different from the format present in the store
      */
     @Nonnull
-    public static RecordFormats selectForStoreOrConfig(
-            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    public static RecordFormats selectForStoreOrConfig( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         RecordFormats configuredFormat = getConfiguredRecordFormat( config, databaseLayout );
         boolean formatConfigured = configuredFormat != null;
 
-        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
+        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
         boolean storeWithFormatExists = currentFormat != null;
 
         if ( formatConfigured && storeWithFormatExists )
@@ -240,13 +245,14 @@ public class RecordFormatSelector
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @param logProvider log provider
+     * @param pageCacheTracer underlying page cache operations tracer.
      * @return true if configured and actual format is compatible, false otherwise.
      */
-    public static boolean isStoreAndConfigFormatsCompatible(
-            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    public static boolean isStoreAndConfigFormatsCompatible( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
-        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
+        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
         return isStoreAndConfigFormatsCompatible( configuredFormat, currentFormat );
     }
 
@@ -276,12 +282,13 @@ public class RecordFormatSelector
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
+     * @param pageCacheTracer underlying page cache operations tracer.
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @see RecordFormats#generation()
      */
     @Nonnull
-    public static RecordFormats selectNewestFormat(
-            Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    public static RecordFormats selectNewestFormat( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );
         if ( formatConfigured )
@@ -291,7 +298,7 @@ public class RecordFormatSelector
         }
         else
         {
-            final RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider );
+            final RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format

@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -58,7 +59,8 @@ public interface StorageEngineFactory
      * and means of checking upgradability between them.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
      */
-    StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, LogService logService );
+    StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, LogService logService,
+            PageCacheTracer pageCacheTracer );
 
     StoreVersion versionInformation( String storeVersion );
 
@@ -102,14 +104,15 @@ public interface StorageEngineFactory
      * @return the read-only {@link TransactionIdStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction filySystem, DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
+    TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction filySystem, DatabaseLayout databaseLayout,
+            PageCache pageCache, PageCursorTracer pageCursorTracer ) throws IOException;
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.
      * @return the read-only {@link LogVersionRepository}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
+    LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Instantiates a fully functional {@link TransactionMetaDataStore}, which is a union of {@link TransactionIdStore}
@@ -120,7 +123,7 @@ public interface StorageEngineFactory
     TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             PageCacheTracer cacheTracer ) throws IOException;
 
-    StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
+    StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException;
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
             LogService logService, String recordFormats, PageCacheTracer cacheTracer );

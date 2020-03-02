@@ -27,6 +27,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -46,9 +48,10 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     private final RecordFormats configuredFormat;
     private final Config config;
 
-    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, LogProvider logProvider, Config config )
+    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, LogProvider logProvider, Config config,
+            PageCacheTracer pageCacheTracer )
     {
-        this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider ), config );
+        this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer ), config );
     }
 
     RecordStoreVersionCheck( PageCache pageCache, DatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
@@ -60,11 +63,11 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
-    public Optional<String> storeVersion()
+    public Optional<String> storeVersion( PageCursorTracer cursorTracer )
     {
         try
         {
-            String version = readVersion();
+            String version = readVersion( cursorTracer );
             return Optional.of( version );
         }
         catch ( IOException e )
@@ -73,9 +76,9 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         }
     }
 
-    private String readVersion() throws IOException
+    private String readVersion( PageCursorTracer cursorTracer ) throws IOException
     {
-        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION );
+        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, cursorTracer );
         if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );
@@ -97,12 +100,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
-    public Result checkUpgrade( String desiredVersion )
+    public Result checkUpgrade( String desiredVersion, PageCursorTracer cursorTracer )
     {
         String version;
         try
         {
-            version = readVersion();
+            version = readVersion( cursorTracer );
         }
         catch ( IllegalStateException e )
         {
@@ -152,8 +155,8 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     private static RecordFormats configuredVersion( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
-        return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
+        return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
     }
 }

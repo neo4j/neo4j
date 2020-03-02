@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Neo4jLayoutExtension
 class RunOutOfDiskSpaceIT
@@ -100,7 +101,7 @@ class RunOutOfDiskSpaceIT
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = databaseLayout.metadataStore();
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 
     @Test
@@ -141,7 +142,7 @@ class RunOutOfDiskSpaceIT
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = databaseLayout.metadataStore();
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 
 }

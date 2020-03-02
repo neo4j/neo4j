@@ -36,7 +36,7 @@ public class SimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public long incrementAndGetVersion()
+    public long incrementAndGetVersion( PageCursorTracer cursorTracer )
     {
         logVersion++;
         return logVersion;

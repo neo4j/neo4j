@@ -30,8 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
@@ -44,7 +42,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -73,7 +70,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -95,7 +91,6 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -386,8 +381,8 @@ public class NeoStoresTest
     {
         File storeDir = dir.homeDir();
         createShutdownTestDatabase( fs, storeDir );
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10 ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12 ) );
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, NULL ) );
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, NULL ) );
 
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, LOG_PROVIDER );
@@ -421,7 +416,7 @@ public class NeoStoresTest
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion );
+        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -525,12 +520,12 @@ public class NeoStoresTest
 
         File file = databaseLayout.metadataStore();
 
-        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID ) );
-        assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM ) );
+        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, NULL ) );
+        assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, NULL ) );
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10 );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12 );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10, NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11, NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12, NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -547,7 +542,7 @@ public class NeoStoresTest
             assertArrayEquals( new long[]{6, 44, 43}, metaDataStore.getLastClosedTransaction() );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13 );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {

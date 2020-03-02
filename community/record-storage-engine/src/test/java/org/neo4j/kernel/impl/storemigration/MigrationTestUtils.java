@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
@@ -86,7 +87,7 @@ public class MigrationTestUtils
 
     public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check )
     {
-        return check.checkUpgrade( RecordFormatSelector.defaultFormat().storeVersion() ).outcome.isSuccessful();
+        return check.checkUpgrade( RecordFormatSelector.defaultFormat().storeVersion(), PageCursorTracer.NULL ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

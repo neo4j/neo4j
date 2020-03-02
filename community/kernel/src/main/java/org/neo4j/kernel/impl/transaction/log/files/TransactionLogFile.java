@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -51,10 +53,12 @@ import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
  */
 class TransactionLogFile extends LifecycleAdapter implements LogFile
 {
+    private static final String TRANSACTION_LOG_FILE_ROTATION_TAG = "transactionLogFileRotation";
     private final AtomicLong rotateAtSize;
     private final LogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
+    private final PageCacheTracer pageCacheTracer;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
 
@@ -67,6 +71,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         this.context = context;
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( logFiles );
+        this.pageCacheTracer = context.getDatabaseTracers().getPageCacheTracer();
     }
 
     @Override
@@ -155,9 +160,12 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public synchronized File rotate() throws IOException
     {
-        channel = rotate( channel );
-        writer.setChannel( channel );
-        return channel.getFile();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) )
+        {
+            channel = rotate( channel, cursorTracer );
+            writer.setChannel( channel );
+            return channel.getFile();
+        }
     }
 
     /**
@@ -168,7 +176,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
      *
      * Steps during rotation are:
      * <ol>
-     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion()} (also flushes the store)</li>
+     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion(PageCursorTracer)} (also flushes the store)</li>
      * <li>2: Flush current log</li>
      * <li>3: Create new log file</li>
      * <li>4: Write header</li>
@@ -199,16 +207,17 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
      * </ol>
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
+     * @param cursorTracer underlying page cursor tracer.
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog ) throws IOException
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, PageCursorTracer cursorTracer ) throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
          */
-        long newLogVersion = logVersionRepository.incrementAndGetVersion();
+        long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorTracer );
         /*
          * Rotation can happen at any point, although not concurrently with an append,
          * although an append may have (most likely actually) left at least some bytes left
