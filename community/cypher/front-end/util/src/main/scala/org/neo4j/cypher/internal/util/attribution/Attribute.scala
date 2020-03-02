@@ -24,6 +24,11 @@ trait Attribute[KEY <: Identifiable, VALUE] {
 
   private val array: ArrayBuffer[Unchangeable[VALUE]] = new ArrayBuffer[Unchangeable[VALUE]]()
 
+  def copyTo[T <: Attribute[KEY, VALUE]](to: T): T = {
+    array.copyToBuffer(to.array)
+    to
+  }
+
   def set(id: Id, t: VALUE): Unit = {
     val requiredSize = id.x + 1
     if (array.size < requiredSize)

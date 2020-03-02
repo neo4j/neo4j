@@ -172,16 +172,20 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       query.options.operatorEngine,
       query.options.interpretedPipesFallback)
 
-    val logicalQuery = LogicalQuery(logicalPlan,
+    // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
+    val planningAttributesCopy = logicalPlanResult.logicalPlanState.planningAttributes.copy()
+
+    val logicalQuery = LogicalQuery(
+      logicalPlan,
       planState.queryText,
       queryType == READ_ONLY,
       planState.returnColumns().toArray,
       planState.semanticTable(),
-      planState.planningAttributes.cardinalities,
-      planState.planningAttributes.providedOrders,
+      planningAttributesCopy.cardinalities,
+      planningAttributesCopy.providedOrders,
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
-      new SequentialIdGen(planState.planningAttributes.cardinalities.size))
+      new SequentialIdGen(planningAttributesCopy.cardinalities.size))
 
     val securityContext = transactionalContext.securityContext()
     val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, securityContext)
@@ -189,8 +193,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     new CypherExecutableQuery(
       logicalPlan,
       logicalQuery.readOnly,
-      logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
-      logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
+      planningAttributesCopy.cardinalities,
+      planningAttributesCopy.providedOrders,
       executionPlan,
       preParsingNotifications,
       logicalPlanResult.notifications,

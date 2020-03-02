@@ -41,4 +41,6 @@ object PlanningAttributes {
 
 case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders) {
   def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, solveds, cardinalities, providedOrders)
+  def copy() : PlanningAttributes =
+    PlanningAttributes(solveds.copyTo(new Solveds()), cardinalities.copyTo(new Cardinalities()), providedOrders.copyTo(new ProvidedOrders()))
 }
