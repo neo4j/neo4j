@@ -42,6 +42,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static java.lang.System.lineSeparator;
 
 /**
  * This class defines a JUnit rule which ensures that the test's working directory is cleaned up. The clean-up
@@ -80,6 +81,7 @@ public class TestDirectory extends ExternalResource
     private File testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
+    private String testName;
     private File testDirectory;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
@@ -220,8 +222,9 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
-                final long printLimit = ByteUnit.mebiBytes( 5 );
-                StringBuilder sb = new StringBuilder( "Files larger than " + ByteUnit.bytesToString( printLimit ) + '\n' );
+                long printLimit = ByteUnit.mebiBytes( 1 );
+                String newLine = lineSeparator();
+                StringBuilder sb = new StringBuilder( "Files larger than " ).append( ByteUnit.bytesToString( printLimit ) ).append( newLine );
 
                 Optional<Long> totalSize = fileSystem.streamFilesRecursive( testDirectory ).map( fh ->
                 {
@@ -229,14 +232,15 @@ public class TestDirectory extends ExternalResource
                     if ( size > ByteUnit.mebiBytes( 5 ) )
                     {
                         String path = homeDir().toPath().relativize( fh.getFile().toPath() ).toString();
-                        sb.append( path ).append( " : " ).append( ByteUnit.bytesToString( size ) ).append( '\n' );
+                        String bytes = ByteUnit.bytesToString( size );
+                        sb.append( testName ).append( " => " ).append( "./" ).append( path ).append( " : " ).append( bytes ).append( newLine );
                     }
                     return size;
                 } ).reduce( Long::sum ); // Sum
 
                 fileSystem.deleteRecursively( testDirectory );
 
-                final long limit = ByteUnit.mebiBytes( 50 );
+                long limit = ByteUnit.mebiBytes( 50 );
                 if ( totalSize.map( l -> l > limit ).orElse( false ) && // Larger than limit
                         !(fileSystem instanceof EphemeralFileSystemAbstraction) )
                 {
@@ -262,6 +266,7 @@ public class TestDirectory extends ExternalResource
         {
             test = "static";
         }
+        testName = test;
         testDirectory = prepareDirectoryForTest( test );
 
     }
