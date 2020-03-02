@@ -592,4 +592,24 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       consume(execute(logicalQuery, runtime))
     }
   }
+
+  test("should kill caching optional expand-into query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .optionalExpandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
 }
