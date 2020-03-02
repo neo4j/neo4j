@@ -69,16 +69,16 @@ trait CachingExpandInto {
         return Iterator.empty
       }
 
-      relIterator(state.query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
+      relIterator(state, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
     }
     // iterate from a non-dense node
     else if (toNodeIsDense)
-      relIterator(state.query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
+      relIterator(state, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
     else if (fromNodeIsDense)
-      relIterator(state.query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
+      relIterator(state, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
     //both nodes are non-dense, choose a random starting point
     else
-      relIterator(state.query, fromNode, toNode, alternate(), relTypes, relCache, dir)
+      relIterator(state, fromNode, toNode, alternate(), relTypes, relCache, dir)
   }
 
   private var alternateState = false
@@ -89,24 +89,27 @@ trait CachingExpandInto {
     result
   }
 
-  private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
-                          relTypes: Array[Int], relCache: RelationshipsCache, dir: SemanticDirection) = {
+  private def relIterator(state: QueryState, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
+                          relTypes: Array[Int], relCache: RelationshipsCache, dir: SemanticDirection): Iterator[RelationshipValue] = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes)
+    val relationships = state.query.getRelationshipsForIds(start.id(), localDirection, relTypes)
     new PrefetchingIterator[RelationshipValue] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[RelationshipValue](2)
-
       override def fetchNextOrNull(): RelationshipValue = {
         while (relationships.hasNext) {
           val rel = relationships.next()
           val other = rel.otherNode(start)
           if (end == other) {
+            state.memoryTracker.allocated(rel)
             connectedRelationships.append(rel)
             return rel
           }
         }
-        relCache.put(fromNode, toNode, connectedRelationships, dir)
+        if (relCache.put(fromNode, toNode, connectedRelationships, dir)) {
+          state.memoryTracker.allocated(fromNode)
+          state.memoryTracker.allocated(toNode)
+        }
         null
       }
     }.asScala
@@ -137,9 +140,11 @@ trait CachingExpandInto {
 
     def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[RelationshipValue]] = table.get(key(start, end, dir))
 
-    def put(start: NodeValue, end: NodeValue, rels: Seq[RelationshipValue], dir: SemanticDirection) = {
+    def put(start: NodeValue, end: NodeValue, rels: Seq[RelationshipValue], dir: SemanticDirection): Boolean = {
       if (table.size < capacity) {
-        table.put(key(start, end, dir), rels)
+        table.put(key(start, end, dir), rels).isEmpty
+      } else {
+        false
       }
     }
 
