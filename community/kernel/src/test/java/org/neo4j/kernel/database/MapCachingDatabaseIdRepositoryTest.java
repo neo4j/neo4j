@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
@@ -105,7 +105,7 @@ class MapCachingDatabaseIdRepositoryTest
         databaseIdRepository.getByName( otherDbName );
         databaseIdRepository.getById( otherDbid );
 
-        verifyZeroInteractions( delegate );
+        verifyNoInteractions( delegate );
     }
 
     @Test
@@ -114,7 +114,7 @@ class MapCachingDatabaseIdRepositoryTest
         NamedDatabaseId namedDatabaseId = databaseIdRepository.getByName( NAMED_SYSTEM_DATABASE_ID.name() ).get();
 
         assertThat( namedDatabaseId ).isEqualTo( NAMED_SYSTEM_DATABASE_ID );
-        verifyZeroInteractions( delegate );
+        verifyNoInteractions( delegate );
     }
 
     @Test
@@ -123,7 +123,7 @@ class MapCachingDatabaseIdRepositoryTest
         NamedDatabaseId namedDatabaseId = databaseIdRepository.getById( NAMED_SYSTEM_DATABASE_ID.databaseId() ).get();
 
         assertThat( namedDatabaseId ).isEqualTo( NAMED_SYSTEM_DATABASE_ID );
-        verifyZeroInteractions( delegate );
+        verifyNoInteractions( delegate );
     }
 
 }

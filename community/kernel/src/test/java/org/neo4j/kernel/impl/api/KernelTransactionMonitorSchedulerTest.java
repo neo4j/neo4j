@@ -30,7 +30,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class KernelTransactionMonitorSchedulerTest
 {
@@ -53,7 +53,7 @@ class KernelTransactionMonitorSchedulerTest
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler( 0 );
         transactionMonitorScheduler.start();
 
-        verifyZeroInteractions( scheduler);
+        verifyNoInteractions( scheduler);
     }
 
     private KernelTransactionMonitorScheduler createMonitorScheduler( long checkInterval )

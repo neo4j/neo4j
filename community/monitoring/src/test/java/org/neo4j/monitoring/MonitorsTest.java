@@ -102,7 +102,7 @@ class MonitorsTest
 
         // Then
         monitorTag1.aVoid();
-        Mockito.verifyZeroInteractions( listener );
+        Mockito.verifyNoInteractions( listener );
         monitorTag2.aVoid();
         Mockito.verify( listener ).aVoid();
         Mockito.verifyNoMoreInteractions( listener );
@@ -123,7 +123,7 @@ class MonitorsTest
         MyMonitor parentMonitor = parent.newMonitor( MyMonitor.class );
         parentMonitor.aVoid();
         Mockito.verify( parentListener ).aVoid();
-        Mockito.verifyZeroInteractions( childListener );
+        Mockito.verifyNoInteractions( childListener );
 
         // Calls on monitors from child should reach both listeners
         MyMonitor childMonitor = child.newMonitor( MyMonitor.class );

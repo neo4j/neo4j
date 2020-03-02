@@ -34,7 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
@@ -59,7 +59,7 @@ class TraversalBranchImplTest
         branch.initialize( expander, context );
 
         // THEN the branch should not be expanded
-        verifyZeroInteractions( source );
+        verifyNoInteractions( source );
 
         // and WHEN actually traversing from it
         branch.next( expander, context );

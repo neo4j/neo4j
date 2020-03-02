@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyZeroInteractions
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -42,7 +42,7 @@ class LazyTypesTest extends CypherFunSuite {
     types.types(newContext)
 
     // then
-    verifyZeroInteractions(newContext)
+    verifyNoInteractions(newContext)
   }
 
   test("should re-initialize if not fully initialized") {

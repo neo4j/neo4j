@@ -59,8 +59,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 class CheckPointSchedulerTest
@@ -272,12 +272,12 @@ class CheckPointSchedulerTest
             // Fail
             checkPointer.fail = true;
             jobScheduler.runJob();
-            verifyZeroInteractions( health );
+            verifyNoInteractions( health );
 
             // Succeed
             checkPointer.fail = false;
             jobScheduler.runJob();
-            verifyZeroInteractions( health );
+            verifyNoInteractions( health );
         }
     }
 
@@ -321,7 +321,7 @@ class CheckPointSchedulerTest
         for ( int i = 0; i < CheckPointScheduler.MAX_CONSECUTIVE_FAILURES_TOLERANCE - 1; i++ )
         {
             jobScheduler.runJob();
-            verifyZeroInteractions( health );
+            verifyNoInteractions( health );
         }
 
         UnderlyingStorageException error = assertThrows( UnderlyingStorageException.class, jobScheduler::runJob );

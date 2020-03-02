@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 class IndexSamplingJobTrackerTest
@@ -106,7 +106,7 @@ class IndexSamplingJobTrackerTest
         jobTracker.scheduleSamplingJob( mock( IndexSamplingJob.class ) );
 
         // Then
-        verifyZeroInteractions( scheduler );
+        verifyNoInteractions( scheduler );
     }
 
     @Test

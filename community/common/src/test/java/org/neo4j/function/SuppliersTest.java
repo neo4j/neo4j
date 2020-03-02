@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings( "unchecked" )
@@ -55,7 +55,7 @@ class SuppliersTest
         when( mockSupplier.get() ).thenReturn( o );
         Supplier<Object> supplier = Suppliers.lazySingleton( mockSupplier );
 
-        verifyZeroInteractions( mockSupplier );
+        verifyNoInteractions( mockSupplier );
 
         assertThat( supplier.get() ).isSameAs( o );
         assertThat( supplier.get() ).isSameAs( o );

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyZeroInteractions
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.InterestingOrder
@@ -47,7 +47,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     // THEN
     result should equal(candidates)
     verify(priority).candidates(any(), any(), any(), any())
-    verifyZeroInteractions(fallback)
+    verifyNoInteractions(fallback)
   }
 
   test("should use the fallback list if priority is empty") {

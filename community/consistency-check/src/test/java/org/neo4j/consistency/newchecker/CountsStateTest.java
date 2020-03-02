@@ -39,7 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_BITS;
 import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_LABELS;
@@ -79,7 +79,7 @@ class CountsStateTest
     @AfterEach
     void tearDown()
     {
-        verifyZeroInteractions( noConsistencyReporter );
+        verifyNoInteractions( noConsistencyReporter );
         countsState.close();
     }
 
