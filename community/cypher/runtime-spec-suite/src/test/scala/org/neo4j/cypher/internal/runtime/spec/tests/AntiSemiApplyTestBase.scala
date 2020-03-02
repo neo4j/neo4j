@@ -337,7 +337,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     runtimeResult should beColumns("x").withRows(inputRows)
   }
 
-  test("sort on rhs") {
+  test("empty sort on rhs") {
     given {
       nodeGraph(sizeHint)
     }
@@ -357,7 +357,26 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
   }
 
-  test("top on rhs") {
+  test("non-empty sort on rhs") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.sort(Seq(Ascending("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("empty top on rhs") {
     given {
       nodeGraph(sizeHint)
     }
@@ -375,6 +394,25 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("non-empty top on rhs") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.top(Seq(Ascending("x")), 10)
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
   }
 }
 
