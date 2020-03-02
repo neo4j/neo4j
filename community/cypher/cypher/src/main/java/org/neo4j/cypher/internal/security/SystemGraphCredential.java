@@ -32,7 +32,6 @@ public class SystemGraphCredential implements Credential
 {
     private final SecureHasher secureHasher;
     private final SimpleHash hashedCredentials;
-    private static final String credentialSeparator = ",";
 
     private SystemGraphCredential( SecureHasher secureHasher, SimpleHash hash )
     {

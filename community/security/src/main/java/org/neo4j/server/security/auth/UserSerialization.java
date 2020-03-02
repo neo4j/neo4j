@@ -20,10 +20,14 @@
 package org.neo4j.server.security.auth;
 
 import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.HexString;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.impl.security.Credential.credentialSeparator;
 
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.
@@ -31,15 +35,13 @@ import static java.lang.String.format;
 public class UserSerialization extends FileRepositorySerializer<User>
 {
     private static final String userSeparator = ":";
-    private static final String credentialSeparator = ",";
 
     @Override
     protected String serialize( User user )
     {
         return String.join( userSeparator,
                 user.name(),
-                // Only used by FileRepository (InternalFlatFileRealm) so we can assume LegacyCredential here
-                serialize( (LegacyCredential) user.credentials() ),
+                user.credentials().serialize(),
                 String.join( ",", user.getFlags() )
             );
     }
@@ -72,14 +74,16 @@ public class UserSerialization extends FileRepositorySerializer<User>
 
     protected String serialize( LegacyCredential cred )
     {
-        String encodedSalt = HexString.encodeHexString( cred.salt() );
-        String encodedPassword = HexString.encodeHexString( cred.passwordHash() );
-        return String.join( credentialSeparator, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt );
+        return cred.serialize();
     }
 
-    private LegacyCredential deserializeCredentials( String part, int lineNumber ) throws FormatException
+    private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
         String[] split = part.split( credentialSeparator, -1 );
+        if ( split.length == 4 )
+        {
+            return SystemGraphCredential.deserialize( part, new SecureHasher() );
+        }
         if ( split.length != 3 )
         {
             throw new FormatException( format( "wrong number of credential fields [line %d]", lineNumber ) );

@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
 
@@ -49,6 +51,36 @@ class UserSerializationTest
 
         // Then
         assertThat( serialization.deserializeRecords( serialized ) ).isEqualTo( users );
+    }
+
+    @Test
+    void shouldSerializeAndDeserializeSystemGraphCredentialPassword() throws Exception
+    {
+        // Given
+        UserSerialization serialization = new UserSerialization();
+        SecureHasher hasher = new SecureHasher();
+
+        List<User> users = asList(
+                new User.Builder( "Mike", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "Steve", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "Bob", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "0987654" ), hasher ) ).build()
+        );
+
+        // When
+        byte[] serialized = serialization.serialize( users );
+
+        // Then
+        List<User> actual = serialization.deserializeRecords( serialized );
+        assertThat( actual.size() ).isEqualTo( users.size() );
+        for ( int i = 0; i < actual.size(); i++ )
+        {
+            // they should be in the same order so this is okay
+            User actualUser = actual.get( i );
+            User givenUser = users.get( i );
+            assertThat( actualUser.name() ).isEqualTo( givenUser.name() );
+            assertThat( actualUser.credentials().serialize() ).isEqualTo( givenUser.credentials().serialize() );
+        }
     }
 
     /**
