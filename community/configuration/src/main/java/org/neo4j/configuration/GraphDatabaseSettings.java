@@ -522,6 +522,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
+    @Internal
+    @Description( "Location of the database scripts directory." )
+    public static final Setting<Path> scripts_dir = newBuilder( "unsupported.dbms.directories.scripts", PATH, Path.of("scripts" ) )
+            .setDependency( neo4j_home )
+            .immutable()
+            .build();
+
+    @Description( "Name of file containing commands to be run during initialization of the system database. " +
+                  "The file should exists in the scripts directory in neo4j home directory." )
+    public static final Setting<Path> system_init_file =
+            newBuilder( "dbms.init_file", PATH, null ).immutable().setDependency( scripts_dir ).build();
+
     @Description( "Threshold for rotation of the user log. If set to 0 log rotation is disabled." )
     public static final Setting<Long> store_user_log_rotation_threshold =
             newBuilder( "dbms.logs.user.rotation.size", BYTES, 0L ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
