@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.CypherPreParser.WS
-import org.neo4j.cypher.internal.CypherPreParser.keyword
-import org.neo4j.cypher.internal.CypherPreParser.parseOrThrow
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.parser.Base
 import org.neo4j.cypher.internal.util.InputPosition

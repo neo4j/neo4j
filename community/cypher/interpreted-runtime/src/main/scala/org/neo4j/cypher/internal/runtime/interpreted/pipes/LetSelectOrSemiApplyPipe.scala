@@ -42,6 +42,4 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
         outerContext
     }
   }
-
-  private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
 }

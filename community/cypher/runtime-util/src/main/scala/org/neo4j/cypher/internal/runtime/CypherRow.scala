@@ -25,10 +25,6 @@ import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeReference
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipReference
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 

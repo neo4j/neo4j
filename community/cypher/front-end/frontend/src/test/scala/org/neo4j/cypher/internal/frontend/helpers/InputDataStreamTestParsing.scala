@@ -20,15 +20,6 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.CommaSep
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.FromGraph
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.Variable
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.WS
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.ch
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.keyword
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.oneOrMore
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.optional
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestCypherParser.rule
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState

@@ -39,6 +39,4 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
         }
     }
   }
-
-  private def name = if (negated) "SelectOrAntiSemiApply" else "SelectOrSemiApply"
 }

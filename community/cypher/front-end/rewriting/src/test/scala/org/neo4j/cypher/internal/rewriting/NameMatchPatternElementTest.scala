@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.nameMatchPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses

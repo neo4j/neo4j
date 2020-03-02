@@ -156,7 +156,7 @@ case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[Cy
       val first = input.next()
       var current = first
       var best = first
-      var matchingRows = init(best)
+      val matchingRows = init(best)
 
       while (current != null) {
         if (input.hasNext) {

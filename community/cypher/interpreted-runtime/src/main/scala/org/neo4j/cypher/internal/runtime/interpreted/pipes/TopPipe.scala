@@ -135,7 +135,7 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[CypherRow])
     else {
       val first = input.next()
       var best = first
-      var matchingRows = init(best)
+      val matchingRows = init(best)
 
       while (input.hasNext) {
         val ctx = input.next()
