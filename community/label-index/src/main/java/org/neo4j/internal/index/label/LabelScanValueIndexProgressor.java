@@ -22,7 +22,6 @@ package org.neo4j.internal.index.label;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
@@ -47,8 +46,8 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
      *  Progress through the index until the next accepted entry.
      *
      *  Progress the cursor to the current {@link LabelScanValue}, if this is not accepted by the client or if current
-     *  value is exhausted it continues to the next {@link LabelScanValue}  from {@link RawCursor}.
-     * @return <code>true</code> if an accepted entry was found, <code>false</code> otherwise
+     *  value has been exhausted it continues to the next {@link LabelScanValue} by progressing the {@link Seeker}.
+     * @return <code>true</code> if it found an accepted entry, <code>false</code> otherwise
      */
     @Override
     public boolean next()

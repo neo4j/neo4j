@@ -47,7 +47,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
     protected long next;
 
     /**
-     * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets and the fromId may
+     * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets, and the fromId may
      * be somewhere inside a bit-set range.
      */
     LabelScanValueIterator( Seeker<LabelScanKey,LabelScanValue> cursor, long fromId )
@@ -80,8 +80,8 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
 
     /**
      * @return next node id in the current {@link LabelScanValue} or, if current value exhausted,
-     * goes to next {@link LabelScanValue} from {@link Seeker}. Returns {@code true} if next node id
-     * was found, otherwise {@code false}.
+     * goes to next {@link LabelScanValue} by progressing the {@link Seeker}. Returns {@code true}
+     * if it found next node id, otherwise {@code false}.
      */
     protected boolean fetchNext()
     {

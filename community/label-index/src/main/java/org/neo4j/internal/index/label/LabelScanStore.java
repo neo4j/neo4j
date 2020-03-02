@@ -120,21 +120,21 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a writer for updating the store.
      *
-     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
+     * @return {@link LabelScanWriter} that can modify the {@link LabelScanStore}.
      */
     LabelScanWriter newWriter();
 
     /**
-     * Acquire a writer which is specialized in bulk-append writing, e.g. building from initial data.
+     * Acquire a writer that is specialized in bulk-append writing, e.g. building from initial data.
      *
-     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
+     * @return {@link LabelScanWriter} that can modify the {@link LabelScanStore}.
      */
     LabelScanWriter newBulkAppendWriter();
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
-     * rotating the logical log. After completion of this call there cannot be any essential state that
-     * hasn't been forced to disk.
+     * rotating the logical log. There cannot be any essential state not forced to disk
+     * after completion of this call .
      *
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
@@ -163,13 +163,13 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
     boolean isEmpty() throws IOException;
 
     /**
-     * Initializes the store. After this has been called recovery updates can be processed.
+     * Initializes the store. Recovery updates can be processed after this has been called.
      */
     @Override
     void init() throws IOException;
 
     /**
-     * Starts the store. After this has been called updates can be processed.
+     * Starts the store. Updates can be processed after this has been called.
      */
     @Override
     void start() throws IOException;
@@ -194,10 +194,4 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
      * @return whether or not this index is read-only.
      */
     boolean isReadOnly();
-
-    /**
-     * @return whether or not there's an existing store present for this label scan store.
-     * @throws IOException on I/O error checking the presence of a store.
-     */
-    boolean hasStore();
 }

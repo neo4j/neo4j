@@ -23,7 +23,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
- * Reader of a label scan store which contains label-->nodes mappings.
+ * Reader of a label scan store containing label-->nodes mappings.
  */
 public interface LabelScanReader
 {

@@ -38,7 +38,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
 /**
  * Writer that takes a more batching approach to adding data to the label scan store. It is optimized for writing large amounts of node-id-sequential updates,
  * especially when there are lots of labels involved. It works by having an array of ranges, slot index is labelId. Updates that comes in
- * will find the slot by labelId and add the correct bit the the current range, or if the bit is in another range, merge the current one first.
+ * will find the slot by labelId and add the correct bit to the current range, or if the bit is in another range, merge the current one first.
  * It cannot handle updates to nodes that are already in ths label index, such operations will fail before trying to make those changes.
  */
 class BulkAppendNativeLabelScanWriter implements LabelScanWriter

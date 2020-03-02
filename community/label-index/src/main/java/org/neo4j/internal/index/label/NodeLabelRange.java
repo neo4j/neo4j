@@ -143,7 +143,7 @@ public class NodeLabelRange
         return toString( prefix, nodes, labels );
     }
 
-    public static void readBitmap( long bitmap, long labelId, MutableLongList[] labelsPerNode )
+    static void readBitmap( long bitmap, long labelId, MutableLongList[] labelsPerNode )
     {
         while ( bitmap != 0 )
         {
@@ -157,7 +157,7 @@ public class NodeLabelRange
         }
     }
 
-    public static long[][] convertState( LongList[] state )
+    static long[][] convertState( LongList[] state )
     {
         long[][] labelIdsByNodeIndex = new long[state.length][];
         for ( int i = 0; i < state.length; i++ )

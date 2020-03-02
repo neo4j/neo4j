@@ -26,6 +26,7 @@ import java.util.Comparator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 import static java.lang.Long.min;
@@ -33,11 +34,11 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 /**
- * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather an {@link Writer} for its
+ * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
- * applied in sorted order (by label and node id) when reaches batch size or on {@link #close()}.
+ * applied in sorted order (by the label and node id) when reaches batch size or on {@link #close()}.
  * <p>
  * Updates aren't visible to {@link LabelScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
@@ -71,25 +72,25 @@ class NativeLabelScanWriter implements LabelScanWriter
 
     /**
      * {@link Writer} acquired when acquiring this {@link NativeLabelScanWriter},
-     * acquired from {@link GBPTree#writer()}.
+     * acquired from {@link GBPTree#writer(PageCursorTracer)}.
      */
     private Writer<LabelScanKey,LabelScanValue> writer;
 
     /**
-     * Instance of {@link LabelScanKey} acting as place to read keys into and also to set for each applied update.
+     * Instance of {@link LabelScanKey} acting as place to read keys into and to set for each applied update.
      */
     private final LabelScanKey key = new LabelScanKey();
 
     /**
-     * Instance of {@link LabelScanValue} acting as place to read values into and also to update
+     * Instance of {@link LabelScanValue} acting as place to read values into and to update
      * for each applied update.
      */
     private final LabelScanValue value = new LabelScanValue();
 
     /**
      * Batch currently building up as {@link #write(NodeLabelUpdate) updates} come in. Cursor for where
-     * to place new updates is {@link #pendingUpdatesCursor}. Length of this queue is decided in constructor
-     * and defines the maximum batch size.
+     * to place new updates is {@link #pendingUpdatesCursor}. The constructor set the length of this queue
+     * and the length defines the maximum batch size.
      */
     private final NodeLabelUpdate[] pendingUpdates;
 
@@ -329,8 +330,8 @@ class NativeLabelScanWriter implements LabelScanWriter
     }
 
     /**
-     * Applies {@link #write(NodeLabelUpdate) queued updates} which has not not yet been applied.
-     * After this call no more {@link #write(NodeLabelUpdate)} can be applied.
+     * Applies {@link #write(NodeLabelUpdate) queued updates} which has not yet been applied.
+     * No more {@link #write(NodeLabelUpdate) updates} can be applied after this call.
      */
     @Override
     public void close() throws IOException

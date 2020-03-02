@@ -118,7 +118,6 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         private long currentRange;
 
         // nodeId (relative to lowestRange) --> labelId[]
-        @SuppressWarnings( "unchecked" )
         private final MutableLongList[] labelsForEachNode = new MutableLongList[RANGE_SIZE];
 
         NodeLabelRangeIterator( long lowestRange )

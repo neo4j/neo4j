@@ -30,8 +30,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceUtils;
 
 /**
- * {@link LongIterator} acting as a combining of multiple {@link LongIterator}
- * for merging their results lazily as iterating commences. Both {@code AND} and {@code OR} merging is supported.
+ * A {@link LongIterator} that acts as a composition of multiple {@link LongIterator iterators},
+ * merge their results lazily as iteration progresses. Has support for both {@code AND} and {@code OR} merging.
  * <p>
  * Source iterators must be sorted in ascending order.
  */

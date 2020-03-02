@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 public interface LabelScan
 {
     /**
-     * Initialize the client for scanning for label
+     * Initialize the client for scanning for a label.
      *
      * @param client the client used for consuming data
      * @param cursorTracer underlying page cursor tracer

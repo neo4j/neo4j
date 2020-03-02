@@ -68,7 +68,7 @@ abstract class LabelScanValueIndexAccessor
                 " where previous range was " + prevRange;
         prevLabel = key.labelId;
         prevRange = key.idRange;
-        // Made as a method returning boolean so that it can participate in an assert call.
+        // Made as a method returning boolean so that it can participate in an assert-call.
         return true;
     }
 

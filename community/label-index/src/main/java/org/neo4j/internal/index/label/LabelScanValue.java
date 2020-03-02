@@ -80,7 +80,7 @@ class LabelScanValue
     }
 
     /**
-     * @return whether or not all bits in this range are cleared, i.e. the whole range is empty.
+     * @return {@code true} if no bit in this range is set, otherwise {@code false}.
      */
     boolean isEmpty()
     {

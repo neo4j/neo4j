@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 /**
- * Stream of changes used to rebuild a {@link LabelScanStore} from scratch.
+ * Stream of changes used to rebuild a {@link LabelScanStore}.
  */
 public interface FullStoreChangeStream
 {

@@ -51,7 +51,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * A {@link NativeLabelScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
- * This class also has a {@link #main(String[])} method for dumping the contents of such a write log to console or file, as text.
+ * This class also has a {@link #main(String[])} method for dumping the contents of such write log to console or file, as text.
  */
 public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 {
@@ -425,6 +425,7 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
             long range = -1;
             int labelId = -1;
             long flush = 0;
+            //noinspection InfiniteLoopStatement
             while ( true )
             {
                 byte type = channel.get();

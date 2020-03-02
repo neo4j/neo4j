@@ -405,8 +405,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         }
     }
 
-    @Override
-    public boolean hasStore()
+    private boolean hasStore()
     {
         return fileSystem.fileExists( storeFile );
     }
@@ -535,6 +534,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     @Override
     public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
+        //noinspection unchecked
         return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 

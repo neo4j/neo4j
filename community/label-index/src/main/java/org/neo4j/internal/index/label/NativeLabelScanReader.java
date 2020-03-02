@@ -38,13 +38,13 @@ import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
 
 /**
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
- * Each {@link LongIterator} returned from each of the methods is backed by {@link Seeker}
- * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)}.
+ * Each {@link LongIterator} returned from each of the methods has a {@link Seeker}
+ * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)} backing it.
  */
 class NativeLabelScanReader implements LabelScanReader
 {
     /**
-     * Index which is queried when calling the methods below.
+     * Index that is queried when calling the methods below.
      */
     private final GBPTree<LabelScanKey,LabelScanValue> index;
 
