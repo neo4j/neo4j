@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -43,8 +42,6 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class SizeEstimationTest
 {
     private static final double EXPECTED_MARGIN_OF_ERROR = 0.1;
-    @Inject
-    private FileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -74,7 +71,7 @@ class SizeEstimationTest
                 new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ), layout ).build() )
         {
             // given
-            int count = random.nextInt( 100_000, 1_000_000 );
+            int count = random.nextInt( 500, 2_500 );
             try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
                 for ( int i = 0; i < count; i++ )

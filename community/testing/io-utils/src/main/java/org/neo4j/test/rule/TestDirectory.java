@@ -50,10 +50,10 @@ import static java.lang.System.lineSeparator;
  * <pre>
  *   public class SomeTest
  *   {
- *     @Rule
+ *    {@literal @}Rule
  *     public TestDirectory dir = TestDirectory.testDirectory();
  *
- *     @Test
+ *    {@literal @}Test
  *     public void shouldDoSomething()
  *     {
  *       File storeDir = dir.homeDir();
@@ -240,11 +240,11 @@ public class TestDirectory extends ExternalResource
 
                 fileSystem.deleteRecursively( testDirectory );
 
-                long limit = ByteUnit.mebiBytes( 50 );
+                long limit = ByteUnit.mebiBytes( 65 ); // Tolerate 64 MiB of storage usage, plus 1 MiB of slack.
                 if ( totalSize.map( l -> l > limit ).orElse( false ) && // Larger than limit
                         !(fileSystem instanceof EphemeralFileSystemAbstraction) )
                 {
-                    throw new IllegalStateException( String.format( "Test created more than %s of data, total size was %s\n%s",
+                    throw new IllegalStateException( String.format( "Test created more than %s of data, total size was %s%n%s",
                             ByteUnit.bytesToString( limit ), ByteUnit.bytesToString( totalSize.get() ), sb.toString() ) );
                 }
             }
