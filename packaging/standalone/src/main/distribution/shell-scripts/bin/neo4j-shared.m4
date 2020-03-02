@@ -233,7 +233,7 @@ EOF
   for file in "neo4j-wrapper.conf" "neo4j.conf"; do
     path="${NEO4J_CONF}/${file}"
     if [ -e "${path}" ]; then
-      while read line; do
+      while read line || [[ -n "$line" ]]; do
         parse_line "${line}"
       done <"${path}"
     fi
