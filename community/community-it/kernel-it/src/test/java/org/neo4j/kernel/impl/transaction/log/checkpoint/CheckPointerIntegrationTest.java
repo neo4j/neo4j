@@ -187,7 +187,14 @@ class CheckPointerIntegrationTest
         // then - checkpoints + shutdown checkpoint have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
-        assertEquals( counter + 1, checkPoints.size() );
+        // Use greater-than-or-equal-to in order to accommodate the following data-race:
+        // Since the `threshold.isCheckPointingNeeded()` call in CheckPointerImpl is done outside of the `mutex.checkPoint()` lock,
+        // and also the `check_point_interval_time` is 300 milliseconds, it means that our direct `triggerCheckPointAttempt( db )` call
+        // can race with the scheduled checkpoints, and both can decide that a checkpoint is needed. They will then coordinate via the
+        // lock to do two checkpoints, one after the other. If our direct call wins the race and goes first, then the scheduled
+        // checkpoint will race with our `checkPointInTxLog( db )` call, which can then count only one checkpoint in the log when there
+        // are actually two.
+        assertThat( checkPoints.size() ).isGreaterThanOrEqualTo( counter + 1 );
     }
 
     @Test
