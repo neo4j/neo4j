@@ -71,7 +71,7 @@ class StoreLogServiceTest
                 .build( fs );
         String firstMessage = "FirstMessage";
         String secondMessage = "SecondMessage";
-        try ( Lifespan life = new Lifespan( logService ) )
+        try ( Lifespan ignored = new Lifespan( logService ) )
         {
             Log log = logService.getInternalLog( getClass() );
             log.debug( firstMessage );
@@ -98,7 +98,7 @@ class StoreLogServiceTest
                 .build( fs );
         String firstMessage = "FirstMessage";
         String secondMessage = "SecondMessage";
-        try ( Lifespan life = new Lifespan( logService ) )
+        try ( Lifespan ignored = new Lifespan( logService ) )
         {
             Log log = logService.getInternalLog( getClass() );
             log.info( firstMessage );
@@ -125,7 +125,7 @@ class StoreLogServiceTest
                 .withLevel( getClass().getPackage().getName(), Level.DEBUG )
                 .build( fs );
         String firstMessage = "FirstMessage";
-        try ( Lifespan life = new Lifespan( logService ) )
+        try ( Lifespan ignored = new Lifespan( logService ) )
         {
             Log log = logService.getInternalLog( getClass() );
             log.debug( firstMessage );
@@ -164,13 +164,15 @@ class StoreLogServiceTest
         // Sometimes instantiate the log here.
         // Also sometimes not since we want to exercise the race of instantiating the log instance concurrently with changing log level.
         Log globalLog = random.nextBoolean() ? logService.getInternalLog( StoreLogServiceTest.class ) : null;
-        try ( Lifespan life = new Lifespan( logService ) )
+        try ( Lifespan ignored = new Lifespan( logService ) )
         {
             Race race = new Race();
+            AtomicBoolean start = new AtomicBoolean();
             AtomicBoolean end = new AtomicBoolean();
             race.addContestants( loggerThreads, () ->
             {
                 ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
+                start.set( true );
                 while ( !end.get() )
                 {
                     long id = nextId.incrementAndGet();
@@ -185,11 +187,15 @@ class StoreLogServiceTest
             } );
             race.addContestant( throwing( () ->
             {
+                while ( !start.get() )
+                {
+                    Thread.onSpinWait();
+                }
                 ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
                 Level[] levels = new Level[]{Level.INFO, Level.WARN, Level.ERROR};
                 for ( Level level : levels )
                 {
-                    Thread.sleep( tlRandom.nextInt( 5_000 ) );
+                    Thread.sleep( tlRandom.nextInt( 200 ) );
                     levelChanger.accept( logService, level );
                 }
                 end.set( true );
