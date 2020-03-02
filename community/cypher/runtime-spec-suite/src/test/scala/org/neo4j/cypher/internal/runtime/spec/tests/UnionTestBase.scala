@@ -560,35 +560,35 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected)
   }
 
-    test("should union on the RHS of a hash join") {
-      val size = sizeHint / 3
-      // given
-      val (as, bs) = given {
-        val as = nodeGraph(size, "A")
-        val bs = nodeGraph(size, "B")
-        nodeGraph(size, "C")
-        (as, bs)
-      }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .nodeHashJoin("x")
-        .|.union()
-        .|.|.nodeByLabelScan("x", "B")
-        .|.nodeByLabelScan("x", "A")
-        .allNodeScan("x")
-        .build()
-
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = for {
-        x <- as ++ bs
-      } yield Array(x)
-
-      runtimeResult should beColumns("x").withRows(expected)
+  test("should union on the RHS of a hash join") {
+    val size = sizeHint / 3
+    // given
+    val (as, bs) = given {
+      val as = nodeGraph(size, "A")
+      val bs = nodeGraph(size, "B")
+      nodeGraph(size, "C")
+      (as, bs)
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      .|.union()
+      .|.|.nodeByLabelScan("x", "B")
+      .|.nodeByLabelScan("x", "A")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      x <- as ++ bs
+    } yield Array(x)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
 
     test("should union with reducers") {
       val size = sizeHint / 3
