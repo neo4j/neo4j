@@ -68,7 +68,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -113,7 +112,7 @@ class TransactionLogAppendAndRotateIT
 
         // WHEN
         Race race = new Race();
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 4; i++ )
         {
             race.addContestant( () ->
             {
@@ -132,17 +131,20 @@ class TransactionLogAppendAndRotateIT
                 }
             } );
         }
-        race.addContestant( endAfterMax( 10, SECONDS, end ) );
+        race.addContestant( endAfterMax( 250, MILLISECONDS, end, monitoring ) );
         race.go();
 
         // THEN
         assertTrue( monitoring.numberOfRotations() > 0 );
     }
 
-    private Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end )
+    private Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )
     {
         return () ->
         {
+            while ( monitoring.numberOfRotations() < 2 && !end.get() ) {
+                parkNanos( MILLISECONDS.toNanos( 50 ) );
+            }
             long endTime = currentTimeMillis() + unit.toMillis( time );
             while ( currentTimeMillis() < endTime && !end.get() )
             {

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -122,6 +123,7 @@ class BatchingTransactionAppenderRotationIT
             SimpleTransactionIdStore transactionIdStore ) throws IOException
     {
         return LogFilesBuilder.builder( layout, fileSystem )
+                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )

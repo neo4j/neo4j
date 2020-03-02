@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -105,12 +106,7 @@ class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        final LogFiles logFiles = buildLogFiles( transactionIdStore );
         life.add( logFiles );
         life.start();
         try
@@ -139,12 +135,7 @@ class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        final LogFiles logFiles = buildLogFiles( transactionIdStore );
         life.add( logFiles );
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, DATABASE_HEALTH ) );
@@ -171,12 +162,7 @@ class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        final LogFiles logFiles = buildLogFiles( transactionIdStore );
 
         life.start();
         life.add( logFiles );
@@ -231,12 +217,7 @@ class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        final LogFiles logFiles = buildLogFiles( transactionIdStore );
         life.start();
         life.add( logFiles );
         try
@@ -294,6 +275,17 @@ class PhysicalLogicalTransactionStoreTest
         {
             life.shutdown();
         }
+    }
+
+    private LogFiles buildLogFiles( TransactionIdStore transactionIdStore ) throws IOException
+    {
+        return LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( mock( LogVersionRepository.class ) )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .build();
     }
 
     private void addATransactionAndRewind( LifeSupport life, LogFiles logFiles,

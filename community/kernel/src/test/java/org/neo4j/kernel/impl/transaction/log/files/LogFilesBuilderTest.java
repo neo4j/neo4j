@@ -112,6 +112,22 @@ class LogFilesBuilderTest
     }
 
     @Test
+    void buildContextWithRotationThreshold() throws IOException
+    {
+        TransactionLogFilesContext context = builder( databaseLayout, fileSystem )
+                .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withLogEntryReader( logEntryReader() )
+                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
+                .buildContext();
+        assertEquals( fileSystem, context.getFileSystem() );
+        assertNotNull( context.getLogEntryReader() );
+        assertEquals( ByteUnit.mebiBytes( 1 ), context.getRotationThreshold().get() );
+        assertEquals( 1, context.getLastCommittedTransactionId() );
+        assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
+    }
+
+    @Test
     void buildDefaultContextWithDependencies() throws IOException
     {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 2 );
@@ -141,6 +157,7 @@ class LogFilesBuilderTest
                 .set( transaction_logs_root_path, customLogDirectory.toPath().toAbsolutePath() )
                 .build();
         LogFiles logFiles = builder( DatabaseLayout.of( config ), fileSystem )
+                .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( logEntryReader() )

@@ -75,7 +75,7 @@ public class DatabaseMigratorFactory
         final LogFiles logFiles;
         try
         {
-            // we should not use provided database layout here since transaction log location is different compare to previous versions
+            // we should not use provided database layout here since transaction log location is different compared to previous versions
             // and that's why we need to use custom transaction logs locator and database layout
             DatabaseLayout oldDatabaseLayout = new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(),
                     logsLocator );

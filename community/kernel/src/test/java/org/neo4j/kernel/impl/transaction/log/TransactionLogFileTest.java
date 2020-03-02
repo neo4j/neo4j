@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -75,14 +76,15 @@ class TransactionLogFileTest
     @Inject
     private LifeSupport life;
 
+    private final long rotationThreshold = ByteUnit.mebiBytes( 1 );
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
 
     @Test
     void skipLogFileWithoutHeader() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -107,7 +109,7 @@ class TransactionLogFileTest
     void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException
     {
         final CapturingNativeAccess capturingNativeAccess = new CapturingNativeAccess();
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+        LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -144,6 +146,7 @@ class TransactionLogFileTest
     {
         // GIVEN
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -169,6 +172,7 @@ class TransactionLogFileTest
     {
         // GIVEN
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -200,6 +204,7 @@ class TransactionLogFileTest
     {
         // GIVEN
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -247,6 +252,7 @@ class TransactionLogFileTest
     {
         // GIVEN
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -331,6 +337,7 @@ class TransactionLogFileTest
     void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )

@@ -26,6 +26,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.function.Factory;
@@ -35,6 +36,7 @@ import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -143,7 +145,8 @@ public class DatabaseRule extends ExternalResource
 
         // Satisfy non-satisfied dependencies
         mutableDependencies.satisfyDependency( mock( CompositeDatabaseAvailabilityGuard.class ) );
-        Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
+        Config config = dependency( mutableDependencies, Config.class,
+                deps -> Config.defaults( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) ) );
         config.set( default_schema_provider, EMPTY.getProviderDescriptor().name() );
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance() ) );

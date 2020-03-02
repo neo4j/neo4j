@@ -233,7 +233,8 @@ public class TestDirectory extends ExternalResource
                     {
                         String path = homeDir().toPath().relativize( fh.getFile().toPath() ).toString();
                         String bytes = ByteUnit.bytesToString( size );
-                        sb.append( testName ).append( " => " ).append( "./" ).append( path ).append( " : " ).append( bytes ).append( newLine );
+                        sb.append( owningTest.getSimpleName() ).append( '.' ).append( testName ).append( " => " )
+                                .append( "./" ).append( path ).append( " : " ).append( bytes ).append( newLine );
                     }
                     return size;
                 } ).reduce( Long::sum ); // Sum

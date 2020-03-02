@@ -28,10 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.batchinsert.BatchInserters;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -59,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -66,6 +69,10 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 @Neo4jLayoutExtension
 class BatchInserterImplTest
 {
+    private final Config config = defaults( Map.of(
+            pagecache_memory, "280K",
+            logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) ) );
+
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -74,7 +81,7 @@ class BatchInserterImplTest
     @Test
     void testHonorsPassedInParams() throws Exception
     {
-        try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem, defaults( pagecache_memory, "280K" ) ) )
+        try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem, config ) )
         {
             NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
             PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
@@ -112,7 +119,7 @@ class BatchInserterImplTest
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var databaseTracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
-        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, defaults( pagecache_memory, "8m" ), loadExtensions(), databaseTracers ) )
+        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, loadExtensions(), databaseTracers ) )
         {
             for ( int i = 0; i < 10; i++ )
             {
@@ -120,11 +127,11 @@ class BatchInserterImplTest
             }
         }
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 316 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 316 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 297 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 19 );
-        assertThat( pageCacheTracer.flushes() ).isEqualTo( 235 );
+        assertThat( pageCacheTracer.pins() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( pageCacheTracer.pins() );
+        assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.flushes() ).isGreaterThan( 0 );
     }
 
     @Test
@@ -133,7 +140,7 @@ class BatchInserterImplTest
         // given
         DatabaseLayout layout = databaseLayout;
         long[] nodeIds = new long[10];
-        try ( var inserter = BatchInserters.inserter( layout, fileSystem, defaults( pagecache_memory, "8m" ) ) )
+        try ( var inserter = BatchInserters.inserter( layout, fileSystem, config ) )
         {
             Map<String,Object> properties = new HashMap<>();
             properties.put( "name", "Just some name" );
