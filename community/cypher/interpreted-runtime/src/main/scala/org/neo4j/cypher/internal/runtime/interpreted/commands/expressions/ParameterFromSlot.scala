@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 
 case class ParameterFromSlot(offset: Int, parameterName: String) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = state.params(offset)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = state.params(offset)
 
   override def toString: String = "$" + parameterName
 

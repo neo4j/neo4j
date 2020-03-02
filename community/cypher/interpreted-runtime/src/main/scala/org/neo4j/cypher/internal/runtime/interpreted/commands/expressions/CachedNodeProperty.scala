@@ -48,8 +48,8 @@ abstract class AbstractCachedProperty extends Expression {
 
   // encapsulated cached-property logic
 
-  def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
-    val id = getId(ctx)
+  def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    val id = getId(row)
     if (id == StatementConstants.NO_SUCH_ENTITY)
       Values.NO_VALUE
     else {
@@ -59,12 +59,12 @@ abstract class AbstractCachedProperty extends Expression {
           val maybeTxStateValue = getTxStateProperty(state, id, propId)
           maybeTxStateValue match {
             case null =>
-              val cached = getCachedProperty(ctx)
+              val cached = getCachedProperty(row)
               if (cached == null) {
                 // if the cached node property has been invalidated
                 val value = property(state, id, propId)
                 // Re-cache the value
-                setCachedProperty(ctx, value)
+                setCachedProperty(row, value)
                 value
               } else {
                 cached

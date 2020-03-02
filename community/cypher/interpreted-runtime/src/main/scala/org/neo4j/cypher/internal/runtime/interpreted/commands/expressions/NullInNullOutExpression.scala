@@ -27,8 +27,8 @@ import org.neo4j.values.storable.Values
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
   def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = argument(ctx, state) match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = argument(row, state) match {
     case x if x == Values.NO_VALUE => Values.NO_VALUE
-    case x    => compute(x, ctx, state)
+    case x    => compute(x, row, state)
   }
 }

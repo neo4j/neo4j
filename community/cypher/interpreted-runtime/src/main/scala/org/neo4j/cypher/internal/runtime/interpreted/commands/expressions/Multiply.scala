@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values
 
 case class Multiply(a: Expression, b: Expression) extends Expression  {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = (a(ctx, state), b(ctx, state)) match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = (a(row, state), b(row, state)) match {
     case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
     case (x,y) => CypherMath.multiply(x, y)
   }

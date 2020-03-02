@@ -29,7 +29,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class Linenumber() extends Expression {
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = row.getLinenumber match {
     case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
     case _ => Values.NO_VALUE
   }
@@ -43,7 +43,7 @@ case class Linenumber() extends Expression {
 
 
 case class File() extends Expression {
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = row.getLinenumber match {
     case Some(ResourceLinenumber(name, _, _)) =>Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
     case _ => Values.NO_VALUE
   }

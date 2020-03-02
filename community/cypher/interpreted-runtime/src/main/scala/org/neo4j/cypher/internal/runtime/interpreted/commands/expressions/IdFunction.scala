@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Values
 
 case class IdFunction(inner: Expression) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = inner(ctx, state) match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = inner(row, state) match {
     case IsNoValue() => Values.NO_VALUE
     case value => CypherFunctions.id(value)
   }

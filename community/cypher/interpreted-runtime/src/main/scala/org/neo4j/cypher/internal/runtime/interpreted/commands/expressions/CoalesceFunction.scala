@@ -27,10 +27,10 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class CoalesceFunction(override val arguments: Expression*) extends Expression {
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
     arguments.
       view.
-      map(expression => expression(ctx, state)).
+      map(expression => expression(row, state)).
       find(value => !(value eq Values.NO_VALUE)) match {
       case None    => Values.NO_VALUE
       case Some(x) => x

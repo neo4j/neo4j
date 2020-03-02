@@ -32,11 +32,11 @@ object ListLiteral {
 case class ListLiteral(override val arguments: Expression*) extends Expression {
   private val size = arguments.size
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val result = new Array[AnyValue](size)
     var i = 0
     while (i < size) {
-      result(i) = arguments(i).apply(ctx, state)
+      result(i) = arguments(i).apply(row, state)
       i += 1
     }
     VirtualValues.list(result:_*)

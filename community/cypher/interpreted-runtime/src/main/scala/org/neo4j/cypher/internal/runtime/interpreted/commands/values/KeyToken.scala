@@ -45,7 +45,7 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   override def rewrite(f: Expression => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = throw new NotImplementedError()
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = throw new NotImplementedError()
 }
 
 object KeyToken {

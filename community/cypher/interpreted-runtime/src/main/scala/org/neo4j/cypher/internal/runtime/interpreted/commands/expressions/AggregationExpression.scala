@@ -28,7 +28,7 @@ import org.neo4j.exceptions.SyntaxException
 import org.neo4j.values.AnyValue
 
 abstract class AggregationExpression extends Expression {
-  def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+  def apply(row: ReadableRow, state: QueryState): AnyValue =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
   def createAggregationFunction(operatorId: Id): AggregationFunction

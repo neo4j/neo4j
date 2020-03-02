@@ -35,7 +35,7 @@ object ExpressionVariable {
 
 case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = state.expressionVariables(offset)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = state.expressionVariables(offset)
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

@@ -27,16 +27,16 @@ import org.neo4j.values.AnyValue
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
-    val value = expression(ctx, state)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    val value = expression(row, state)
 
     val matchingExpression: Option[Expression] = alternatives collectFirst {
-      case (exp, res) if exp(ctx, state) == value => res
+      case (exp, res) if exp(row, state) == value => res
     }
 
     matchingExpression match {
-      case Some(resultExpression) => resultExpression(ctx, state)
-      case None => default.getOrElse(Null()).apply(ctx, state)
+      case Some(resultExpression) => resultExpression(row, state)
+      case None => default.getOrElse(Null()).apply(row, state)
     }
   }
 

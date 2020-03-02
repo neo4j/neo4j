@@ -35,8 +35,8 @@ import scala.collection.Map
 case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
   extends Expression with GraphElementPropertyFunctions {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
-    val variableValue = variable(ctx, state)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    val variableValue = variable(row, state)
 
     val mapOfProperties = variableValue match {
       case v if v eq Values.NO_VALUE => return Values.NO_VALUE
@@ -53,7 +53,7 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
     {
       val builder = new MapValueBuilder(literalExpressions.size)
       literalExpressions.foreach {
-        case (k, e) => builder.add(k, e(ctx, state))
+        case (k, e) => builder.add(k, e(row, state))
       }
       return mapOfProperties.updatedWith(builder.build())
     }

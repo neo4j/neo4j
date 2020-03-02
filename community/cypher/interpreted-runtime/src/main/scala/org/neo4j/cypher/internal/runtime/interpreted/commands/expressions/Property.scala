@@ -41,7 +41,7 @@ import scala.util.Try
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
-  def apply(ctx: ReadableRow, state: QueryState): AnyValue = mapExpr(ctx, state) match {
+  def apply(row: ReadableRow, state: QueryState): AnyValue = mapExpr(row, state) match {
     case IsNoValue() => Values.NO_VALUE
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {

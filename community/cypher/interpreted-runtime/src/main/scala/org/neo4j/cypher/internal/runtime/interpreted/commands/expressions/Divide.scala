@@ -27,9 +27,9 @@ import org.neo4j.values.AnyValue
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
-    val aVal = a(ctx, state)
-    val bVal = b(ctx, state)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    val aVal = a(row, state)
+    val bVal = b(row, state)
     CypherMath.divideCheckForNull(aVal, bVal)
     applyWithValues(aVal, bVal)
   }

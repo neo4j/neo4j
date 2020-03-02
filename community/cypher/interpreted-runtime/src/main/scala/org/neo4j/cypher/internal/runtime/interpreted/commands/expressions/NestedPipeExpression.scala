@@ -34,9 +34,9 @@ case class NestedPipeExpression(pipe: Pipe,
                                 inner: Expression,
                                 availableExpressionVariables: Seq[ExpressionVariable]) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
 
-    val initialContext = pipe.executionContextFactory.copyWith(ctx)
+    val initialContext = pipe.executionContextFactory.copyWith(row)
     availableExpressionVariables.foreach { expVar =>
       initialContext.set(expVar.name, state.expressionVariables(expVar.offset))
     }

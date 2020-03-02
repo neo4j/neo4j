@@ -251,7 +251,7 @@ class CoerceToTest extends CypherFunSuite {
 
         override def children: Seq[AstNode[_]] = Seq.empty
 
-        override def apply(ctx: ReadableRow, state: QueryState): AnyValue = in
+        override def apply(row: ReadableRow, state: QueryState): AnyValue = in
 
       }
 

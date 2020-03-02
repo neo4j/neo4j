@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = coerce(expr(ctx, state), state, typ)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = coerce(expr(row, state), state, typ)
 
   override def rewrite(f: Expression => Expression): Expression = f(CoerceTo(expr.rewrite(f), typ))
 

@@ -34,10 +34,10 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
 
   override def children: Seq[AstNode[_]] = input
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val query = state.query
     val argValues = input.map(arg => {
-      arg(ctx, state)
+      arg(row, state)
     })
     call(query, argValues)
   }

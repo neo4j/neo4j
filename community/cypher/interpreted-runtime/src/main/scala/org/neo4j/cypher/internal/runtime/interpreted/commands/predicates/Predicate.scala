@@ -49,8 +49,8 @@ import scala.util.Success
 import scala.util.Try
 
 abstract class Predicate extends Expression {
-  override def apply(ctx: ReadableRow, state: QueryState): Value =
-    isMatch(ctx, state).
+  override def apply(row: ReadableRow, state: QueryState): Value =
+    isMatch(row, state).
       map(Values.booleanValue).
       getOrElse(Values.NO_VALUE)
 

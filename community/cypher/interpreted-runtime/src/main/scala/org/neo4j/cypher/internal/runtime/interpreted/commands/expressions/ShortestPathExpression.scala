@@ -58,15 +58,15 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
 
   val predicates = perStepPredicates ++ fullPathPredicates
 
-  def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
-    if (anyStartpointsContainNull(ctx)) {
+  def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    if (anyStartpointsContainNull(row)) {
       Values.NO_VALUE
     } else {
-      val start = getEndPoint(ctx, state, shortestPathPattern.left)
-      val end = getEndPoint(ctx, state, shortestPathPattern.right)
+      val start = getEndPoint(row, state, shortestPathPattern.left)
+      val end = getEndPoint(row, state, shortestPathPattern.right)
       if (!shortestPathPattern.allowZeroLength && disallowSameNode && start
         .equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
-      getMatches(ctx, start, end, state)
+      getMatches(row, start, end, state)
     }
   }
 

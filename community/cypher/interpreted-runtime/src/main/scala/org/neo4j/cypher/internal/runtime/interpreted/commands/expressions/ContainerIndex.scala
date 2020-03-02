@@ -32,10 +32,10 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
 
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = expression(ctx, state) match {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = expression(row, state) match {
     case x if x eq NO_VALUE => NO_VALUE
     case value =>
-      val idx = index(ctx, state)
+      val idx = index(row, state)
       if (idx eq NO_VALUE) NO_VALUE
       else CypherFunctions.containerIndex(value,
         idx,

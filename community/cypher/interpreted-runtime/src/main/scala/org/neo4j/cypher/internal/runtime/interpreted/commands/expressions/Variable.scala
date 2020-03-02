@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 
 case class Variable(name: String) extends VariableCommand(name) {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = ctx.getByName(name)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = row.getByName(name)
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

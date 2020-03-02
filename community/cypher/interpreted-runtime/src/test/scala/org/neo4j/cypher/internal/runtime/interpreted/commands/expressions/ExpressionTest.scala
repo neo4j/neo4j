@@ -133,5 +133,5 @@ class TestExpression extends Expression {
 
   override def rewrite(f: Expression => Expression): Expression = null
 
-  override def apply(v1: ReadableRow, state: QueryState): AnyValue = null
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = null
 }
