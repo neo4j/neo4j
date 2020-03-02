@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -49,6 +50,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingSparseCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingDenseCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingSparseCursor;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
  * Utility for performing Expand(Into)
@@ -60,6 +62,8 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 @SuppressWarnings( "unused" )
 public class CachingExpandInto
 {
+    private static final long RELATIONSHIP_SIZE = shallowSizeOfInstance( Relationship.class );
+
     private static final int NOT_DENSE_DEGREE = -1;
 
     private RelationshipCache relationshipCache = new RelationshipCache();
@@ -68,11 +72,15 @@ public class CachingExpandInto
 
     private final Read read;
     private final Direction direction;
+    private final QueryMemoryTracker memoryTracker;
+    private final int operatorId;
 
-    public CachingExpandInto( Read read, Direction direction )
+    public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )
     {
         this.read = read;
+        this.memoryTracker = memoryTracker;
         this.direction = direction;
+        this.operatorId = operatorId;
     }
 
     /**
@@ -504,11 +512,15 @@ public class CachingExpandInto
                 if ( allRelationships.otherNodeReference() == otherNode )
                 {
                     connections.add( relationship( allRelationships ) );
+                    memoryTracker.allocated( RELATIONSHIP_SIZE, operatorId );
                     return true;
                 }
             }
 
-            relationshipCache.add( fromNode, toNode, direction, connections );
+            if ( relationshipCache.add( fromNode, toNode, direction, connections ) )
+            {
+                memoryTracker.allocated( 2 * Long.BYTES, operatorId );
+            }
             done();
             close();
             return false;
@@ -568,11 +580,16 @@ public class CachingExpandInto
             this.capacity = capacity;
         }
 
-        public void add( long start, long end, Direction direction, List<Relationship> relationships )
+        public boolean add( long start, long end, Direction direction, List<Relationship> relationships )
         {
             if ( map.size() < capacity )
             {
                 map.put( key( start, end, direction ), relationships );
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

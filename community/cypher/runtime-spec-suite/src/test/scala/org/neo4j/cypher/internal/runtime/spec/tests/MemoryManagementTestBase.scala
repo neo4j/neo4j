@@ -469,6 +469,46 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should kill caching expand-into query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
+  test("should kill caching optional expand-into query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .optionalExpandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
