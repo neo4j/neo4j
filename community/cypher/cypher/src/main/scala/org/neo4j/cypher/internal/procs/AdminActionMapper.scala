@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
-import org.neo4j.cypher.internal.ast.SchemaManagementAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -71,7 +70,6 @@ object AdminActionMapper {
     case CreateIndexAction => security.PrivilegeAction.CREATE_INDEX
     case DropIndexAction => security.PrivilegeAction.DROP_INDEX
     case AllConstraintActions => security.PrivilegeAction.CONSTRAINT
-    case SchemaManagementAction => security.PrivilegeAction.SCHEMA
     case CreateConstraintAction => security.PrivilegeAction.CREATE_CONSTRAINT
     case DropConstraintAction => security.PrivilegeAction.DROP_CONSTRAINT
 
@@ -117,7 +115,6 @@ object AdminActionMapper {
     case security.PrivilegeAction.CREATE_INDEX => CreateIndexAction
     case security.PrivilegeAction.DROP_INDEX => DropIndexAction
     case security.PrivilegeAction.CONSTRAINT => AllConstraintActions
-    case security.PrivilegeAction.SCHEMA => SchemaManagementAction
     case security.PrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
     case security.PrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
 

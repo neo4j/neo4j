@@ -107,15 +107,6 @@ public enum PrivilegeAction
                 }
             },
 
-    SCHEMA
-            {
-                @Override
-                public boolean satisfies( PrivilegeAction action )
-                {
-                    return INDEX.satisfies( action ) || CONSTRAINT.satisfies( action ) || this == action;
-                }
-            },
-
     CONSTRAINT
             {
                 public boolean satisfies( PrivilegeAction action )
@@ -278,7 +269,8 @@ public enum PrivilegeAction
                 public boolean satisfies( PrivilegeAction action )
                 {
                     return action == PrivilegeAction.ACCESS ||
-                           SCHEMA.satisfies( action ) ||
+                           INDEX.satisfies( action ) ||
+                           CONSTRAINT.satisfies( action ) ||
                            TOKEN.satisfies( action ) ||
                            this == action;
                 }

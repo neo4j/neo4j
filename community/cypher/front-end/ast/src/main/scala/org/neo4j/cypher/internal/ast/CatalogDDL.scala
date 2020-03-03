@@ -299,7 +299,6 @@ case object StopDatabaseAction extends DatabaseAction("STOP")
 
 case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 case object AccessDatabaseAction extends DatabaseAction("ACCESS")
-case object SchemaManagementAction extends DatabaseAction("SCHEMA MANAGEMENT")
 
 abstract class IndexManagementAction(override val name: String) extends DatabaseAction(name)
 case object AllIndexActions extends IndexManagementAction("INDEX MANAGEMENT")
