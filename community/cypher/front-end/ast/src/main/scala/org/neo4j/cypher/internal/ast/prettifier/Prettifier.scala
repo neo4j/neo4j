@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphScope
@@ -124,11 +125,13 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.TraversePrivilege
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsersQualifier
@@ -150,16 +153,12 @@ import org.neo4j.cypher.internal.expressions.Variable
 case class Prettifier(expr: ExpressionStringifier) {
 
   private val NL = System.lineSeparator()
-  private val INDENT = "  "
 
-  private def indentedNewLine(l: String) = NL + INDENT + l
-  private def indentedLine(l: String) = INDENT + l
+  private val base = QueryPrettifier()
 
   def asString(statement: Statement): String = statement match {
-    case Query(maybePeriodicCommit, part) =>
-      val hint = maybePeriodicCommit.map("USING PERIODIC COMMIT" + _.size.map(" " + expr(_)).getOrElse("") + NL).getOrElse("")
-      val query = queryPart(part)
-      s"$hint$query"
+    case q: Query =>
+      base.query(q)
 
     case CreateIndex(LabelName(label), properties) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
@@ -179,10 +178,10 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"DROP INDEX ${Prettifier.escapeName(name)}"
 
     case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, None) =>
-      s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${asString(properties)} IS NODE KEY"
+      s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
 
     case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, Some(name)) =>
-      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${asString(properties)} IS NODE KEY"
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
 
     case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS NODE KEY"
@@ -224,14 +223,14 @@ case class Prettifier(expr: ExpressionStringifier) {
       val userNameString = Prettifier.escapeName(userName)
       val ifNotExists = ifExistsDo match {
         case _: IfExistsDoNothing => " IF NOT EXISTS"
-        case _ => ""
+        case _                    => ""
       }
       val password = if (initialParameterPassword.isDefined)
         s"$$${initialParameterPassword.get.name}"
       else "'******'"
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
-      val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
-                         else ""
+      val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
+      else ""
       s"${x.name} $userNameString$ifNotExists $passwordString$statusString"
 
     case x @ DropUser(userName, ifExists) =>
@@ -267,13 +266,13 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ CreateRole(roleName, None, ifExistsDo) =>
       ifExistsDo match {
         case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
-        case _ => s"${x.name} ${Prettifier.escapeName(roleName)}"
+        case _                    => s"${x.name} ${Prettifier.escapeName(roleName)}"
       }
 
     case x @ CreateRole(roleName, Some(fromRole), ifExistsDo) =>
       ifExistsDo match {
         case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
-        case _ => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
+        case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
       }
 
     case x @ DropRole(roleName, ifExists) =>
@@ -281,16 +280,16 @@ case class Prettifier(expr: ExpressionStringifier) {
       else s"${x.name} ${Prettifier.escapeName(roleName)}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) if roleNames.length > 1 =>
-      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", " )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", ")} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", ")} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ RevokeRolesFromUsers(roleNames, userNames) if roleNames.length > 1 =>
-      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ GrantPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
       s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
@@ -302,13 +301,13 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames) =>
-      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
+      Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
     case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames) =>
-      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
+      Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
     case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames, _) =>
-      prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
+      Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
@@ -361,7 +360,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ CreateDatabase(dbName, ifExistsDo) =>
       ifExistsDo match {
         case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS"
-        case _ => s"${x.name} ${Prettifier.escapeName(dbName)}"
+        case _                    => s"${x.name} ${Prettifier.escapeName(dbName)}"
       }
 
     case x @ DropDatabase(dbName, ifExists) =>
@@ -376,7 +375,7 @@ case class Prettifier(expr: ExpressionStringifier) {
 
     case x @ CreateGraph(catalogName, query) =>
       val graphName = catalogName.parts.mkString(".")
-      s"${x.name} $graphName {$NL${queryPart(query)}$NL}"
+      s"${x.name} $graphName {$NL${base.indented().queryPart(query)}$NL}"
 
     case x @ DropGraph(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
@@ -385,32 +384,282 @@ case class Prettifier(expr: ExpressionStringifier) {
     case CreateView(catalogName, params, query, _) =>
       val graphName = catalogName.parts.mkString(".")
       val paramString = params.map(p => "$" + p.name).mkString("(", ", ", ")")
-      s"CATALOG CREATE VIEW $graphName$paramString {$NL${queryPart(query)}$NL}"
+      s"CATALOG CREATE VIEW $graphName$paramString {$NL${base.indented().queryPart(query)}$NL}"
 
     case DropView(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
       s"CATALOG DROP VIEW $graphName"
   }
 
-  private def queryPart(part: QueryPart): String =
-    part match {
-      case SingleQuery(clauses) =>
-        clauses.map(dispatch).mkString(NL)
+  private case class QueryPrettifier(indentLevel: Int = 0) {
+    def indented(): QueryPrettifier = copy(indentLevel + 1)
 
-      case UnionAll(partA, partB) =>
-        s"${queryPart(partA)}${NL}UNION ALL$NL${queryPart(partB)}"
+    private val INDENT = "  " * indentLevel
 
-      case UnionDistinct(partA, partB) =>
-        s"${queryPart(partA)}${NL}UNION$NL${queryPart(partB)}"
+    private def asNewLine(l: String) = NL + l
 
-      case ProjectingUnionAll(partA, partB, mappings) =>
-        s"${queryPart(partA)}${NL}UNION ALL mappings: (${mappings.map(asString).mkString(", ")})$NL${queryPart(partB)}"
-
-      case ProjectingUnionDistinct(partA, partB, mappings) =>
-        s"${queryPart(partA)}${NL}UNION mappings: (${mappings.map(asString).mkString(", ")})$NL${queryPart(partB)}"
+    def query(q: Query): String = {
+      val hint = q.periodicCommitHint.map(INDENT + "USING PERIODIC COMMIT" + _.size.map(" " + expr(_)).getOrElse("") + NL).getOrElse("")
+      val query = queryPart(q.part)
+      s"$hint$query"
     }
 
-  private def prettifyDatabasePrivilege(privilegeName: String,
+    def queryPart(part: QueryPart): String =
+      part match {
+        case SingleQuery(clauses) =>
+          clauses.map(dispatch).mkString(NL)
+
+        case union: Union =>
+          val lhs = queryPart(union.part)
+          val rhs = queryPart(union.query)
+          val operation = union match {
+            case _: UnionAll      => s"${INDENT}UNION ALL"
+            case _: UnionDistinct => s"${INDENT}UNION"
+
+            case u: ProjectingUnionAll      =>
+              s"${INDENT}UNION ALL mappings: (${u.unionMappings.map(asString).mkString(", ")})"
+            case u: ProjectingUnionDistinct =>
+              s"${INDENT}UNION mappings: (${u.unionMappings.map(asString).mkString(", ")})"
+          }
+          Seq(lhs, operation, rhs).mkString(NL)
+
+      }
+
+    private def asString(u: UnionMapping): String = {
+      s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
+    }
+
+    private def dispatch(clause: Clause) = clause match {
+      case u: UseGraph       => asString(u)
+      case f: FromGraph      => asString(f)
+      case e: Return         => asString(e)
+      case m: Match          => asString(m)
+      case c: SubQuery       => asString(c)
+      case w: With           => asString(w)
+      case c: Create         => asString(c)
+      case u: Unwind         => asString(u)
+      case u: UnresolvedCall => asString(u)
+      case s: SetClause      => asString(s)
+      case r: Remove         => asString(r)
+      case d: Delete         => asString(d)
+      case m: Merge          => asString(m)
+      case l: LoadCSV        => asString(l)
+      case f: Foreach        => asString(f)
+      case s: Start          => asString(s)
+      case _                 => clause.asCanonicalStringVal // TODO
+    }
+
+    def asString(u: UseGraph): String =
+      s"${INDENT}USE ${expr(u.expression)}"
+
+    def asString(f: FromGraph): String =
+      s"${INDENT}FROM ${expr(f.expression)}"
+
+    def asString(m: Match): String = {
+      val o = if (m.optional) "OPTIONAL " else ""
+      val p = expr.patterns.apply(m.pattern)
+      val ind = indented()
+      val w = m.where.map(ind.asString).map(asNewLine).getOrElse("")
+      val h = m.hints.map(ind.asString).map(asNewLine).mkString
+      s"${INDENT}${o}MATCH $p$h$w"
+    }
+
+    def asString(c: SubQuery): String = {
+      s"""${INDENT}CALL {
+         |${indented().queryPart(c.part)}
+         |${INDENT}}""".stripMargin
+    }
+
+    def asString(w: Where): String =
+      s"${INDENT}WHERE ${expr(w.expression)}"
+
+    def asString(m: UsingHint): String = {
+      m match {
+        case UsingIndexHint(v, l, ps, s) => Seq(
+          s"${INDENT}USING INDEX ", if (s == SeekOnly) "SEEK " else "",
+          expr(v), ":", expr(l),
+          ps.map(expr(_)).mkString("(", ",", ")")
+        ).mkString
+
+        case UsingScanHint(v, l) => Seq(
+          s"${INDENT}USING SCAN ", expr(v), ":", expr(l)
+        ).mkString
+
+        case UsingJoinHint(vs) => Seq(
+          s"${INDENT}USING JOIN ON ", vs.map(expr(_)).toIterable.mkString(", ")
+        ).mkString
+      }
+    }
+
+    def asString(ma: MergeAction): String = ma match {
+      case OnMatch(set)  => s"${INDENT}ON MATCH ${asString(set)}"
+      case OnCreate(set) => s"${INDENT}ON CREATE ${asString(set)}"
+    }
+
+    def asString(m: Merge): String = {
+      val p = expr.patterns.apply(m.pattern)
+      val ind = indented()
+      val a = m.actions.map(ind.asString).map(asNewLine).mkString
+      s"${INDENT}MERGE $p$a"
+    }
+
+    def asString(o: Skip): String = s"${INDENT}SKIP ${expr(o.expression)}"
+    def asString(o: Limit): String = s"${INDENT}LIMIT ${expr(o.expression)}"
+
+    def asString(o: OrderBy): String = s"${INDENT}ORDER BY " + {
+      o.sortItems.map {
+        case AscSortItem(expression)  => expr(expression) + " ASCENDING"
+        case DescSortItem(expression) => expr(expression) + " DESCENDING"
+      }.mkString(", ")
+    }
+
+    def asString(r: ReturnItem): String = r match {
+      case AliasedReturnItem(e, v)   => expr(e) + " AS " + expr(v)
+      case UnaliasedReturnItem(e, _) => expr(e)
+    }
+
+    def asString(r: ReturnItemsDef): String = {
+      val as = if (r.includeExisting) Seq("*") else Seq()
+      val is = r.items.map(asString)
+      (as ++ is).mkString(", ")
+    }
+
+    def asString(r: Return): String = {
+      val d = if (r.distinct) " DISTINCT" else ""
+      val i = asString(r.returnItems)
+      val ind = indented()
+      val o = r.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
+      val l = r.limit.map(ind.asString).map(asNewLine).getOrElse("")
+      val s = r.skip.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}RETURN$d $i$o$s$l"
+    }
+
+    def asString(w: With): String = {
+      val d = if (w.distinct) " DISTINCT" else ""
+      val i = asString(w.returnItems)
+      val ind = indented()
+      val o = w.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
+      val l = w.limit.map(ind.asString).map(asNewLine).getOrElse("")
+      val s = w.skip.map(ind.asString).map(asNewLine).getOrElse("")
+      val wh = w.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}WITH$d $i$o$s$l$wh"
+    }
+
+    def asString(c: Create): String = {
+      val p = expr.patterns.apply(c.pattern)
+      s"${INDENT}CREATE $p"
+    }
+
+    def asString(u: Unwind): String = {
+      s"${INDENT}UNWIND ${expr(u.expression)} AS ${expr(u.variable)}"
+    }
+
+    def asString(u: UnresolvedCall): String = {
+      val namespace = expr(u.procedureNamespace)
+      val prefix = if (namespace.isEmpty) "" else namespace + "."
+      val arguments = u.declaredArguments.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
+      val ind = indented()
+      val yields = u.declaredResult.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}CALL $prefix${expr(u.procedureName)}$arguments$yields"
+    }
+
+    def asString(r: ProcedureResult): String = {
+      def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
+      val items = r.items.map(item).mkString(", ")
+      val ind = indented()
+      val where = r.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}YIELD $items$where"
+    }
+
+    def asString(s: SetClause): String = {
+      val items = s.items.map {
+        case SetPropertyItem(prop, exp)                       => s"${expr(prop)} = ${expr(exp)}"
+        case SetLabelItem(variable, labels)                   => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+        case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
+        case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"
+        case _                                                => s.asCanonicalStringVal
+      }
+      s"${INDENT}SET ${items.mkString(", ")}"
+    }
+
+    def asString(r: Remove): String = {
+      val items = r.items.map {
+        case RemovePropertyItem(prop)          => s"${expr(prop)}"
+        case RemoveLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+        case _                                 => r.asCanonicalStringVal
+      }
+      s"${INDENT}REMOVE ${items.mkString(", ")}"
+    }
+
+    def asString(v: LoadCSV): String = {
+      val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
+      val url = expr(v.urlString)
+      val varName = expr(v.variable)
+      val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR " + expr(x)).getOrElse("")
+      s"${INDENT}LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
+    }
+
+    def asString(delete: Delete): String = {
+      val detach = if (delete.forced) "DETACH " else ""
+      s"${INDENT}${detach}DELETE ${delete.expressions.map(expr(_)).mkString(", ")}"
+    }
+
+    def asString(foreach: Foreach): String = {
+      val varName = expr(foreach.variable)
+      val list = expr(foreach.expression)
+      val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
+      s"${INDENT}FOREACH ( $varName IN $list |$updates)"
+    }
+
+    def asString(start: Start): String = {
+      val startItems =
+        start.items.map {
+          case AllNodes(v)                                               => s"${expr(v)} = NODE( * )"
+          case NodeByIds(v, ids)                                         => s"${expr(v)} = NODE( ${ids.map(expr(_)).mkString(", ")} )"
+          case NodeByParameter(v, param: Parameter)                      => s"${expr(v)} = NODE( ${expr(param)} )"
+          case NodeByParameter(v, param: ParameterWithOldSyntax)         => s"${expr(v)} = NODE( ${expr(param)} )"
+          case AllRelationships(v)                                       => s"${expr(v)} = RELATIONSHIP( * )"
+          case RelationshipByIds(v, ids)                                 => s"${expr(v)} = RELATIONSHIP( ${ids.map(expr(_)).mkString(", ")} )"
+          case RelationshipByParameter(v, param: Parameter)              => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
+          case RelationshipByParameter(v, param: ParameterWithOldSyntax) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
+        }
+
+      val ind = indented()
+      val where = start.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}START ${startItems.mkString(s",$NL      ")}$where"
+    }
+
+    def asString(properties: Seq[Property]): String =
+      properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")
+  }
+}
+
+object Prettifier {
+
+  def extractScope(scope: ShowPrivilegeScope): String = {
+    scope match {
+      case ShowUserPrivileges(name) => s"USER ${escapeName(name)}"
+      case ShowRolePrivileges(name) => s"ROLE ${escapeName(name)}"
+      case ShowAllPrivileges()      => "ALL"
+      case _                        => "<unknown>"
+    }
+  }
+
+  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = (extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
+
+  def extractScope(resource: ActionResource, dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String, String) = {
+    val resourceName = resource match {
+      case PropertyResource(name)    => escapeName(name)
+      case PropertiesResource(names) => names.map(escapeName).mkString(", ")
+      case AllResource()             => "*"
+      case _                         => "<unknown>"
+    }
+    (resourceName, extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
+  }
+
+  def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
+
+  def prettifyDatabasePrivilege(privilegeName: String,
                                         dbScope: GraphScope,
                                         qualifier: PrivilegeQualifier,
                                         preposition: String,
@@ -426,241 +675,26 @@ case class Prettifier(expr: ExpressionStringifier) {
     }
   }
 
-  private def asString(u: UnionMapping): String = {
-    s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
-  }
-
-  private def dispatch(clause: Clause) = clause match {
-    case e: Return => asString(e)
-    case m: Match => asString(m)
-    case c: SubQuery => asString(c)
-    case w: With => asString(w)
-    case c: Create => asString(c)
-    case u: Unwind => asString(u)
-    case u: UnresolvedCall => asString(u)
-    case s: SetClause => asString(s)
-    case r: Remove => asString(r)
-    case d: Delete => asString(d)
-    case m: Merge => asString(m)
-    case l: LoadCSV => asString(l)
-    case f: Foreach => asString(f)
-    case s: Start => asString(s)
-    case _ => clause.asCanonicalStringVal // TODO
-  }
-
-  def asString(m: Match): String = {
-    val o = if(m.optional) "OPTIONAL " else ""
-    val p = expr.patterns.apply(m.pattern)
-    val w = m.where.map(asString).map(indentedNewLine).getOrElse("")
-    val h = m.hints.map(asString).map(indentedNewLine).mkString
-    s"${o}MATCH $p$h$w"
-  }
-
-  def asString(c: SubQuery): String = {
-    val q = queryPart(c.part)
-    val qWithIndent = q.split(NL).map(indentedLine).mkString(NL)
-    s"""CALL {
-       |$qWithIndent
-       |}""".stripMargin
-  }
-
-  private def asString(w: Where): String =
-    "WHERE " + expr(w.expression)
-
-  private def asString(m: UsingHint): String = {
-    m match {
-      case UsingIndexHint(v, l, ps, s) => Seq(
-        "USING INDEX ", if (s == SeekOnly) "SEEK " else "",
-        expr(v), ":", expr(l),
-        ps.map(expr(_)).mkString("(", ",", ")")
-      ).mkString
-
-      case UsingScanHint(v, l) => Seq(
-        "USING SCAN ", expr(v), ":", expr(l)
-      ).mkString
-
-      case UsingJoinHint(vs) => Seq(
-        "USING JOIN ON ", vs.map(expr(_)).toIterable.mkString(", ")
-      ).mkString
-    }
-  }
-
-  private def asString(ma: MergeAction): String = ma match {
-    case OnMatch(set) => s"ON MATCH ${asString(set)}"
-    case OnCreate(set) => s"ON CREATE ${asString(set)}"
-  }
-
-  private def asString(m: Merge): String = {
-    val p = expr.patterns.apply(m.pattern)
-    val a = m.actions.map(asString).map(indentedNewLine).mkString
-    s"MERGE $p$a"
-  }
-
-  private def asString(o: Skip): String = "SKIP " + expr(o.expression)
-  private def asString(o: Limit): String = "LIMIT " + expr(o.expression)
-
-  private def asString(o: OrderBy): String = "ORDER BY " + {
-    o.sortItems.map {
-      case AscSortItem(expression) => expr(expression) + " ASCENDING"
-      case DescSortItem(expression) => expr(expression) + " DESCENDING"
-    }.mkString(", ")
-  }
-
-  private def asString(r: ReturnItem): String = r match {
-    case AliasedReturnItem(e, v) => expr(e) + " AS " + expr(v)
-    case UnaliasedReturnItem(e, _) => expr(e)
-  }
-
-  private def asString(r: ReturnItemsDef): String = {
-    val as = if (r.includeExisting) Seq("*") else Seq()
-    val is = r.items.map(asString)
-    (as ++ is).mkString(", ")
-  }
-
-  private def asString(r: Return): String = {
-    val d = if (r.distinct) " DISTINCT" else ""
-    val i = asString(r.returnItems)
-    val o = r.orderBy.map(asString).map(indentedNewLine).getOrElse("")
-    val l = r.limit.map(asString).map(indentedNewLine).getOrElse("")
-    val s = r.skip.map(asString).map(indentedNewLine).getOrElse("")
-    s"RETURN$d $i$o$s$l"
-  }
-
-  private def asString(w: With): String = {
-    val d = if (w.distinct) " DISTINCT" else ""
-    val i = asString(w.returnItems)
-    val o = w.orderBy.map(asString).map(indentedNewLine).getOrElse("")
-    val l = w.limit.map(asString).map(indentedNewLine).getOrElse("")
-    val s = w.skip.map(asString).map(indentedNewLine).getOrElse("")
-    val wh = w.where.map(asString).map(indentedNewLine).getOrElse("")
-    s"WITH$d $i$o$s$l$wh"
-  }
-
-  private def asString(c: Create): String = {
-    val p = expr.patterns.apply(c.pattern)
-    s"CREATE $p"
-  }
-
-  private def asString(u: Unwind): String = {
-    s"UNWIND ${expr(u.expression)} AS ${expr(u.variable)}"
-  }
-
-  private def asString(u: UnresolvedCall): String = {
-    val namespace = expr(u.procedureNamespace)
-    val prefix = if (namespace.isEmpty) "" else namespace + "."
-    val arguments = u.declaredArguments.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
-    def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
-    def result(r: ProcedureResult) = "YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedNewLine).getOrElse("")
-    val yields = u.declaredResult.map(result).map(indentedNewLine).getOrElse("")
-    s"CALL $prefix${expr(u.procedureName)}$arguments$yields"
-  }
-
-  private def asString(s: SetClause): String = {
-    val items = s.items.map {
-      case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
-      case SetLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
-      case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
-      case SetExactPropertiesFromMapItem(variable, exp) => s"${expr(variable)} = ${expr(exp)}"
-      case _ => s.asCanonicalStringVal
-    }
-    s"SET ${items.mkString(", ")}"
-  }
-
-  private def asString(r: Remove): String = {
-    val items = r.items.map {
-      case RemovePropertyItem(prop) => s"${expr(prop)}"
-      case RemoveLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
-      case _ => r.asCanonicalStringVal
-    }
-    s"REMOVE ${items.mkString(", ")}"
-  }
-
-  private def asString(v: LoadCSV): String = {
-    val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
-    val url = expr(v.urlString)
-    val varName = expr(v.variable)
-    val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR " + expr(x)).getOrElse("")
-    s"LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
-  }
-
-  private def asString(delete: Delete): String = {
-    val detach = if (delete.forced) "DETACH " else ""
-    s"${detach}DELETE ${delete.expressions.map(expr(_)).mkString(", ")}"
-  }
-
-  private def asString(foreach: Foreach): String = {
-    val varName = expr(foreach.variable)
-    val list = expr(foreach.expression)
-    val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
-    s"FOREACH ( $varName IN $list |$updates)"
-  }
-
-  private def asString(start: Start): String = {
-    val startItems =
-      start.items.map {
-        case AllNodes(v) => s"${expr(v)} = NODE( * )"
-        case NodeByIds(v, ids) => s"${expr(v)} = NODE( ${ids.map(expr(_)).mkString(", ")} )"
-        case NodeByParameter(v, param :Parameter) => s"${expr(v)} = NODE( ${expr(param)} )"
-        case NodeByParameter(v, param :ParameterWithOldSyntax) => s"${expr(v)} = NODE( ${expr(param)} )"
-        case AllRelationships(v) => s"${expr(v)} = RELATIONSHIP( * )"
-        case RelationshipByIds(v, ids) => s"${expr(v)} = RELATIONSHIP( ${ids.map(expr(_)).mkString(", ")} )"
-        case RelationshipByParameter(v, param: Parameter) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
-        case RelationshipByParameter(v, param: ParameterWithOldSyntax) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
-      }
-
-    val where = start.where.map(asString).map(indentedNewLine).getOrElse("")
-    s"START ${startItems.mkString(s",$NL      ")}$where"
-  }
-
-  private def asString(properties: Seq[Property]): String =
-    properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")
-}
-
-object Prettifier {
-
-  def extractScope(scope: ShowPrivilegeScope): String = {
-    scope match {
-      case ShowUserPrivileges(name) => s"USER ${escapeName(name)}"
-      case ShowRolePrivileges(name) => s"ROLE ${escapeName(name)}"
-      case ShowAllPrivileges() => "ALL"
-      case _ => "<unknown>"
-    }
-  }
-
-  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = (extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
-
-  def extractScope(resource: ActionResource, dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String, String) = {
-    val resourceName = resource match {
-      case PropertyResource(name) => escapeName(name)
-      case PropertiesResource(names) => names.map(escapeName).mkString(", ")
-      case AllResource() => "*"
-      case _ => "<unknown>"
-    }
-    (resourceName, extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
-  }
-
-  def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
-
-  def extractQualifierPart( qualifier: PrivilegeQualifier ): String = qualifier match {
-    case LabelQualifier(name) => "NODE " + escapeName(name)
-    case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
-    case LabelAllQualifier() => "NODES *"
-    case RelationshipQualifier(name) => "RELATIONSHIP " + escapeName(name)
+  def extractQualifierPart(qualifier: PrivilegeQualifier): String = qualifier match {
+    case LabelQualifier(name)          => "NODE " + escapeName(name)
+    case LabelsQualifier(names)        => "NODES " + names.map(escapeName).mkString(", ")
+    case LabelAllQualifier()           => "NODES *"
+    case RelationshipQualifier(name)   => "RELATIONSHIP " + escapeName(name)
     case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
-    case RelationshipAllQualifier() => "RELATIONSHIPS *"
-    case ElementsAllQualifier() => "ELEMENTS *"
-    case UsersQualifier(names) => "(" + names.map(escapeName).mkString(", ") + ")"
-    case UserQualifier(name) => "(" + escapeName(name) + ")"
-    case UserAllQualifier() => "(*)"
-    case AllQualifier() => "*"
-    case _ => "<unknown>"
+    case RelationshipAllQualifier()    => "RELATIONSHIPS *"
+    case ElementsAllQualifier()        => "ELEMENTS *"
+    case UsersQualifier(names)         => "(" + names.map(escapeName).mkString(", ") + ")"
+    case UserQualifier(name)           => "(" + escapeName(name) + ")"
+    case UserAllQualifier()            => "(*)"
+    case AllQualifier()                => "*"
+    case _                             => "<unknown>"
   }
 
   def extractDbScope(dbScope: GraphScope): (String, Boolean) = dbScope match {
-    case NamedGraphScope(name) => (escapeName(name), false)
-    case AllGraphsScope() => ("*", false)
+    case NamedGraphScope(name)  => (escapeName(name), false)
+    case AllGraphsScope()       => ("*", false)
     case DefaultDatabaseScope() => ("DEFAULT", true)
-    case _ => ("<unknown>", false)
+    case _                      => ("<unknown>", false)
   }
 
   /*
@@ -682,4 +716,5 @@ object Prettifier {
   }
 
   def escapeNames(names: Seq[String]): String = names.map(escapeName).mkString(", ")
+
 }

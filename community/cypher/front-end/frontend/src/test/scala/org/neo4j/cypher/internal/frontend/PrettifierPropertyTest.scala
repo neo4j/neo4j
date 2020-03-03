@@ -28,16 +28,16 @@ class PrettifierPropertyTest extends CypherFunSuite
   with GeneratorDrivenPropertyChecks
   with PrettifierTestUtils {
 
-  val pr = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true))
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true))
 
   val parser = new CypherParser
 
-  val gen = new AstGenerator(simpleStrings = false)
+  val astGenerator = new AstGenerator(simpleStrings = false)
 
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 500)
 
   test("Prettifier output should parse to the same ast") {
-    forAll(gen._query) { query =>
+    forAll(astGenerator._query) { query =>
       roundTripCheck(query)
     }
   }

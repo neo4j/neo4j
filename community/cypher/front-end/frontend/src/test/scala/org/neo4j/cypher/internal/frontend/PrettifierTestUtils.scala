@@ -29,7 +29,7 @@ import org.scalatest.Matchers
 
 trait PrettifierTestUtils extends Matchers {
 
-  def pr: Prettifier
+  def prettifier: Prettifier
 
   def parser: CypherParser
 
@@ -55,7 +55,7 @@ trait PrettifierTestUtils extends Matchers {
   }
 
   def roundTripCheck(original: Statement): Assertion = {
-    val pretty = pr.asString(original)
+    val pretty = prettifier.asString(original)
     val parsed = try {
       parser.parse(pretty, OpenCypherExceptionFactory(None))
     } catch {
@@ -87,7 +87,7 @@ trait PrettifierTestUtils extends Matchers {
     println("original: " + original)
     val parsed1 = parser.parse(original, OpenCypherExceptionFactory(None))
     println("  - ast1: " + parsed1)
-    val pretty = pr.asString(parsed1)
+    val pretty = prettifier.asString(parsed1)
     println("  - pret: " + pretty)
     val parsed2 = parser.parse(pretty, OpenCypherExceptionFactory(None))
     println("  - ast2: " + parsed2)
