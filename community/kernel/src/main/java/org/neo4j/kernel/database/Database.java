@@ -165,6 +165,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
@@ -577,8 +578,8 @@ public class Database extends LifecycleAdapter
             boolean readOnly )
     {
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-        LabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( indexStoreView ),
-                readOnly, monitors, recoveryCleanupWorkCollector );
+        FullLabelStream labelStream = new FullLabelStream( indexStoreView );
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
         return labelScanStore;
     }

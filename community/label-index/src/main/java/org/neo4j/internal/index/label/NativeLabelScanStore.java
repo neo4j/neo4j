@@ -78,7 +78,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * <p>
  * This store is backed by a single store file "neostore.labelscanstore.db".
  */
-public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateListener
+public class NativeLabelScanStore implements TokenScanStore, LabelScanStore, NodeLabelUpdateListener
 {
     /**
      * Written in header to indicate native label scan store is clean
@@ -128,11 +128,6 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     private final FileSystemAbstraction fs;
 
     /**
-     * Page size to use for each tree node in {@link GBPTree}. Passed to {@link GBPTree}.
-     */
-    private final int pageSize;
-
-    /**
      * Used for all file operations on the gbpTree file.
      */
     private final FileSystemAbstraction fileSystem;
@@ -180,23 +175,11 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    public NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
+    NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
-    {
-        this( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                /*means no opinion about page size*/ 0 );
-    }
-
-    /*
-     * Test access to be able to control page size.
-     */
-    NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-                FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
         this.pageCache = pageCache;
         this.fs = fs;
-        this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
         this.storeFile = getLabelScanStoreFile( directoryStructure );
@@ -428,7 +411,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         try
         {
-            index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
+            index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), 0, monitor, readRebuilding,
                     needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL, immutable.empty() );
             return isRebuilding.getValue();
         }

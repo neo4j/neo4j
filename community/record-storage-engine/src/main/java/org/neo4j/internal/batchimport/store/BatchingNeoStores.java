@@ -45,6 +45,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -81,6 +82,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
@@ -230,8 +232,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         life = new LifeSupport();
         life.start();
-        labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
-                immediate() );
+        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() );
         life.add( labelScanStore );
     }
 

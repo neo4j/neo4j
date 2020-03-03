@@ -47,9 +47,8 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -85,6 +84,7 @@ import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
@@ -239,8 +239,7 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors, workCollector );
+            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector );
             life.add( labelScanStore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, PageCacheTracer.NULL );
             life.add( indexStatisticsStore );

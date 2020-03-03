@@ -48,7 +48,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -285,8 +285,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
     {
-        LabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), readOnly, monitors, immediate() );
+        FullLabelStream labelStream = new FullLabelStream( indexStoreView );
+        LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout(), fileSystem, labelStream, readOnly, monitors, immediate() );
         try
         {
             labelScanStore.init();

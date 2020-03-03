@@ -45,7 +45,6 @@ import java.util.stream.LongStream;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -77,6 +76,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
@@ -551,8 +551,7 @@ public class NativeLabelScanStoreTest
     private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
     {
-        return new NativeLabelScanStore( pageCache, databaseLayout, fileSystemAbstraction,
-                fullStoreChangeStream, readOnly, monitors, RecoveryCleanupWorkCollector.immediate() );
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate() );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException

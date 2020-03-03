@@ -62,7 +62,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
@@ -1095,9 +1095,8 @@ public class BatchInserterImpl implements BatchInserter
 
     private LabelScanStore buildLabelIndex() throws IOException
     {
-        LabelScanStore labelIndex =
-                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
-                        immediate() );
+        FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
+        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate() );
         if ( labelsTouched )
         {
             labelIndex.drop();

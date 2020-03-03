@@ -62,7 +62,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -119,12 +119,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -1423,8 +1425,7 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return new NativeLabelScanStore( pageCache, databaseLayout, fs,
-                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.immediate() );
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate() );
     }
 
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

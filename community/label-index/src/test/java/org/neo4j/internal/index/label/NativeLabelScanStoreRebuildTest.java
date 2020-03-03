@@ -42,6 +42,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.igno
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
+import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -70,16 +71,15 @@ class NativeLabelScanStoreRebuildTest
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
 
-        LabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, monitors, immediate() );
-        nativeLabelScanStore.init();
-        nativeLabelScanStore.start();
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, monitors, immediate() );
+        labelScanStore.init();
+        labelScanStore.start();
 
         // then
         assertTrue( monitor.notValid );
         assertTrue( monitor.rebuilding );
         assertTrue( monitor.rebuilt );
-        nativeLabelScanStore.shutdown();
+        labelScanStore.shutdown();
     }
 
     @Test
@@ -91,15 +91,14 @@ class NativeLabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        LabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
-                EMPTY, true, monitors, ignore() );
-        nativeLabelScanStore.init();
-        nativeLabelScanStore.start();
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, ignore() );
+        labelScanStore.init();
+        labelScanStore.start();
 
         assertTrue( monitor.notValid );
         assertFalse( monitor.rebuilt );
         assertFalse( monitor.rebuilding );
-        nativeLabelScanStore.shutdown();
+        labelScanStore.shutdown();
     }
 
     @Test
@@ -109,37 +108,35 @@ class NativeLabelScanStoreRebuildTest
         List<NodeLabelUpdate> existingData = new ArrayList<>();
         existingData.add( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
-        LabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
         try
         {
-            nativeLabelScanStore.init();
-            IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, nativeLabelScanStore::start );
+            labelScanStore.init();
+            IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, labelScanStore::start );
             assertThat( exception.getMessage() ).contains( "unsorted label" );
             assertThat( exception.getMessage() ).containsSubsequence( "2", "1" );
         }
         finally
         {
-            nativeLabelScanStore.shutdown();
+            labelScanStore.shutdown();
         }
     }
 
     private void createDirtyIndex( PageCache pageCache ) throws IOException
     {
-        LabelScanStore nativeLabelScanStore = null;
+        LabelScanStore labelScanStore = null;
         try
         {
-            nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, false,
-                    new Monitors(), immediate() );
+            labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, false, new Monitors(), immediate() );
 
-            nativeLabelScanStore.init();
-            nativeLabelScanStore.start();
+            labelScanStore.init();
+            labelScanStore.start();
         }
         catch ( IllegalArgumentException e )
         {
-            if ( nativeLabelScanStore != null )
+            if ( labelScanStore != null )
             {
-                nativeLabelScanStore.shutdown();
+                labelScanStore.shutdown();
             }
         }
     }

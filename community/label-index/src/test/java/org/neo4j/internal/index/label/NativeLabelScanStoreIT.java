@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,13 +42,13 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
-import static org.neo4j.io.fs.FileUtils.blockSize;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
@@ -75,12 +74,9 @@ class NativeLabelScanStoreIT
     private static final int LABEL_COUNT = 12;
 
     @BeforeEach
-    void before() throws IOException
+    void before()
     {
-        store = life.add( new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY,
-                false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
-                // a bit of random pageSize
-                Math.min( pageCache.pageSize(), toIntExact( blockSize( databaseLayout.databaseDirectory() ) ) << random.nextInt( 5 ) ) ) );
+        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() ) );
     }
 
     @Test

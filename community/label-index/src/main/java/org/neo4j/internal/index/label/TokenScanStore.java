@@ -23,10 +23,15 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 /**
@@ -35,6 +40,15 @@ import org.neo4j.storageengine.api.NodeLabelUpdateListener;
  */
 public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 {
+    /**
+     * Create a new {@link LabelScanStore}.
+     */
+    static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector );
+    }
+
     /**
      * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
