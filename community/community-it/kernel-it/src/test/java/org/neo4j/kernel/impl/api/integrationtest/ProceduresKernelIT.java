@@ -119,7 +119,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertThat( asList( found ).contains( new AnyValue[]{longValue(1337)} ) );
+        assertThat( asList( found ) ).contains( new AnyValue[]{longValue(1337)} );
         commit();
     }
 
