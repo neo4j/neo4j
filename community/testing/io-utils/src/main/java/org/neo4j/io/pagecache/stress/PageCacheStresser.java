@@ -19,9 +19,12 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import org.eclipse.collections.api.factory.Sets;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -67,13 +70,12 @@ public class PageCacheStresser
     public void stress( PageCache pageCache, PageCacheTracer cacheTracer, Condition condition ) throws Exception
     {
         File file = Files.createTempFile( workingDirectory.toPath(), "pagecacheundertest", ".bin" ).toFile();
-        file.deleteOnExit();
 
         int cachePageSize = pageCache.pageSize();
         RecordFormat format = new RecordFormat( numberOfThreads, cachePageSize );
         int filePageSize = format.getFilePageSize();
 
-        try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize, Sets.immutable.of( StandardOpenOption.DELETE_ON_CLOSE ) ) )
         {
             List<RecordStresser> recordStressers = prepare( condition, pagedFile, format, cacheTracer );
             verifyResults( format, pagedFile, recordStressers, cacheTracer );

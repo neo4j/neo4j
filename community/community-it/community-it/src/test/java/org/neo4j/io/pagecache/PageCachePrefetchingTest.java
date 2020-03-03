@@ -168,7 +168,7 @@ class PageCachePrefetchingTest
     {
         try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | additionalPfFlags, tracer ) )
         {
-            for ( int i = 0; i < 10_000; i++ )
+            for ( int i = 0; i < 6_000; i++ )
             {
                 cursor.next();
                 scanner.accept( cursor );
