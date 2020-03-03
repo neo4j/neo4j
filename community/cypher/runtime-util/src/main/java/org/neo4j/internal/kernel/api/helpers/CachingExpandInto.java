@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.cypher.internal.runtime.NoMemoryTracker$;
 import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
@@ -74,6 +75,14 @@ public class CachingExpandInto
     private final Direction direction;
     private final QueryMemoryTracker memoryTracker;
     private final int operatorId;
+
+    //NOTE: this constructor is here for legacy compiled runtime where we don't track memory
+    //when we remove the legacy_compiled this should go as well.
+    @Deprecated
+    public CachingExpandInto( Read read, Direction direction )
+    {
+        this( read, direction, NoMemoryTracker$.MODULE$, -1 );
+    }
 
     public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )
     {
