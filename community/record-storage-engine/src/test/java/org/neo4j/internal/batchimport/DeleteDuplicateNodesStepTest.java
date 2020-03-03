@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -54,6 +56,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -163,6 +166,34 @@ class DeleteDuplicateNodesStepTest
 
         assertEquals( expectedNodes, monitor.nodesImported() );
         assertEquals( expectedProperties, monitor.propertiesImported() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeDeduplication() throws Exception
+    {
+        // given
+        Ids[] ids = new Ids[10];
+        DataImporter.Monitor monitor = new DataImporter.Monitor();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            ids[i] = createNode( monitor, neoStores, 1, 1 );
+        }
+
+        long[] duplicateNodeIds = randomNodes( ids );
+        SimpleStageControl control = new SimpleStageControl();
+        var cacheTracer = new DefaultPageCacheTracer();
+        try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
+                iterator( duplicateNodeIds ), neoStores.getNodeStore(), neoStores.getPropertyStore(), monitor, cacheTracer ) )
+        {
+            control.steps( step );
+            startAndAwaitCompletionOf( step );
+        }
+        control.assertHealthy();
+
+        int expectedEventNumber = duplicateNodeIds.length * 2; // at least 2 events per node is expected since property size is dynamic random thingy
+        assertThat( cacheTracer.pins() ).isGreaterThanOrEqualTo( expectedEventNumber );
+        assertThat( cacheTracer.unpins() ).isGreaterThanOrEqualTo( expectedEventNumber );
+        assertThat( cacheTracer.hits() ).isGreaterThanOrEqualTo( expectedEventNumber );
     }
 
     private long[] randomNodes( Ids[] ids )

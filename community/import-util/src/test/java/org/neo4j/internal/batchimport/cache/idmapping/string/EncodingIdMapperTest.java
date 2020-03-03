@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,11 +44,11 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertEquals;
@@ -88,8 +87,6 @@ public class EncodingIdMapperTest
     private final Groups groups = new Groups();
     @Rule
     public final RandomRule random = new RandomRule();
-    @Rule
-    public final RepeatRule repeater = new RepeatRule();
 
     public EncodingIdMapperTest( int processors )
     {
@@ -134,7 +131,7 @@ public class EncodingIdMapperTest
         long id = idMapper.get( "123", Group.GLOBAL );
 
         // THEN
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, id );
+        assertEquals( IdMapper.ID_NOT_FOUND, id );
     }
 
     @Test
@@ -149,7 +146,7 @@ public class EncodingIdMapperTest
         long id = idMapper.get( "123", Group.GLOBAL );
 
         // THEN
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, id );
+        assertEquals( IdMapper.ID_NOT_FOUND, id );
         verify( progress, times( 3 ) ).started( anyString() );
         verify( progress, times( 3 ) ).done();
     }
@@ -241,6 +238,37 @@ public class EncodingIdMapperTest
         // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
         verify( progress, times( 7 ) ).started( anyString() );
         verify( progress, times( 7 ) ).done();
+    }
+
+    @Test
+    public void tracePageCacheAccessOnCollisions()
+    {
+        EncodingIdMapper.Monitor monitor = mock( EncodingIdMapper.Monitor.class );
+        Encoder encoder = mock( Encoder.class );
+        when( encoder.encode( any() ) ).thenReturn( 12345L );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        IdMapper mapper = mapper( encoder, Radix.STRING, monitor, pageCacheTracer );
+
+        PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
+        {
+            cursorTracer.beginPin( false, 1, null ).done();
+            return nodeId + "";
+        };
+        int expectedCollisions = 2;
+        for ( int i = 0; i < expectedCollisions; i++ )
+        {
+            mapper.put( ids.lookupProperty( i, NULL ), i, Group.GLOBAL );
+        }
+
+        ProgressListener progress = mock( ProgressListener.class );
+        Collector collector = mock( Collector.class );
+        mapper.prepare( ids, collector, progress );
+
+        verifyNoMoreInteractions( collector );
+        verify( monitor ).numberOfCollisions( expectedCollisions );
+
+        assertEquals( expectedCollisions, pageCacheTracer.pins() );
+        assertEquals( expectedCollisions, pageCacheTracer.unpins() );
     }
 
     @Test
@@ -337,15 +365,15 @@ public class EncodingIdMapperTest
 
         // WHEN/THEN
         assertEquals( 0L, mapper.get( "8", firstGroup ) );
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "8", secondGroup ) );
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "8", thirdGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "8", secondGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "8", thirdGroup ) );
 
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "9", firstGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "9", firstGroup ) );
         assertEquals( 1L, mapper.get( "9", secondGroup ) );
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "9", thirdGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "9", thirdGroup ) );
 
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "10", firstGroup ) );
-        Assert.assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "10", secondGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "10", firstGroup ) );
+        assertEquals( IdMapper.ID_NOT_FOUND, mapper.get( "10", secondGroup ) );
         assertEquals( 2L, mapper.get( "10", thirdGroup ) );
     }
 
@@ -403,13 +431,13 @@ public class EncodingIdMapperTest
             if ( nodeId % idsPerGroup < 2 )
             {   // Let these colliding values encode into the same eId as well,
                 // so that they are definitely marked as collisions
-                encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
-                return Long.valueOf( nodeId % idsPerGroup );
+                encoder.useThisIdToEncodeNoMatterWhatComesIn( 1234567L );
+                return nodeId % idsPerGroup;
             }
 
             // The other 90% will be accidental collisions for something else
-            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456 - group.get().id() ) );
-            return Long.valueOf( nodeId );
+            encoder.useThisIdToEncodeNoMatterWhatComesIn( (long) (123456 - group.get().id()) );
+            return nodeId;
         };
 
         // WHEN
@@ -440,11 +468,7 @@ public class EncodingIdMapperTest
         List<Object> ids = new ArrayList<>();
         for ( int i = 0; i < 100; i++ )
         {
-            if ( random.nextBoolean() )
-            {
-                // Skip this one
-            }
-            else
+            if ( !random.nextBoolean() )
             {
                 Long id = (long) i;
                 ids.add( id );
@@ -575,6 +599,12 @@ public class EncodingIdMapperTest
         return ( value, cursor ) -> values[toIntExact( value )];
     }
 
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, PageCacheTracer pageCacheTracer )
+    {
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ), 1_000, processors,
+                ParallelSort.DEFAULT, pageCacheTracer );
+    }
+
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
     {
         return mapper( encoder, radix, monitor, ParallelSort.DEFAULT );
@@ -692,7 +722,7 @@ public class EncodingIdMapperTest
             @Override
             Factory<Object> data( final Random random )
             {
-                return new Factory<Object>()
+                return new Factory<>()
                 {
                     @Override
                     public Object newInstance()

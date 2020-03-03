@@ -69,7 +69,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
@@ -88,6 +88,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -176,11 +177,12 @@ public class ParallelBatchImporterTest
         IdGroupDistribution groupDistribution = new IdGroupDistribution( NODE_COUNT, NUMBER_OF_ID_GROUPS, random.random(), groups );
         long nodeRandomSeed = random.nextLong();
         long relationshipRandomSeed = random.nextLong();
+        var pageCacheTracer = new DefaultPageCacheTracer();
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         // This will have statistically half the nodes be considered dense
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
-            fs, null, PageCacheTracer.NULL, config, NullLogService.getInstance(),
+            fs, null, pageCacheTracer, config, NullLogService.getInstance(),
             monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();
@@ -198,6 +200,10 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 * Long.BYTES,
                             RELATIONSHIP_COUNT * TOKENS.length / 2 * Long.BYTES,
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
+
+            assertThat( pageCacheTracer.pins() ).isGreaterThan( 0 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( pageCacheTracer.unpins() );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( Math.addExact( pageCacheTracer.faults(), pageCacheTracer.hits() ) );
 
             // THEN
             DatabaseManagementService managementService = getDBMSBuilder( databaseLayout ).build();

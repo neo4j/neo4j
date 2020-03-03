@@ -117,8 +117,6 @@ class BatchingTokenRepositoryTest
     @Test
     void shouldFlushNewTokens()
     {
-        // given
-
         try ( NeoStores stores = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )

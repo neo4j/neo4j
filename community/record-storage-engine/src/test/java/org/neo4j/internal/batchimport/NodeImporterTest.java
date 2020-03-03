@@ -25,10 +25,12 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,6 +45,8 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -92,6 +96,46 @@ class NodeImporterTest
             NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
             long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, PageCursorTracer.NULL );
             assertEquals( numberOfLabels, labels.length );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnNodeImport() throws IOException
+    {
+        JobScheduler scheduler = new ThreadPoolJobScheduler();
+        try ( Lifespan life = new Lifespan( scheduler );
+                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
+                        Standard.LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults() ) )
+        {
+            stores.createNew();
+
+            int numberOfLabels = 50;
+            long nodeId = 0;
+            var cacheTracer = new DefaultPageCacheTracer();
+            try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), cacheTracer ) )
+            {
+                importer.id( nodeId );
+                String[] labels = new String[numberOfLabels];
+                for ( int i = 0; i < labels.length; i++ )
+                {
+                    labels[i] = "Label" + i;
+                }
+                importer.labels( labels );
+                importer.property( "a", randomAscii( 10 ) );
+                importer.property( "b", randomAscii( 100 ) );
+                importer.property( "c", randomAscii( 1000 ) );
+                importer.endOfEntity();
+            }
+
+            NodeStore nodeStore = stores.getNodeStore();
+            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, PageCursorTracer.NULL );
+            assertEquals( numberOfLabels, labels.length );
+
+            assertThat( cacheTracer.faults() ).isEqualTo( 2 );
+            assertThat( cacheTracer.pins() ).isEqualTo( 13 );
+            assertThat( cacheTracer.unpins() ).isEqualTo( 13 );
+            assertThat( cacheTracer.hits() ).isEqualTo( 11 );
         }
     }
 }

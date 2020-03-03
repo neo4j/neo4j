@@ -25,6 +25,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Collections;
@@ -34,12 +35,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Neo4jLayoutExtension
@@ -77,5 +80,35 @@ class CsvImporterTest
         csvImporter.doImport();
 
         assertTrue( reportLocation.exists() );
+    }
+
+    @Test
+    void tracePageCacheAccessOnCsvImport() throws IOException
+    {
+        File logDir = testDir.directory( "logs" );
+        File reportLocation = testDir.file( "the_report" );
+        File inputFile = testDir.file( "foobar.csv" );
+
+        List<String> lines = List.of( "foo;bar;baz" );
+        Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
+
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() );
+
+        var cacheTracer = new DefaultPageCacheTracer();
+        CsvImporter csvImporter = CsvImporter.builder()
+                .withDatabaseLayout( databaseLayout )
+                .withDatabaseConfig( config )
+                .withReportFile( reportLocation.getAbsoluteFile() )
+                .withFileSystem( testDir.getFileSystem() )
+                .withPageCacheTracer( cacheTracer )
+                .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
+                .build();
+
+        csvImporter.doImport();
+
+        assertThat( cacheTracer.faults() ).isEqualTo( 19 );
+        assertThat( cacheTracer.pins() ).isEqualTo( 394 );
+        assertThat( cacheTracer.unpins() ).isEqualTo( 394 );
+        assertThat( cacheTracer.hits() ).isEqualTo( 375 );
     }
 }

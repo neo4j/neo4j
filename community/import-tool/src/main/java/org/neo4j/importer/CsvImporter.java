@@ -108,6 +108,7 @@ class CsvImporter implements Importer
     private final FileSystemAbstraction fileSystem;
     private final PrintStream stdOut;
     private final PrintStream stdErr;
+    private final PageCacheTracer pageCacheTracer;
 
     private CsvImporter( Builder b )
     {
@@ -128,6 +129,7 @@ class CsvImporter implements Importer
         this.nodeFiles = requireNonNull( b.nodeFiles );
         this.relationshipFiles = requireNonNull( b.relationshipFiles );
         this.fileSystem = requireNonNull( b.fileSystem );
+        this.pageCacheTracer = requireNonNull( b.pageCacheTracer );
         this.stdOut = requireNonNull( b.stdOut );
         this.stdErr = requireNonNull( b.stdErr );
     }
@@ -170,7 +172,7 @@ class CsvImporter implements Importer
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
                     fileSystem,
                     null, // no external page cache
-                    PageCacheTracer.NULL,
+                    pageCacheTracer,
                     importConfig,
                     new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
                     executionMonitor,
@@ -398,9 +400,10 @@ class CsvImporter implements Importer
         private long badTolerance;
         private boolean normalizeTypes;
         private boolean verbose;
-        private Map<Set<String>, List<File[]>> nodeFiles = new HashMap<>();
-        private Map<String, List<File[]>> relationshipFiles = new HashMap<>();
+        private final Map<Set<String>, List<File[]>> nodeFiles = new HashMap<>();
+        private final Map<String, List<File[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
 
@@ -505,6 +508,12 @@ class CsvImporter implements Importer
         Builder withFileSystem( FileSystemAbstraction fileSystem )
         {
             this.fileSystem = fileSystem;
+            return this;
+        }
+
+        Builder withPageCacheTracer( PageCacheTracer pageCacheTracer )
+        {
+            this.pageCacheTracer = pageCacheTracer;
             return this;
         }
 
