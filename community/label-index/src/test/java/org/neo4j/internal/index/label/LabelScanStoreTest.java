@@ -159,7 +159,7 @@ public class LabelScanStoreTest
     void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = NativeTokenScanStore.getLabelScanStoreFile( databaseLayout );
+        File labelScanStoreFile = databaseLayout.labelScanStore();
         fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();

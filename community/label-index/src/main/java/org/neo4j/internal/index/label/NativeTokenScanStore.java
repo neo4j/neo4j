@@ -182,23 +182,12 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
-        this.storeFile = getLabelScanStoreFile( directoryStructure );
+        this.storeFile = directoryStructure.labelScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.fileSystem = fs;
-    }
-
-    /**
-     * Returns the file backing the label scan store.
-     *
-     * @param directoryStructure The store directory to use.
-     * @return the file backing the label scan store
-     */
-    public static File getLabelScanStoreFile( DatabaseLayout directoryStructure )
-    {
-        return directoryStructure.labelScanStore();
     }
 
     /**
