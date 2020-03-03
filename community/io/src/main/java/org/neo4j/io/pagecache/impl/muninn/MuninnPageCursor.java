@@ -193,7 +193,6 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public final void close()
     {
-        storeCurrentPageId( UNBOUND_PAGE_ID );
         if ( pagedFile == null )
         {
             return; // already closed
@@ -209,6 +208,8 @@ public abstract class MuninnPageCursor extends PageCursor
             // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
             // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
             cursor.pagedFile = null;
+            // Signal to any pre-fetchers that the cursor is closed.
+            cursor.storeCurrentPageId( UNBOUND_PAGE_ID );
             if ( preFetcher != null )
             {
                 preFetcher.cancel();

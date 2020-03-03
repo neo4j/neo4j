@@ -5997,6 +5997,23 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void eagerFlushMustWriteToFileOnClose() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        try ( PagedFile pf = map( file, filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                writeRecords( cursor );
+            } // this will unpin and flush page 0
+            // Verify on the file *before* we unmap it, since unmapping will also flush the file.
+            verifyRecordsInFile( file, recordsPerFilePage );
+        }
+    }
+
+    @Test
     void noFaultNextReadOnInMemoryPages() throws Exception
     {
         configureStandardPageCache();
