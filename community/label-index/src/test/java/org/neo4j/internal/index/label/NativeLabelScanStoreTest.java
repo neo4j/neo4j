@@ -118,7 +118,7 @@ public class NativeLabelScanStoreTest
     {
         String expectedMessage = "Expected exception message";
         Monitors monitors = mock( Monitors.class );
-        when( monitors.newMonitor( LabelScanStore.Monitor.class ) ).thenReturn( LabelScanStore.Monitor.EMPTY );
+        when( monitors.newMonitor( LabelScanStore.Monitor.class ) ).thenReturn( TokenScanStore.Monitor.EMPTY );
         doThrow( new RuntimeException( expectedMessage ) ).when( monitors ).addMonitorListener( any() );
 
         LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, true, monitors );
