@@ -20,12 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import org.neo4j.cypher.internal.runtime.NoMemoryTracker
+import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue, VirtualNodeValue}
+
+import scala.collection.mutable.ArrayBuffer
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -180,7 +184,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     private def initiate(): Unit = {
       nodeState = expandMap.get(node.id())
       if (nodeState == NodeState.UNINITIALIZED) {
-        nodeState = new NodeState()
+        nodeState = new NodeState(queryState.memoryTracker)
         expandMap.put(node.id(), nodeState)
       }
     }
@@ -192,7 +196,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     val NOOP_REL: Int = 0
 
     val NOOP: NodeState = {
-      val noop = new NodeState()
+      val noop = new NodeState(NoMemoryTracker)
       noop.rels = Array(null)
       noop.depths = Array[Byte](0)
       noop
@@ -202,7 +206,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   /**
     * The state of expansion for one node
     */
-  class NodeState() {
+  class NodeState(memoryTracker: QueryMemoryTracker) {
 
     // All relationships that connect to this node, filtered by the var-length predicates
     var rels: Array[RelationshipValue] = _
@@ -241,11 +245,18 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: VirtualNodeValue): Unit = {
       if ( rels == null ) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
-        rels = allRels.filter(r => {
-          filteringStep.filterRelationship(row, queryState)(r) &&
-            filteringStep.filterNode(row, queryState)(r.otherNode(node))
-        }).toArray
+        val builder = ArrayBuffer.newBuilder[RelationshipValue]
+        while (allRels.hasNext) {
+          val rel = allRels.next()
+          if (filteringStep.filterRelationship(row, queryState)(rel) &&
+            filteringStep.filterNode(row, queryState)(rel.otherNode(node))) {
+            builder += rel
+            memoryTracker.allocated(rel)
+          }
+        }
+        rels = builder.result().toArray
         depths = new Array[Byte](rels.length)
+        memoryTracker.allocated(rels.length * java.lang.Byte.BYTES)
       }
     }
   }
@@ -257,6 +268,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     private var inputRow:ExecutionContext = _
     private val nodeState = new Array[PruningDFS](self.max + 1)
     private val path = new Array[Long](max)
+    queryState.memoryTracker.allocated(max * java.lang.Long.BYTES)
     private var depth = -1
 
     def startRow( inputRow:ExecutionContext ): Unit = {
