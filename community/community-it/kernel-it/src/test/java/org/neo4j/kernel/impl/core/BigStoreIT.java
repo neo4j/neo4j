@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,10 +40,11 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.pow;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 class BigStoreIT
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
@@ -64,6 +64,8 @@ class BigStoreIT
 
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     private DatabaseManagementService managementService;
     private GraphDatabaseService db;
@@ -76,7 +78,7 @@ class BigStoreIT
 
     private void startDb()
     {
-        var builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        var builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setFileSystem( fs );
         managementService = builder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -152,8 +154,11 @@ class BigStoreIT
         }
         tx.commit();
 
-        managementService.shutdown();
-        startDb();
+        try ( var ignored = fs.keepFiles() )
+        {
+            managementService.shutdown();
+            startDb();
+        }
 
         // Verify the data
         int verified = 0;
@@ -187,17 +192,6 @@ class BigStoreIT
 
     private static boolean machineIsOkToRunThisTest( int requiredHeapMb )
     {
-        if ( SystemUtils.IS_OS_WINDOWS )
-        {
-            // This test cannot be run on Windows because it can't handle files of this size in a timely manner
-            return false;
-        }
-        if ( SystemUtils.IS_OS_MAC_OSX )
-        {
-            // This test cannot be run on macOS because macOS doesn't support sparse files
-            return false;
-        }
-
         // Not 1024, matches better wanted result with -Xmx
         long heapMb = Runtime.getRuntime().maxMemory() / (1000 * 1000);
         return heapMb >= requiredHeapMb;
@@ -280,8 +274,11 @@ class BigStoreIT
             }
             if ( i == 0 )
             {
-                managementService.shutdown();
-                startDb();
+                try ( var ignored = fs.keepFiles() )
+                {
+                    managementService.shutdown();
+                    startDb();
+                }
             }
         }
     }
