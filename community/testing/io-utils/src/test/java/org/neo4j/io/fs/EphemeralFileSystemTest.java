@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 
 class EphemeralFileSystemTest
@@ -87,16 +89,17 @@ class EphemeralFileSystemTest
         byte[] testBytes = {1, 2, 3, 4};
         int length = testBytes.length;
         byteBuffer.put( 0, testBytes, 0, length );
-        assertEquals( (int) ByteUnit.kibiBytes( 1 ), byteBuffer.buf().capacity() );
+        assertEquals( (int) ByteUnit.kibiBytes( 1 ), single( byteBuffer.iterator() ).capacity() );
 
         byteBuffer.put( (int) (ByteUnit.kibiBytes( 1 ) + 2), testBytes, 0, length );
-        assertEquals( (int) ByteUnit.kibiBytes( 2 ), byteBuffer.buf().capacity() );
+        assertEquals( (int) ByteUnit.kibiBytes( 2 ), stream( byteBuffer.iterator() ).mapToInt( ByteBuffer::capacity ).sum() );
 
         byteBuffer.put( (int) (ByteUnit.kibiBytes( 5 ) + 2), testBytes, 0, length );
-        assertEquals( (int) ByteUnit.kibiBytes( 8 ), byteBuffer.buf().capacity() );
+        assertEquals( (int) ByteUnit.kibiBytes( 6 ), stream( byteBuffer.iterator() ).mapToInt( ByteBuffer::capacity ).sum() );
 
         byteBuffer.put( (int) (ByteUnit.mebiBytes( 2 ) + 2), testBytes, 0, length );
-        assertEquals( (int) ByteUnit.mebiBytes( 4 ), byteBuffer.buf().capacity() );
+        assertEquals( (int) ByteUnit.mebiBytes( 2 ) + ByteUnit.kibiBytes( 1 ),
+                stream( byteBuffer.iterator() ).mapToInt( ByteBuffer::capacity ).sum() );
     }
 
     @Test

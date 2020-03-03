@@ -56,12 +56,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.memory.ByteBuffers;
@@ -76,6 +82,7 @@ import static java.util.Arrays.asList;
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Clock clock;
+    private final AtomicInteger keepFiles = new AtomicInteger();
     private volatile boolean closed;
 
     interface Positionable
@@ -140,9 +147,19 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         files.values().forEach( EphemeralFileSystemAbstraction.EphemeralFileData::crash );
     }
 
+    public Resource keepFiles()
+    {
+        keepFiles.getAndIncrement();
+        return keepFiles::decrementAndGet;
+    }
+
     @Override
     public synchronized void close() throws IOException
     {
+        if ( keepFiles.get() > 0 )
+        {
+            return;
+        }
         closeFiles();
         closed = true;
     }
@@ -228,13 +245,11 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         File parentFile = fileName.getParentFile();
         if ( parentFile != null /*means that this is the 'default location'*/ && !fileExists( parentFile ) )
         {
-            throw new FileNotFoundException( "'" + fileName
-                                             + "' (The system cannot find the path specified)" );
+            throw new FileNotFoundException( "'" + fileName + "' (The system cannot find the path specified)" );
         }
 
-        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( clock ) );
-        return new StoreFileChannel(
-                new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ), interruptible ) );
+        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( key, clock ) );
+        return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ), interruptible ) );
     }
 
     @Override
@@ -552,13 +567,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         for ( File name : names )
         {
             EphemeralFileData file = files.get( name );
-            ByteBuffer buf = file.fileAsBuffer.buf();
-            buf.position( 0 );
-            while ( buf.position() < buf.limit() )
+            for ( ByteBuffer buf : file.fileAsBuffer )
             {
-                int len = Math.min( data.length, buf.limit() - buf.position() );
-                buf.get( data );
-                checksum.update( data, 0, len );
+                while ( buf.position() < buf.limit() )
+                {
+                    int len = Math.min( data.length, buf.limit() - buf.position() );
+                    buf.get( data );
+                    checksum.update( data, 0, len );
+                }
             }
         }
         return checksum.getValue();
@@ -894,22 +910,24 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         private static final ThreadLocal<byte[]> SCRATCH_PAD =
                 ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
+        private final File file;
         private DynamicByteBuffer fileAsBuffer;
         private DynamicByteBuffer forcedBuffer;
         private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
-        private int size;
-        private int forcedSize;
+        private long size;
+        private long forcedSize;
         private int locked;
         private final Clock clock;
         private long lastModified;
 
-        EphemeralFileData( Clock clock )
+        EphemeralFileData( File file, Clock clock )
         {
-            this( new DynamicByteBuffer(), clock );
+            this( file, new DynamicByteBuffer(), clock );
         }
 
-        private EphemeralFileData( DynamicByteBuffer data, Clock clock )
+        private EphemeralFileData( File file, DynamicByteBuffer data, Clock clock )
         {
+            this.file = file;
             this.fileAsBuffer = data;
             this.forcedBuffer = data.copy();
             this.clock = clock;
@@ -920,24 +938,24 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             int wanted = dst.limit() - dst.position();
             long size = size();
-            int available = min( wanted, (int) (size - fc.pos()) );
+            long available = min( wanted, size - fc.pos() );
             if ( available <= 0 )
             {
                 return -1; // EOF
             }
-            int pending = available;
+            long pending = available;
             // Read up until our internal size
             byte[] scratchPad = SCRATCH_PAD.get();
             while ( pending > 0 )
             {
-                int howMuchToReadThisTime = min( pending, scratchPad.length );
+                int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
                 long pos = fc.pos();
-                fileAsBuffer.get( (int) pos, scratchPad, 0, howMuchToReadThisTime );
+                fileAsBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
                 fc.pos( pos + howMuchToReadThisTime );
                 dst.put( scratchPad, 0, howMuchToReadThisTime );
                 pending -= howMuchToReadThisTime;
             }
-            return available; // return how much data was read
+            return Math.toIntExact( available ); // return how much data was read
         }
 
         synchronized int write( Positionable fc, ByteBuffer src )
@@ -951,27 +969,19 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 int howMuchToWriteThisTime = min( pending, scratchPad.length );
                 src.get( scratchPad, 0, howMuchToWriteThisTime );
                 long pos = fc.pos();
-                fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
+                fileAsBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
                 fc.pos( pos + howMuchToWriteThisTime );
                 pending -= howMuchToWriteThisTime;
             }
 
-            // If we just made a jump in the file fill the rest of the gap with zeros
-            int newSize = max( size, (int) fc.pos() );
-            int intermediaryBytes = newSize - wanted - size;
-            if ( intermediaryBytes > 0 )
-            {
-                fileAsBuffer.fillWithZeros( size, intermediaryBytes );
-            }
-
-            size = newSize;
+            size = max( size, fc.pos() );
             lastModified = clock.millis();
             return wanted;
         }
 
         synchronized EphemeralFileData copy()
         {
-            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy(), clock );
+            EphemeralFileData copy = new EphemeralFileData( file, fileAsBuffer.copy(), clock );
             copy.size = size;
             return copy;
         }
@@ -1052,7 +1062,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized void truncate( long newSize )
         {
-            this.size = (int) newSize;
+            this.size = newSize;
         }
 
         boolean lock()
@@ -1103,33 +1113,67 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
      * Dynamically expanding ByteBuffer substitute/wrapper. This will allocate ByteBuffers on the go
      * so that we don't have to allocate too big of a buffer up-front.
      */
-    static class DynamicByteBuffer
+    static class DynamicByteBuffer implements Iterable<ByteBuffer>
     {
-        private static final byte[] zeroBuffer = new byte[(int) ByteUnit.kibiBytes( 1 )];
-        private ByteBuffer buf;
+        private static final int SECTOR_SIZE = (int) ByteUnit.kibiBytes( 1 );
+        private static final ByteBuffer ZERO_BUFFER = ByteBuffer.allocate( SECTOR_SIZE );
+        private SortedMap<Long,ByteBuffer> sectors;
         private Exception freeCall;
 
         DynamicByteBuffer()
         {
-            buf = allocate( ByteUnit.kibiBytes( 1 ) );
-        }
-
-        public ByteBuffer buf()
-        {
-            assertNotFreed();
-            return buf;
+            sectors = new TreeMap<>();
         }
 
         /** This is a copying constructor, the input buffer is just read from, never stored in 'this'. */
-        private DynamicByteBuffer( ByteBuffer toClone )
+        @SuppressWarnings( "CopyConstructorMissesField" )
+        private DynamicByteBuffer( DynamicByteBuffer toClone )
         {
-            buf = allocate( toClone.capacity() );
-            copyByteBufferContents( toClone, buf );
+            this();
+            toClone.assertNotFreed();
+            for ( Map.Entry<Long,ByteBuffer> entry : toClone.sectors.entrySet() )
+            {
+                ByteBuffer sector = allocate( SECTOR_SIZE );
+                copyByteBufferContents( entry.getValue(), sector );
+                sectors.put( entry.getKey(), sector );
+            }
+        }
+
+        public Iterator<ByteBuffer> iterator()
+        {
+            if ( sectors.isEmpty() )
+            {
+                return Iterators.emptyResourceIterator();
+            }
+
+            return new Iterator<>()
+            {
+                long last = sectors.lastKey();
+                long next = 0;
+
+                @Override
+                public boolean hasNext()
+                {
+                    return next <= last;
+                }
+
+                @Override
+                public ByteBuffer next()
+                {
+                    if ( next > last )
+                    {
+                        throw new NoSuchElementException();
+                    }
+                    ByteBuffer sector = sectors.get( next );
+                    next++;
+                    return Objects.requireNonNullElse( sector, ZERO_BUFFER ).position( 0 );
+                }
+            };
         }
 
         synchronized DynamicByteBuffer copy()
         {
-            return new DynamicByteBuffer( buf() ); // invoke "copy constructor"
+            return new DynamicByteBuffer( this ); // invoke "copy constructor"
         }
 
         private void copyByteBufferContents( ByteBuffer from, ByteBuffer to )
@@ -1155,105 +1199,72 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         void free()
         {
             assertNotFreed();
-            try
+            sectors = null;
+            freeCall = new Exception(
+                    "You're most likely seeing this exception because there was an attempt to use this buffer " +
+                            "after it was freed. This stack trace may help you figure out where and why it was freed." );
+        }
+
+        synchronized void put( long pos, byte[] bytes, int off, int length )
+        {
+            long sector = pos / SECTOR_SIZE;
+            int offset = (int) (pos % SECTOR_SIZE);
+
+            for ( ;; )
             {
-                clear();
-            }
-            finally
-            {
-                buf = null;
-                freeCall = new Exception(
-                        "You're most likely seeing this exception because there was an attempt to use this buffer " +
-                        "after it was freed. This stack trace may help you figure out where and why it was freed." );
+                ByteBuffer buf = getOrCreateSector( sector );
+                buf.position( offset );
+                int toPut = Math.min( buf.remaining(), length );
+                buf.put( bytes, off, toPut );
+                if ( toPut == length )
+                {
+                    break;
+                }
+                off += toPut;
+                length -= toPut;
+                offset = 0;
+                sector += 1;
             }
         }
 
-        synchronized void put( int pos, byte[] bytes, int offset, int length )
+        synchronized void get( long pos, byte[] bytes, int off, int length )
         {
-            verifySize( pos + length );
-            ByteBuffer buf = buf();
-            try
+            long sector = pos / SECTOR_SIZE;
+            int offset = (int) (pos % SECTOR_SIZE);
+
+            for ( ;; )
             {
-                buf.position( pos );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                throw new IllegalArgumentException( buf + ", " + pos, e );
-            }
-            buf.put( bytes, offset, length );
-        }
-
-        synchronized void get( int pos, byte[] scratchPad, int i, int howMuchToReadThisTime )
-        {
-            ByteBuffer buf = buf();
-            buf.position( pos );
-            buf.get( scratchPad, i, howMuchToReadThisTime );
-        }
-
-        synchronized void fillWithZeros( int pos, int bytes )
-        {
-            ByteBuffer buf = buf();
-            buf.position( pos );
-            while ( bytes > 0 )
-            {
-                int howMuchToReadThisTime = min( bytes, zeroBuffer.length );
-                buf.put( zeroBuffer, 0, howMuchToReadThisTime );
-                bytes -= howMuchToReadThisTime;
-            }
-            buf.position( pos );
-        }
-
-        /**
-         * Checks if more space needs to be allocated.
-         */
-        private void verifySize( int totalAmount )
-        {
-            ByteBuffer buf = buf();
-            if ( buf.capacity() >= totalAmount )
-            {
-                return;
-            }
-
-            int newSize = buf.capacity();
-            long maxSize = ByteUnit.gibiBytes( 1 );
-            checkAllowedSize( totalAmount, maxSize );
-            while ( newSize < totalAmount )
-            {
-                newSize = newSize << 1;
-                checkAllowedSize( newSize, maxSize );
-            }
-            int oldPosition = buf.position();
-
-            // allocate new buffer
-            ByteBuffer newBuf = allocate( newSize );
-
-            // copy contents of current buffer into new buffer
-            buf.position( 0 );
-            newBuf.put( buf );
-
-            // re-assign buffer to new buffer
-            newBuf.position( oldPosition );
-            this.buf = newBuf;
-        }
-
-        private void checkAllowedSize( long size, long maxSize )
-        {
-            if ( size > maxSize )
-            {
-                throw new RuntimeException( "Requested file size is too big for ephemeral file system." );
+                ByteBuffer buf = sectors.getOrDefault( sector, ZERO_BUFFER );
+                buf.position( offset );
+                int toGet = Math.min( buf.remaining(), length );
+                buf.get( bytes, off, toGet );
+                if ( toGet == length )
+                {
+                    break;
+                }
+                off += toGet;
+                length -= toGet;
+                offset = 0;
+                sector += 1;
             }
         }
 
-        public void clear()
+        private ByteBuffer getOrCreateSector( long sector )
         {
-            buf().clear();
+            ByteBuffer buf = sectors.get( sector );
+            if ( buf == null )
+            {
+                buf = allocate( SECTOR_SIZE );
+                sectors.put( sector, buf );
+            }
+            return buf;
         }
 
         private void assertNotFreed()
         {
-            if ( this.buf == null )
+            if ( sectors == null )
             {
-                throw new IllegalStateException( "This buffer have been freed.", freeCall );
+                throw new IllegalStateException( "This buffer has been freed.", freeCall );
             }
         }
     }
