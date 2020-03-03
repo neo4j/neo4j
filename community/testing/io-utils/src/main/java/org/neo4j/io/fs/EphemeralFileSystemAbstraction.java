@@ -1149,7 +1149,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return new Iterator<>()
             {
                 long last = sectors.lastKey();
-                long next = 0;
+                long next;
 
                 @Override
                 public boolean hasNext()

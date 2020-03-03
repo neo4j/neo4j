@@ -142,7 +142,8 @@ class TransactionLogAppendAndRotateIT
     {
         return () ->
         {
-            while ( monitoring.numberOfRotations() < 2 && !end.get() ) {
+            while ( monitoring.numberOfRotations() < 2 && !end.get() )
+            {
                 parkNanos( MILLISECONDS.toNanos( 50 ) );
             }
             long endTime = currentTimeMillis() + unit.toMillis( time );
