@@ -20,7 +20,8 @@
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
 
-declare -r PROGRAM="$(basename "$0")"
+PROGRAM="$(basename "$0")"
+readonly PROGRAM
 
 # Sets up the standard environment for running Neo4j shell scripts.
 #
@@ -74,35 +75,33 @@ check_limits() {
 setup_memory_opts() {
   # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
   if [[ -n "${dbms_memory_heap_initial_size:-}" && -z "${JAVA_MEMORY_OPTS_XMS-}" ]]; then
-    local mem="${dbms_memory_heap_initial_size}"
-    if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
-      mem="${mem}m"
+    if ! [[ "${dbms_memory_heap_initial_size}" =~ .*[gGmMkK] ]]; then
       cat >&2 <<EOF
-WARNING: dbms.memory.heap.initial_size will require a unit suffix in a
-         future version of Neo4j. Please add a unit suffix to your
-         configuration. Example:
+ERROR: dbms.memory.heap.initial_size require a unit suffix. Use
+       'k' for kilobytes, 'm' for megabytes and 'g' for gigabytes.
+       Example:
 
-         dbms.memory.heap.initial_size=512m
-                                          ^
+       dbms.memory.heap.initial_size=512m
+                                        ^
 EOF
+      exit 1
     fi
-    JAVA_MEMORY_OPTS_XMS="-Xms${mem}"
+    JAVA_MEMORY_OPTS_XMS="-Xms${dbms_memory_heap_initial_size}"
   fi
   # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
   if [[ -n "${dbms_memory_heap_max_size:-}" && -z "${JAVA_MEMORY_OPTS_XMX-}" ]]; then
-    local mem="${dbms_memory_heap_max_size}"
-    if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
-      mem="${mem}m"
+    if ! [[ "${dbms_memory_heap_max_size}" =~ .*[gGmMkK] ]]; then
       cat >&2 <<EOF
-WARNING: dbms.memory.heap.max_size will require a unit suffix in a
-         future version of Neo4j. Please add a unit suffix to your
-         configuration. Example:
+ERROR: dbms.memory.heap.max_size require a unit suffix. Use
+       'k' for kilobytes, 'm' for megabytes and 'g' for gigabytes.
+       Example:
 
-         dbms.memory.heap.max_size=512m
-                                      ^
+       dbms.memory.heap.max_size=512m
+                                    ^
 EOF
+      exit 1
     fi
-    JAVA_MEMORY_OPTS_XMX="-Xmx${mem}"
+    JAVA_MEMORY_OPTS_XMX="-Xmx${dbms_memory_heap_max_size}"
   fi
 }
 
@@ -110,7 +109,7 @@ check_java() {
   _find_java_cmd
   setup_memory_opts
 
-  version_command=("${JAVA_CMD}" "-version" ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-})
+  version_command=("${JAVA_CMD}" "-version")
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
   if [[ $JAVA_VERSION = "1."* ]] || [[ $JAVA_VERSION = "9"* ]] || [[ $JAVA_VERSION = "10"* ]]; then
@@ -120,7 +119,7 @@ check_java() {
   elif [[ $JAVA_VERSION != "11"* ]] ; then
     unsupported_runtime_warning
   else
-    if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+    if ! ("${version_command[@]}" 2>&1 | grep -Eq "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
       unsupported_runtime_warning
     fi
   fi
@@ -143,23 +142,6 @@ resolve_path() {
     echo "${filename}"
 }
 
-call_main_class() {
-  setup_environment
-  check_limits
-  check_java
-  build_classpath
-  EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
-  class_name=$1
-  shift
-
-  export NEO4J_HOME NEO4J_CONF
-
-  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-} \
-    -classpath "${CLASSPATH}" \
-    ${EXTRA_JVM_ARGUMENTS:-} \
-    $class_name "$@"
-}
-
 _find_java_cmd() {
   [[ "${JAVA_CMD:-}" ]] && return
   detect_os
@@ -174,12 +156,12 @@ _find_java_cmd() {
   else
     if [ "${DIST_OS}" != "macosx" ] ; then
       # Don't use default java on Darwin because it displays a misleading dialog box
-      JAVA_CMD="$(which java || true)"
+      JAVA_CMD="$(command -v java || true)"
     fi
   fi
 
   if [[ ! "${JAVA_CMD:-}" ]]; then
-    echo "ERROR: Unable to find Java executable."
+    echo "ERROR: Unable to find Java executable. Make sure the java executable is on the PATH or define JAVA_HOME."
     _show_java_help
     exit 1
   fi
@@ -222,10 +204,10 @@ _read_config() {
       fi
       # Ignore keys that start with a number because export ${key}= will fail - it is not valid for a bash env var to start with a digit
       if [[ ! "${key}" =~ ^[0-9]+.*$ ]]; then
-        if [[ "${!key:-}" ]]; then
-          export ${key}="${!key} ${value}"
+        if [[ "${key}" == "dbms_jvm_additional" && "${!key:-}" ]]; then
+          export "${key}=${!key} ${value}"
         else
-          export ${key}="${value}"
+          export "${key}=${value}"
         fi
       else
         echo >&2 "WARNING: Ignoring key ${key}, environment variables cannot start with a number."
@@ -233,21 +215,15 @@ _read_config() {
     fi
   }
 
-  if [[ -f "${NEO4J_CONF}/neo4j-wrapper.conf" ]]; then
-    cat >&2 <<EOF
-WARNING: neo4j-wrapper.conf is deprecated and support for it will be removed in a future
-         version of Neo4j; please move all your settings to neo4j.conf
-EOF
-  fi
+  path="${NEO4J_CONF}/neo4j.conf"
+  if [ -e "${path}" ]; then
 
-  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
-    path="${NEO4J_CONF}/${file}"
-    if [ -e "${path}" ]; then
-      while read line; do
-        parse_line "${line}"
-      done <"${path}"
-    fi
-  done
+    # we want to get multi lines as a single value
+    # shellcheck disable=SC2162
+    while read line || [[ -n "$line" ]]; do
+      parse_line "${line}"
+    done <"${path}"
+  fi
 }
 
 _setup_configurable_paths() {
@@ -267,18 +243,22 @@ _setup_configurable_paths() {
   readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PLUGINS NEO4J_RUN NEO4J_IMPORT NEO4J_CERTS
 }
 
-print_configurable_paths() {
-  cat <<EOF
-Directories in use:
-  home:         ${NEO4J_HOME}
-  config:       ${NEO4J_CONF}
-  logs:         ${NEO4J_LOGS}
-  plugins:      ${NEO4J_PLUGINS}
-  import:       ${NEO4J_IMPORT}
-  data:         ${NEO4J_DATA}
-  certificates: ${NEO4J_CERTS}
-  run:          ${NEO4J_RUN}
-EOF
+
+call_main_class() {
+  setup_environment
+  check_limits
+  check_java
+  build_classpath
+  class_name=$1
+  shift
+
+  export NEO4J_HOME NEO4J_CONF
+
+  # shellcheck disable=SC2086
+  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-} \
+    -classpath "${CLASSPATH}" \
+    "-Dfile.encoding=UTF-8" \
+    "$class_name" "$@"
 }
 
 setup_heap

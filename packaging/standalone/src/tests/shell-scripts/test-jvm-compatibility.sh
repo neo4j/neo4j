@@ -62,7 +62,7 @@ test_expect_success "should run happily with OpenJDK" "
 "
 
 test_expect_success "should warn when run with IBM JVM" "
-  ! (FAKE_JAVA_JVM='IBM' run_console | grep 'unsupported Java runtime')
+  FAKE_JAVA_JVM='IBM' run_console | grep 'unsupported Java runtime'
 "
 
 test_expect_success "should warn when run with other JDKs" "
