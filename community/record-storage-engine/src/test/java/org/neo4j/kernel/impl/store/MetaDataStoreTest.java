@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -748,12 +749,120 @@ class MetaDataStoreTest
         }
     }
 
+    @Test
+    void tracePageCacheAccessOnStoreInitialisation()
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        newMetaDataStore( pageCacheTracer );
+
+        assertThat( pageCacheTracer.faults() ).isOne();
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 21 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 21 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 20 );
+    }
+
+    @Test
+    void tracePageCacheAccessOnSetRecord() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnSetRecord" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            MetaDataStore.setRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, 3, cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
+            assertThat( cursorTracer.hits() ).isOne();
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnGetRecord() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnGetRecord" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            MetaDataStore.getRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
+            assertThat( cursorTracer.hits() ).isOne();
+        }
+    }
+
+    @Test
+    void tracePageCacheAssessOnGetStoreId() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnGetStoreId" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAssessOnSetStoreId() throws IOException
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnSetStoreId" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            var storeId = new StoreId( 1, 2, 3, 4, 5 );
+            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 7 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 7 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 7 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAssessOnUpgradeTransactionSet()
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnUpgradeTransactionSet" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.setUpgradeTransaction( 1, 2, 3, cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    void tracePageCacheAssessOnIncrementAndGetVersion()
+    {
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnIncrementAndGetVersion" );
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.incrementAndGetVersion( cursorTracer );
+
+            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
+        }
+    }
+
     private MetaDataStore newMetaDataStore()
+    {
+        return newMetaDataStore( PageCacheTracer.NULL );
+    }
+
+    private MetaDataStore newMetaDataStore( PageCacheTracer pageCacheTracer )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
-                        pageCacheWithFakeOverflow, fs, logProvider, PageCacheTracer.NULL );
+                        pageCacheWithFakeOverflow, fs, logProvider, pageCacheTracer );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 

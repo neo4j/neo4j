@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.NullLogProvider;
@@ -40,8 +41,10 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -72,6 +75,59 @@ class RecordStoreVersionCheckTest
         assertFalse( result.outcome.isSuccessful() );
         assertEquals( Outcome.missingStoreFile, result.outcome );
         assertNull( result.actualVersion );
+    }
+
+    @Test
+    void tracePageCacheAccessOnCheckUpgradable() throws IOException
+    {
+        File neoStore = emptyFile( fileSystem );
+        String storeVersion = "V1";
+        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
+        RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckUpgradable" );
+
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, cursorTracer );
+
+        assertTrue( result.outcome.isSuccessful() );
+        assertThat( cursorTracer.pins() ).isOne();
+        assertThat( cursorTracer.unpins() ).isOne();
+        assertThat( cursorTracer.faults() ).isOne();
+    }
+
+    @Test
+    void tracePageCacheAccessOnConstruction() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        File neoStore = emptyFile( fileSystem );
+        String storeVersion = "V1";
+        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
+
+        assertNotNull( newStoreVersionCheck( pageCacheTracer ) );
+        assertThat( pageCacheTracer.pins() ).isOne();
+        assertThat( pageCacheTracer.unpins() ).isOne();
+        assertThat( pageCacheTracer.faults() ).isOne();
+    }
+
+    @Test
+    void tracePageCacheAccessOnStoreVersionAccessConstruction() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreVersionAccessConstruction" );
+
+        File neoStore = emptyFile( fileSystem );
+        String storeVersion = "V1";
+        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
+
+        var versionCheck = newStoreVersionCheck();
+        assertEquals( storeVersion, versionCheck.storeVersion( cursorTracer ).get() );
+
+        assertThat( cursorTracer.pins() ).isOne();
+        assertThat( cursorTracer.unpins() ).isOne();
+        assertThat( cursorTracer.faults() ).isOne();
     }
 
     @Test
@@ -147,7 +203,11 @@ class RecordStoreVersionCheckTest
 
     private RecordStoreVersionCheck newStoreVersionCheck()
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(),
-                PageCacheTracer.NULL );
+        return newStoreVersionCheck( PageCacheTracer.NULL );
+    }
+
+    private RecordStoreVersionCheck newStoreVersionCheck( PageCacheTracer pageCacheTracer )
+    {
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
     }
 }

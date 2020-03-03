@@ -66,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -125,9 +126,9 @@ class StoreMigratorTest
 
         // when
         // ... data in record
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_ID, txId, PageCursorTracer.NULL );
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, checksum, PageCursorTracer.NULL );
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp, PageCursorTracer.NULL );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_ID, txId, NULL );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, checksum, NULL );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp, NULL );
 
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL );
@@ -150,9 +151,9 @@ class StoreMigratorTest
 
         // when
         // ... transaction info not in neo store
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, PageCursorTracer.NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, PageCursorTracer.NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, PageCursorTracer.NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, NULL ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
@@ -183,9 +184,9 @@ class StoreMigratorTest
 
         // when
         // ... transaction info not in neo store
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, PageCursorTracer.NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, PageCursorTracer.NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, PageCursorTracer.NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, NULL ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
@@ -265,7 +266,7 @@ class StoreMigratorTest
         managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
-                MetaDataRecordFormat.FIELD_NOT_PRESENT, PageCursorTracer.NULL );
+                MetaDataRecordFormat.FIELD_NOT_PRESENT, NULL );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
 

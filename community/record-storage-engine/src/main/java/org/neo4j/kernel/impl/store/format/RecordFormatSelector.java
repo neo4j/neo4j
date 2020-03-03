@@ -236,26 +236,6 @@ public class RecordFormatSelector
         return loadRecordFormat( configuredRecordFormat( config ) );
     }
 
-    /**
-     * Check if store and configured formats are compatible. In case if format is not configured or store does not
-     * exist yet - we consider formats as compatible. If the store is that of the system database then we also disregard
-     * configuration, considering formats as compatible.
-     * @param config configuration parameters
-     * @param databaseLayout database directory structure
-     * @param fs file system used to access store files
-     * @param pageCache page cache to read store files
-     * @param logProvider log provider
-     * @param pageCacheTracer underlying page cache operations tracer.
-     * @return true if configured and actual format is compatible, false otherwise.
-     */
-    public static boolean isStoreAndConfigFormatsCompatible( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, PageCacheTracer pageCacheTracer )
-    {
-        RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
-        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
-        return isStoreAndConfigFormatsCompatible( configuredFormat, currentFormat );
-    }
-
     private static boolean formatSameFamilyAndGeneration( RecordFormats left, RecordFormats right )
     {
         return left.getFormatFamily().equals( right.getFormatFamily() ) && left.generation() == right.generation();

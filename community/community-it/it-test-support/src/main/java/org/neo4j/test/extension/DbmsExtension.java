@@ -63,7 +63,7 @@ import org.neo4j.test.rule.TestDirectory;
 @Inherited
 @Target( {ElementType.TYPE, ElementType.METHOD} )
 @Retention( RetentionPolicy.RUNTIME )
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( DbmsSupportExtension.class )
 public @interface DbmsExtension
 {
