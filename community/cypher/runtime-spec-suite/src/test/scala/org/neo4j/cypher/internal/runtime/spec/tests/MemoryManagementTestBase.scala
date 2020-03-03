@@ -577,4 +577,24 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       consume(execute(logicalQuery, runtime, input))
     }
   }
+
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  test("should kill pruning-var-expand before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .pruningVarExpand("(x)-[*..1]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
 }
