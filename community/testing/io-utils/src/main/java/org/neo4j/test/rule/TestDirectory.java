@@ -245,8 +245,9 @@ public class TestDirectory extends ExternalResource
                 if ( totalSize.map( l -> l > limit ).orElse( false ) && // Larger than limit
                         !(fileSystem instanceof EphemeralFileSystemAbstraction) )
                 {
-                    throw new IllegalStateException( String.format( "Test created more than %s of data, total size was %s%n%s",
-                            ByteUnit.bytesToString( limit ), ByteUnit.bytesToString( totalSize.get() ), sb.toString() ) );
+                    String message = format( "WARNING: Test created more than %s of data, total size was %s%n%s", ByteUnit.bytesToString( limit ),
+                            ByteUnit.bytesToString( totalSize.get() ), sb.toString() );
+                    System.err.println( message );
                 }
             }
             testDirectory = null;
