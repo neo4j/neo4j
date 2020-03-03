@@ -55,18 +55,18 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     protected final DatabaseManager<?> databaseManager;
     protected GraphDatabaseService systemDb;
     protected final SystemGraphInitializer systemGraphInitializer;
-    protected final Log log;
+    protected final Log securityLog;
 
     protected final UserRepository migrationUserRepository;
     private final UserRepository initialUserRepository;
     private final SecureHasher secureHasher;
 
-    public UserSecurityGraphInitializer( DatabaseManager<?> databaseManager, SystemGraphInitializer systemGraphInitializer, Log log,
+    public UserSecurityGraphInitializer( DatabaseManager<?> databaseManager, SystemGraphInitializer systemGraphInitializer, Log securityLog,
                                          UserRepository migrationUserRepository, UserRepository initialUserRepository, SecureHasher secureHasher )
     {
         this.databaseManager = databaseManager;
         this.systemGraphInitializer = systemGraphInitializer;
-        this.log = log;
+        this.securityLog = securityLog;
         this.migrationUserRepository = migrationUserRepository;
         this.initialUserRepository = initialUserRepository;
         this.secureHasher = secureHasher;
@@ -170,7 +170,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
             // Log what happened to the security log
             String userString = users.values().size() == 1 ? "user" : "users";
-            log.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            securityLog.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
             return true;
         }
         return false;
@@ -232,14 +232,14 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
             if ( initialUser == null )
             {
                 String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
-                log.error( errorMessage );
+                securityLog.error( errorMessage );
                 throw new IllegalStateException( errorMessage );
             }
         }
         else if ( initialUserRepository.numberOfUsers() > 1 )
         {
             String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
-            log.error( errorMessage );
+            securityLog.error( errorMessage );
             throw new IllegalStateException( errorMessage );
         }
         stopUserRepository( initialUserRepository );
