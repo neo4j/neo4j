@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -49,6 +50,7 @@ import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.RandomEntityDataGenerator;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -80,6 +82,7 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Percentage.withPercentage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
@@ -91,6 +94,7 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.invisible;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -142,7 +146,13 @@ class CsvInputEstimateCalculationIT
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(), calculateNumberOfProperties( stores ) );
             }
-            assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
+
+            long measuredPropertyStorage = propertyStorageSize();
+            long estimatedPropertyStorage = estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties();
+            assertThat( estimatedPropertyStorage )
+                    .as( "Estimated property storage size of %s must be within 10%% of the measured size of %s.",
+                            bytesToString( estimatedPropertyStorage ), bytesToString( measuredPropertyStorage ) )
+                    .isCloseTo( measuredPropertyStorage, withPercentage( 10.0 ) );
         }
     }
 

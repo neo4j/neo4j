@@ -44,6 +44,7 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
@@ -239,10 +240,11 @@ public class CsvInput implements Input
     {
         long[] nodeSample = sample( nodeDataFactory, nodeHeaderFactory, valueSizeCalculator, node -> node.labels().length );
         long[] relationshipSample = sample( relationshipDataFactory, relationshipHeaderFactory, valueSizeCalculator, entity -> 0 );
+        long propPreAllocAdditional = propertyPreAllocateRounding( nodeSample[2] + relationshipSample[2] ) / 2;
         return Input.knownEstimates(
                 nodeSample[0], relationshipSample[0],
                 nodeSample[1], relationshipSample[1],
-                nodeSample[2], relationshipSample[2],
+                nodeSample[2] + propPreAllocAdditional, relationshipSample[2] + propPreAllocAdditional,
                 nodeSample[3] );
     }
 
@@ -301,6 +303,20 @@ public class CsvInput implements Input
             }
         }
         return estimates;
+    }
+
+    private long propertyPreAllocateRounding( long initialEstimatedPropertyStoreSize )
+    {
+        // By default, the page cache will grow large store files in 32 MiB sized chunks.
+        long preAllocSize = ByteUnit.mebiBytes( 32 );
+        if ( initialEstimatedPropertyStoreSize < preAllocSize )
+        {
+            return 0;
+        }
+        long chunks = 1 + initialEstimatedPropertyStoreSize / preAllocSize;
+        long estimatedFinalPropertyStoreSize = chunks * preAllocSize;
+        // Compute the difference from the initial estimate, to what we anticipate when we account for pre-allocation.
+        return estimatedFinalPropertyStoreSize - initialEstimatedPropertyStoreSize;
     }
 
     public static Extractor<?> idExtractor( IdType idType, Extractors extractors )
