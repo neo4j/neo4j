@@ -89,6 +89,29 @@ class CommunityBackwardsCompatibilityTest extends ExecutionEngineFunSuite {
 
   // Additions in 4.1
 
+  test("commands using DEFAULT DATABASE should fail correctly with CYPHER 3.5 and 4.0") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+
+    // WHEN 3.5
+    val exception_35 = the[SyntaxException] thrownBy {
+      execute(s"CYPHER 3.5 GRANT ACCESS ON DEFAULT DATABASE TO reader")
+    }
+    exception_35.getMessage should include("Commands towards system database are not supported in this Cypher version.")
+
+    // WHEN 4.0
+    val exception_40 = the[SyntaxException] thrownBy {
+      execute(s"CYPHER 4.0 GRANT ACCESS ON DEFAULT DATABASE TO reader")
+    }
+    exception_40.getMessage should include("DEFAULT DATABASE is not supported in this Cypher version.")
+
+    // WHEN 4.1
+    val exception_41 = the[SecurityAdministrationException] thrownBy {
+      execute("GRANT ACCESS ON DEFAULT DATABASE TO reader")
+    }
+    exception_41.getMessage should include("Unsupported administration command: GRANT ACCESS ON DEFAULT DATABASE TO reader")
+  }
+
   test("user management administration commands should fail correctly with CYPHER 3.5 and 4.0") {
     // GIVEN
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
@@ -110,5 +133,28 @@ class CommunityBackwardsCompatibilityTest extends ExecutionEngineFunSuite {
       execute("GRANT CREATE USER ON DBMS TO reader")
     }
     exception_41.getMessage should include("Unsupported administration command: GRANT CREATE USER ON DBMS TO reader")
+  }
+
+  test("transaction management administration commands should fail correctly with CYPHER 3.5 and 4.0") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+
+    // WHEN 3.5
+    val exception_35 = the[SyntaxException] thrownBy {
+      execute(s"CYPHER 3.5 GRANT TERMINATE TRANSACTION ON DATABASE * TO reader")
+    }
+    exception_35.getMessage should include("Commands towards system database are not supported in this Cypher version.")
+
+    // WHEN 4.0
+    val exception_40 = the[SyntaxException] thrownBy {
+      execute(s"CYPHER 4.0 GRANT TERMINATE TRANSACTION ON DATABASE * TO reader")
+    }
+    exception_40.getMessage should include("Transaction administration privileges are not supported in this Cypher version.")
+
+    // WHEN 4.1
+    val exception_41 = the[SecurityAdministrationException] thrownBy {
+      execute("GRANT TERMINATE TRANSACTION ON DATABASE * TO reader")
+    }
+    exception_41.getMessage should include("Unsupported administration command: GRANT TERMINATE TRANSACTION ON DATABASE * TO reader")
   }
 }

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DenyPrivilege
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TransactionManagementAction
 import org.neo4j.cypher.internal.ast.UserManagementAction
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -103,6 +105,18 @@ object Additions {
       // revoke user administration
       case p@RevokePrivilege(DbmsPrivilege(_: UserManagementAction), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("User administration privileges are not supported in this Cypher version.", p.position)
+
+      // grant transaction administration
+      case p@GrantPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
+
+      // deny transaction administration
+      case p@DenyPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
+
+      // revoke transaction administration
+      case p@RevokePrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
     }
   }
 
