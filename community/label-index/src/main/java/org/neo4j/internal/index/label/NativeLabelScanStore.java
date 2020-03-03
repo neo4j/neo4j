@@ -362,6 +362,12 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         return Iterators.asResourceIterator( Iterators.iterator( storeFile ) );
     }
 
+    @Override
+    public NodeLabelUpdateListener updateListener()
+    {
+        return this;
+    }
+
     /**
      * Instantiates the underlying {@link GBPTree} and its resources.
      *

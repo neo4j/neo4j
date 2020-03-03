@@ -61,6 +61,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -549,7 +550,7 @@ public class BatchInserterImpl implements BatchInserter
         return prototype.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT;
     }
 
-    private void repopulateAllIndexes( NativeLabelScanStore labelIndex ) throws IOException
+    private void repopulateAllIndexes( LabelScanStore labelIndex ) throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
@@ -1079,7 +1080,7 @@ public class BatchInserterImpl implements BatchInserter
               neoStores )
         {
             rebuildCounts( pageCacheTracer );
-            NativeLabelScanStore labelIndex = buildLabelIndex();
+            LabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
@@ -1092,9 +1093,9 @@ public class BatchInserterImpl implements BatchInserter
         msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
     }
 
-    private NativeLabelScanStore buildLabelIndex() throws IOException
+    private LabelScanStore buildLabelIndex() throws IOException
     {
-        NativeLabelScanStore labelIndex =
+        LabelScanStore labelIndex =
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
                         immediate() );
         if ( labelsTouched )

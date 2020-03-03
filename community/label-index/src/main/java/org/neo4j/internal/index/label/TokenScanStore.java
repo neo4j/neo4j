@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 /**
  * Stores token-->entities mappings. It receives updates in the form of condensed token->entity transaction data
@@ -77,6 +78,11 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     AllEntriesLabelScanReader allNodeLabelRanges( long fromNodeId, long toNodeId );
 
     ResourceIterator<File> snapshotStoreFiles();
+
+    /**
+     * Acquire a listener that can take care of entity token updates.
+     */
+    NodeLabelUpdateListener updateListener();
 
     /**
      * @return {@code true} if there's no data at all in this label scan store, otherwise {@code false}.

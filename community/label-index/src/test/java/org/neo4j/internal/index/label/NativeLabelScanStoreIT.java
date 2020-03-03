@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
-import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -70,7 +69,7 @@ class NativeLabelScanStoreIT
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private NativeLabelScanStore store;
+    private LabelScanStore store;
 
     private static final int NODE_COUNT = 10_000;
     private static final int LABEL_COUNT = 12;

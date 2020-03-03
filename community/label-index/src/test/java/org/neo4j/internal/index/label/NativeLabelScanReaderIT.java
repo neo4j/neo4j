@@ -85,7 +85,7 @@ class NativeLabelScanReaderIT
     private void shouldStartFromGivenId( int sparsity ) throws IOException
     {
         // given
-        NativeLabelScanStore store = life.add(
+        LabelScanStore store = life.add(
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() ) );
         int labelId = 1;
         int highNodeId = 100_000;

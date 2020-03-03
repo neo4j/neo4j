@@ -577,9 +577,9 @@ public class Database extends LifecycleAdapter
             boolean readOnly )
     {
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-        NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( indexStoreView ),
+        LabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( indexStoreView ),
                 readOnly, monitors, recoveryCleanupWorkCollector );
-        storageEngine.addNodeLabelUpdateListener( labelScanStore );
+        storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
         return labelScanStore;
     }
 

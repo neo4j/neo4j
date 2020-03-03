@@ -70,7 +70,7 @@ class NativeLabelScanStoreRebuildTest
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore =
+        LabelScanStore nativeLabelScanStore =
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, monitors, immediate() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -91,7 +91,7 @@ class NativeLabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
+        LabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
                 EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -109,7 +109,7 @@ class NativeLabelScanStoreRebuildTest
         List<NodeLabelUpdate> existingData = new ArrayList<>();
         existingData.add( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
-        NativeLabelScanStore nativeLabelScanStore =
+        LabelScanStore nativeLabelScanStore =
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
         try
         {
@@ -126,7 +126,7 @@ class NativeLabelScanStoreRebuildTest
 
     private void createDirtyIndex( PageCache pageCache ) throws IOException
     {
-        NativeLabelScanStore nativeLabelScanStore = null;
+        LabelScanStore nativeLabelScanStore = null;
         try
         {
             nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, false,

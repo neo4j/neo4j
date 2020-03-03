@@ -285,7 +285,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
     {
-        NativeLabelScanStore labelScanStore =
+        LabelScanStore labelScanStore =
                 new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), readOnly, monitors, immediate() );
         try
         {
