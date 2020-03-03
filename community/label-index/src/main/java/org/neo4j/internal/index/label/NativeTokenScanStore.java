@@ -78,7 +78,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * <p>
  * This store is backed by a single store file "neostore.labelscanstore.db".
  */
-public class NativeLabelScanStore implements TokenScanStore, LabelScanStore, NodeLabelUpdateListener
+public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, NodeLabelUpdateListener
 {
     /**
      * Written in header to indicate native label scan store is clean
@@ -175,7 +175,7 @@ public class NativeLabelScanStore implements TokenScanStore, LabelScanStore, Nod
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
+    NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.pageCache = pageCache;

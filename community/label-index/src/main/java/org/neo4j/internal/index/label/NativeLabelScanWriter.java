@@ -34,7 +34,7 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 /**
- * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather a {@link Writer} for its
+ * {@link LabelScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,

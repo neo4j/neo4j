@@ -87,7 +87,7 @@ import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
-public class NativeLabelScanStoreTest
+public class LabelScanStoreTest
 {
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -159,7 +159,7 @@ public class NativeLabelScanStoreTest
     void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( databaseLayout );
+        File labelScanStoreFile = NativeTokenScanStore.getLabelScanStoreFile( databaseLayout );
         fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();

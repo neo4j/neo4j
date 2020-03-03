@@ -37,7 +37,7 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
 
 /**
- * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
+ * {@link LabelScanReader} for reading data from {@link NativeTokenScanStore}.
  * Each {@link LongIterator} returned from each of the methods has a {@link Seeker}
  * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)} backing it.
  */

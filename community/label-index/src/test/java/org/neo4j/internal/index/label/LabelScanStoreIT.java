@@ -55,7 +55,7 @@ import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
-class NativeLabelScanStoreIT
+class LabelScanStoreIT
 {
     @Inject
     private RandomRule random;

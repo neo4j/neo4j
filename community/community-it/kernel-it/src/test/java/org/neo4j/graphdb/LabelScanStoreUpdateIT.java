@@ -38,7 +38,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 
 @ImpermanentDbmsExtension
-class NativeLabelScanStoreUpdateIT
+class LabelScanStoreUpdateIT
 {
     @Inject
     private GraphDatabaseService db;

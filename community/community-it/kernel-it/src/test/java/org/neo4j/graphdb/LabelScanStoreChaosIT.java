@@ -27,7 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.internal.index.label.NativeLabelScanStoreTest;
+import org.neo4j.internal.index.label.LabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -37,10 +37,10 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 /**
- * Tests functionality around missing or corrupted lucene label scan store index, and that
+ * Tests functionality around missing or corrupted label scan store index, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
-public class NativeLabelScanStoreChaosIT
+public class LabelScanStoreChaosIT
 {
     private final DbmsRule dbRule = new EmbeddedDbmsRule();
     private final RandomRule randomRule = new RandomRule();
@@ -108,7 +108,7 @@ public class NativeLabelScanStoreChaosIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        NativeLabelScanStoreTest.scrambleFile( randomRule.random(), file );
+        LabelScanStoreTest.scrambleFile( randomRule.random(), file );
     }
 
     private void deleteNode( Node node )

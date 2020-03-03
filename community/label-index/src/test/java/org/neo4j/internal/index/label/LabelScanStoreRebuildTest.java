@@ -46,7 +46,7 @@ import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
-class NativeLabelScanStoreRebuildTest
+class LabelScanStoreRebuildTest
 {
     @Inject
     private DatabaseLayout databaseLayout;

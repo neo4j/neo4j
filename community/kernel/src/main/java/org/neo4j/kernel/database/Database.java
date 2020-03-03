@@ -47,7 +47,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LoggingMonitor;
-import org.neo4j.internal.index.label.NativeLabelScanStore;
+import org.neo4j.internal.index.label.NativeTokenScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -577,7 +577,7 @@ public class Database extends LifecycleAdapter
             FileSystemAbstraction fs,
             boolean readOnly )
     {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeTokenScanStore.class ) ) );
         FullLabelStream labelStream = new FullLabelStream( indexStoreView );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );

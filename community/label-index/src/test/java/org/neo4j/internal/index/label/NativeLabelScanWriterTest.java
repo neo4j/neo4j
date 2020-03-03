@@ -47,9 +47,9 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.internal.index.label.LabelScanReader.NO_ID;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
-import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.flipRandom;
-import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.getLabels;
-import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.nodesWithLabel;
+import static org.neo4j.internal.index.label.LabelScanStoreIT.flipRandom;
+import static org.neo4j.internal.index.label.LabelScanStoreIT.getLabels;
+import static org.neo4j.internal.index.label.LabelScanStoreIT.nodesWithLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )

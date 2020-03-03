@@ -37,9 +37,9 @@ import static java.lang.Long.min;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 /**
- * {@link AllEntriesLabelScanReader} for {@link NativeLabelScanStore}.
+ * {@link AllEntriesLabelScanReader} for {@link NativeTokenScanStore}.
  * <p>
- * {@link NativeLabelScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
+ * {@link NativeTokenScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
  * results, so the approach this implementation is taking is to create one (lazy) seek cursor per label id
  * and coordinate those simultaneously over the scan. Each {@link NodeLabelRange} returned is a view
  * over all cursors at that same range, giving an aggregation of all labels in that node id range.

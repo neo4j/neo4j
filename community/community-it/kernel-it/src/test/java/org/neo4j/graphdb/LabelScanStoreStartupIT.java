@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LabelScanWriter;
-import org.neo4j.internal.index.label.NativeLabelScanStoreTest;
+import org.neo4j.internal.index.label.LabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -50,7 +50,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
-class NativeLabelScanStoreStartupIT
+class LabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
     @Inject
@@ -119,7 +119,7 @@ class NativeLabelScanStoreStartupIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        NativeLabelScanStoreTest.scrambleFile( random.random(), file );
+        LabelScanStoreTest.scrambleFile( random.random(), file );
     }
 
     private static File storeFile( DatabaseLayout databaseLayout )

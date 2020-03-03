@@ -24,7 +24,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
- * {@link Layout} for {@link GBPTree} used by {@link NativeLabelScanStore}.
+ * {@link Layout} for {@link GBPTree} used by {@link NativeTokenScanStore}.
  *
  * <ul>
  * <li>
