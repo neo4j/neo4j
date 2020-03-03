@@ -36,7 +36,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -91,7 +90,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.Math.toIntExact;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -99,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -652,21 +649,18 @@ class GBPTreeTest
     }
 
     @Test
-    void writeHeaderInDirtyTreeMustNotDeadlock()
+    void writeHeaderInDirtyTreeMustNotDeadlock() throws IOException
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        PageCache pageCache = createPageCache( defaultPageSize * 4 );
+        makeDirty( pageCache );
+
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
-            PageCache pageCache = createPageCache( defaultPageSize * 4 );
-            makeDirty( pageCache );
+            index.checkpoint( UNLIMITED, headerWriter, NULL );
+        }
 
-            Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
-            try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
-            {
-                index.checkpoint( UNLIMITED, headerWriter, NULL );
-            }
-
-            verifyHeader( pageCache, "failed".getBytes() );
-        } );
+        verifyHeader( pageCache, "failed".getBytes() );
     }
 
     private void verifyHeader( PageCache pageCache, byte[] expectedHeader ) throws IOException
@@ -842,76 +836,11 @@ class GBPTreeTest
     /* Mutex tests */
 
     @Test
-    void checkPointShouldLockOutWriter()
+    void checkPointShouldLockOutWriter() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).build() )
         {
-            CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
-            try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).build() )
-            {
-                long key = 10;
-                try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
-                {
-                    writer.put( new MutableLong( key ), new MutableLong( key ) );
-                }
-
-                // WHEN
-                monitor.enabled = true;
-                Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
-                monitor.barrier.awaitUninterruptibly();
-                // now we're in the smack middle of a checkpoint
-                Future<?> writerClose = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
-
-                // THEN
-                shouldWait( writerClose );
-                monitor.barrier.release();
-
-                writerClose.get();
-                checkpoint.get();
-            }
-        } );
-    }
-
-    @Test
-    void checkPointShouldWaitForWriter()
-    {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
-        {
-            // GIVEN
-            try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-            {
-                // WHEN
-                Barrier.Control barrier = new Barrier.Control();
-                Future<?> write = executor.submit( throwing( () ->
-                {
-                    try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
-                    {
-                        writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
-                        barrier.reached();
-                    }
-                } ) );
-                barrier.awaitUninterruptibly();
-                Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
-                shouldWait( checkpoint );
-
-                // THEN
-                barrier.release();
-                checkpoint.get();
-                write.get();
-            }
-        } );
-    }
-
-    @Test
-    void closeShouldLockOutWriter()
-    {
-        assertTimeoutPreemptively( ofSeconds( 50 ), () ->
-        {
-            // GIVEN
-            AtomicBoolean enabled = new AtomicBoolean();
-            Barrier.Control barrier = new Barrier.Control();
-            PageCache pageCacheWithBarrier = pageCacheWithBarrierInClose( enabled, barrier );
-            GBPTree<MutableLong,MutableLong> index = index( pageCacheWithBarrier ).build();
             long key = 10;
             try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
             {
@@ -919,41 +848,27 @@ class GBPTreeTest
             }
 
             // WHEN
-            enabled.set( true );
-            Future<?> close = executor.submit( throwing( index::close ) );
-            barrier.awaitUninterruptibly();
-            // now we're in the smack middle of a close/checkpoint
-            AtomicReference<Exception> writerError = new AtomicReference<>();
-            Future<?> write = executor.submit( () ->
-            {
-                try
-                {
-                    index.writer( NULL ).close();
-                }
-                catch ( Exception e )
-                {
-                    writerError.set( e );
-                }
-            } );
-
-            shouldWait( write );
-            barrier.release();
+            monitor.enabled = true;
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            monitor.barrier.awaitUninterruptibly();
+            // now we're in the smack middle of a checkpoint
+            Future<?> writerClose = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
 
             // THEN
-            write.get();
-            close.get();
-            assertTrue( writerError.get() instanceof FileIsNotMappedException, "Writer should not be able to acquired after close" );
-        } );
+            shouldWait( writerClose );
+            monitor.barrier.release();
+
+            writerClose.get();
+            checkpoint.get();
+        }
     }
 
     @Test
-    void writerShouldLockOutClose()
+    void checkPointShouldWaitForWriter() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        // GIVEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            // GIVEN
-            GBPTree<MutableLong,MutableLong> index = index().build();
-
             // WHEN
             Barrier.Control barrier = new Barrier.Control();
             Future<?> write = executor.submit( throwing( () ->
@@ -965,14 +880,81 @@ class GBPTreeTest
                 }
             } ) );
             barrier.awaitUninterruptibly();
-            Future<?> close = executor.submit( throwing( index::close ) );
-            shouldWait( close );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            shouldWait( checkpoint );
 
             // THEN
             barrier.release();
-            close.get();
+            checkpoint.get();
             write.get();
+        }
+    }
+
+    @Test
+    void closeShouldLockOutWriter() throws ExecutionException, InterruptedException, IOException
+    {
+        // GIVEN
+        AtomicBoolean enabled = new AtomicBoolean();
+        Barrier.Control barrier = new Barrier.Control();
+        PageCache pageCacheWithBarrier = pageCacheWithBarrierInClose( enabled, barrier );
+        GBPTree<MutableLong,MutableLong> index = index( pageCacheWithBarrier ).build();
+        long key = 10;
+        try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( key ) );
+        }
+
+        // WHEN
+        enabled.set( true );
+        Future<?> close = executor.submit( throwing( index::close ) );
+        barrier.awaitUninterruptibly();
+        // now we're in the smack middle of a close/checkpoint
+        AtomicReference<Exception> writerError = new AtomicReference<>();
+        Future<?> write = executor.submit( () ->
+        {
+            try
+            {
+                index.writer( NULL ).close();
+            }
+            catch ( Exception e )
+            {
+                writerError.set( e );
+            }
         } );
+
+        shouldWait( write );
+        barrier.release();
+
+        // THEN
+        write.get();
+        close.get();
+        assertTrue( writerError.get() instanceof FileIsNotMappedException, "Writer should not be able to acquired after close" );
+    }
+
+    @Test
+    void writerShouldLockOutClose() throws ExecutionException, InterruptedException
+    {
+        // GIVEN
+        GBPTree<MutableLong,MutableLong> index = index().build();
+
+        // WHEN
+        Barrier.Control barrier = new Barrier.Control();
+        Future<?> write = executor.submit( throwing( () ->
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                barrier.reached();
+            }
+        } ) );
+        barrier.awaitUninterruptibly();
+        Future<?> close = executor.submit( throwing( index::close ) );
+        shouldWait( close );
+
+        // THEN
+        barrier.release();
+        close.get();
+        write.get();
     }
 
     @Test
@@ -1015,107 +997,99 @@ class GBPTreeTest
     }
 
     @Test
-    void cleanJobShouldLockOutCheckpoint()
+    void cleanJobShouldLockOutCheckpoint() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
-            // GIVEN
-            makeDirty();
+        // GIVEN
+        makeDirty();
 
-            RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
-            CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
-            try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
-            {
-                // WHEN cleanup not finished
-                Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
-                monitor.barrier.awaitUninterruptibly();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
+            // WHEN cleanup not finished
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
+            monitor.barrier.awaitUninterruptibly();
 
-                // THEN
-                Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
-                shouldWait( checkpoint );
+            // THEN
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            shouldWait( checkpoint );
 
-                monitor.barrier.release();
-                cleanup.get();
-                checkpoint.get();
-            }
-        } );
+            monitor.barrier.release();
+            cleanup.get();
+            checkpoint.get();
+        }
     }
 
     @Test
-    void cleanJobShouldLockOutCheckpointOnNoUpdate()
+    void cleanJobShouldLockOutCheckpointOnNoUpdate() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
-            // GIVEN
-            makeDirty();
+        // GIVEN
+        makeDirty();
 
-            RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
-            CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
-            try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
-            {
-                // WHEN cleanup not finished
-                Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
-                monitor.barrier.awaitUninterruptibly();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
+            // WHEN cleanup not finished
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
+            monitor.barrier.awaitUninterruptibly();
 
-                // THEN
-                Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
-                shouldWait( checkpoint );
+            // THEN
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            shouldWait( checkpoint );
 
-                monitor.barrier.release();
-                cleanup.get();
-                checkpoint.get();
-            }
-        } );
+            monitor.barrier.release();
+            cleanup.get();
+            checkpoint.get();
+        }
     }
 
     @Test
-    void cleanJobShouldNotLockOutClose()
+    void cleanJobShouldNotLockOutClose() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
-            // GIVEN
-            makeDirty();
+        // GIVEN
+        makeDirty();
 
-            RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
-            CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
-            GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build();
 
+        // WHEN
+        // Cleanup not finished
+        Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
+        monitor.barrier.awaitUninterruptibly();
+
+        // THEN
+        Future<?> close = executor.submit( throwing( index::close ) );
+        close.get();
+
+        monitor.barrier.release();
+        cleanup.get();
+    }
+
+    @Test
+    void cleanJobShouldLockOutWriter() throws IOException, ExecutionException, InterruptedException
+    {
+        // GIVEN
+        makeDirty();
+
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
             // WHEN
             // Cleanup not finished
             Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> close = executor.submit( throwing( index::close ) );
-            close.get();
+            Future<?> writer = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
+            shouldWait( writer );
 
             monitor.barrier.release();
             cleanup.get();
-        } );
-    }
-
-    @Test
-    void cleanJobShouldLockOutWriter()
-    {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
-            // GIVEN
-            makeDirty();
-
-            RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
-            CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
-            try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
-            {
-                // WHEN
-                // Cleanup not finished
-                Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
-                monitor.barrier.awaitUninterruptibly();
-
-                // THEN
-                Future<?> writer = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
-                shouldWait( writer );
-
-                monitor.barrier.release();
-                cleanup.get();
-                writer.get();
-            }
-        } );
+            writer.get();
+        }
     }
 
     /* Cleaner test */
@@ -1648,20 +1622,17 @@ class GBPTreeTest
             // Corrupt the child
             corruptTheChild( pageCache, corruptChild );
 
-            assertTimeoutPreemptively( Duration.ofSeconds( 60 ), () ->
+            TreeInconsistencyException e = assertThrows( TreeInconsistencyException.class, () ->
             {
-                TreeInconsistencyException e = assertThrows( TreeInconsistencyException.class, () ->
+                // when seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
+                try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), pageCursorTracer ) )
                 {
-                    // when seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
-                    try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), pageCursorTracer ) )
-                    {
-                        seek.next();
-                    }
-                } );
-                assertThat( e.getMessage() ).contains(
-                        "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
-                                "Loop occurred when restarting search from root from page " + corruptChild + "." );
+                    seek.next();
+                }
             } );
+            assertThat( e.getMessage() ).contains(
+                    "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
+                            "Loop occurred when restarting search from root from page " + corruptChild + "." );
         }
     }
 
@@ -1688,49 +1659,46 @@ class GBPTreeTest
             corruptTheChild( pageCache, leftChild );
             corruptTheChild( pageCache, rightChild );
 
-            assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () ->
+            // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
+            // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.
+            ExecutorService executor = null;
+            try
             {
-                // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
-                // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.
-                ExecutorService executor = null;
-                try
+                executor = Executors.newFixedThreadPool( 2 );
+                CountDownLatch go = new CountDownLatch( 2 );
+                Future<Object> execute1 = executor.submit( () ->
                 {
-                    executor = Executors.newFixedThreadPool( 2 );
-                    CountDownLatch go = new CountDownLatch( 2 );
-                    Future<Object> execute1 = executor.submit( () ->
+                    go.countDown();
+                    go.await();
+                    try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), NULL ) )
                     {
-                        go.countDown();
-                        go.await();
-                        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), NULL ) )
-                        {
-                            seek.next();
-                        }
-                        return null;
-                    } );
-
-                    Future<Object> execute2 = executor.submit( () ->
-                    {
-                        go.countDown();
-                        go.await();
-                        try ( Seeker<MutableLong,MutableLong> seek = tree
-                                .seek( new MutableLong( Long.MAX_VALUE ), new MutableLong( Long.MAX_VALUE ), NULL ) )
-                        {
-                            seek.next();
-                        }
-                        return null;
-                    } );
-
-                    assertFutureFailsWithTreeInconsistencyException( execute1 );
-                    assertFutureFailsWithTreeInconsistencyException( execute2 );
-                }
-                finally
-                {
-                    if ( executor != null )
-                    {
-                        executor.shutdown();
+                        seek.next();
                     }
+                    return null;
+                } );
+
+                Future<Object> execute2 = executor.submit( () ->
+                {
+                    go.countDown();
+                    go.await();
+                    try ( Seeker<MutableLong,MutableLong> seek = tree
+                            .seek( new MutableLong( Long.MAX_VALUE ), new MutableLong( Long.MAX_VALUE ), NULL ) )
+                    {
+                        seek.next();
+                    }
+                    return null;
+                } );
+
+                assertFutureFailsWithTreeInconsistencyException( execute1 );
+                assertFutureFailsWithTreeInconsistencyException( execute2 );
+            }
+            finally
+            {
+                if ( executor != null )
+                {
+                    executor.shutdown();
                 }
-            } );
+            }
         }
     }
 
