@@ -23,7 +23,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
- * Reader of a label scan store containing label-->nodes mappings.
+ * Reader of a token scan store containing token-->entities mappings.
  */
 public interface TokenScanReader
 {
@@ -33,34 +33,34 @@ public interface TokenScanReader
     long NO_ID = -1;
 
     /**
-     * @param labelId label token id.
+     * @param tokenId token id.
      * @param cursorTracer underlying page cursor tracer
-     * @return node ids with the given {@code labelId}.
+     * @return entity ids with the given {@code tokenId}.
      */
-    PrimitiveLongResourceIterator nodesWithLabel( int labelId, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator nodesWithLabel( int tokenId, PageCursorTracer cursorTracer );
 
     /**
-     * Sets the client up for a label scan on <code>labelId</code>
+     * Sets the client up for a token scan on <code>tokenId</code>
      *
-     * @param labelId label token id
+     * @param tokenId token id
      */
-    LabelScan nodeLabelScan( int labelId, PageCursorTracer cursorTracer );
+    LabelScan nodeLabelScan( int tokenId, PageCursorTracer cursorTracer );
 
     /**
-     * @param labelIds label token ids.
+     * @param tokenIds token ids.
      * @param cursorTracer underlying page cursor tracer
-     * @return node ids with any of the given label ids.
+     * @return entity ids with any of the given token ids.
      */
-    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] labelIds, PageCursorTracer cursorTracer )
+    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] tokenIds, PageCursorTracer cursorTracer )
     {
-        return nodesWithAnyOfLabels( NO_ID, labelIds, cursorTracer );
+        return nodesWithAnyOfLabels( NO_ID, tokenIds, cursorTracer );
     }
 
     /**
      * @param fromId entity id to start at, exclusive, i.e. the given {@code fromId} will not be included in the result.
-     * @param labelIds label token ids.
+     * @param tokenIds token ids.
      * @param cursorTracer underlying page cursor tracer
-     * @return node ids with any of the given label ids.
+     * @return entity ids with any of the given token ids.
      */
-    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] labelIds, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] tokenIds, PageCursorTracer cursorTracer );
 }
