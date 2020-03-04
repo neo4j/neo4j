@@ -41,7 +41,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 class SchemaLoggingIT
 {
-    private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
+    private static final String CREATION_FINISHED = "Index creation finished for index [%s].";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
@@ -67,25 +67,12 @@ class SchemaLoggingIT
         // then
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        String before = logProvider.serialize();
-        try
-        {
-            assertThat( logProvider ).forLevel( INFO )
-                    .containsMessageWithArguments( "Index population started: [%s]",
-                            "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() +
-                                    "' )" )
-                    .containsMessageWithArguments( CREATION_FINISHED,
-                            "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() +
-                                    "' )",
-                            "ONLINE" );
-        }
-        catch ( Throwable t )
-        {
-            System.out.println( "Before: \n" + before );
-            System.out.println( "############################\n" );
-            System.out.println( "After: \n" + logProvider.serialize() );
-            throw t;
-        }
+        String indexName =
+                "Index( id=1, name='index_a908f819', type='GENERAL BTREE', schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )";
+
+        assertThat( logProvider ).forLevel( INFO )
+                .containsMessageWithArguments( "Index population started: [%s]", indexName )
+                .containsMessageWithArguments( CREATION_FINISHED, indexName );
     }
 
     private static void createIndex( GraphDatabaseAPI db, String labelName, String property )

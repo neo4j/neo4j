@@ -742,21 +742,17 @@ public class MultipleIndexPopulator
                 }
                 finally
                 {
+                    logCompletionMessage();
                     populationOngoing = false;
                     populatorLock.unlock();
                 }
             }, failedIndexProxyFactory );
             removeFromOngoingPopulations( this );
-            logCompletionMessage();
         }
 
         private void logCompletionMessage()
         {
-            InternalIndexState postPopulationState = flipper.getState();
-            String messageTemplate = isIndexPopulationOngoing( postPopulationState )
-                                     ? "Index created. Starting data checks. Index [%s] is %s."
-                                     : "Index creation finished. Index [%s] is %s.";
-            log.info( messageTemplate, indexUserDescription, postPopulationState.name() );
+            log.info( "Index creation finished for index [%s].", indexUserDescription );
         }
 
         private boolean isIndexPopulationOngoing( InternalIndexState postPopulationState )

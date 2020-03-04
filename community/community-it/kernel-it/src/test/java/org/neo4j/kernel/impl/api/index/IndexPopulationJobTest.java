@@ -424,7 +424,6 @@ class IndexPopulationJobTest
             // Then
             var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
             matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
-                   .containsMessageWithArguments( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
                     .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
@@ -453,7 +452,6 @@ class IndexPopulationJobTest
             // Then
             var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
             matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
-                    .containsMessageWithArguments( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
                     .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
