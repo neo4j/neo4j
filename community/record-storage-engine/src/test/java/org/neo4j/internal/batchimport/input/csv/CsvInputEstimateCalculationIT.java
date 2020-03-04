@@ -103,6 +103,39 @@ class CsvInputEstimateCalculationIT
 {
     private static final long NODE_COUNT = 600_000;
     private static final long RELATIONSHIP_COUNT = 600_000;
+    // Configured for maximum determinism in order to reduce flakiness of this test.
+    private static final Configuration PBI_CONFIG = new Configuration.Overridden( Configuration.DEFAULT )
+    {
+        @Override
+        public boolean sequentialBackgroundFlushing()
+        {
+            return false;
+        }
+
+        @Override
+        public int maxNumberOfProcessors()
+        {
+            return 1;
+        }
+
+        @Override
+        public boolean parallelRecordWrites()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean parallelRecordReads()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean highIO()
+        {
+            return false;
+        }
+    };
 
     @Inject
     private RandomRule random;
@@ -129,7 +162,7 @@ class CsvInputEstimateCalculationIT
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( databaseLayout, fs, null, PageCacheTracer.NULL, Configuration.DEFAULT, NullLogService.getInstance(),
+            new ParallelBatchImporter( databaseLayout, fs, null, PageCacheTracer.NULL, PBI_CONFIG, NullLogService.getInstance(),
                     invisible(), EMPTY, config, format, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     EmptyLogFilesInitializer.INSTANCE ).doImport( input );
 
@@ -245,7 +278,7 @@ class CsvInputEstimateCalculationIT
         Deserialization<String> deserialization = new StringDeserialization( COMMAS );
         try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( file ) ) );
               RandomEntityDataGenerator generator = new RandomEntityDataGenerator( nodeCount, count, toIntExact( count ), random.seed(),
-                      start.longValue(), header, distribution, distribution, 0, 0, 8 );
+                      start.longValue(), header, distribution, distribution, 0, 0, 5 );
               InputChunk chunk = generator.newChunk();
               InputEntity entity = new InputEntity() )
         {
