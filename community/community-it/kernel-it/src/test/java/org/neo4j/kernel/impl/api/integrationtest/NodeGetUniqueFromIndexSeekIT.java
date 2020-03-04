@@ -196,10 +196,12 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Runnable runnableForThread2 = () ->
         {
             latch.waitForAllToStart();
-            try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
-                  NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+            try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
             {
-                tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
+                try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+                {
+                    tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
+                }
                 tx.commit();
             }
             catch ( KernelException e )
