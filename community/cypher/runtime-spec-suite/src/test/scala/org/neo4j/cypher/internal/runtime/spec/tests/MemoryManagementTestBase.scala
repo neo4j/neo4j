@@ -564,7 +564,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val (nodes, _) = circleGraph(1) // Just for size estimation
+    circleGraph(1) // Just for size estimation
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
 
     // then
@@ -573,6 +573,9 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     }
   }
 
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill caching expand-into query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -593,6 +596,9 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     }
   }
 
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill caching optional expand-into query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
