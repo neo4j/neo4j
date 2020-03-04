@@ -430,6 +430,7 @@ public class FlippableIndexProxy implements IndexProxy
                 if ( actionDuringFlip.call() )
                 {
                     this.delegate = flipTarget.create();
+
                     if ( started )
                     {
                         this.delegate.start();
