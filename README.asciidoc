@@ -16,13 +16,13 @@ We encourage experimentation with Neo4j. You can build extensions to Neo4j, deve
 
 Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
 
-OS X users need to have http://brew.sh/[Homebrew] installed.
+macOS users need to have http://brew.sh/[Homebrew] installed.
 
-=== With brew on OS X ===
+=== With brew on macOS ===
 
   brew install maven
 
-Please note that we do not support building Debian packages on OS X.
+Please note that we do not support building Debian packages on macOS.
 
 === With apt-get on Ubuntu ===
 
