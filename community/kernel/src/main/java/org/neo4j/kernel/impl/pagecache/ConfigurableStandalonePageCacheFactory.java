@@ -26,11 +26,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
+
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -45,15 +46,14 @@ public final class ConfigurableStandalonePageCacheFactory
     {
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, Config.defaults(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return createPageCache( fileSystem, pageCacheTracer, Config.defaults(), EMPTY, jobScheduler );
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, config,
-                EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler );
     }
 
     /**

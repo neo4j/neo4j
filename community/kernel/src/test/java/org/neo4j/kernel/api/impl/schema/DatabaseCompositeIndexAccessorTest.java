@@ -52,6 +52,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -98,7 +100,6 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -142,7 +143,7 @@ public class DatabaseCompositeIndexAccessorTest
 
         Dependencies deps = new Dependencies();
         JobScheduler jobScheduler = cleanup.add( JobSchedulerFactory.createInitialisedScheduler() );
-        PageCache pageCache = cleanup.add( ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule, jobScheduler ) );
+        PageCache pageCache = cleanup.add( ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule, jobScheduler, PageCacheTracer.NULL ) );
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystemRule, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
                 RecoveryCleanupWorkCollector.ignore() );
         dir.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
@@ -306,7 +307,7 @@ public class DatabaseCompositeIndexAccessorTest
             {
                 Thread.onSpinWait();
             }
-            sampler.sampleIndex( NULL );
+            sampler.sampleIndex( PageCursorTracer.NULL );
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )
@@ -323,7 +324,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
+            reader.query( NULL_CONTEXT, results, unconstrained(), PageCursorTracer.NULL, queries );
             return toSet( results );
         }
     }
@@ -346,7 +347,7 @@ public class DatabaseCompositeIndexAccessorTest
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL ) )
         {
             for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {
