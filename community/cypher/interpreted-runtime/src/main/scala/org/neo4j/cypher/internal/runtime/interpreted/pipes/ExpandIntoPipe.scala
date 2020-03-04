@@ -47,7 +47,7 @@ case class ExpandIntoPipe(source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
-    val relCache = new RelationshipsCache(CACHE_SIZE)
+    val relCache = new RelationshipsCache(CACHE_SIZE, state.memoryTracker)
 
     input.flatMap {
       row =>

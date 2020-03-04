@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.exceptions.ParameterWrongTypeException
@@ -69,16 +70,16 @@ trait CachingExpandInto {
         return Iterator.empty
       }
 
-      relIterator(state, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
     }
     // iterate from a non-dense node
     else if (toNodeIsDense)
-      relIterator(state, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
     else if (fromNodeIsDense)
-      relIterator(state, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
     //both nodes are non-dense, choose a random starting point
     else
-      relIterator(state, fromNode, toNode, alternate(), relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, alternate(), relTypes, relCache, dir)
   }
 
   private var alternateState = false
@@ -89,27 +90,22 @@ trait CachingExpandInto {
     result
   }
 
-  private def relIterator(state: QueryState, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
+  private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
                           relTypes: Array[Int], relCache: RelationshipsCache, dir: SemanticDirection): Iterator[RelationshipValue] = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = state.query.getRelationshipsForIds(start.id(), localDirection, relTypes)
+    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes)
     new PrefetchingIterator[RelationshipValue] {
-      //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[RelationshipValue](2)
+      val connectedRelationships = new RelationshipChain
       override def fetchNextOrNull(): RelationshipValue = {
         while (relationships.hasNext) {
           val rel = relationships.next()
           val other = rel.otherNode(start)
           if (end == other) {
-            state.memoryTracker.allocated(rel)
             connectedRelationships.append(rel)
             return rel
           }
         }
-        if (relCache.put(fromNode, toNode, connectedRelationships, dir)) {
-          state.memoryTracker.allocated(fromNode)
-          state.memoryTracker.allocated(toNode)
-        }
+        relCache.put(fromNode, toNode, connectedRelationships, dir)
         null
       }
     }.asScala
@@ -134,17 +130,40 @@ trait CachingExpandInto {
     }
   }
 
-  protected final class RelationshipsCache(capacity: Int) {
+  final class RelationshipChain() {
+    //we do not expect two nodes to have many connecting relationships
+    private val buffer = new ArrayBuffer[RelationshipValue](2)
+    private var heapUsageEstimation = 0L
+
+    def append(rel: RelationshipValue): Unit = {
+      buffer.append(rel)
+      heapUsageEstimation += rel.estimatedHeapUsage()
+    }
+
+    def estimatedHeapUsage: Long = heapUsageEstimation
+
+    def relationships: Seq[RelationshipValue] = buffer
+  }
+
+  protected final class RelationshipsCache(capacity: Int, memoryTracker: QueryMemoryTracker) {
 
     val table = new mutable.OpenHashMap[(Long, Long), Seq[RelationshipValue]]()
 
     def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[RelationshipValue]] = table.get(key(start, end, dir))
 
-    def put(start: NodeValue, end: NodeValue, rels: Seq[RelationshipValue], dir: SemanticDirection): Boolean = {
+    /**
+      * Add connections to the cache.
+      * @param start the start node
+      * @param end the end node
+      * @param rels the interconnecting relationships
+      * @param dir the direction of the interconnecting relationships
+      */
+    def put(start: NodeValue, end: NodeValue, rels: RelationshipChain, dir: SemanticDirection): Unit = {
       if (table.size < capacity) {
-        table.put(key(start, end, dir), rels).isEmpty
-      } else {
-        false
+        //key uses two longs
+        memoryTracker.allocated(2 * java.lang.Long.BYTES)
+        memoryTracker.allocated(rels.estimatedHeapUsage)
+        table.put(key(start, end, dir), rels.relationships)
       }
     }
 
