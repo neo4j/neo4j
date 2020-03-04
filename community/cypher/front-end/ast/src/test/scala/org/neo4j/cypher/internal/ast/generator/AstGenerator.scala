@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
@@ -62,12 +63,14 @@ import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.Start
 import org.neo4j.cypher.internal.ast.StartItem
+import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -877,7 +880,21 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _usingScanHint
   )
 
+  def _use: Gen[UseGraph] = for {
+    expression <- _expression
+  } yield UseGraph(expression)(pos)
+
+  def _from: Gen[FromGraph] = for {
+    expression <- _expression
+  } yield FromGraph(expression)(pos)
+
+  def _subQuery: Gen[SubQuery] = for {
+    part <- _queryPart
+  } yield SubQuery(part)(pos)
+
   def _clause: Gen[Clause] = oneOf(
+    lzy(_use),
+    lzy(_from),
     lzy(_with),
     lzy(_return),
     lzy(_match),
@@ -890,7 +907,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_call),
     lzy(_foreach),
     lzy(_loadCsv),
-    lzy(_start)
+    lzy(_start),
+    lzy(_subQuery),
   )
 
   def _singleQuery: Gen[SingleQuery] = for {
