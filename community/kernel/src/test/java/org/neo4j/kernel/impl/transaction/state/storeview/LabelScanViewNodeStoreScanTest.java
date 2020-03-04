@@ -27,7 +27,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
@@ -44,7 +44,7 @@ class LabelScanViewNodeStoreScanTest
 {
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private final LabelScanReader labelScanReader = mock( LabelScanReader.class );
+    private final TokenScanReader labelScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );

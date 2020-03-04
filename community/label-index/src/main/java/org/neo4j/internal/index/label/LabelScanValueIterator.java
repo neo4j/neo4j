@@ -36,7 +36,7 @@ import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
  * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
- * The provided {@link Seeker} is managed externally, e.g. {@link NativeLabelScanReader},
+ * The provided {@link Seeker} is managed externally, e.g. {@link NativeTokenScanReader},
  * this because implemented interface lacks close-method.
  */
 class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
@@ -113,7 +113,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
             baseNodeId = key.idRange * RANGE_SIZE;
             bits = cursor.value().bits;
 
-            if ( fromId != LabelScanReader.NO_ID )
+            if ( fromId != TokenScanReader.NO_ID )
             {
                 // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
                 long range = rangeOf( fromId );
@@ -125,7 +125,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
                     bits &= ~mask;
                 }
                 // ... and let's not do that again, only for the first idRange
-                fromId = LabelScanReader.NO_ID;
+                fromId = TokenScanReader.NO_ID;
             }
 
             //noinspection AssertWithSideEffects

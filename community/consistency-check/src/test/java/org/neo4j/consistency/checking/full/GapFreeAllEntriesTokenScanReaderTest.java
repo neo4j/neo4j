@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 @ExtendWith( RandomExtension.class )
-class GapFreeAllEntriesLabelScanReaderTest
+class GapFreeAllEntriesTokenScanReaderTest
 {
     private static final int EMPTY_RANGE = 0;
     private static final int NON_EMPTY_RANGE = 0b10101; // 0, 2, 4

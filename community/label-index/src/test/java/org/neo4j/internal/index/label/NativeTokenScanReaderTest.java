@@ -42,7 +42,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
-class NativeLabelScanReaderTest
+class NativeTokenScanReaderTest
 {
     private static final int LABEL_ID = 1;
 
@@ -66,7 +66,7 @@ class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) )
                 .thenReturn( cursor );
         // WHEN
-        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID, NULL ) )
         {
             // THEN
@@ -94,7 +94,7 @@ class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID, NULL );
               PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID, NULL ) )
         {
@@ -130,7 +130,7 @@ class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID, NULL );
               PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID, NULL )
         )
@@ -167,7 +167,7 @@ class NativeLabelScanReaderTest
 
         // when
         long fromId = LabelScanValue.RANGE_SIZE + 3;
-        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, new int[]{LABEL_ID}, NULL ) )
         {
             // then

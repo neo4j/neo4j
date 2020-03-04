@@ -56,11 +56,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.index.label.FullStoreChangeStream;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -1430,7 +1428,7 @@ class BatchInsertTest
 
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
     {
-        LabelScanReader labelScanReader = labelScanStore.newReader();
+        TokenScanReader labelScanReader = labelScanStore.newReader();
         List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
         List<Long> actualNodeIds;
         try ( PrimitiveLongResourceIterator itr = labelScanReader.nodesWithLabel( labelId, NULL ) )

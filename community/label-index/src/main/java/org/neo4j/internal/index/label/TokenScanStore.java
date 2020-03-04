@@ -50,9 +50,9 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     }
 
     /**
-     * @return a {@link LabelScanReader} capable of retrieving entities for tokens.
+     * @return a {@link TokenScanReader} capable of retrieving entities for tokens.
      */
-    LabelScanReader newReader();
+    TokenScanReader newReader();
 
     /**
      * Acquire a writer for updating the store.

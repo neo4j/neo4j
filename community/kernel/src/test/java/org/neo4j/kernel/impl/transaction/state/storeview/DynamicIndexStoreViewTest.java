@@ -29,7 +29,7 @@ import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
@@ -64,7 +64,7 @@ class DynamicIndexStoreViewTest
     @Test
     void visitOnlyLabeledNodes() throws Exception
     {
-        LabelScanReader labelScanReader = mock( LabelScanReader.class );
+        TokenScanReader labelScanReader = mock( TokenScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
         when( nodeLabelRanges.maxCount() ).thenReturn( 1L );
 

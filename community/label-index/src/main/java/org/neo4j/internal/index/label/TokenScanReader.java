@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 /**
  * Reader of a label scan store containing label-->nodes mappings.
  */
-public interface LabelScanReader
+public interface TokenScanReader
 {
     /**
      * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[], PageCursorTracer)}.

@@ -48,7 +48,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
-class NativeAllEntriesLabelScanReaderTest
+class NativeAllEntriesTokenScanReaderTest
 {
     @Inject
     private RandomRule random;

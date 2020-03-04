@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
 import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
@@ -31,13 +31,13 @@ import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSuppl
 class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements EntityIdIterator
 {
     private final int[] labelIds;
-    private final LabelScanReader labelScanReader;
+    private final TokenScanReader labelScanReader;
     private final CURSOR entityCursor;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    LabelScanViewIdIterator( LabelScanReader labelScanReader, int[] labelIds, CURSOR entityCursor )
+    LabelScanViewIdIterator( TokenScanReader labelScanReader, int[] labelIds, CURSOR entityCursor )
     {
         this.labelScanReader = labelScanReader;
         this.entityCursor = entityCursor;

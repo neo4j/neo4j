@@ -51,7 +51,7 @@ import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
-class NativeLabelScanReaderIT
+class NativeTokenScanReaderIT
 {
     @Inject
     private RandomRule random;
@@ -103,7 +103,7 @@ class NativeLabelScanReaderIT
         // when
         long fromId = random.nextInt( highNodeId );
         int nextExpectedId = expected.nextSetBit( toIntExact( fromId + 1 ) );
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         try ( PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId}, NULL ) )
         {
             // then

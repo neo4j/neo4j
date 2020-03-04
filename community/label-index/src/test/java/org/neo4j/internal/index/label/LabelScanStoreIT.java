@@ -190,7 +190,7 @@ class LabelScanStoreIT
 
     private void verifyReads( long[] expected )
     {
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] actualNodes = closingAsArray( reader.nodesWithLabel( i, NULL ) );

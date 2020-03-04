@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScan;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
@@ -533,7 +533,7 @@ abstract class Read implements TxStateHolder,
 
     public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
 
-    abstract LabelScanReader labelScanReader();
+    abstract TokenScanReader labelScanReader();
 
     @Override
     public TransactionState txState()

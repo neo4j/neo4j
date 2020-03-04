@@ -192,15 +192,15 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * @return {@link LabelScanReader} capable of finding entity ids with given token ids.
+     * @return {@link TokenScanReader} capable of finding entity ids with given token ids.
      * Readers will immediately see updates made by {@link LabelScanWriter}, although {@link LabelScanWriter}
      * may internally batch updates so functionality isn't reliable. The only given is that readers will
      * see at least updates from closed {@link LabelScanWriter writers}.
      */
     @Override
-    public LabelScanReader newReader()
+    public TokenScanReader newReader()
     {
-        return new NativeLabelScanReader( index );
+        return new NativeTokenScanReader( index );
     }
 
     /**

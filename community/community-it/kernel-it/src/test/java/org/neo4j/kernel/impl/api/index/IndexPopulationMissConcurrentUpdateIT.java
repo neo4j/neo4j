@@ -37,7 +37,7 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -109,7 +109,7 @@ public class IndexPopulationMissConcurrentUpdateIT
     /**
      * Tests an issue where the {@link MultipleIndexPopulator} had a condition when applying external concurrent updates that any given
      * update would only be applied if the entity id was lower than the highest entity id the scan had seen (i.e. where the scan was currently at).
-     * This would be a problem because of how the {@link LabelScanReader} works internally, which is that it reads one bit-set of node ids
+     * This would be a problem because of how the {@link TokenScanReader} works internally, which is that it reads one bit-set of node ids
      * at the time, effectively caching a small range of ids. If a concurrent creation would happen right in front of where the scan was
      * after it had read and cached that bit-set it would not apply the update and miss that entity in the scan and would end up with an index
      * that was inconsistent with the store.

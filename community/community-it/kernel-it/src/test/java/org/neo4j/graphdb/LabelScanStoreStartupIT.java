@@ -27,7 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LabelScanWriter;
 import org.neo4j.internal.index.label.LabelScanStoreTest;
@@ -144,7 +144,7 @@ class LabelScanStoreStartupIT
         {
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
-        LabelScanReader labelScanReader = labelScanStore.newReader();
+        TokenScanReader labelScanReader = labelScanStore.newReader();
         try ( PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId, NULL ) )
         {
             assertEquals( 1, iterator.next() );

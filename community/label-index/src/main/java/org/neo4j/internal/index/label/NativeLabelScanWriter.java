@@ -40,7 +40,7 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
  * applied in sorted order (by the label and node id) when reaches batch size or on {@link #close()}.
  * <p>
- * Updates aren't visible to {@link LabelScanReader readers} immediately, rather when queue happens to be applied.
+ * Updates aren't visible to {@link TokenScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
  * Incoming {@link NodeLabelUpdate updates} are actually modified from representing physical before/after
  * state to represent logical to-add/to-remove state. These changes are done directly inside the provided

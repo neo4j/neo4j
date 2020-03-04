@@ -37,18 +37,18 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
 
 /**
- * {@link LabelScanReader} for reading data from {@link NativeTokenScanStore}.
+ * {@link TokenScanReader} for reading data from {@link NativeTokenScanStore}.
  * Each {@link LongIterator} returned from each of the methods has a {@link Seeker}
  * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)} backing it.
  */
-class NativeLabelScanReader implements LabelScanReader
+class NativeTokenScanReader implements TokenScanReader
 {
     /**
      * Index that is queried when calling the methods below.
      */
     private final GBPTree<LabelScanKey,LabelScanValue> index;
 
-    NativeLabelScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
+    NativeTokenScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
     {
         this.index = index;
     }
@@ -66,7 +66,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIterator( cursor, LabelScanReader.NO_ID );
+        return new LabelScanValueIterator( cursor, TokenScanReader.NO_ID );
     }
 
     @Override

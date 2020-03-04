@@ -349,7 +349,7 @@ public class LabelScanStoreTest
         start( updates );
 
         // when
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) labelId, NULL ) );
 
         // then
@@ -375,7 +375,7 @@ public class LabelScanStoreTest
         write( Collections.emptyIterator() );
 
         // then
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id, NULL ) );
         assertEquals( nodes, nodesWithLabel0 );
     }
@@ -456,7 +456,7 @@ public class LabelScanStoreTest
 
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         PrimitiveLongResourceIterator nodes = reader.nodesWithLabel( labelId, NULL );
         while ( nodes.hasNext() )
         {
@@ -490,7 +490,7 @@ public class LabelScanStoreTest
                 labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
 
         // THEN
-        LabelScanReader reader = store.newReader();
+        TokenScanReader reader = store.newReader();
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 6, 7},
                 closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2}, NULL ) ) );

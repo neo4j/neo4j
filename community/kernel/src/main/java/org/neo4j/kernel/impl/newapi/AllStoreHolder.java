@@ -30,7 +30,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -90,7 +90,7 @@ public class AllStoreHolder extends Read
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final IndexReaderCache indexReaderCache;
-    private LabelScanReader labelScanReader;
+    private TokenScanReader labelScanReader;
 
     public AllStoreHolder( StorageReader storageReader,
                            KernelTransactionImplementation ktx,
@@ -350,7 +350,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    LabelScanReader labelScanReader()
+    TokenScanReader labelScanReader()
     {
         if ( labelScanReader == null )
         {
