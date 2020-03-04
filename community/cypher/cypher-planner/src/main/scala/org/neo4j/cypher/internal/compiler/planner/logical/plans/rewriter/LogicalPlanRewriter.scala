@@ -44,7 +44,8 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: PlannerContext, solveds: Solveds,
+  override def instance(context: PlannerContext,
+                        solveds: Solveds,
                         cardinalities: Cardinalities,
                         providedOrders: ProvidedOrders,
                         otherAttributes: Attributes[LogicalPlan]) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
@@ -54,7 +55,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
     simplifyPredicates,
     unnestOptional,
-    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes),
+    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(providedOrders)),
     removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds, providedOrders)),
     pruningVarExpander,
     useTop,
@@ -66,7 +67,8 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: PlannerContext, solveds: Solveds,
+  def instance(context: PlannerContext,
+               solveds: Solveds,
                cardinalities: Cardinalities,
                providedOrders: ProvidedOrders,
                otherAttributes: Attributes[LogicalPlan]): Rewriter

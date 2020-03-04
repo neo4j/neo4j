@@ -154,10 +154,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case preParsedQuery: PreParsedQuery => planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime)
     }
 
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(logicalPlanResult.logicalPlanState.planningAttributes match {
-      case PlanningAttributes(solveds, cardinalities, providedOrders) =>
-        providedOrders.size == cardinalities.size && providedOrders.size == solveds.size
-    }, "All planning attributes should contain the same plans")
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(logicalPlanResult.logicalPlanState.planningAttributes.hasEqualSizeAttributes,
+                                             "All planning attributes should contain the same plans")
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)

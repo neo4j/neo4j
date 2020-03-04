@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 A join on given variable is similar to a logical AND - any predicates evaluated on the LHS will in effect
 also be applied to the output of the join. This means that evaluating the same predicate on the RHS is redundant.
 
-This rewriters finds predicates on the join variables, and removes any predicates on the RHS that already
+This rewriter finds predicates on the join variables, and removes any predicates on the RHS that already
 exist on the LHS.
  */
 case class predicateRemovalThroughJoins(solveds: Solveds, cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
@@ -54,6 +54,8 @@ case class predicateRemovalThroughJoins(solveds: Solveds, cardinalities: Cardina
         val newRhsPlannerQuery = solveds.get(rhsLeaf.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
         val newSelection = Selection(Ands(newPredicate)(newPredicate.head.position), rhsLeaf)(attributes.copy(rhs.id))
         solveds.set(newSelection.id, newRhsPlannerQuery)
+        // NOTE: This overestimates cardinality of the new Selection, because it has fewer predicates than the original Selection.
+        //       To get it right, we should recompute cardinality of newRhsPlannerQuery
         cardinalities.copy(rhsLeaf.id, newSelection.id)
         NodeHashJoin(nodeIds, lhs, newSelection)(SameId(n.id))
       }
