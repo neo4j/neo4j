@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -50,7 +49,6 @@ import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.RandomEntityDataGenerator;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -80,7 +78,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Percentage.withPercentage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,9 +159,10 @@ class CsvInputEstimateCalculationIT
     {
         // given
         Groups groups = new Groups();
-        Collection<DataFactory> nodeData = asList( generateData( defaultFormatNodeFileHeader(), new MutableLong(), 0, 0, ":ID", "nodes-1.csv", groups ) );
-        Collection<DataFactory> relationshipData = asList( generateData( defaultFormatRelationshipFileHeader(), new MutableLong(),
-                0, 0, ":START_ID,:TYPE,:END_ID", "rels-1.csv", groups ) );
+        Collection<DataFactory> nodeData = singletonList(
+                generateData( defaultFormatNodeFileHeader(), new MutableLong(), 0, 0, ":ID", "nodes-1.csv", groups ) );
+        Collection<DataFactory> relationshipData = singletonList(
+                generateData( defaultFormatRelationshipFileHeader(), new MutableLong(), 0, 0, ":START_ID,:TYPE,:END_ID", "rels-1.csv", groups ) );
         Input input = new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(),
                 IdType.INTEGER, COMMAS, CsvInput.NO_MONITOR, groups );
 
@@ -246,7 +245,7 @@ class CsvInputEstimateCalculationIT
         Deserialization<String> deserialization = new StringDeserialization( COMMAS );
         try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( file ) ) );
               RandomEntityDataGenerator generator = new RandomEntityDataGenerator( nodeCount, count, toIntExact( count ), random.seed(),
-                      start.longValue(), header, distribution, distribution, 0, 0 );
+                      start.longValue(), header, distribution, distribution, 0, 0, 8 );
               InputChunk chunk = generator.newChunk();
               InputEntity entity = new InputEntity() )
         {

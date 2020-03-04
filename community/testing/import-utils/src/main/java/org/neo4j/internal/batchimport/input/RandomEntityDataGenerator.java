@@ -40,7 +40,7 @@ import static org.neo4j.internal.batchimport.input.InputEntity.NO_LABELS;
 public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomValues>
 {
     public RandomEntityDataGenerator( long nodeCount, long count, int batchSize, long seed, long startId, Header header,
-           Distribution<String> labels, Distribution<String> relationshipTypes, float factorBadNodeData, float factorBadRelationshipData )
+           Distribution<String> labels, Distribution<String> relationshipTypes, float factorBadNodeData, float factorBadRelationshipData, int maxStringLength )
     {
         super( count, batchSize, new RandomsStates( seed ), ( randoms, visitor, id ) -> {
             for ( Entry entry : header.entries() )
@@ -63,7 +63,7 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                     }
                     break;
                 case PROPERTY:
-                    visitor.property( entry.name(), randomProperty( entry, randoms ) );
+                    visitor.property( entry.name(), randomProperty( entry, randoms, maxStringLength ) );
                     break;
                 case LABEL:
                     visitor.labels( randomLabels( randoms, labels ) );
@@ -118,13 +118,13 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
         return relationshipTypes.random( random );
     }
 
-    private static Object randomProperty( Entry entry, RandomValues random )
+    private static Object randomProperty( Entry entry, RandomValues random, int maxLStringength )
     {
         String type = entry.extractor().name();
         switch ( type )
         {
         case "String":
-            return random.nextAlphaNumericTextValue( 5, 20 ).stringValue();
+            return random.nextAlphaNumericTextValue( 5, maxLStringength ).stringValue();
         case "long":
             return random.nextInt( Integer.MAX_VALUE );
         case "int":

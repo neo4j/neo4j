@@ -75,6 +75,7 @@ public class DataGeneratorInput implements Input
     private final float factorBadRelationshipData;
     private final long startId;
     private final Groups groups = new Groups();
+    private int maxStringLength = 20;
 
     public DataGeneratorInput( long nodes, long relationships, IdType idType, long seed, long startId,
             Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount,
@@ -97,14 +98,14 @@ public class DataGeneratorInput implements Input
     public InputIterable nodes( Collector badCollector )
     {
         return () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
-                factorBadNodeData, factorBadRelationshipData );
+                factorBadNodeData, factorBadRelationshipData, maxStringLength );
     }
 
     @Override
     public InputIterable relationships( Collector badCollector )
     {
         return () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
-                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData );
+                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData, maxStringLength );
     }
 
     @Override
