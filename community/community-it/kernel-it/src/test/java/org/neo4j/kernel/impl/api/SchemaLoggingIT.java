@@ -94,7 +94,7 @@ class SchemaLoggingIT
 
     private class LogMessageMatcher extends BaseMatcher<Object>
     {
-        private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
+        private static final String CREATION_FINISHED = "Index creation finished for index [%s].";
         private final LogMatcherBuilder match;
         private final IndexProviderDescriptor descriptor;
 
@@ -108,7 +108,7 @@ class SchemaLoggingIT
         public boolean matches( Object item )
         {
             return logProvider.containsMatchingLogCall( match.info( containsString( CREATION_FINISHED ),
-                    ":User(name) [provider: {key=" + descriptor.getKey() + ", version=" + descriptor.getVersion() + "}]", "ONLINE" ) );
+                    ":User(name) [provider: {key=" + descriptor.getKey() + ", version=" + descriptor.getVersion() + "}]" ) );
         }
 
         @Override

@@ -436,6 +436,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
                 if ( actionDuringFlip.call() )
                 {
                     this.delegate = flipTarget.create();
+
                     if ( started )
                     {
                         this.delegate.start();
