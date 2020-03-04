@@ -45,10 +45,12 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.util.Preconditions;
@@ -88,7 +90,7 @@ public class GBPTreeCountsStore implements CountsStore
     private volatile TxIdInformation txIdInformation;
     private volatile boolean started;
 
-    public GBPTreeCountsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector,
+    public GBPTreeCountsStore( PageCache pageCache, File file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, boolean readOnly, Monitor monitor ) throws IOException
     {
         this.readOnly = readOnly;
@@ -96,7 +98,20 @@ public class GBPTreeCountsStore implements CountsStore
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-        this.tree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header );
+        GBPTree<CountsKey,CountsValue> instantiatedTree;
+        try
+        {
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // Corrupt, delete and rebuild
+            fileSystem.deleteFileOrThrow( file );
+            header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header );
+        }
+        this.tree = instantiatedTree;
+
         boolean successful = false;
         try
         {

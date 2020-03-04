@@ -335,7 +335,7 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
-        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
+        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )

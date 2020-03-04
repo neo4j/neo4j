@@ -351,8 +351,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public void buildCountsStore( CountsBuilder builder )
     {
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
-                builder, false, GBPTreeCountsStore.NO_MONITOR ) )
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                RecoveryCleanupWorkCollector.immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start();
             countsStore.checkpoint( UNLIMITED );

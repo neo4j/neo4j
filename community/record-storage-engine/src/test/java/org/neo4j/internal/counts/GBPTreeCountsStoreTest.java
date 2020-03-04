@@ -402,7 +402,7 @@ class GBPTreeCountsStoreTest
     {
         final File file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new GBPTreeCountsStore( pageCache, file, immediate(), CountsBuilder.EMPTY, true, NO_MONITOR ) );
+                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, NO_MONITOR ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -627,7 +627,7 @@ class GBPTreeCountsStoreTest
 
     private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), immediate(), builder, readOnly, monitor );
+        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, monitor );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder
