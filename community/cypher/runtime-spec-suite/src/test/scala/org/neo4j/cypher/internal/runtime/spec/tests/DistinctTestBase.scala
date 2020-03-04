@@ -177,4 +177,31 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(aNodes.map(a => Array(a)))
   }
+
+  test("should support filter after a distinct") {
+    // given
+    val n = sizeHint
+    val relTuples = (for(i <- 0 until n) yield {
+      Seq((i, (i + 1) % n, "NEXT"))
+    }).reduce(_ ++ _)
+    given {
+      //prop = [0, 0, 1, 1, 2, 2,..]
+      val nodes = nodePropertyGraph(n, { case i => Map("prop" -> i / 2) })
+      connect(nodes, relTuples)
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("yprop")
+      .projection("y.prop AS yprop")
+      .expandAll("(x)-->(y)")
+      .filter("xprop = 11")
+      .distinct("x.prop AS xprop")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("yprop").withRows(rowCount(1))
+  }
 }
