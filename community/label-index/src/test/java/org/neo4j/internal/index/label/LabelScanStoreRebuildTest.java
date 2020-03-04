@@ -160,7 +160,7 @@ class LabelScanStoreRebuildTest
         }
 
         @Override
-        public void rebuilt( long roughNodeCount )
+        public void rebuilt( long roughEntityCount )
         {
             rebuilt = true;
         }

@@ -59,9 +59,9 @@ public class LoggingMonitor extends Monitor.Adaptor
     }
 
     @Override
-    public void rebuilt( long roughNodeCount )
+    public void rebuilt( long roughEntityCount )
     {
-        log.info( "Label index rebuilt (roughly " + roughNodeCount + " nodes)" );
+        log.info( "Label index rebuilt (roughly " + roughEntityCount + " nodes)" );
     }
 
     @Override

@@ -57,41 +57,42 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
- * {@link LabelScanStore} which is implemented using {@link GBPTree} atop a {@link PageCache}.
+ * Implements {@link TokenScanStore} and thus also implements {@link LabelScanStore}.
+ *
+ * Uses {@link GBPTree} atop a {@link PageCache}.
  * Only a single writer is allowed at any given point in time so synchronization or merging of updates
  * need to be handled externally.
  * <p>
  * About the {@link Layout} used in this instance of {@link GBPTree}:
  * <ul>
  * <li>
- * Each keys is a combination of {@code labelId} and {@code nodeIdRange} ({@code nodeId/64}).
+ * Each keys is a combination of {@code entityId} and {@code entityIdRange} ({@code entityId/64}).
  * </li>
  * <li>
  * Each value is a 64-bit bit set (a primitive {@code long}) where each set bit in it represents
- * a node with that label, such that {@code nodeId = nodeIdRange+bitOffset}. Range size (e.g. 64 bits)
- * is configurable on initial creation of the store, 8, 16, 32 or 64.
+ * an entity with that token, such that {@code entityId = entityIdRange+bitOffset}.
  * </li>
  * </ul>
  * <p>
  * {@link #force(IOLimiter, PageCursorTracer)} is vital for allowing this store to be recoverable, and must be called
  * whenever Neo4j performs a checkpoint.
  * <p>
- * This store is backed by a single store file "neostore.labelscanstore.db".
+ * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
  */
 public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, NodeLabelUpdateListener
 {
     /**
-     * Written in header to indicate native label scan store is clean
+     * Written in header to indicate native token scan store is clean
      */
     private static final byte CLEAN = (byte) 0x00;
 
     /**
-     * Written in header to indicate native label scan store is rebuilding
+     * Written in header to indicate native token scan store is rebuilding
      */
     private static final byte NEEDS_REBUILDING = (byte) 0x01;
 
     /**
-     * Whether or not this label scan store is read-only.
+     * Whether or not this token scan store is read-only.
      */
     private final boolean readOnly;
 
@@ -107,7 +108,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
 
     /**
      * {@link PageCache} to {@link PageCache#map(File, int, ImmutableSet)}
-     * store file backing this label scan store. Passed to {@link GBPTree}.
+     * store file backing this token scan store. Passed to {@link GBPTree}.
      */
     private final PageCache pageCache;
 
@@ -118,7 +119,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
 
     /**
      * Used in {@link #start()} if the store is empty, where this will provide all data for fully populating
-     * this label scan store. This can be the case when changing label scan store provider on an existing database.
+     * this token scan store. This can be the case when if file was corrupt or missing.
      */
     private final FullStoreChangeStream fullStoreChangeStream;
 
@@ -138,13 +139,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     private final DatabaseLayout directoryStructure;
 
     /**
-     * The index which backs this label scan store. Instantiated in {@link #init()} and considered
+     * The index which backs this token scan store. Instantiated in {@link #init()} and considered
      * started after call to {@link #start()}.
      */
     private GBPTree<LabelScanKey,LabelScanValue> index;
 
     /**
-     * Set during {@link #init()} if {@link #start()} will need to rebuild the whole label scan store from
+     * Set during {@link #init()} if {@link #start()} will need to rebuild the whole token scan store from
      * {@link FullStoreChangeStream}.
      */
     private boolean needsRebuild;
@@ -160,7 +161,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     private NativeLabelScanWriter singleWriter;
 
     /**
-     * Monitor for all writes going into this label scan store.
+     * Monitor for all writes going into this token scan store.
      */
     private NativeLabelScanWriter.WriteMonitor writeMonitor;
 
@@ -191,7 +192,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * @return {@link LabelScanReader} capable of finding node ids with given label ids.
+     * @return {@link LabelScanReader} capable of finding entity ids with given token ids.
      * Readers will immediately see updates made by {@link LabelScanWriter}, although {@link LabelScanWriter}
      * may internally batch updates so functionality isn't reliable. The only given is that readers will
      * see at least updates from closed {@link LabelScanWriter writers}.
@@ -256,11 +257,11 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates )
+    public void applyUpdates( Iterable<NodeLabelUpdate> tokenUpdates )
     {
         try ( LabelScanWriter writer = newWriter() )
         {
-            for ( NodeLabelUpdate update : labelUpdates )
+            for ( NodeLabelUpdate update : tokenUpdates )
             {
                 writer.write( update );
             }
@@ -292,15 +293,15 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public AllEntriesLabelScanReader allNodeLabelRanges( long fromNodeId, long toNodeId )
+    public AllEntriesLabelScanReader allNodeLabelRanges( long fromEntityId, long toEntityId )
     {
-        IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider = labelId ->
+        IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider = tokenId ->
         {
             try
             {
                 return index.seek(
-                        new LabelScanKey().set( labelId, fromNodeId / RANGE_SIZE ),
-                        new LabelScanKey().set( labelId, (toNodeId - 1) / RANGE_SIZE + 1 ), NULL );
+                        new LabelScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
+                        new LabelScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), NULL );
             }
             catch ( IOException e )
             {
@@ -308,21 +309,21 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
             }
         };
 
-        int highestLabelId = -1;
+        int highestTokenId = -1;
         try ( Seeker<LabelScanKey,LabelScanValue> cursor = index.seek(
                 new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
                 new LabelScanKey().set( 0, -1 ), NULL ) )
         {
             if ( cursor.next() )
             {
-                highestLabelId = cursor.key().labelId;
+                highestTokenId = cursor.key().labelId;
             }
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        return new NativeAllEntriesLabelScanReader( seekProvider, highestLabelId );
+        return new NativeAllEntriesLabelScanReader( seekProvider, highestTokenId );
     }
 
     /**
@@ -451,17 +452,17 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         if ( needsRebuild && !readOnly )
         {
             monitor.rebuilding();
-            long numberOfNodes;
+            long numberOfEntities;
 
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = newBulkAppendWriter() )
             {
-                numberOfNodes = fullStoreChangeStream.applyTo( writer );
+                numberOfEntities = fullStoreChangeStream.applyTo( writer );
             }
 
             index.checkpoint( IOLimiter.UNLIMITED, writeClean, NULL );
 
-            monitor.rebuilt( numberOfNodes );
+            monitor.rebuilt( numberOfEntities );
             needsRebuild = false;
         }
     }

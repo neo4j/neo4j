@@ -50,7 +50,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     }
 
     /**
-     * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
+     * @return a {@link LabelScanReader} capable of retrieving entities for tokens.
      */
     LabelScanReader newReader();
 
@@ -78,18 +78,18 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     void force( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
-     * Acquire a reader for all {@link NodeLabelRange node label} ranges.
+     * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
      *
      * @return the {@link AllEntriesLabelScanReader reader}.
      */
     AllEntriesLabelScanReader allNodeLabelRanges();
 
     /**
-     * Acquire a reader for all {@link NodeLabelRange node label} ranges.
+     * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
      *
      * @return the {@link AllEntriesLabelScanReader reader}.
      */
-    AllEntriesLabelScanReader allNodeLabelRanges( long fromNodeId, long toNodeId );
+    AllEntriesLabelScanReader allNodeLabelRanges( long fromEntityId, long toEntityId );
 
     ResourceIterator<File> snapshotStoreFiles();
 
@@ -99,7 +99,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     NodeLabelUpdateListener updateListener();
 
     /**
-     * @return {@code true} if there's no data at all in this label scan store, otherwise {@code false}.
+     * @return {@code true} if there's no data at all in this token scan store, otherwise {@code false}.
      * @throws IOException on I/O error.
      */
     boolean isEmpty() throws IOException;
@@ -164,7 +164,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             }
 
             @Override
-            public void rebuilt( long roughNodeCount )
+            public void rebuilt( long roughEntityCount )
             {   // empty
             }
 
@@ -202,7 +202,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 
         void rebuilding();
 
-        void rebuilt( long roughNodeCount );
+        void rebuilt( long roughEntityCount );
 
         void recoveryCleanupRegistered();
 
