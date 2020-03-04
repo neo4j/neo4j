@@ -123,7 +123,8 @@ class GBPTreeCountsStoreTest
 
         assertZeroGlobalTracer( pageCacheTracer );
 
-        try ( var counts = new GBPTreeCountsStore( pageCache, file, immediate(), CountsBuilder.EMPTY, false, pageCacheTracer, NO_MONITOR ) )
+        try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, false, pageCacheTracer,
+                NO_MONITOR ) )
         {
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
@@ -473,7 +474,7 @@ class GBPTreeCountsStoreTest
     {
         final File file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new GBPTreeCountsStore( pageCache, file, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR ) );
+                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -695,7 +696,7 @@ class GBPTreeCountsStoreTest
 
     private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), immediate(), builder, readOnly, PageCacheTracer.NULL, monitor );
+        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, PageCacheTracer.NULL, monitor );
     }
 
     private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

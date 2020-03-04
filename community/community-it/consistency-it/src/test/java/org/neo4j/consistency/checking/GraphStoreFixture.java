@@ -262,20 +262,21 @@ public abstract class GraphStoreFixture implements AutoCloseable
         {
             if ( counts == null )
             {
-                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), new CountsBuilder()
-                {
-                    @Override
-                    public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
-                    {
-                        throw new UnsupportedOperationException( "Should not be rebuilt" );
-                    }
+                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
+                        new CountsBuilder()
+                        {
+                            @Override
+                            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+                            {
+                                throw new UnsupportedOperationException( "Should not be rebuilt" );
+                            }
 
-                    @Override
-                    public long lastCommittedTxId()
-                    {
-                        return 0;
-                    }
-                }, true, PageCacheTracer.NULL, NO_MONITOR );
+                            @Override
+                            public long lastCommittedTxId()
+                            {
+                                return 0;
+                            }
+                        }, true, PageCacheTracer.NULL, NO_MONITOR );
                 counts.start( NULL );
             }
             return counts;

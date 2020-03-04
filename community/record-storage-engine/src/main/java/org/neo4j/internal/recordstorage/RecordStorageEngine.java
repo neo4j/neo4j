@@ -169,7 +169,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
-            countsStore = openCountsStore( pageCache, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
+            countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseSettings.consistency_check_on_apply );
         }
@@ -180,13 +180,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private GBPTreeCountsStore openCountsStore( PageCache pageCache, DatabaseLayout layout, Config config, LogProvider logProvider,
+    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config, LogProvider logProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
         try
         {
-            return new GBPTreeCountsStore( pageCache, layout.countStore(), recoveryCleanupWorkCollector, new CountsBuilder()
+            return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 
