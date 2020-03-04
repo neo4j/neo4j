@@ -167,12 +167,10 @@ class StoreLogServiceTest
         try ( Lifespan ignored = new Lifespan( logService ) )
         {
             Race race = new Race();
-            AtomicBoolean start = new AtomicBoolean();
             AtomicBoolean end = new AtomicBoolean();
             race.addContestants( loggerThreads, () ->
             {
                 ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
-                start.set( true );
                 while ( !end.get() )
                 {
                     long id = nextId.incrementAndGet();
@@ -187,10 +185,6 @@ class StoreLogServiceTest
             } );
             race.addContestant( throwing( () ->
             {
-                while ( !start.get() )
-                {
-                    Thread.onSpinWait();
-                }
                 ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
                 Level[] levels = new Level[]{Level.INFO, Level.WARN, Level.ERROR};
                 for ( Level level : levels )
