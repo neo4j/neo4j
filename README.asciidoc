@@ -76,3 +76,7 @@ To install Neo4j Desktop, go to https://neo4j.com/download-center/[Neo4j Downloa
 Neo4j Community Edition is an open source product licensed under GPLv3.
 
 Neo4j Enterprise Edition includes additional closed-source components _not available in this repository_ and requires a commercial license from Neo4j or one of its affiliates.
+
+== Trademark ==
+
+Neo4j's trademark policy is available at https://neo4j.com/trademark-policy/[our trademark policy page].
