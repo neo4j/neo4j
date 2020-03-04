@@ -57,16 +57,16 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a writer for updating the store.
      *
-     * @return {@link LabelScanWriter} that can modify the {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} that can modify the {@link LabelScanStore}.
      */
-    LabelScanWriter newWriter();
+    TokenScanWriter newWriter();
 
     /**
      * Acquire a writer that is specialized in bulk-append writing, e.g. building from initial data.
      *
-     * @return {@link LabelScanWriter} that can modify the {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} that can modify the {@link LabelScanStore}.
      */
-    LabelScanWriter newBulkAppendWriter();
+    TokenScanWriter newBulkAppendWriter();
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when

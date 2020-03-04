@@ -227,7 +227,7 @@ class LabelScanStoreIT
     private void randomModifications( long[] expected, int count ) throws IOException
     {
         BitSet editedNodes = new BitSet();
-        try ( LabelScanWriter writer = store.newWriter() )
+        try ( TokenScanWriter writer = store.newWriter() )
         {
             for ( int i = 0; i < count; i++ )
             {

@@ -516,7 +516,7 @@ public class LabelScanStoreTest
         }
 
         // when
-        try ( LabelScanWriter writer = store.newBulkAppendWriter() )
+        try ( TokenScanWriter writer = store.newBulkAppendWriter() )
         {
             for ( NodeLabelUpdate update : updates )
             {
@@ -562,7 +562,7 @@ public class LabelScanStoreTest
 
     private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
     {
-        try ( LabelScanWriter writer = store.newWriter() )
+        try ( TokenScanWriter writer = store.newWriter() )
         {
             while ( iterator.hasNext() )
             {
@@ -595,7 +595,7 @@ public class LabelScanStoreTest
     private void prepareIndex() throws IOException
     {
         start();
-        try ( LabelScanWriter labelScanWriter = store.newWriter() )
+        try ( TokenScanWriter labelScanWriter = store.newWriter() )
         {
             labelScanWriter.write( labelChanges( 1, new long[]{}, new long[]{1} ) );
         }

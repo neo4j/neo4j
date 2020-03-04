@@ -89,7 +89,7 @@ class NativeTokenScanReaderIT
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );
-        try ( LabelScanWriter writer = store.newWriter() )
+        try ( TokenScanWriter writer = store.newWriter() )
         {
             int updates = highNodeId / sparsity;
             for ( int i = 0; i < updates; i++ )

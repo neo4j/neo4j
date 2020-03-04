@@ -156,14 +156,14 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
 
     /**
-     * The single instance of {@link NativeLabelScanWriter} used for updates.
+     * The single instance of {@link NativeTokenScanWriter} used for updates.
      */
-    private NativeLabelScanWriter singleWriter;
+    private NativeTokenScanWriter singleWriter;
 
     /**
      * Monitor for all writes going into this token scan store.
      */
-    private NativeLabelScanWriter.WriteMonitor writeMonitor;
+    private NativeTokenScanWriter.WriteMonitor writeMonitor;
 
     /**
      * Write rebuilding bit to header.
@@ -193,9 +193,9 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
 
     /**
      * @return {@link TokenScanReader} capable of finding entity ids with given token ids.
-     * Readers will immediately see updates made by {@link LabelScanWriter}, although {@link LabelScanWriter}
+     * Readers will immediately see updates made by {@link TokenScanWriter}, although {@link TokenScanWriter}
      * may internally batch updates so functionality isn't reliable. The only given is that readers will
-     * see at least updates from closed {@link LabelScanWriter writers}.
+     * see at least updates from closed {@link TokenScanWriter writers}.
      */
     @Override
     public TokenScanReader newReader()
@@ -204,15 +204,15 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * Returns {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * Returns {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
      * Only a single writer is allowed at any given point in time.
      *
-     * @return {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
-     * called {@link LabelScanWriter#close()}.
+     * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public LabelScanWriter newWriter()
+    public TokenScanWriter newWriter()
     {
         assertWritable();
 
@@ -227,20 +227,20 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * Returns a {@link LabelScanWriter} like that from {@link #newWriter()}, but is specialized in bulk-writing new data.
+     * Returns a {@link TokenScanWriter} like that from {@link #newWriter()}, but is specialized in bulk-writing new data.
      *
-     * @return {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
-     * called {@link LabelScanWriter#close()}.
+     * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public LabelScanWriter newBulkAppendWriter()
+    public TokenScanWriter newBulkAppendWriter()
     {
         assertWritable();
 
         try
         {
-            return new BulkAppendNativeLabelScanWriter( index.writer( NULL ) );
+            return new BulkAppendNativeTokenScanWriter( index.writer( NULL ) );
         }
         catch ( IOException e )
         {
@@ -259,7 +259,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     @Override
     public void applyUpdates( Iterable<NodeLabelUpdate> tokenUpdates )
     {
-        try ( LabelScanWriter writer = newWriter() )
+        try ( TokenScanWriter writer = newWriter() )
         {
             for ( NodeLabelUpdate update : tokenUpdates )
             {
@@ -369,8 +369,8 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
             isDirty = true;
         }
 
-        writeMonitor = LabelScanWriteMonitor.ENABLED ? new LabelScanWriteMonitor( fs, directoryStructure ) : NativeLabelScanWriter.EMPTY;
-        singleWriter = new NativeLabelScanWriter( 1_000, writeMonitor );
+        writeMonitor = LabelScanWriteMonitor.ENABLED ? new LabelScanWriteMonitor( fs, directoryStructure ) : NativeTokenScanWriter.EMPTY;
+        singleWriter = new NativeTokenScanWriter( 1_000, writeMonitor );
 
         if ( isDirty )
         {
@@ -455,7 +455,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
             long numberOfEntities;
 
             // Intentionally ignore read-only flag here when rebuilding.
-            try ( LabelScanWriter writer = newBulkAppendWriter() )
+            try ( TokenScanWriter writer = newBulkAppendWriter() )
             {
                 numberOfEntities = fullStoreChangeStream.applyTo( writer );
             }
@@ -467,7 +467,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         }
     }
 
-    private NativeLabelScanWriter writer() throws IOException
+    private NativeTokenScanWriter writer() throws IOException
     {
         return singleWriter.initialize( index.writer( NULL ) );
     }

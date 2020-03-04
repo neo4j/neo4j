@@ -31,7 +31,7 @@ public interface FullStoreChangeStream
 {
     FullStoreChangeStream EMPTY = writer -> 0;
 
-    long applyTo( LabelScanWriter writer ) throws IOException;
+    long applyTo( TokenScanWriter writer ) throws IOException;
 
     static FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
     {

@@ -31,8 +31,8 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.index.label.NativeLabelScanWriter.offsetOf;
-import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.internal.index.label.NativeTokenScanWriter.offsetOf;
+import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
@@ -41,16 +41,16 @@ import static org.neo4j.util.Preconditions.checkArgument;
  * will find the slot by labelId and add the correct bit to the current range, or if the bit is in another range, merge the current one first.
  * It cannot handle updates to nodes that are already in ths label index, such operations will fail before trying to make those changes.
  */
-class BulkAppendNativeLabelScanWriter implements LabelScanWriter
+class BulkAppendNativeTokenScanWriter implements TokenScanWriter
 {
     private final Writer<LabelScanKey,LabelScanValue> writer;
     private final ValueMerger<LabelScanKey,LabelScanValue> merger;
     private MutableIntObjectMap<Pair<LabelScanKey,LabelScanValue>> ranges = IntObjectMaps.mutable.empty();
 
-    BulkAppendNativeLabelScanWriter( Writer<LabelScanKey,LabelScanValue> writer )
+    BulkAppendNativeTokenScanWriter( Writer<LabelScanKey,LabelScanValue> writer )
     {
         this.writer = writer;
-        this.merger = new AddMerger( NativeLabelScanWriter.EMPTY );
+        this.merger = new AddMerger( NativeTokenScanWriter.EMPTY );
     }
 
     @Override

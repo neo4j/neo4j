@@ -54,7 +54,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
-class NativeLabelScanWriterTest
+class NativeTokenScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
@@ -85,7 +85,7 @@ class NativeLabelScanWriterTest
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
+        try ( NativeTokenScanWriter writer = new NativeTokenScanWriter( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -113,7 +113,7 @@ class NativeLabelScanWriterTest
         // GIVEN
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
         {
-            try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
+            try ( NativeTokenScanWriter writer = new NativeTokenScanWriter( 1, NativeTokenScanWriter.EMPTY ) )
             {
                 writer.initialize( tree.writer( NULL ) );
 
@@ -134,7 +134,7 @@ class NativeLabelScanWriterTest
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
+        try ( NativeTokenScanWriter writer = new NativeTokenScanWriter( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -153,7 +153,7 @@ class NativeLabelScanWriterTest
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
+        try ( NativeTokenScanWriter writer = new NativeTokenScanWriter( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;

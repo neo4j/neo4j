@@ -29,7 +29,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.index.label.LabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -140,7 +140,7 @@ class LabelScanStoreStartupIT
     private static void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {
         int labelId = 1;
-        try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
+        try ( TokenScanWriter labelScanWriter = labelScanStore.newWriter() )
         {
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }

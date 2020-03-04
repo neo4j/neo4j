@@ -29,8 +29,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
-import static org.neo4j.internal.index.label.NativeLabelScanWriter.offsetOf;
-import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.internal.index.label.NativeTokenScanWriter.offsetOf;
+import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each

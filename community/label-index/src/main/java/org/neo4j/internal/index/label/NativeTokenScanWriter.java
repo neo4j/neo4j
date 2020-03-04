@@ -34,7 +34,7 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 /**
- * {@link LabelScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
+ * {@link TokenScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
@@ -50,7 +50,7 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
  *
  * @see PhysicalToLogicalLabelChanges
  */
-class NativeLabelScanWriter implements LabelScanWriter
+class NativeTokenScanWriter implements TokenScanWriter
 {
     /**
      * {@link Comparator} for sorting the node id ranges, used in batches to apply updates in sorted order.
@@ -71,7 +71,7 @@ class NativeLabelScanWriter implements LabelScanWriter
     private final WriteMonitor monitor;
 
     /**
-     * {@link Writer} acquired when acquiring this {@link NativeLabelScanWriter},
+     * {@link Writer} acquired when acquiring this {@link NativeTokenScanWriter},
      * acquired from {@link GBPTree#writer(PageCursorTracer)}.
      */
     private Writer<LabelScanKey,LabelScanValue> writer;
@@ -160,7 +160,7 @@ class NativeLabelScanWriter implements LabelScanWriter
     {
     };
 
-    NativeLabelScanWriter( int batchSize, WriteMonitor monitor )
+    NativeTokenScanWriter( int batchSize, WriteMonitor monitor )
     {
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
         this.addMerger = new AddMerger( monitor );
@@ -175,7 +175,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         this.monitor = monitor;
     }
 
-    NativeLabelScanWriter initialize( Writer<LabelScanKey,LabelScanValue> writer )
+    NativeTokenScanWriter initialize( Writer<LabelScanKey,LabelScanValue> writer )
     {
         this.writer = writer;
         this.pendingUpdatesCursor = 0;

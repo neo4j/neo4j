@@ -66,7 +66,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
@@ -325,7 +325,7 @@ public class FullCheckIntegrationTest
     private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
             throws IOException
     {
-        try ( LabelScanWriter writer = labelScanStore.newWriter() )
+        try ( TokenScanWriter writer = labelScanStore.newWriter() )
         {
             for ( NodeLabelUpdate update : nodeLabelUpdates )
             {

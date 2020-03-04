@@ -61,7 +61,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -721,7 +721,7 @@ public class DetectRandomSabotageIT
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
-                        try ( LabelScanWriter writer = labelIndex.newWriter() )
+                        try ( TokenScanWriter writer = labelIndex.newWriter() )
                         {
                             if ( nodeRecord.inUse() )
                             {

@@ -41,7 +41,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
-class BulkAppendNativeLabelScanWriterTest
+class BulkAppendNativeTokenScanWriterTest
 {
     @Inject
     private PageCache pageCache;
@@ -53,7 +53,7 @@ class BulkAppendNativeLabelScanWriterTest
     {
         // given
         TrackingWriter treeWriter = new TrackingWriter();
-        try ( BulkAppendNativeLabelScanWriter writer = new BulkAppendNativeLabelScanWriter( treeWriter ) )
+        try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( treeWriter ) )
         {
             // when
             long nodeId = 5;
@@ -73,7 +73,7 @@ class BulkAppendNativeLabelScanWriterTest
     {
         // given
         TrackingWriter treeWriter = new TrackingWriter();
-        try ( BulkAppendNativeLabelScanWriter writer = new BulkAppendNativeLabelScanWriter( treeWriter ) )
+        try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( treeWriter ) )
         {
             // when
             long nodeId1 = 5;
@@ -105,7 +105,7 @@ class BulkAppendNativeLabelScanWriterTest
     {
         // given
         TrackingWriter treeWriter = new TrackingWriter();
-        try ( BulkAppendNativeLabelScanWriter writer = new BulkAppendNativeLabelScanWriter( treeWriter ) )
+        try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( treeWriter ) )
         {
             // when/then
             IllegalArgumentException failure =
@@ -119,14 +119,14 @@ class BulkAppendNativeLabelScanWriterTest
     {
         // given
         long nodeId = 3;
-        try ( BulkAppendNativeLabelScanWriter writer = new BulkAppendNativeLabelScanWriter( new TrackingWriter() ) )
+        try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( new TrackingWriter() ) )
         {
             writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{2} ) );
         }
 
         // when
         TrackingWriter treeWriter = new TrackingWriter();
-        try ( BulkAppendNativeLabelScanWriter writer = new BulkAppendNativeLabelScanWriter( treeWriter ) )
+        try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( treeWriter ) )
         {
             writer.write( labelChanges( 3, EMPTY_LONG_ARRAY, new long[]{3} ) );
         }

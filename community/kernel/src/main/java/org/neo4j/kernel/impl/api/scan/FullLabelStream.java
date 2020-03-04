@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -38,7 +38,7 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabelUpdate,IOException>
 {
     private final IndexStoreView indexStoreView;
-    private LabelScanWriter writer;
+    private TokenScanWriter writer;
     private long count;
 
     public FullLabelStream( IndexStoreView indexStoreView )
@@ -47,7 +47,7 @@ public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabel
     }
 
     @Override
-    public long applyTo( LabelScanWriter writer ) throws IOException
+    public long applyTo( TokenScanWriter writer ) throws IOException
     {
         // Keep the write for using it in visit
         this.writer = writer;

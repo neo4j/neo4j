@@ -31,9 +31,8 @@ import org.neo4j.consistency.report.ConsistencyReport.LabelScanConsistencyReport
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -115,7 +114,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // Label index having (N) which is not in use in the store
-            try ( LabelScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
                 writer.write( labelChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -135,7 +134,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // A couple of nodes w/ correct label indexing
-            try ( LabelScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
                 for ( int i = 0; i < 10; i++ )
                 {
@@ -145,7 +144,7 @@ class NodeCheckerTest extends CheckerTestBase
             }
 
             // Label index having (N) which is not in use in the store
-            try ( LabelScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
                 writer.write( labelChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -245,7 +244,7 @@ class NodeCheckerTest extends CheckerTestBase
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
             long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
-            try ( LabelScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
                 writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -282,7 +281,7 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            try ( LabelScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
                 for ( int i = 0; i < 20; i++ )
                 {

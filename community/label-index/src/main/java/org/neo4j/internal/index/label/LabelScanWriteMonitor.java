@@ -50,10 +50,10 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
- * A {@link NativeLabelScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
+ * A {@link NativeTokenScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
  * This class also has a {@link #main(String[])} method for dumping the contents of such write log to console or file, as text.
  */
-public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
+public class LabelScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 {
     // configuration for this monitor
     static final boolean ENABLED = FeatureToggles.flag( LabelScanWriteMonitor.class, "enabled", false );

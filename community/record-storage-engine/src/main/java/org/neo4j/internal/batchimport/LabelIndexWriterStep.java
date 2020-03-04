@@ -23,7 +23,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -34,7 +34,7 @@ import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
 {
-    private final LabelScanWriter writer;
+    private final TokenScanWriter writer;
     private final NodeStore nodeStore;
 
     public LabelIndexWriterStep( StageControl control, Configuration config, LabelScanStore store,

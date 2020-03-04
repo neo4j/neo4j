@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
-public interface LabelScanWriter extends Closeable
+public interface TokenScanWriter extends Closeable
 {
     /**
      * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending node id.

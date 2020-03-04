@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
-import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
+import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 
 /**
  * {@link TokenScanReader} for reading data from {@link NativeTokenScanStore}.

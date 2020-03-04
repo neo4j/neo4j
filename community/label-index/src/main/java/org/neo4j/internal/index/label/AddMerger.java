@@ -23,9 +23,9 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 
 class AddMerger implements ValueMerger<LabelScanKey,LabelScanValue>
 {
-    private final NativeLabelScanWriter.WriteMonitor monitor;
+    private final NativeTokenScanWriter.WriteMonitor monitor;
 
-    AddMerger( NativeLabelScanWriter.WriteMonitor monitor )
+    AddMerger( NativeTokenScanWriter.WriteMonitor monitor )
     {
         this.monitor = monitor;
     }
