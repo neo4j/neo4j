@@ -47,6 +47,7 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.values.storable.Value;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
@@ -307,6 +308,11 @@ public class CsvInput implements Input
 
     private long propertyPreAllocateRounding( long initialEstimatedPropertyStoreSize )
     {
+        if ( !IS_OS_LINUX )
+        {
+            // Only linux systems does pre-allocation of store files, so the pre-allocation rounding is zero for all other systems.
+            return 0;
+        }
         // By default, the page cache will grow large store files in 32 MiB sized chunks.
         long preAllocSize = ByteUnit.mebiBytes( 32 );
         if ( initialEstimatedPropertyStoreSize < preAllocSize )
