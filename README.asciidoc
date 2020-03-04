@@ -16,13 +16,13 @@ We encourage experimentation with Neo4j. You can build extensions to Neo4j, deve
 
 Neo4j is built using https://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
 
-OS X users need to have https://brew.sh/[Homebrew] installed.
+macOS users need to have https://brew.sh/[Homebrew] installed.
 
-=== With brew on OS X ===
+=== With brew on macOS ===
 
   brew install maven
 
-Please note that we do not support building Debian packages on OS X.
+Please note that we do not support building Debian packages on macOS.
 
 === With apt-get on Ubuntu ===
 
@@ -49,17 +49,17 @@ Before you start running the unit and integration tests in the Neo4j Maven proje
 
 == Running Neo4j ==
 
-After running a `mvn clean install` cd into `packaging/standalone/target` and extract the version you want, then
+After running a `mvn clean install`, `cd` into `packaging/standalone/target` and extract the version you want, then:
 
   bin/neo4j start
 
-in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run
+in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run:
 
   bin\neo4j start
 
 instead.
 
-Or, if you are not interested in the tarballs and just want to run Neo4j you can instead run a `mvn clean install -DminimalBuild` and then cd into `community/server` and run
+Or, if you are not interested in the tarballs and just want to run Neo4j you can instead run a `mvn clean install -DminimalBuild` and then `cd` into `community/server` and run:
 
   mvn clean compile exec:java
 

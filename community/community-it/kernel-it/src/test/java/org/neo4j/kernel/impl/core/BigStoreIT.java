@@ -194,7 +194,7 @@ class BigStoreIT
         }
         if ( SystemUtils.IS_OS_MAC_OSX )
         {
-            // This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files
+            // This test cannot be run on macOS because macOS doesn't support sparse files
             return false;
         }
 
