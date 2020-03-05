@@ -287,4 +287,22 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
     // then
     assertOnMemory(logicalQuery, 3, 1)
   }
+
+  test("should profile memory of expand(into)") {
+    given {
+      bipartiteGraph(SIZE, "X", "Y", "R")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "Y")
+      .nodeByLabelScan("x", "X")
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, 5, 1)
+  }
 }
