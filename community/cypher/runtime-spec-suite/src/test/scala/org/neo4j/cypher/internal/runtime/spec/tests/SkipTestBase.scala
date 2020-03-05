@@ -125,7 +125,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withRows(input.flatten.drop(10))
+    runtimeResult should beColumns("x").withRows(rowCount(3 * sizeHint - 10))
   }
 
   test("should support skip with null values") {
@@ -140,7 +140,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withRows(input.flatten.drop(10))
+    runtimeResult should beColumns("x").withRows(rowCount(3 * sizeHint - 10))
   }
 
   test("should support skip in the first of two pipelines") {
@@ -173,7 +173,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .|.skip(90)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -195,7 +195,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -217,7 +217,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .|.sort(Seq(Ascending("y")))
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -245,7 +245,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .|.skip(SKIP)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -269,7 +269,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .expandAll("(b1)<--(a1)")
       .skip(90)
       .expandAll("(x)-->(b1)")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -296,7 +296,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .skip(10)
       .skip(30)
       .skip(50)
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -324,7 +324,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .limit(10)
       .skip(10)
       .expandAll("(x)-->(b1)")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
