@@ -37,20 +37,20 @@ import static java.lang.Long.min;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
- * {@link AllEntriesLabelScanReader} for {@link NativeTokenScanStore}.
+ * {@link AllEntriesTokenScanReader} for {@link NativeTokenScanStore}.
  * <p>
  * {@link NativeTokenScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
  * results, so the approach this implementation is taking is to create one (lazy) seek cursor per label id
  * and coordinate those simultaneously over the scan. Each {@link NodeLabelRange} returned is a view
  * over all cursors at that same range, giving an aggregation of all labels in that node id range.
  */
-class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
+class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
 {
     private final IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider;
     private final List<Seeker<TokenScanKey,TokenScanValue>> cursors = new ArrayList<>();
     private final int highestLabelId;
 
-    NativeAllEntriesLabelScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
+    NativeAllEntriesTokenScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
             int highestLabelId )
     {
         this.seekProvider = seekProvider;

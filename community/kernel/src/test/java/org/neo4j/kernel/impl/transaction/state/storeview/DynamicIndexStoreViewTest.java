@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
+import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -53,7 +53,7 @@ class DynamicIndexStoreViewTest
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
     private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
+    private final AllEntriesTokenScanReader nodeLabelRanges = mock( AllEntriesTokenScanReader.class );
 
     @BeforeEach
     void setUp()

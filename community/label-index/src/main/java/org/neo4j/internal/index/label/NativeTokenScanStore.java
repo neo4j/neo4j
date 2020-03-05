@@ -287,13 +287,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public AllEntriesLabelScanReader allNodeLabelRanges()
+    public AllEntriesTokenScanReader allNodeLabelRanges()
     {
         return allNodeLabelRanges( 0, Long.MAX_VALUE );
     }
 
     @Override
-    public AllEntriesLabelScanReader allNodeLabelRanges( long fromEntityId, long toEntityId )
+    public AllEntriesTokenScanReader allNodeLabelRanges( long fromEntityId, long toEntityId )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {
@@ -323,7 +323,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         {
             throw new RuntimeException( e );
         }
-        return new NativeAllEntriesLabelScanReader( seekProvider, highestTokenId );
+        return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId );
     }
 
     /**

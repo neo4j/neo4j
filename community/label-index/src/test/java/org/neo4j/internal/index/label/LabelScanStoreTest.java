@@ -392,7 +392,7 @@ public class LabelScanStoreTest
 
         // when
         MutableInt count = new MutableInt();
-        AllEntriesLabelScanReader nodeLabelRanges = store.allNodeLabelRanges();
+        AllEntriesTokenScanReader nodeLabelRanges = store.allNodeLabelRanges();
         nodeLabelRanges.forEach( nlr ->
         {
             for ( long nodeId : nlr.nodes() )

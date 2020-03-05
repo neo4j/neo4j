@@ -88,7 +88,7 @@ class NativeAllEntriesTokenScanReaderTest
     private static void shouldIterateCorrectlyOver( Labels... data ) throws Exception
     {
         // GIVEN
-        try ( AllEntriesLabelScanReader reader = new NativeAllEntriesLabelScanReader( store( data ), highestLabelId( data ) ) )
+        try ( AllEntriesTokenScanReader reader = new NativeAllEntriesTokenScanReader( store( data ), highestLabelId( data ) ) )
         {
             // WHEN/THEN
             assertRanges( reader, data );
@@ -126,7 +126,7 @@ class NativeAllEntriesTokenScanReaderTest
         return highest;
     }
 
-    private static void assertRanges( AllEntriesLabelScanReader reader, Labels[] data )
+    private static void assertRanges( AllEntriesTokenScanReader reader, Labels[] data )
     {
         Iterator<NodeLabelRange> iterator = reader.iterator();
         long highestRangeId = highestRangeId( data );

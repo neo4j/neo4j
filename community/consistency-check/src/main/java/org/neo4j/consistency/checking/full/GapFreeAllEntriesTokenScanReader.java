@@ -22,19 +22,19 @@ package org.neo4j.consistency.checking.full;
 import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
+import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.NodeLabelRange;
 
 /**
  * Inserts empty {@link NodeLabelRange} for those ranges missing from the source iterator.
  * High node id is known up front such that ranges are returned up to that point.
  */
-class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
+class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
 {
-    private final AllEntriesLabelScanReader nodeLabelRanges;
+    private final AllEntriesTokenScanReader nodeLabelRanges;
     private final long highId;
 
-    GapFreeAllEntriesLabelScanReader( AllEntriesLabelScanReader nodeLabelRanges, long highId )
+    GapFreeAllEntriesTokenScanReader( AllEntriesTokenScanReader nodeLabelRanges, long highId )
     {
         this.nodeLabelRanges = nodeLabelRanges;
         this.highId = highId;

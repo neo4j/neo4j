@@ -22,9 +22,9 @@ package org.neo4j.internal.index.label;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 
 /**
- * Iterates over all label data in a label index.
+ * Iterates over all token data in a token index.
  */
-public interface AllEntriesLabelScanReader extends BoundedIterable<NodeLabelRange>
+public interface AllEntriesTokenScanReader extends BoundedIterable<NodeLabelRange>
 {
     /**
      * @return size of a range. All {@link NodeLabelRange} instances handed out by this iterator

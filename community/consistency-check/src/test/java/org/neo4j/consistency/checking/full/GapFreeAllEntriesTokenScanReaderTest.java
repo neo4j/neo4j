@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
+import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.NodeLabelRange;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -54,7 +54,7 @@ class GapFreeAllEntriesTokenScanReaderTest
     {
         // given
         int[] ranges = array( EMPTY_RANGE, EMPTY_RANGE, NON_EMPTY_RANGE );
-        GapFreeAllEntriesLabelScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
+        GapFreeAllEntriesTokenScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
 
         // when
         Iterator<NodeLabelRange> iterator = reader.iterator();
@@ -68,7 +68,7 @@ class GapFreeAllEntriesTokenScanReaderTest
     {
         // given
         int[] ranges = array( NON_EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE );
-        GapFreeAllEntriesLabelScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
+        GapFreeAllEntriesTokenScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
 
         // when
         Iterator<NodeLabelRange> iterator = reader.iterator();
@@ -82,7 +82,7 @@ class GapFreeAllEntriesTokenScanReaderTest
     {
         // given
         int[] ranges = array( EMPTY_RANGE, NON_EMPTY_RANGE, EMPTY_RANGE );
-        GapFreeAllEntriesLabelScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
+        GapFreeAllEntriesTokenScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
 
         // when
         Iterator<NodeLabelRange> iterator = reader.iterator();
@@ -101,7 +101,7 @@ class GapFreeAllEntriesTokenScanReaderTest
         {
             ranges[rangeId] = random.nextInt( 1 << RANGE_SIZE );
         }
-        GapFreeAllEntriesLabelScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
+        GapFreeAllEntriesTokenScanReader reader = newGapFreeAllEntriesLabelScanReader( ranges );
 
         // when
         Iterator<NodeLabelRange> iterator = reader.iterator();
@@ -130,12 +130,12 @@ class GapFreeAllEntriesTokenScanReaderTest
         assertFalse( iterator.hasNext() );
     }
 
-    private static GapFreeAllEntriesLabelScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
+    private static GapFreeAllEntriesTokenScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
     {
-        return new GapFreeAllEntriesLabelScanReader( ranges( RANGE_SIZE, ranges ), RANGE_SIZE * ranges.length );
+        return new GapFreeAllEntriesTokenScanReader( ranges( RANGE_SIZE, ranges ), RANGE_SIZE * ranges.length );
     }
 
-    private static AllEntriesLabelScanReader ranges( int rangeSize, int... ranges )
+    private static AllEntriesTokenScanReader ranges( int rangeSize, int... ranges )
     {
         List<NodeLabelRange> rangeList = new ArrayList<>();
         for ( int rangeId = 0; rangeId < ranges.length; rangeId++ )
@@ -143,7 +143,7 @@ class GapFreeAllEntriesTokenScanReaderTest
             rangeList.add( new NodeLabelRange( rangeId, labelsPerNode( ranges[rangeId] ) ) );
         }
 
-        return new AllEntriesLabelScanReader()
+        return new AllEntriesTokenScanReader()
         {
             @Override
             public void close()

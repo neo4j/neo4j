@@ -80,16 +80,16 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
      *
-     * @return the {@link AllEntriesLabelScanReader reader}.
+     * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesLabelScanReader allNodeLabelRanges();
+    AllEntriesTokenScanReader allNodeLabelRanges();
 
     /**
      * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
      *
-     * @return the {@link AllEntriesLabelScanReader reader}.
+     * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesLabelScanReader allNodeLabelRanges( long fromEntityId, long toEntityId );
+    AllEntriesTokenScanReader allNodeLabelRanges( long fromEntityId, long toEntityId );
 
     ResourceIterator<File> snapshotStoreFiles();
 

@@ -35,7 +35,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
+import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.NodeLabelRange;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
@@ -120,12 +120,12 @@ class NodeChecker implements Checker
     {
         long usedNodes = 0;
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-                var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
-                RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
-                RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-                AllEntriesLabelScanReader labelIndexReader = context.labelScanStore.allNodeLabelRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
-                SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
-                SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer ) )
+              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
+              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
+              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
+              AllEntriesTokenScanReader labelIndexReader = context.labelScanStore.allNodeLabelRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
+              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer ) )
         {
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
