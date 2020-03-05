@@ -40,21 +40,21 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * {@link AllEntriesTokenScanReader} for {@link NativeTokenScanStore}.
  * <p>
  * {@link NativeTokenScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
- * results, so the approach this implementation is taking is to create one (lazy) seek cursor per label id
+ * results, so the approach this implementation is taking is to create one (lazy) seek cursor per token id
  * and coordinate those simultaneously over the scan. Each {@link NodeLabelRange} returned is a view
- * over all cursors at that same range, giving an aggregation of all labels in that node id range.
+ * over all cursors at that same range, giving an aggregation of all tokens in that entity id range.
  */
 class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
 {
     private final IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider;
     private final List<Seeker<TokenScanKey,TokenScanValue>> cursors = new ArrayList<>();
-    private final int highestLabelId;
+    private final int highestTokenId;
 
     NativeAllEntriesTokenScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
-            int highestLabelId )
+            int highestTokenId )
     {
         this.seekProvider = seekProvider;
-        this.highestLabelId = highestLabelId;
+        this.highestTokenId = highestTokenId;
     }
 
     @Override
@@ -76,9 +76,9 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         {
             long lowestRange = Long.MAX_VALUE;
             closeCursors();
-            for ( int labelId = 0; labelId <= highestLabelId; labelId++ )
+            for ( int tokenId = 0; tokenId <= highestTokenId; tokenId++ )
             {
-                Seeker<TokenScanKey,TokenScanValue> cursor = seekProvider.apply( labelId );
+                Seeker<TokenScanKey,TokenScanValue> cursor = seekProvider.apply( tokenId );
 
                 // Bootstrap the cursor, which also provides a great opportunity to exclude if empty
                 if ( cursor.next() )
@@ -87,7 +87,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     cursors.add( cursor );
                 }
             }
-            return new NodeLabelRangeIterator( lowestRange );
+            return new EntityTokenRangeIterator( lowestRange );
         }
         catch ( IOException e )
         {
@@ -113,14 +113,14 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     /**
      * The main iterator over {@link NodeLabelRange ranges}, aggregating all the cursors as it goes.
      */
-    private class NodeLabelRangeIterator extends PrefetchingIterator<NodeLabelRange>
+    private class EntityTokenRangeIterator extends PrefetchingIterator<NodeLabelRange>
     {
         private long currentRange;
 
-        // nodeId (relative to lowestRange) --> labelId[]
-        private final MutableLongList[] labelsForEachNode = new MutableLongList[RANGE_SIZE];
+        // entityId (relative to lowestRange) --> tokenId[]
+        private final MutableLongList[] tokensForEachEntity = new MutableLongList[RANGE_SIZE];
 
-        NodeLabelRangeIterator( long lowestRange )
+        EntityTokenRangeIterator( long lowestRange )
         {
             this.currentRange = lowestRange;
         }
@@ -133,7 +133,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                 return null;
             }
 
-            Arrays.fill( labelsForEachNode, null );
+            Arrays.fill( tokensForEachEntity, null );
             long nextLowestRange = Long.MAX_VALUE;
             try
             {
@@ -150,8 +150,8 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     else if ( idRange == currentRange )
                     {
                         long bits = cursor.value().bits;
-                        long labelId = cursor.key().tokenId;
-                        NodeLabelRange.readBitmap( bits, labelId, labelsForEachNode );
+                        long tokenId = cursor.key().tokenId;
+                        NodeLabelRange.readBitmap( bits, tokenId, tokensForEachEntity );
 
                         // Advance cursor and look ahead to the next range
                         if ( cursor.next() )
@@ -166,7 +166,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     }
                 }
 
-                NodeLabelRange range = new NodeLabelRange( currentRange, NodeLabelRange.convertState( labelsForEachNode ) );
+                NodeLabelRange range = new NodeLabelRange( currentRange, NodeLabelRange.convertState( tokensForEachEntity ) );
                 currentRange = nextLowestRange;
 
                 return range;

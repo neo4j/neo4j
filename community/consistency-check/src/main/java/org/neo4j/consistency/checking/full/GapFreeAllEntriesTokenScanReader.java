@@ -27,42 +27,42 @@ import org.neo4j.internal.index.label.NodeLabelRange;
 
 /**
  * Inserts empty {@link NodeLabelRange} for those ranges missing from the source iterator.
- * High node id is known up front such that ranges are returned up to that point.
+ * High entity id is known up front such that ranges are returned up to that point.
  */
 class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
 {
-    private final AllEntriesTokenScanReader nodeLabelRanges;
+    private final AllEntriesTokenScanReader entityTokenRanges;
     private final long highId;
 
-    GapFreeAllEntriesTokenScanReader( AllEntriesTokenScanReader nodeLabelRanges, long highId )
+    GapFreeAllEntriesTokenScanReader( AllEntriesTokenScanReader entityTokenRanges, long highId )
     {
-        this.nodeLabelRanges = nodeLabelRanges;
+        this.entityTokenRanges = entityTokenRanges;
         this.highId = highId;
     }
 
     @Override
     public long maxCount()
     {
-        return nodeLabelRanges.maxCount();
+        return entityTokenRanges.maxCount();
     }
 
     @Override
     public void close() throws Exception
     {
-        nodeLabelRanges.close();
+        entityTokenRanges.close();
     }
 
     @Override
     public int rangeSize()
     {
-        return nodeLabelRanges.rangeSize();
+        return entityTokenRanges.rangeSize();
     }
 
     @Override
     public Iterator<NodeLabelRange> iterator()
     {
-        return new GapFillingIterator( nodeLabelRanges.iterator(), (highId - 1) / nodeLabelRanges.rangeSize(),
-                nodeLabelRanges.rangeSize() );
+        return new GapFillingIterator( entityTokenRanges.iterator(), (highId - 1) / entityTokenRanges.rangeSize(),
+                entityTokenRanges.rangeSize() );
     }
 
     private static class GapFillingIterator extends PrefetchingIterator<NodeLabelRange>
@@ -74,10 +74,10 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         private NodeLabelRange nextFromSource;
         private long currentRangeId = -1;
 
-        GapFillingIterator( Iterator<NodeLabelRange> nodeLabelRangeIterator, long highestRangeId, int rangeSize )
+        GapFillingIterator( Iterator<NodeLabelRange> entityTokenRangeIterator, long highestRangeId, int rangeSize )
         {
             this.highestRangeId = highestRangeId;
-            this.source = nodeLabelRangeIterator;
+            this.source = entityTokenRangeIterator;
             this.emptyRangeData = new long[rangeSize][];
         }
 
