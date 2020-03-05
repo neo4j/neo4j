@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.runtime.NoMemoryTracker$;
+import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -59,6 +60,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class CachingExpandIntoTest
 {
     private static final NoMemoryTracker$ MEMORY_TRACKER = NoMemoryTracker$.MODULE$;
+    private static final int INVALID_ID = Id.INVALID_ID();
     @Inject
     private Kernel kernel;
 
@@ -222,7 +224,7 @@ class CachingExpandIntoTest
               RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, -1 );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, null, end ) ) ).isEqualTo(
                     LongSets.immutable.of( r1, r2 ) );
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, end, null, start ) ) ).isEqualTo(
@@ -262,7 +264,7 @@ class CachingExpandIntoTest
         {
 
             int[] types = {t1, t3};
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, -1 );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
 
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, groupCursor, traversalCursor, start, types, end ) ) ).isEqualTo(
                     LongSets.immutable.of( r1 ) );
@@ -310,7 +312,7 @@ class CachingExpandIntoTest
 
             int[] types = {t2, t3};
             CachingExpandInto expandInto =
-                    new CachingExpandInto( tx.dataRead(), INCOMING, MEMORY_TRACKER, -1 );
+                    new CachingExpandInto( tx.dataRead(), INCOMING, MEMORY_TRACKER, INVALID_ID );
 
             //Find r3 first time
             RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
@@ -394,7 +396,7 @@ class CachingExpandIntoTest
             try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() );
                   RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor(tx.pageCursorTracer()) )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, -1 );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
 
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
@@ -435,7 +437,7 @@ class CachingExpandIntoTest
             try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() );
                   RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor( tx.pageCursorTracer() ) )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, -1 );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
                 assertThat( nodes.isDense() ).isEqualTo( true );
@@ -464,7 +466,7 @@ class CachingExpandIntoTest
         {
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction, MEMORY_TRACKER, -1 );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction, MEMORY_TRACKER, INVALID_ID );
             RelationshipSelectionCursor cursor = expandInto.connectingRelationships(
                     nodeCursor,
                     groupCursor,
