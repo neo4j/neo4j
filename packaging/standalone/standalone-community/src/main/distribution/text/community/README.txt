@@ -23,7 +23,7 @@ Here in the installation directory, you'll find:
 Make it go
 ----------
 
-For full instructions, see https://neo4j.com/docs/operations-manual/current/installation/
+For full instructions, see https://neo4j.com/docs/operations-manual/4.0/installation/
 
 To get started with Neo4j, let's start the server and take a
 look at the web interface ...
@@ -39,7 +39,7 @@ Learn more
 ----------
 
 * Neo4j Home: https://neo4j.com/
-* Getting Started: https://neo4j.com/docs/developer-manual/current/introduction/
+* Getting Started: https://neo4j.com/docs/getting-started/4.0/get-started-with-neo4j/
 * Neo4j Documentation: https://neo4j.com/docs/
 
 License(s)

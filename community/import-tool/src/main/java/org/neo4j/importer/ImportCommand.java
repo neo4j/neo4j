@@ -49,6 +49,7 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.util.DocumentationURLs;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.toIntExact;
@@ -100,7 +101,7 @@ public class ImportCommand extends AbstractCommand
             "  INTEGER: arbitrary integer values for identifying nodes,%n" +
             "  ACTUAL: (advanced) actual node ids.%n" +
             "For more information on id handling, please see the Neo4j Manual: " +
-            "https://neo4j.com/docs/operations-manual/current/tools/import/" )
+            DocumentationURLs.IMPORT_TOOL )
     private IdType idType = IdType.STRING;
 
     @Option( names = "--input-encoding", paramLabel = "<character-set>", description = "Character set that input data is encoded in." )
@@ -145,7 +146,7 @@ public class ImportCommand extends AbstractCommand
 
     @Option( names = "--max-memory", paramLabel = "<size>", defaultValue = "90%", converter = MemoryConverter.class,
             description = "Maximum memory that neo4j-admin can use for various data structures and caching to improve performance. " +
-                    "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." )
+                    "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%%." )
     private long maxMemory;
 
     @Option( names = "--high-io", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",

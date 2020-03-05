@@ -111,7 +111,7 @@ class ImportCommandTest
                         "                               ACTUAL: (advanced) actual node ids." + lineSeparator() +
                         "                             For more information on id handling, please see" + lineSeparator() +
                         "                               the Neo4j Manual: https://neo4j." + lineSeparator() +
-                        "                               com/docs/operations-manual/current/tools/import/" + lineSeparator() +
+                        "                               com/docs/operations-manual/4.0/tools/import/" + lineSeparator() +
                         "                               Default: STRING" + lineSeparator() +
                         "      --input-encoding=<character-set>" + lineSeparator() +
                         "                             Character set that input data is encoded in." + lineSeparator() +
