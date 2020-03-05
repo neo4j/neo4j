@@ -53,12 +53,12 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
  * A {@link NativeTokenScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
  * This class also has a {@link #main(String[])} method for dumping the contents of such write log to console or file, as text.
  */
-public class LabelScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
+public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 {
     // configuration for this monitor
-    static final boolean ENABLED = FeatureToggles.flag( LabelScanWriteMonitor.class, "enabled", false );
-    private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
-    private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "pruneThreshold", DAYS.toMillis( 2 ) );
+    static final boolean ENABLED = FeatureToggles.flag( TokenScanWriteMonitor.class, "enabled", false );
+    private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( TokenScanWriteMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
+    private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( TokenScanWriteMonitor.class, "pruneThreshold", DAYS.toMillis( 2 ) );
 
     private static final byte TYPE_PREPARE_ADD = 0;
     private static final byte TYPE_PREPARE_REMOVE = 1;
@@ -80,12 +80,12 @@ public class LabelScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     private long rotationThreshold;
     private long pruneThreshold;
 
-    LabelScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
+    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
         this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS );
     }
 
-    LabelScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
+    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
             long rotationThreshold, ByteUnit rotationThresholdUnit,
             long pruneThreshold, TimeUnit pruneThresholdUnit )
     {

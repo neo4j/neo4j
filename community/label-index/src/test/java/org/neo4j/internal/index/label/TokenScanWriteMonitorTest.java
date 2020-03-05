@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 @Neo4jLayoutExtension
-class LabelScanWriteMonitorTest
+class TokenScanWriteMonitorTest
 {
     @Inject
     private DefaultFileSystemAbstraction fs;
@@ -56,18 +56,18 @@ class LabelScanWriteMonitorTest
     @BeforeEach
     void before()
     {
-        baseName = LabelScanWriteMonitor.writeLogBaseFile( databaseLayout ).getName();
+        baseName = TokenScanWriteMonitor.writeLogBaseFile( databaseLayout ).getName();
     }
 
     @Test
     void shouldRotateExistingFileOnOpen()
     {
         // given
-        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
         writeMonitor.close();
 
         // when
-        LabelScanWriteMonitor secondWriteMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor secondWriteMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
         secondWriteMonitor.close();
 
         // then
@@ -78,7 +78,7 @@ class LabelScanWriteMonitorTest
     void shouldLogAndDumpData() throws IOException
     {
         // given
-        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
         TokenScanValue value = new TokenScanValue();
         writeMonitor.range( 3, 0 );
         writeMonitor.prepareAdd( 123, 4 );
@@ -96,8 +96,8 @@ class LabelScanWriteMonitorTest
         writeMonitor.close();
 
         // when
-        LabelScanWriteMonitor.Dumper dumper = mock( LabelScanWriteMonitor.Dumper.class );
-        LabelScanWriteMonitor.dump( fs, databaseLayout, dumper, null );
+        TokenScanWriteMonitor.Dumper dumper = mock( TokenScanWriteMonitor.Dumper.class );
+        TokenScanWriteMonitor.dump( fs, databaseLayout, dumper, null );
 
         // then
         InOrder inOrder = Mockito.inOrder( dumper );
@@ -120,7 +120,7 @@ class LabelScanWriteMonitorTest
     void shouldParseSimpleSingleTxFilter()
     {
         // given
-        LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123" );
+        TokenScanWriteMonitor.TxFilter txFilter = TokenScanWriteMonitor.parseTxFilter( "123" );
 
         // when/then
         assertFalse( txFilter.contains( 122 ) );
@@ -132,7 +132,7 @@ class LabelScanWriteMonitorTest
     void shouldParseRangedSingleTxFilter()
     {
         // given
-        LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123-126" );
+        TokenScanWriteMonitor.TxFilter txFilter = TokenScanWriteMonitor.parseTxFilter( "123-126" );
 
         // when/then
         assertFalse( txFilter.contains( 122 ) );
@@ -147,7 +147,7 @@ class LabelScanWriteMonitorTest
     void shouldParseSimpleMultipleTxFilters()
     {
         // given
-        LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123,146,123456" );
+        TokenScanWriteMonitor.TxFilter txFilter = TokenScanWriteMonitor.parseTxFilter( "123,146,123456" );
 
         // when/then
         assertFalse( txFilter.contains( 122 ) );
@@ -161,7 +161,7 @@ class LabelScanWriteMonitorTest
     void shouldParseRangedMultipleTxFilters()
     {
         // given
-        LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123-125,345-567" );
+        TokenScanWriteMonitor.TxFilter txFilter = TokenScanWriteMonitor.parseTxFilter( "123-125,345-567" );
 
         // when/then
         assertFalse( txFilter.contains( 122 ) );
@@ -181,7 +181,7 @@ class LabelScanWriteMonitorTest
         // given
         File storeDir = databaseLayout.databaseDirectory();
         int rotationThreshold = 1_000;
-        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
 
         // when
         for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
@@ -207,8 +207,8 @@ class LabelScanWriteMonitorTest
         // given
         File storeDir = databaseLayout.databaseDirectory();
         long pruneThreshold = 200;
-        LabelScanWriteMonitor writeMonitor =
-                new LabelScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
+        TokenScanWriteMonitor writeMonitor =
+                new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
 
         // when
         long startTime = currentTimeMillis();
@@ -226,7 +226,7 @@ class LabelScanWriteMonitorTest
         writeMonitor.close();
         for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
         {
-            long timestamp = LabelScanWriteMonitor.millisOf( file );
+            long timestamp = TokenScanWriteMonitor.millisOf( file );
             long diff = endTime - timestamp;
             assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
         }
