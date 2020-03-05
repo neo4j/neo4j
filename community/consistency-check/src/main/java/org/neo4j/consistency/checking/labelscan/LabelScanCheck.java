@@ -37,9 +37,9 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
             ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
         EntityTokenRange range = record.getEntityTokenRange();
-        for ( long nodeId : range.nodes() )
+        for ( long nodeId : range.entities() )
         {
-            long[] labels = record.getEntityTokenRange().labels( nodeId );
+            long[] labels = record.getEntityTokenRange().tokens( nodeId );
             engine.comparativeCheck( records.node( nodeId, cursorTracer ),
                     new NodeInUseWithCorrectLabelsCheck<>( labels, COMPLETE_ALL_TOKENS, true ) );
         }

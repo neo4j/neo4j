@@ -141,7 +141,7 @@ class NativeAllEntriesTokenScanReaderTest
                 assertEquals( rangeId, range.id() );
                 for ( Map.Entry<Long,List<Long>> expectedEntry : expected.entrySet() )
                 {
-                    long[] labels = range.labels( expectedEntry.getKey() );
+                    long[] labels = range.tokens( expectedEntry.getKey() );
                     assertArrayEquals( asArray( expectedEntry.getValue().iterator() ), labels );
                 }
             }

@@ -46,10 +46,10 @@ class EntityTokenRangeTest
         EntityTokenRange range = new EntityTokenRange( 0, labelsPerNode );
 
         // then
-        assertArrayEquals( new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.nodes() );
+        assertArrayEquals( new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.entities() );
         for ( int i = 0; i < labelsPerNode.length; i++ )
         {
-            assertArrayEquals( labelsPerNode[i], range.labels( i ) );
+            assertArrayEquals( labelsPerNode[i], range.tokens( i ) );
         }
     }
 
@@ -78,6 +78,6 @@ class EntityTokenRangeTest
         {
             expectedNodeIds[i] = baseNodeId + i;
         }
-        assertArrayEquals( expectedNodeIds, range.nodes() );
+        assertArrayEquals( expectedNodeIds, range.entities() );
     }
 }

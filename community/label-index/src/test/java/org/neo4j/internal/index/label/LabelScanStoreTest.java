@@ -300,8 +300,8 @@ public class LabelScanStoreTest
         // THEN
         assertArrayEquals( new long[]{nodeId1, nodeId2}, reducedNodes( range ) );
 
-        assertArrayEquals( new long[]{labelId1}, sorted( range.labels( nodeId1 ) ) );
-        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.labels( nodeId2 ) ) );
+        assertArrayEquals( new long[]{labelId1}, sorted( range.tokens( nodeId1 ) ) );
+        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.tokens( nodeId2 ) ) );
     }
 
     @Test
@@ -328,9 +328,9 @@ public class LabelScanStoreTest
         assertArrayEquals( new long[]{nodeId1}, reducedNodes( range1 ) );
         assertArrayEquals( new long[]{nodeId2}, reducedNodes( range2 ) );
 
-        assertArrayEquals( new long[]{labelId1}, sorted( range1.labels( nodeId1 ) ) );
+        assertArrayEquals( new long[]{labelId1}, sorted( range1.tokens( nodeId1 ) ) );
 
-        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range2.labels( nodeId2 ) ) );
+        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range2.tokens( nodeId2 ) ) );
     }
 
     @Test
@@ -395,9 +395,9 @@ public class LabelScanStoreTest
         AllEntriesTokenScanReader nodeLabelRanges = store.allNodeLabelRanges();
         nodeLabelRanges.forEach( nlr ->
         {
-            for ( long nodeId : nlr.nodes() )
+            for ( long nodeId : nlr.entities() )
             {
-                count.add( nlr.labels( nodeId ).length );
+                count.add( nlr.tokens( nodeId ).length );
             }
         } );
         assertThat( count.intValue() ).isEqualTo( 1 );
@@ -579,12 +579,12 @@ public class LabelScanStoreTest
 
     private static long[] reducedNodes( EntityTokenRange range )
     {
-        long[] nodes = range.nodes();
+        long[] nodes = range.entities();
         long[] result = new long[nodes.length];
         int cursor = 0;
         for ( long node : nodes )
         {
-            if ( range.labels( node ).length > 0 )
+            if ( range.tokens( node ).length > 0 )
             {
                 result[cursor++] = node;
             }

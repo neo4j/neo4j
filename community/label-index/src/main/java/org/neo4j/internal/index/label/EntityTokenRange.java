@@ -28,101 +28,101 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
- * Represents a range of nodes and label ids attached to those nodes. All nodes in the range are present in
- * {@link #nodes() nodes array}, but not all node ids will have corresponding {@link #labels(long) labels},
+ * Represents a range of entities and token ids attached to those entities. All entities in the range are present in
+ * {@link #entities() entities array}, but not all entity ids will have corresponding {@link #tokens(long) tokens},
  * where an empty long[] will be returned instead.
  */
 public class EntityTokenRange
 {
-    public static final long[][] NO_LABELS = new long[RANGE_SIZE][];
+    public static final long[][] NO_TOKENS = new long[RANGE_SIZE][];
     private final long idRange;
-    private final long[] nodes;
-    private final long[][] labels;
+    private final long[] entities;
+    private final long[][] tokens;
     private final long lowRangeId;
     private final long highRangeId;
 
     /**
-     * @param idRange node id range, e.g. in which id span the nodes are.
-     * @param labels long[][] where first dimension is relative node id in this range, i.e. 0-rangeSize
-     * and second the label ids for that node, potentially empty if there are none for that node.
+     * @param idRange entity id range, e.g. in which id span the entities are.
+     * @param tokens long[][] where first dimension is relative entity id in this range, i.e. 0-rangeSize
+     * and second the token ids for that entity, potentially empty if there are none for that entity.
      * The first dimension must be the size of the range.
      */
-    public EntityTokenRange( long idRange, long[][] labels )
+    public EntityTokenRange( long idRange, long[][] tokens )
     {
         this.idRange = idRange;
-        this.labels = labels;
-        int rangeSize = labels.length;
+        this.tokens = tokens;
+        int rangeSize = tokens.length;
         this.lowRangeId = idRange * rangeSize;
         this.highRangeId = lowRangeId + rangeSize - 1;
 
-        this.nodes = new long[rangeSize];
+        this.entities = new long[rangeSize];
         for ( int i = 0; i < rangeSize; i++ )
         {
-            nodes[i] = lowRangeId + i;
+            entities[i] = lowRangeId + i;
         }
     }
 
     /**
-     * @return the range id of this range. This is the base node id divided by range size.
-     * Example: A store with nodes 1,3,20,22 and a range size of 16 would return ranges:
-     * - rangeId=0, nodes=1,3
-     * - rangeId=1, nodes=20,22
+     * @return the range id of this range. This is the base entity id divided by range size.
+     * Example: A store with entities 1,3,20,22 and a range size of 16 would return ranges:
+     * - rangeId=0, entities=1,3
+     * - rangeId=1, entities=20,22
      */
     public long id()
     {
         return idRange;
     }
 
-    public boolean covers( long nodeId )
+    public boolean covers( long entityId )
     {
-        return nodeId >= lowRangeId && nodeId <= highRangeId;
+        return entityId >= lowRangeId && entityId <= highRangeId;
     }
 
-    public boolean isBelow( long nodeId )
+    public boolean isBelow( long entityId )
     {
-        return highRangeId < nodeId;
+        return highRangeId < entityId;
     }
 
     /**
-     * @return node ids in this range, the nodes in this array may or may not have {@link #labels(long) labels}
+     * @return entity ids in this range, the entities in this array may or may not have {@link #tokens(long) tokens}
      * attached to it.
      */
-    public long[] nodes()
+    public long[] entities()
     {
-        return nodes;
+        return entities;
     }
 
     /**
-     * Returns the label ids (as longs) for the given node id. The {@code nodeId} must be one of the ids
-     * from {@link #nodes()}.
+     * Returns the token ids (as longs) for the given entity id. The {@code entityId} must be one of the ids
+     * from {@link #entities()}.
      *
-     * @param nodeId the node id to return labels for.
-     * @return label ids for the given {@code nodeId}.
+     * @param entityId the entity id to return tokens for.
+     * @return token ids for the given {@code entityId}.
      */
-    public long[] labels( long nodeId )
+    public long[] tokens( long entityId )
     {
-        int index = toIntExact( nodeId - lowRangeId );
-        assert index >= 0 && index < labels.length : "nodeId:" + nodeId + ", idRange:" + idRange;
-        return labels[index] != null ? labels[index] : EMPTY_LONG_ARRAY;
+        int index = toIntExact( entityId - lowRangeId );
+        assert index >= 0 && index < tokens.length : "entityId:" + entityId + ", idRange:" + idRange;
+        return tokens[index] != null ? tokens[index] : EMPTY_LONG_ARRAY;
     }
 
-    private static String toString( String prefix, long[] nodes, long[][] labels )
+    private static String toString( String prefix, long[] entities, long[][] tokens )
     {
         StringBuilder result = new StringBuilder( prefix );
         result.append( "; {" );
-        for ( int i = 0; i < nodes.length; i++ )
+        for ( int i = 0; i < entities.length; i++ )
         {
             if ( i != 0 )
             {
                 result.append( ", " );
             }
-            result.append( "Node[" ).append( nodes[i] ).append( "]: Labels[" );
+            result.append( "Entity[" ).append( entities[i] ).append( "]: Tokens[" );
             String sep = "";
-            if ( labels[i] != null )
+            if ( tokens[i] != null )
             {
-                for ( long labelId : labels[i] )
+                for ( long tokenId : tokens[i] )
                 {
-                    result.append( sep ).append( labelId );
+                    result.append( sep ).append( tokenId );
                     sep = ", ";
                 }
             }
@@ -139,35 +139,35 @@ public class EntityTokenRange
     public String toString()
     {
         String rangeString = lowRangeId + "-" + (highRangeId + 1);
-        String prefix = "NodeLabelRange[idRange=" + rangeString;
-        return toString( prefix, nodes, labels );
+        String prefix = this.getClass().getSimpleName() + "[idRange=" + rangeString;
+        return toString( prefix, entities, tokens );
     }
 
-    static void readBitmap( long bitmap, long labelId, MutableLongList[] labelsPerNode )
+    static void readBitmap( long bitmap, long tokenId, MutableLongList[] tokensPerEntity )
     {
         while ( bitmap != 0 )
         {
-            int relativeNodeId = Long.numberOfTrailingZeros( bitmap );
-            if ( labelsPerNode[relativeNodeId] == null )
+            int relativeEntityId = Long.numberOfTrailingZeros( bitmap );
+            if ( tokensPerEntity[relativeEntityId] == null )
             {
-                labelsPerNode[relativeNodeId] = new LongArrayList();
+                tokensPerEntity[relativeEntityId] = new LongArrayList();
             }
-            labelsPerNode[relativeNodeId].add( labelId );
+            tokensPerEntity[relativeEntityId].add( tokenId );
             bitmap &= bitmap - 1;
         }
     }
 
     static long[][] convertState( LongList[] state )
     {
-        long[][] labelIdsByNodeIndex = new long[state.length][];
+        long[][] tokenIdsByEntityIndex = new long[state.length][];
         for ( int i = 0; i < state.length; i++ )
         {
-            final LongList labelIdList = state[i];
-            if ( labelIdList != null )
+            final LongList tokenIdList = state[i];
+            if ( tokenIdList != null )
             {
-                labelIdsByNodeIndex[i] = labelIdList.toArray();
+                tokenIdsByEntityIndex[i] = tokenIdList.toArray();
             }
         }
-        return labelIdsByNodeIndex;
+        return tokenIdsByEntityIndex;
     }
 }

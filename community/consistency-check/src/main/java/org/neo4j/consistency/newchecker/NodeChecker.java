@@ -277,7 +277,7 @@ class NodeChecker implements Checker
                     for ( long nodeIdMissingFromStore = labelIndexState.lastCheckedNodeId + 1;
                             nodeIdMissingFromStore < nodeId & labelIndexState.currentRange.covers( nodeIdMissingFromStore ); nodeIdMissingFromStore++ )
                     {
-                        if ( labelIndexState.currentRange.labels( nodeIdMissingFromStore ).length > 0 )
+                        if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                         {
                             reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) ).nodeNotInUse(
                                     recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
@@ -285,7 +285,7 @@ class NodeChecker implements Checker
                     }
                 }
                 labelIndexState.currentRange = nodeLabelRangeIterator.next();
-                labelIndexState.lastCheckedNodeId = max( fromNodeId, labelIndexState.currentRange.nodes()[0] ) - 1;
+                labelIndexState.lastCheckedNodeId = max( fromNodeId, labelIndexState.currentRange.entities()[0] ) - 1;
             }
             else
             {
@@ -297,13 +297,13 @@ class NodeChecker implements Checker
         {
             for ( long nodeIdMissingFromStore = labelIndexState.lastCheckedNodeId + 1; nodeIdMissingFromStore < nodeId; nodeIdMissingFromStore++ )
             {
-                if ( labelIndexState.currentRange.labels( nodeIdMissingFromStore ).length > 0 )
+                if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
                     reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) )
                             .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
                 }
             }
-            long[] labelsInLabelIndex = labelIndexState.currentRange.labels( nodeId );
+            long[] labelsInLabelIndex = labelIndexState.currentRange.tokens( nodeId );
             if ( labels != null )
             {
                 validateLabelIds( nodeCursor, labels, sortAndDeduplicate( labelsInLabelIndex ) /* TODO remove when fixed */, labelIndexState.currentRange,
@@ -315,7 +315,7 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new LabelScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_LABELS ) ) )
+                reporter.forNodeLabelScan( new LabelScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS ) ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
             }
         }
@@ -336,7 +336,7 @@ class NodeChecker implements Checker
                     nodeIdMissingFromStore < toNodeId && !labelIndexState.needToMoveRangeForwardToReachNode( nodeIdMissingFromStore );
                     nodeIdMissingFromStore++ )
             {
-                if ( labelIndexState.currentRange.covers( nodeIdMissingFromStore ) && labelIndexState.currentRange.labels( nodeIdMissingFromStore ).length > 0 )
+                if ( labelIndexState.currentRange.covers( nodeIdMissingFromStore ) && labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
                     reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) )
                             .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );

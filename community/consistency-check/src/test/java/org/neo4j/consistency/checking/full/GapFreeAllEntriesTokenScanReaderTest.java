@@ -123,8 +123,8 @@ class GapFreeAllEntriesTokenScanReaderTest
             {
                 long nodeId = baseNodeId + i;
                 long[] expectedLabelIds = (expectedRange & (1 << i)) == 0 ? EMPTY_LONG_ARRAY : LABEL_IDS;
-                assertArrayEquals( expectedLabelIds, actualRange.labels( nodeId ) );
-                assertEquals( nodeId, actualRange.nodes()[i] );
+                assertArrayEquals( expectedLabelIds, actualRange.tokens( nodeId ) );
+                assertEquals( nodeId, actualRange.entities()[i] );
             }
         }
         assertFalse( iterator.hasNext() );
