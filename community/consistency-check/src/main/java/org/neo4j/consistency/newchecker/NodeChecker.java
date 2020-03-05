@@ -36,7 +36,7 @@ import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
@@ -131,7 +131,7 @@ class NodeChecker implements Checker
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
             long[] nextRelCacheFields = new long[]{-1, -1, 1/*inUse*/, 0, 0, 1/*note that this needs to be checked*/, 0};
-            Iterator<NodeLabelRange> nodeLabelRangeIterator = labelIndexReader.iterator();
+            Iterator<EntityTokenRange> nodeLabelRangeIterator = labelIndexReader.iterator();
             NodeLabelIndexCheckState labelIndexState = new NodeLabelIndexCheckState( null, fromNodeId - 1 );
             for ( long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++ )
             {
@@ -264,7 +264,7 @@ class NodeChecker implements Checker
         return allGood ? labels : sortAndDeduplicate( labels );
     }
 
-    private void checkNodeVsLabelIndex( RecordNodeCursor nodeCursor, Iterator<NodeLabelRange> nodeLabelRangeIterator, NodeLabelIndexCheckState labelIndexState,
+    private void checkNodeVsLabelIndex( RecordNodeCursor nodeCursor, Iterator<EntityTokenRange> nodeLabelRangeIterator, NodeLabelIndexCheckState labelIndexState,
             long nodeId, long[] labels, long fromNodeId, PageCursorTracer cursorTracer )
     {
         // Detect node-label combinations that exist in the label index, but not in the store
@@ -315,13 +315,13 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new LabelScanDocument( new NodeLabelRange( nodeId / Long.SIZE, NodeLabelRange.NO_LABELS ) ) )
+                reporter.forNodeLabelScan( new LabelScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_LABELS ) ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
             }
         }
     }
 
-    private void reportRemainingLabelIndexEntries( Iterator<NodeLabelRange> nodeLabelRangeIterator, NodeLabelIndexCheckState labelIndexState, long toNodeId,
+    private void reportRemainingLabelIndexEntries( Iterator<EntityTokenRange> nodeLabelRangeIterator, NodeLabelIndexCheckState labelIndexState, long toNodeId,
             PageCursorTracer cursorTracer )
     {
         if ( labelIndexState.currentRange == null && nodeLabelRangeIterator.hasNext() )
@@ -347,12 +347,12 @@ class NodeChecker implements Checker
         }
     }
 
-    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, NodeLabelRange nodeLabelRange, PageCursorTracer cursorTracer )
+    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, EntityTokenRange entityTokenRange, PageCursorTracer cursorTracer )
     {
         compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
-                indexLabel -> reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) )
+                indexLabel -> reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ) )
                         .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId(), cursorTracer ), indexLabel ),
-                storeLabel -> reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ) )
+                storeLabel -> reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ) )
                         .nodeLabelNotInIndex( recordLoader.node( node.getId(), cursorTracer ), storeLabel ) );
     }
 
@@ -474,10 +474,10 @@ class NodeChecker implements Checker
 
     private static class NodeLabelIndexCheckState
     {
-        private NodeLabelRange currentRange;
+        private EntityTokenRange currentRange;
         private long lastCheckedNodeId;
 
-        NodeLabelIndexCheckState( NodeLabelRange currentRange, long lastCheckedNodeId )
+        NodeLabelIndexCheckState( EntityTokenRange currentRange, long lastCheckedNodeId )
         {
             this.currentRange = currentRange;
             this.lastCheckedNodeId = lastCheckedNodeId;

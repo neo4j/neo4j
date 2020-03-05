@@ -294,8 +294,8 @@ public class LabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<NodeLabelRange> reader = store.allNodeLabelRanges();
-        NodeLabelRange range = single( reader.iterator() );
+        BoundedIterable<EntityTokenRange> reader = store.allNodeLabelRanges();
+        EntityTokenRange range = single( reader.iterator() );
 
         // THEN
         assertArrayEquals( new long[]{nodeId1, nodeId2}, reducedNodes( range ) );
@@ -318,10 +318,10 @@ public class LabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<NodeLabelRange> reader = store.allNodeLabelRanges();
-        Iterator<NodeLabelRange> iterator = reader.iterator();
-        NodeLabelRange range1 = iterator.next();
-        NodeLabelRange range2 = iterator.next();
+        BoundedIterable<EntityTokenRange> reader = store.allNodeLabelRanges();
+        Iterator<EntityTokenRange> iterator = reader.iterator();
+        EntityTokenRange range1 = iterator.next();
+        EntityTokenRange range2 = iterator.next();
         assertFalse( iterator.hasNext() );
 
         // THEN
@@ -577,7 +577,7 @@ public class LabelScanStoreTest
         return input;
     }
 
-    private static long[] reducedNodes( NodeLabelRange range )
+    private static long[] reducedNodes( EntityTokenRange range )
     {
         long[] nodes = range.nodes();
         long[] result = new long[nodes.length];

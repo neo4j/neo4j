@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -28,12 +28,12 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  */
 public class LabelScanDocument extends AbstractBaseRecord
 {
-    private NodeLabelRange nodeLabelRange;
+    private EntityTokenRange entityTokenRange;
 
-    public LabelScanDocument( NodeLabelRange nodeLabelRange )
+    public LabelScanDocument( EntityTokenRange entityTokenRange )
     {
-        super( nodeLabelRange.id() );
-        this.nodeLabelRange = nodeLabelRange;
+        super( entityTokenRange.id() );
+        this.entityTokenRange = entityTokenRange;
         setInUse( true );
     }
 
@@ -41,12 +41,12 @@ public class LabelScanDocument extends AbstractBaseRecord
     public void clear()
     {
         super.clear();
-        this.nodeLabelRange = null;
+        this.entityTokenRange = null;
     }
 
-    public NodeLabelRange getNodeLabelRange()
+    public EntityTokenRange getEntityTokenRange()
     {
-        return nodeLabelRange;
+        return entityTokenRange;
     }
 
     @Override
@@ -58,6 +58,6 @@ public class LabelScanDocument extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return nodeLabelRange.toString();
+        return entityTokenRange.toString();
     }
 }

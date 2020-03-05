@@ -128,7 +128,7 @@ class NativeAllEntriesTokenScanReaderTest
 
     private static void assertRanges( AllEntriesTokenScanReader reader, Labels[] data )
     {
-        Iterator<NodeLabelRange> iterator = reader.iterator();
+        Iterator<EntityTokenRange> iterator = reader.iterator();
         long highestRangeId = highestRangeId( data );
         for ( long rangeId = 0; rangeId <= highestRangeId; rangeId++ )
         {
@@ -136,7 +136,7 @@ class NativeAllEntriesTokenScanReaderTest
             if ( expected != null )
             {
                 assertTrue( iterator.hasNext(), "Was expecting range " + expected );
-                NodeLabelRange range = iterator.next();
+                EntityTokenRange range = iterator.next();
 
                 assertEquals( rangeId, range.id() );
                 for ( Map.Entry<Long,List<Long>> expectedEntry : expected.entrySet() )

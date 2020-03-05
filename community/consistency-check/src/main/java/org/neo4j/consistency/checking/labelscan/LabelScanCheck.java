@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
@@ -36,10 +36,10 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
     public void check( LabelScanDocument record, CheckerEngine<LabelScanDocument,
             ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records, PageCursorTracer cursorTracer )
     {
-        NodeLabelRange range = record.getNodeLabelRange();
+        EntityTokenRange range = record.getEntityTokenRange();
         for ( long nodeId : range.nodes() )
         {
-            long[] labels = record.getNodeLabelRange().labels( nodeId );
+            long[] labels = record.getEntityTokenRange().labels( nodeId );
             engine.comparativeCheck( records.node( nodeId, cursorTracer ),
                     new NodeInUseWithCorrectLabelsCheck<>( labels, COMPLETE_ALL_TOKENS, true ) );
         }

@@ -41,7 +41,7 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * <p>
  * {@link NativeTokenScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
  * results, so the approach this implementation is taking is to create one (lazy) seek cursor per token id
- * and coordinate those simultaneously over the scan. Each {@link NodeLabelRange} returned is a view
+ * and coordinate those simultaneously over the scan. Each {@link EntityTokenRange} returned is a view
  * over all cursors at that same range, giving an aggregation of all tokens in that entity id range.
  */
 class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
@@ -70,7 +70,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     }
 
     @Override
-    public Iterator<NodeLabelRange> iterator()
+    public Iterator<EntityTokenRange> iterator()
     {
         try
         {
@@ -111,9 +111,9 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     }
 
     /**
-     * The main iterator over {@link NodeLabelRange ranges}, aggregating all the cursors as it goes.
+     * The main iterator over {@link EntityTokenRange ranges}, aggregating all the cursors as it goes.
      */
-    private class EntityTokenRangeIterator extends PrefetchingIterator<NodeLabelRange>
+    private class EntityTokenRangeIterator extends PrefetchingIterator<EntityTokenRange>
     {
         private long currentRange;
 
@@ -126,7 +126,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         }
 
         @Override
-        protected NodeLabelRange fetchNextOrNull()
+        protected EntityTokenRange fetchNextOrNull()
         {
             if ( currentRange == Long.MAX_VALUE )
             {
@@ -151,7 +151,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     {
                         long bits = cursor.value().bits;
                         long tokenId = cursor.key().tokenId;
-                        NodeLabelRange.readBitmap( bits, tokenId, tokensForEachEntity );
+                        EntityTokenRange.readBitmap( bits, tokenId, tokensForEachEntity );
 
                         // Advance cursor and look ahead to the next range
                         if ( cursor.next() )
@@ -166,7 +166,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     }
                 }
 
-                NodeLabelRange range = new NodeLabelRange( currentRange, NodeLabelRange.convertState( tokensForEachEntity ) );
+                EntityTokenRange range = new EntityTokenRange( currentRange, EntityTokenRange.convertState( tokensForEachEntity ) );
                 currentRange = nextLowestRange;
 
                 return range;

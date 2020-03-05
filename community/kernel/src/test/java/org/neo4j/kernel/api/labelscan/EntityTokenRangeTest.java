@@ -21,11 +21,11 @@ package org.neo4j.kernel.api.labelscan;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class NodeLabelRangeTest
+class EntityTokenRangeTest
 {
     @Test
     void shouldTransposeNodeIdsAndLabelIds()
@@ -43,7 +43,7 @@ class NodeLabelRangeTest
             };
 
         // when
-        NodeLabelRange range = new NodeLabelRange( 0, labelsPerNode );
+        EntityTokenRange range = new EntityTokenRange( 0, labelsPerNode );
 
         // then
         assertArrayEquals( new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.nodes() );
@@ -69,7 +69,7 @@ class NodeLabelRangeTest
         };
 
         // when
-        NodeLabelRange range = new NodeLabelRange( 10, labelsPerNode );
+        EntityTokenRange range = new EntityTokenRange( 10, labelsPerNode );
 
         // then
         long baseNodeId = range.id() * labelsPerNode.length;

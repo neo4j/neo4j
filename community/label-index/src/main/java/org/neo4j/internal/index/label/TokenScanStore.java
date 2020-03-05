@@ -78,14 +78,14 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     void force( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
-     * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
+     * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
     AllEntriesTokenScanReader allNodeLabelRanges();
 
     /**
-     * Acquire a reader for all {@link NodeLabelRange entity token} ranges.
+     * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
      * @return the {@link AllEntriesTokenScanReader reader}.
      */

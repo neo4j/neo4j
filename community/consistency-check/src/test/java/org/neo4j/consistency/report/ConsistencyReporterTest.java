@@ -47,7 +47,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -307,7 +307,7 @@ class ConsistencyReporterTest
             }
             if ( type == LabelScanDocument.class )
             {
-                return new LabelScanDocument( new NodeLabelRange( 0, new long[][] {} ) );
+                return new LabelScanDocument( new EntityTokenRange( 0, new long[][] {} ) );
             }
             if ( type == IndexEntry.class )
             {

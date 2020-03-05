@@ -23,10 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
-import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.index.label.EntityTokenRange;
 
 /**
- * Inserts empty {@link NodeLabelRange} for those ranges missing from the source iterator.
+ * Inserts empty {@link EntityTokenRange} for those ranges missing from the source iterator.
  * High entity id is known up front such that ranges are returned up to that point.
  */
 class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
@@ -59,22 +59,22 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     }
 
     @Override
-    public Iterator<NodeLabelRange> iterator()
+    public Iterator<EntityTokenRange> iterator()
     {
         return new GapFillingIterator( entityTokenRanges.iterator(), (highId - 1) / entityTokenRanges.rangeSize(),
                 entityTokenRanges.rangeSize() );
     }
 
-    private static class GapFillingIterator extends PrefetchingIterator<NodeLabelRange>
+    private static class GapFillingIterator extends PrefetchingIterator<EntityTokenRange>
     {
         private final long highestRangeId;
-        private final Iterator<NodeLabelRange> source;
+        private final Iterator<EntityTokenRange> source;
         private final long[][] emptyRangeData;
 
-        private NodeLabelRange nextFromSource;
+        private EntityTokenRange nextFromSource;
         private long currentRangeId = -1;
 
-        GapFillingIterator( Iterator<NodeLabelRange> entityTokenRangeIterator, long highestRangeId, int rangeSize )
+        GapFillingIterator( Iterator<EntityTokenRange> entityTokenRangeIterator, long highestRangeId, int rangeSize )
         {
             this.highestRangeId = highestRangeId;
             this.source = entityTokenRangeIterator;
@@ -82,7 +82,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         }
 
         @Override
-        protected NodeLabelRange fetchNextOrNull()
+        protected EntityTokenRange fetchNextOrNull()
         {
             while ( true )
             {
@@ -99,7 +99,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     if ( currentRangeId < nextFromSource.id() )
                     {
                         // Source range iterator has a gap we need to fill
-                        return new NodeLabelRange( ++currentRangeId, emptyRangeData );
+                        return new EntityTokenRange( ++currentRangeId, emptyRangeData );
                     }
                 }
 
@@ -111,7 +111,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                 }
                 else if ( currentRangeId < highestRangeId )
                 {
-                    nextFromSource = new NodeLabelRange( highestRangeId, emptyRangeData );
+                    nextFromSource = new EntityTokenRange( highestRangeId, emptyRangeData );
                     // continue in the outer loop
                 }
                 else

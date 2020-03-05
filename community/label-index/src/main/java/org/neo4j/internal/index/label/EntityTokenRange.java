@@ -32,7 +32,7 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * {@link #nodes() nodes array}, but not all node ids will have corresponding {@link #labels(long) labels},
  * where an empty long[] will be returned instead.
  */
-public class NodeLabelRange
+public class EntityTokenRange
 {
     public static final long[][] NO_LABELS = new long[RANGE_SIZE][];
     private final long idRange;
@@ -47,7 +47,7 @@ public class NodeLabelRange
      * and second the label ids for that node, potentially empty if there are none for that node.
      * The first dimension must be the size of the range.
      */
-    public NodeLabelRange( long idRange, long[][] labels )
+    public EntityTokenRange( long idRange, long[][] labels )
     {
         this.idRange = idRange;
         this.labels = labels;
