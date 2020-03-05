@@ -36,6 +36,7 @@ import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.util.DocumentationURLs;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
@@ -113,7 +114,7 @@ public class ImportCommand implements AdminCommand
                     "  INTEGER: arbitrary integer values for identifying nodes,\n" +
                     "  ACTUAL: (advanced) actual node ids.\n" +
                     "For more information on id handling, please see the Neo4j Manual: " +
-                    "https://neo4j.com/docs/operations-manual/3.5/tools/import/" ) )
+                    DocumentationURLs.IMPORT_TOOL ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
                     "Character set that input data is encoded in." ) )
             .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,

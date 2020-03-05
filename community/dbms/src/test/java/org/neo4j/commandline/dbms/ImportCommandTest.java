@@ -47,6 +47,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.DocumentationURLs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -287,7 +288,7 @@ class ImportCommandTest
                             "        INTEGER: arbitrary integer values for identifying nodes,%n" +
                             "        ACTUAL: (advanced) actual node ids.%n" +
                             "      For more information on id handling, please see the Neo4j Manual:%n" +
-                            "      https://neo4j.com/docs/operations-manual/3.5/tools/import/%n" +
+                            "      " + DocumentationURLs.IMPORT_TOOL + "%n" +
                             "      [default:STRING]%n" +
                             "  --input-encoding=<character-set>%n" +
                             "      Character set that input data is encoded in. [default:UTF-8]%n" +
