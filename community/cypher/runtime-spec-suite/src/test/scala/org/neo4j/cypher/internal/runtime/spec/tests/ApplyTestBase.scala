@@ -97,7 +97,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("apply on aggregation") {
+  test("apply on aggregation should carry through argument variables") {
     // given
     val nodes = given {
       nodePropertyGraph(sizeHint, {
@@ -111,6 +111,54 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "xMax")
       .apply()
       .|.aggregation(Seq.empty, Seq("max(x.prop) as xMax"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("x", "xMax").withRows(nodes.zipWithIndex.map(_.productIterator.toArray))
+  }
+
+  test("apply on grouped aggregation should carry through argument variables") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("prop" -> i, "group" -> i)
+      }, "Label")
+    }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "xMax")
+      .apply()
+      .|.aggregation(Seq("x.group AS group"), Seq("max(x.prop) as xMax"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("x", "xMax").withRows(nodes.zipWithIndex.map(_.productIterator.toArray))
+  }
+
+  test("apply on entity aggregation should carry through argument variables") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("prop" -> i, "group" -> i)
+      }, "Label")
+    }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "xMax")
+      .apply()
+      .|.aggregation(Seq("x AS group"), Seq("max(x.prop) as xMax"))
       .|.argument("x")
       .allNodeScan("x")
       .build()
