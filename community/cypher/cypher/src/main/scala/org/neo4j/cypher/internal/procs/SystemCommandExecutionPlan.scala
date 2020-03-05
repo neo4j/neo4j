@@ -31,9 +31,11 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -43,7 +45,8 @@ import org.neo4j.values.virtual.MapValue
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                       queryHandler: QueryHandler = QueryHandler.handleError(identity),
                                       source: Option[ExecutionPlan] = None,
-                                      checkCredentialsExpired: Boolean = true)
+                                      checkCredentialsExpired: Boolean = true,
+                                      parameterGenerator: Transaction => MapValue = _ => MapValue.EMPTY)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -53,7 +56,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                            ignore: InputDataStream,
                            subscriber: QuerySubscriber): RuntimeResult = {
 
-    val tc = ctx.kernelTransactionalContext
+    val tc: TransactionalContext = ctx.kernelTransactionalContext
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
@@ -61,8 +64,9 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
+      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction()))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
-      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, updatedSystemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
       if (systemSubscriber.shouldIgnoreResult()) {

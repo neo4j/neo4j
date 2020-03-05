@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
@@ -48,9 +49,15 @@ import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
+import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType.withName
+import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
+import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
@@ -60,7 +67,10 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
+
+import scala.collection.JavaConverters._
 
 /**
  * This runtime takes on queries that require no planning, such as multidatabase administration commands
@@ -231,20 +241,20 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Password not correctly supplied.")
 
     // SHOW DATABASES
-    case ShowDatabases() => (_, _, _) =>
-      val query = makeShowDatabasesQuery()
-      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
+    case ShowDatabases() => (_, _, securityContext) =>
+      val (query, generator) = makeShowDatabasesQuery(securityContext)
+      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DEFAULT DATABASE
-    case ShowDefaultDatabase() => (_, _, _) =>
-      val query = makeShowDatabasesQuery(isDefault = true)
-      SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
+    case ShowDefaultDatabase() => (_, _, securityContext) =>
+      val (query, generator) = makeShowDatabasesQuery(securityContext, isDefault = true)
+      SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DATABASE foo
-    case ShowDatabase(normalizedName) => (_, _, _) =>
-      val query = makeShowDatabasesQuery(nameSpecified = true)
+    case ShowDatabase(normalizedName) => (_, _, securityContext) =>
+      val (query, generator) = makeShowDatabasesQuery(securityContext, dbName = Some(normalizedName.name))
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query,
-        VirtualValues.map(Array("name"), Array(Values.utf8Value(normalizedName.name))))
+        VirtualValues.map(Array("name"), Array(Values.utf8Value(normalizedName.name))), parameterGenerator = generator)
 
     case DoNothingIfNotExists(source, label, name) => (context, parameterMapping, securityContext) =>
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
@@ -303,16 +313,95 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
-  private def makeShowDatabasesQuery(isDefault: Boolean = false, nameSpecified: Boolean = false): String = {
-    val props = if(isDefault) "{default:true}" else if(nameSpecified) "{name:$name}"  else ""
+  private def makeShowDatabasesQuery(securityContext: SecurityContext, isDefault: Boolean = false, dbName: Option[String] = None): (String, Transaction => MapValue) = {
+    def allowsDatabaseManagement(securityContext: SecurityContext): Boolean =
+      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.CREATE_DATABASE, DatabaseScope.ALL, Segment.ALL)) ||
+      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, DatabaseScope.ALL, Segment.ALL))
+
     val defaultColumn = if (isDefault) "" else ", d.default as default"
 
-    s"""
-       |MATCH (d: Database $props)
+    val paramGenerator: Transaction => MapValue = tx => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault, dbName)
+    val noGen: Transaction => MapValue = _ => MapValue.EMPTY
+
+    val (filter, generator) = (allowsDatabaseManagement(securityContext), isDefault, dbName) match {
+      // show default database
+      case (false, true, _) => ("WHERE d.name IN $accessibleDbs AND d.default = true", paramGenerator)
+      case (true, true, _) => ("WHERE d.default = true", noGen)
+      // show database name
+      case (false, _, Some(_)) => ("WHERE d.name IN $accessibleDbs AND d.name = $name", paramGenerator)
+      case (true, _, Some(_)) => ("WHERE d.name = $name", noGen)
+      // show all databases
+      case (false, false, None) => ("WHERE d.name IN $accessibleDbs", paramGenerator)
+      case _ => ("", noGen)
+    }
+    val query = s"""
+       |MATCH (d: Database)
+       |$filter
        |CALL dbms.database.state(d.name) yield status, error, address, role
        |WITH d, status as currentStatus, error, address, role
        |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
+       |ORDER BY name
     """.stripMargin
+    (query, generator)
+  }
+
+  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false, dbName: Option[String] = None ): MapValue = {
+    def accessForDatabase(database: Node, roles: Seq[String]): Option[Boolean] = {
+      //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
+      var result: Seq[Boolean] = Seq.empty
+      database.getRelationships(Direction.INCOMING, withName("FOR")).forEach { f =>
+        f.getStartNode.getRelationships(Direction.INCOMING, withName("SCOPE")).forEach { s =>
+          val privilegeNode = s.getStartNode
+          if (privilegeNode.getProperty("action").equals("access")) {
+            privilegeNode.getRelationships(Direction.INCOMING).forEach { p =>
+              val roleName = p.getStartNode.getProperty("name")
+              if (roles.contains(roleName)) {
+                p.getType.name() match {
+                  case "DENIED" => result = result :+ false
+                  case "GRANTED" => result = result :+ true
+                  case _ =>
+                }
+              }
+            }
+          }
+        }
+      }
+      result.reduceOption(_ && _)
+    }
+
+    val username = securityContext.subject().username()
+    val roles = transaction.findNode(Label.label("User"), "name", username).getRelationships(Direction.OUTGOING, withName("HAS_ROLE")).asScala.foldLeft[Seq[String]](Seq.empty)(
+      (acc, roleRel) => acc :+ roleRel.getEndNode.getProperty("name").toString
+    )
+
+    val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
+    val allDatabaseAccess = accessForDatabase(allDatabaseNode, roles)
+
+    val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
+      val dbName = dbNode.getProperty("name").toString
+      if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
+        acc :+ dbName
+      } else {
+        (accessForDatabase(dbNode, roles), allDatabaseAccess) match {
+          // denied
+          case (Some(false), _) => acc
+          case (_, Some(false)) => acc
+
+          // granted
+          case (_, Some(true)) => acc :+ dbName
+          case (Some(true), _) => acc :+ dbName
+
+          // no privilege
+          case _ => acc
+        }
+      }
+    }
+
+    val filteredDatabases = dbName match {
+      case Some(name) => accessibleDatabases.filter(db => name.equals(db))
+      case _ => accessibleDatabases
+    }
+    VirtualValues.map(Array("accessibleDbs"), Array(Values.stringArray(filteredDatabases: _*)))
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {
