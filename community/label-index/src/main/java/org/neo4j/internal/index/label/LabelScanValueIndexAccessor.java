@@ -62,11 +62,11 @@ abstract class LabelScanValueIndexAccessor
 
     boolean keysInOrder( TokenScanKey key )
     {
-        assert key.labelId >= prevLabel : "Expected to get ordered results, got " + key +
+        assert key.tokenId >= prevLabel : "Expected to get ordered results, got " + key +
                 " where previous label was " + prevLabel;
         assert key.idRange > prevRange : "Expected to get ordered results, got " + key +
                 " where previous range was " + prevRange;
-        prevLabel = key.labelId;
+        prevLabel = key.tokenId;
         prevRange = key.idRange;
         // Made as a method returning boolean so that it can participate in an assert-call.
         return true;

@@ -279,12 +279,12 @@ class NativeTokenScanWriter implements TokenScanWriter
     {
         int tokenId = toIntExact( currentTokenId );
         long idRange = rangeOf( entityId );
-        if ( tokenId != key.labelId || idRange != key.idRange || addition != add )
+        if ( tokenId != key.tokenId || idRange != key.idRange || addition != add )
         {
             flushPendingRange();
 
             // Set key to current and reset value
-            key.labelId = tokenId;
+            key.tokenId = tokenId;
             key.idRange = idRange;
             addition = add;
             monitor.range( idRange, tokenId );

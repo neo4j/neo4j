@@ -28,11 +28,11 @@ import org.neo4j.io.pagecache.PageCursor;
  *
  * <ul>
  * <li>
- * Each keys is a combination of {@code labelId} and {@code nodeIdRange} ({@code nodeId/64}).
+ * Each keys is a combination of {@code tokenId} and {@code entityIdRange} ({@code entityId/64}).
  * </li>
  * <li>
  * Each value is a 64-bit bit set (a primitive {@code long}) where each set bit in it represents
- * a node with that label, such that {@code nodeId = nodeIdRange+bitOffset}. Range size is 64 bits.
+ * a entity with that token, such that {@code entityId = entityIdRange+bitOffset}. Range size is 64 bits.
  * </li>
  * </ul>
  */
@@ -51,16 +51,16 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
     /**
      * Size of each {@link TokenScanKey}.
      */
-    private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + 6/*idRange*/;
+    private static final int KEY_SIZE = Integer.BYTES/*tokenId*/ + 6/*idRange*/;
 
     /**
-     * Compares {@link TokenScanKey}, giving ascending order of {@code labelId} then {@code nodeIdRange}.
+     * Compares {@link TokenScanKey}, giving ascending order of {@code tokenId} then {@code entityIdRange}.
      */
     @Override
     public int compare( TokenScanKey o1, TokenScanKey o2 )
     {
-        int labelComparison = Integer.compare( o1.labelId, o2.labelId );
-        return labelComparison != 0 ? labelComparison : Long.compare( o1.idRange, o2.idRange );
+        int tokenComparison = Integer.compare( o1.tokenId, o2.tokenId );
+        return tokenComparison != 0 ? tokenComparison : Long.compare( o1.idRange, o2.idRange );
     }
 
     @Override
@@ -72,7 +72,7 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
     @Override
     public TokenScanKey copyKey( TokenScanKey key, TokenScanKey into )
     {
-        into.labelId = key.labelId;
+        into.tokenId = key.tokenId;
         into.idRange = key.idRange;
         return into;
     }
@@ -98,7 +98,7 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
     @Override
     public void writeKey( PageCursor cursor, TokenScanKey key )
     {
-        cursor.putInt( key.labelId );
+        cursor.putInt( key.tokenId );
         put6ByteLong( cursor, key.idRange );
     }
 
@@ -117,7 +117,7 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
     @Override
     public void readKey( PageCursor cursor, TokenScanKey into, int keySize )
     {
-        into.labelId = cursor.getInt();
+        into.tokenId = cursor.getInt();
         into.idRange = get6ByteLong( cursor );
     }
 

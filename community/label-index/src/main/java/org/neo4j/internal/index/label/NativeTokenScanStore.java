@@ -316,7 +316,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         {
             if ( cursor.next() )
             {
-                highestTokenId = cursor.key().labelId;
+                highestTokenId = cursor.key().tokenId;
             }
         }
         catch ( IOException e )

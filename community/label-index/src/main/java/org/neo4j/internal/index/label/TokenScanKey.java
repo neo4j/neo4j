@@ -20,12 +20,12 @@
 package org.neo4j.internal.index.label;
 
 /**
- * Keys in {@link TokenScanLayout}, each key consists of {@code labelId} and {@code nodeIdRange}, i.e.
- * {@code nodeId/rangeSize}, where each range is a small bit set of size {@link TokenScanValue#RANGE_SIZE}.
+ * Keys in {@link TokenScanLayout}, each key consists of {@code tokenId} and {@code entityIdRange}, i.e.
+ * {@code entityId/rangeSize}, where each range is a small bit set of size {@link TokenScanValue#RANGE_SIZE}.
  */
 class TokenScanKey
 {
-    int labelId;
+    int tokenId;
     long idRange;
 
     TokenScanKey()
@@ -33,21 +33,21 @@ class TokenScanKey
         clear();
     }
 
-    TokenScanKey( int labelId, long idRange )
+    TokenScanKey( int tokenId, long idRange )
     {
-        set( labelId, idRange );
+        set( tokenId, idRange );
     }
 
     /**
      * Sets this key.
      *
-     * @param labelId labelId for this key.
-     * @param idRange node idRange for this key.
+     * @param tokenId tokenId for this key.
+     * @param idRange entity idRange for this key.
      * @return this key instance, for convenience.
      */
-    final TokenScanKey set( int labelId, long idRange )
+    final TokenScanKey set( int tokenId, long idRange )
     {
-        this.labelId = labelId;
+        this.tokenId = tokenId;
         this.idRange = idRange;
         return this;
     }
@@ -60,6 +60,6 @@ class TokenScanKey
     @Override
     public String toString()
     {
-        return "[label:" + labelId + ",range:" + idRange + "]";
+        return "[token:" + tokenId + ",range:" + idRange + "]";
     }
 }

@@ -161,7 +161,7 @@ class BulkAppendNativeTokenScanWriterTest
         {
             Pair<TokenScanKey,TokenScanValue> entry = merged.remove( 0 );
             assertEquals( key.idRange, entry.getKey().idRange, "Wrong id range" );
-            assertEquals( key.labelId, entry.getKey().labelId, "Wrong label id" );
+            assertEquals( key.tokenId, entry.getKey().tokenId, "Wrong label id" );
             assertEquals( value.bits, entry.getValue().bits, "Wrong bits" );
         }
 
@@ -173,7 +173,7 @@ class BulkAppendNativeTokenScanWriterTest
         @Override
         public void merge( TokenScanKey key, TokenScanValue value, ValueMerger<TokenScanKey,TokenScanValue> valueMerger )
         {
-            merged.add( Pair.of( key( key.labelId, key.idRange ), value( value.bits ) ) );
+            merged.add( Pair.of( key( key.tokenId, key.idRange ), value( value.bits ) ) );
         }
 
         @Override

@@ -150,7 +150,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     else if ( idRange == currentRange )
                     {
                         long bits = cursor.value().bits;
-                        long labelId = cursor.key().labelId;
+                        long labelId = cursor.key().tokenId;
                         NodeLabelRange.readBitmap( bits, labelId, labelsForEachNode );
 
                         // Advance cursor and look ahead to the next range
