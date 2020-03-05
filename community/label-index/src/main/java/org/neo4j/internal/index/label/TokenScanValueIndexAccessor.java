@@ -25,7 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 /**
- * Base class for iterator and index-progressor of label scans.
+ * Base class for iterator and index-progressor of token scans.
  */
 abstract class TokenScanValueIndexAccessor
 {
@@ -35,17 +35,17 @@ abstract class TokenScanValueIndexAccessor
     protected final Seeker<TokenScanKey,TokenScanValue> cursor;
 
     /**
-     * Current base nodeId, i.e. the {@link TokenScanKey#idRange} of the current {@link TokenScanKey}.
+     * Current base entityId, i.e. the {@link TokenScanKey#idRange} of the current {@link TokenScanKey}.
      */
-    long baseNodeId;
+    long baseEntityId;
     /**
      * Bit set of the current {@link TokenScanValue}.
      */
     protected long bits;
     /**
-     * LabelId of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
+     * TokenId of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
      */
-    private int prevLabel = -1;
+    private int prevToken = -1;
     /**
      * IdRange of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
      */
@@ -62,11 +62,11 @@ abstract class TokenScanValueIndexAccessor
 
     boolean keysInOrder( TokenScanKey key )
     {
-        assert key.tokenId >= prevLabel : "Expected to get ordered results, got " + key +
-                " where previous label was " + prevLabel;
+        assert key.tokenId >= prevToken : "Expected to get ordered results, got " + key +
+                " where previous token was " + prevToken;
         assert key.idRange > prevRange : "Expected to get ordered results, got " + key +
                 " where previous range was " + prevRange;
-        prevLabel = key.tokenId;
+        prevToken = key.tokenId;
         prevRange = key.idRange;
         // Made as a method returning boolean so that it can participate in an assert-call.
         return true;

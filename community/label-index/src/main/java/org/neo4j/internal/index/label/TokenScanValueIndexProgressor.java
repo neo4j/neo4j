@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * {@link IndexProgressor} which steps over multiple {@link TokenScanValue} and for each
- * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
+ * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
  */
 public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource
@@ -58,7 +58,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             {
                 int delta = Long.numberOfTrailingZeros( bits );
                 bits &= bits - 1;
-                if ( client.acceptNode( baseNodeId + delta, null ) )
+                if ( client.acceptNode( baseEntityId + delta, null ) )
                 {
                     return true;
                 }
@@ -77,7 +77,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             }
 
             TokenScanKey key = cursor.key();
-            baseNodeId = key.idRange * TokenScanValue.RANGE_SIZE;
+            baseEntityId = key.idRange * TokenScanValue.RANGE_SIZE;
             bits = cursor.value().bits;
 
             //noinspection AssertWithSideEffects

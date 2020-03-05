@@ -34,7 +34,7 @@ import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
- * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
+ * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
  * The provided {@link Seeker} is managed externally, e.g. {@link NativeTokenScanReader},
  * this because implemented interface lacks close-method.
@@ -79,9 +79,9 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
     }
 
     /**
-     * @return next node id in the current {@link TokenScanValue} or, if current value exhausted,
+     * @return next entity id in the current {@link TokenScanValue} or, if current value exhausted,
      * goes to next {@link TokenScanValue} by progressing the {@link Seeker}. Returns {@code true}
-     * if it found next node id, otherwise {@code false}.
+     * if it found next entity id, otherwise {@code false}.
      */
     protected boolean fetchNext()
     {
@@ -91,7 +91,7 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
             {
                 int delta = Long.numberOfTrailingZeros( bits );
                 bits &= bits - 1;
-                next =  baseNodeId + delta ;
+                next =  baseEntityId + delta ;
                 hasNext = true;
                 return true;
             }
@@ -110,7 +110,7 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
             }
 
             TokenScanKey key = cursor.key();
-            baseNodeId = key.idRange * RANGE_SIZE;
+            baseEntityId = key.idRange * RANGE_SIZE;
             bits = cursor.value().bits;
 
             if ( fromId != TokenScanReader.NO_ID )
