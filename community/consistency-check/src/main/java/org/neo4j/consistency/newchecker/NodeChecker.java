@@ -264,8 +264,8 @@ class NodeChecker implements Checker
         return allGood ? labels : sortAndDeduplicate( labels );
     }
 
-    private void checkNodeVsLabelIndex( RecordNodeCursor nodeCursor, Iterator<EntityTokenRange> nodeLabelRangeIterator, NodeLabelIndexCheckState labelIndexState,
-            long nodeId, long[] labels, long fromNodeId, PageCursorTracer cursorTracer )
+    private void checkNodeVsLabelIndex( RecordNodeCursor nodeCursor, Iterator<EntityTokenRange> nodeLabelRangeIterator,
+            NodeLabelIndexCheckState labelIndexState, long nodeId, long[] labels, long fromNodeId, PageCursorTracer cursorTracer )
     {
         // Detect node-label combinations that exist in the label index, but not in the store
         while ( labelIndexState.needToMoveRangeForwardToReachNode( nodeId ) && !context.isCancelled() )
@@ -347,7 +347,8 @@ class NodeChecker implements Checker
         }
     }
 
-    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, EntityTokenRange entityTokenRange, PageCursorTracer cursorTracer )
+    private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, EntityTokenRange entityTokenRange,
+            PageCursorTracer cursorTracer )
     {
         compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
                 indexLabel -> reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ) )
