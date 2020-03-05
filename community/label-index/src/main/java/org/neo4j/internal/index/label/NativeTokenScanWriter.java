@@ -38,7 +38,7 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
- * applied in sorted order (by the label and node id) when reaches batch size or on {@link #close()}.
+ * applied in sorted order (by the token and entity id) when reaches batch size or on {@link #close()}.
  * <p>
  * Updates aren't visible to {@link TokenScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
@@ -53,18 +53,18 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 class NativeTokenScanWriter implements TokenScanWriter
 {
     /**
-     * {@link Comparator} for sorting the node id ranges, used in batches to apply updates in sorted order.
+     * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
      */
     private static final Comparator<NodeLabelUpdate> UPDATE_SORTER =
             Comparator.comparingLong( NodeLabelUpdate::getNodeId );
 
     /**
-     * {@link ValueMerger} used for adding label->node mappings, see {@link LabelScanValue#add(LabelScanValue)}.
+     * {@link ValueMerger} used for adding token->entity mappings, see {@link LabelScanValue#add(LabelScanValue)}.
      */
     private final ValueMerger<LabelScanKey,LabelScanValue> addMerger;
 
     /**
-     * {@link ValueMerger} used for removing label->node mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
+     * {@link ValueMerger} used for removing token->entity mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
      */
     private final ValueMerger<LabelScanKey,LabelScanValue> removeMerger;
 
@@ -103,7 +103,7 @@ class NativeTokenScanWriter implements TokenScanWriter
     /**
      * There are two levels of batching, one for {@link NodeLabelUpdate updates} and one when applying.
      * This variable helps keeping track of the second level where updates to the actual {@link GBPTree}
-     * are batched per node id range, i.e. to add several labelId->nodeId mappings falling into the same
+     * are batched per entity id range, i.e. to add several tokenId->entityId mappings falling into the same
      * range, all of those updates are made into one {@link LabelScanValue} and then issues as one update
      * to the tree. There are additions and removals, this variable keeps track of which.
      */
@@ -111,15 +111,15 @@ class NativeTokenScanWriter implements TokenScanWriter
 
     /**
      * When applying {@link NodeLabelUpdate updates} (when batch full or in {@link #close()}), updates are
-     * applied labelId by labelId. All updates are scanned through multiple times, with one label in mind at a time.
-     * For each round the current round tries to figure out which is the closest higher labelId to apply
-     * in the next round. This variable keeps track of that next labelId.
+     * applied tokenId by tokenId. All updates are scanned through multiple times, with one token in mind at a time.
+     * For each round the current round tries to figure out which is the closest higher tokenId to apply
+     * in the next round. This variable keeps track of that next tokenId.
      */
-    private long lowestLabelId;
+    private long lowestTokenId;
 
     interface WriteMonitor
     {
-        default void range( long range, int labelId )
+        default void range( long range, int tokenId )
         {
         }
 
@@ -180,7 +180,7 @@ class NativeTokenScanWriter implements TokenScanWriter
         this.writer = writer;
         this.pendingUpdatesCursor = 0;
         this.addition = false;
-        this.lowestLabelId = Long.MAX_VALUE;
+        this.lowestTokenId = Long.MAX_VALUE;
         return this;
     }
 
@@ -198,15 +198,15 @@ class NativeTokenScanWriter implements TokenScanWriter
 
         pendingUpdates[pendingUpdatesCursor++] = update;
         PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
-        checkNextLabelId( update.getLabelsBefore() );
-        checkNextLabelId( update.getLabelsAfter() );
+        checkNextTokenId( update.getLabelsBefore() );
+        checkNextTokenId( update.getLabelsAfter() );
     }
 
-    private void checkNextLabelId( long[] labels )
+    private void checkNextTokenId( long[] tokens )
     {
-        if ( labels.length > 0 && labels[0] != -1 )
+        if ( tokens.length > 0 && tokens[0] != -1 )
         {
-            lowestLabelId = min( lowestLabelId, labels[0] );
+            lowestTokenId = min( lowestTokenId, tokens[0] );
         }
     }
 
@@ -214,83 +214,83 @@ class NativeTokenScanWriter implements TokenScanWriter
     {
         Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
         monitor.flushPendingUpdates();
-        long currentLabelId = lowestLabelId;
+        long currentTokenId = lowestTokenId;
         value.clear();
         key.clear();
-        while ( currentLabelId != Long.MAX_VALUE )
+        while ( currentTokenId != Long.MAX_VALUE )
         {
-            long nextLabelId = Long.MAX_VALUE;
+            long nextTokenId = Long.MAX_VALUE;
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
                 NodeLabelUpdate update = pendingUpdates[i];
-                long nodeId = update.getNodeId();
-                nextLabelId = extractChange( update.getLabelsAfter(), currentLabelId, nodeId, nextLabelId, true, update.getTxId() );
-                nextLabelId = extractChange( update.getLabelsBefore(), currentLabelId, nodeId, nextLabelId, false, update.getTxId() );
+                long entityId = update.getNodeId();
+                nextTokenId = extractChange( update.getLabelsAfter(), currentTokenId, entityId, nextTokenId, true, update.getTxId() );
+                nextTokenId = extractChange( update.getLabelsBefore(), currentTokenId, entityId, nextTokenId, false, update.getTxId() );
             }
-            currentLabelId = nextLabelId;
+            currentTokenId = nextTokenId;
         }
         flushPendingRange();
         pendingUpdatesCursor = 0;
     }
 
-    private long extractChange( long[] labels, long currentLabelId, long nodeId, long nextLabelId, boolean addition, long txId )
+    private long extractChange( long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition, long txId )
     {
-        long foundNextLabelId = nextLabelId;
-        for ( int li = 0; li < labels.length; li++ )
+        long foundNextTokenId = nextTokenId;
+        for ( int li = 0; li < tokens.length; li++ )
         {
-            long labelId = labels[li];
-            if ( labelId == -1 )
+            long tokenId = tokens[li];
+            if ( tokenId == -1 )
             {
                 break;
             }
 
-            // Have this check here so that we can pick up the next labelId in our change set
-            if ( labelId == currentLabelId )
+            // Have this check here so that we can pick up the next tokenId in our change set
+            if ( tokenId == currentTokenId )
             {
-                change( currentLabelId, nodeId, addition, txId );
+                change( currentTokenId, entityId, addition, txId );
 
-                // We can do a little shorter check for next labelId here straight away,
-                // we just check the next if it's less than what we currently think is next labelId
+                // We can do a little shorter check for next tokenId here straight away,
+                // we just check the next if it's less than what we currently think is next tokenId
                 // and then break right after
-                if ( li + 1 < labels.length && labels[li + 1] != -1 )
+                if ( li + 1 < tokens.length && tokens[li + 1] != -1 )
                 {
-                    long nextLabelCandidate = labels[li + 1];
-                    if ( nextLabelCandidate < currentLabelId )
+                    long nextTokenCandidate = tokens[li + 1];
+                    if ( nextTokenCandidate < currentTokenId )
                     {
                         throw new IllegalArgumentException(
-                                "The node label update contained unsorted label ids " + Arrays.toString( labels ) );
+                                "The node label update contained unsorted label ids " + Arrays.toString( tokens ) );
                     }
-                    if ( nextLabelCandidate > currentLabelId )
+                    if ( nextTokenCandidate > currentTokenId )
                     {
-                        foundNextLabelId = min( foundNextLabelId, nextLabelCandidate );
+                        foundNextTokenId = min( foundNextTokenId, nextTokenCandidate );
                     }
                 }
                 break;
             }
-            else if ( labelId > currentLabelId )
+            else if ( tokenId > currentTokenId )
             {
-                foundNextLabelId = min( foundNextLabelId, labelId );
+                foundNextTokenId = min( foundNextTokenId, tokenId );
             }
         }
-        return foundNextLabelId;
+        return foundNextTokenId;
     }
 
-    private void change( long currentLabelId, long nodeId, boolean add, long txId )
+    private void change( long currentTokenId, long entityId, boolean add, long txId )
     {
-        int labelId = toIntExact( currentLabelId );
-        long idRange = rangeOf( nodeId );
-        if ( labelId != key.labelId || idRange != key.idRange || addition != add )
+        int tokenId = toIntExact( currentTokenId );
+        long idRange = rangeOf( entityId );
+        if ( tokenId != key.labelId || idRange != key.idRange || addition != add )
         {
             flushPendingRange();
 
             // Set key to current and reset value
-            key.labelId = labelId;
+            key.labelId = tokenId;
             key.idRange = idRange;
             addition = add;
-            monitor.range( idRange, labelId );
+            monitor.range( idRange, tokenId );
         }
 
-        int offset = toIntExact( nodeId % RANGE_SIZE );
+        int offset = toIntExact( entityId % RANGE_SIZE );
         value.set( offset );
         if ( addition )
         {
@@ -319,14 +319,14 @@ class NativeTokenScanWriter implements TokenScanWriter
         }
     }
 
-    static long rangeOf( long nodeId )
+    static long rangeOf( long entityId )
     {
-        return nodeId / RANGE_SIZE;
+        return entityId / RANGE_SIZE;
     }
 
-    static int offsetOf( long nodeId )
+    static int offsetOf( long entityId )
     {
-        return (int) (nodeId % RANGE_SIZE);
+        return (int) (entityId % RANGE_SIZE);
     }
 
     /**

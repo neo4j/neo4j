@@ -36,10 +36,10 @@ import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
- * Writer that takes a more batching approach to adding data to the label scan store. It is optimized for writing large amounts of node-id-sequential updates,
- * especially when there are lots of labels involved. It works by having an array of ranges, slot index is labelId. Updates that comes in
- * will find the slot by labelId and add the correct bit to the current range, or if the bit is in another range, merge the current one first.
- * It cannot handle updates to nodes that are already in ths label index, such operations will fail before trying to make those changes.
+ * Writer that takes a more batching approach to adding data to the token scan store. It is optimized for writing large amounts of entity-id-sequential updates,
+ * especially when there are lots of tokens involved. It works by having an array of ranges, slot index is tokenId. Updates that comes in
+ * will find the slot by tokenId and add the correct bit to the current range, or if the bit is in another range, merge the current one first.
+ * It cannot handle updates to entities that are already in ths token index, such operations will fail before trying to make those changes.
  */
 class BulkAppendNativeTokenScanWriter implements TokenScanWriter
 {
@@ -58,14 +58,14 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
     {
         checkArgument( update.getLabelsBefore().length == 0, "Was expecting no labels before, was %s", Arrays.toString( update.getLabelsBefore() ) );
         long idRange = rangeOf( update.getNodeId() );
-        int previousLabelId = -1;
-        for ( long labelId : update.getLabelsAfter() )
+        int previousTokenId = -1;
+        for ( long tokenId : update.getLabelsAfter() )
         {
-            int intLabelId = toIntExact( labelId );
-            checkArgument( intLabelId > previousLabelId, "Detected unsorted labels in %s", update );
-            previousLabelId = intLabelId;
+            int intTokenId = toIntExact( tokenId );
+            checkArgument( intTokenId > previousTokenId, "Detected unsorted labels in %s", update );
+            previousTokenId = intTokenId;
             Pair<LabelScanKey,LabelScanValue> range =
-                    ranges.getIfAbsentPutWithKey( intLabelId, id -> Pair.of( new LabelScanKey( id, idRange ), new LabelScanValue() ) );
+                    ranges.getIfAbsentPutWithKey( intTokenId, id -> Pair.of( new LabelScanKey( id, idRange ), new LabelScanValue() ) );
             if ( range.getKey().idRange != idRange )
             {
                 if ( range.getKey().idRange != -1 )

@@ -27,9 +27,9 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 public interface TokenScanWriter extends Closeable
 {
     /**
-     * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending node id.
+     * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending entity id.
      *
-     * @param update node label update to store
+     * @param update entity token update to store
      * @throws IOException some kind of I/O exception has occurred
      */
     void write( NodeLabelUpdate update ) throws IOException;
