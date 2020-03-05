@@ -153,8 +153,9 @@ object PlanDescriptionArgumentSerializer {
         val argString = args.mkString(", ")
         val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
         s"$procedureName($argString) :: ($resultString)"
-      case PipelineInfo(info) =>
-        s"Pipeline($info)"
+      case PipelineInfo(pipelineId, fused) =>
+        val fusion = if (fused) "Fused in" else "In"
+        s"$fusion Pipeline $pipelineId"
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

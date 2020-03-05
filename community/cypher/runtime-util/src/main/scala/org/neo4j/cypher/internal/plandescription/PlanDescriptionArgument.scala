@@ -84,7 +84,7 @@ object Arguments {
                        args: Seq[org.neo4j.cypher.internal.expressions.Expression],
                        results: Seq[(String, CypherType)]) extends Argument
 
-  case class PipelineInfo(info: String) extends Argument
+  case class PipelineInfo(pipelineId: Int, fused: Boolean) extends Argument
 
   // This is the version of cypher
   case class Version(value: String) extends Argument {
