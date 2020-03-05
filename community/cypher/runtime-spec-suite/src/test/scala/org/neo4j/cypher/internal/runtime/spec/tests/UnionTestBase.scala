@@ -68,6 +68,31 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(nodes ++ nodes))
   }
 
+  test("should union after expands") {
+    // given
+    val nodes = given {
+      val (nodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .sort(Seq(Ascending("y")))
+      .filter("id(y) >= 0")
+      .union()
+      .|.expand("(z)-->(y)")
+      .|.allNodeScan("z")
+      .expand("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(singleColumn(nodes ++ nodes))
+  }
+
   test("should union node and non-node variable") {
     // given
     val nodes = given { nodeGraph(sizeHint / 2) }

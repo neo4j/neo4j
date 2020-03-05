@@ -505,66 +505,66 @@ object IntermediateRepresentation {
 
   def typeRefOf[TYPE](implicit typ: Manifest[TYPE]): codegen.TypeReference = typeRef(typ)
 
-  def field[TYPE](name: String)(implicit typ: Manifest[TYPE]) = InstanceField(typeRef(typ), name)
+  def field[TYPE](name: String)(implicit typ: Manifest[TYPE]): InstanceField = InstanceField(typeRef(typ), name)
 
-  def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: Manifest[TYPE]) =
+  def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: Manifest[TYPE]): InstanceField =
     InstanceField(typeRef(typ), name, Some(initializer))
 
-  def staticConstant[TYPE](name: String, value: AnyRef)(implicit typ: Manifest[TYPE]) =
+  def staticConstant[TYPE](name: String, value: AnyRef)(implicit typ: Manifest[TYPE]): StaticField =
     StaticField(typeRef(typ), name, Some(value))
 
   def variable[TYPE](name: String, value: IntermediateRepresentation)(implicit typ: Manifest[TYPE]): LocalVariable =
     LocalVariable(typeRef(typ), name, value)
 
-  def method[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]) =
+  def method[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]): Method =
     Method(typeRef(owner), typeRef(out), name)
 
-  def method[OWNER, OUT, IN](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT], in: Manifest[IN]) =
+  def method[OWNER, OUT, IN](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT], in: Manifest[IN]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in))
 
   def method[OWNER, OUT, IN1, IN2](name: String)
                                   (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
-                                   in2: Manifest[IN2]) =
+                                   in2: Manifest[IN2]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2))
 
   def method[OWNER, OUT, IN1, IN2, IN3](name: String)
                                        (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
-                                        in2: Manifest[IN2], in3: Manifest[IN3]) =
+                                        in2: Manifest[IN2], in3: Manifest[IN3]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4](name: String)
                                        (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
-                                        in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]) =
+                                        in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5](name: String)
                                             (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
-                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]) =
+                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5))
 
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6](name: String)
                                                  (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                   in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
-                                                  in6: Manifest[IN6]) =
+                                                  in6: Manifest[IN6]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7](name: String)
                                                       (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                        in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
-                                                       in6: Manifest[IN6], in7: Manifest[IN7]) =
+                                                       in6: Manifest[IN6], in7: Manifest[IN7]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](name: String)
                                                            (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
-                                                            in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8]) =
+                                                            in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8))
 
   def methodDeclaration[OUT](name: String,
                              body: IntermediateRepresentation,
                              locals: () => Seq[LocalVariable],
-                             parameters: Parameter*)(implicit out: Manifest[OUT]) =
+                             parameters: Parameter*)(implicit out: Manifest[OUT]): MethodDeclaration =
     MethodDeclaration(name, typeRef(out), parameters, body, locals)
 
   def param[TYPE](name: String)(implicit typ: Manifest[TYPE]): Parameter = Parameter(typeRef(typ), name)
@@ -578,42 +578,42 @@ object IntermediateRepresentation {
 
   def extending[TYPE] (implicit typ: Manifest[TYPE]): TypeReference.Bound = TypeReference.extending(typeRef(typ))
 
-  def constructor[OWNER](implicit owner: Manifest[OWNER]) = Constructor(typeRef(owner), Seq.empty)
+  def constructor[OWNER](implicit owner: Manifest[OWNER]): Constructor = Constructor(typeRef(owner), Seq.empty)
 
-  def constructor[OWNER, IN](implicit owner: Manifest[OWNER],  in: Manifest[IN]) =
+  def constructor[OWNER, IN](implicit owner: Manifest[OWNER],  in: Manifest[IN]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in)))
 
-  def constructor[OWNER, IN1, IN2](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2]) =
+  def constructor[OWNER, IN1, IN2](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2)))
 
-  def constructor[OWNER, IN1, IN2, IN3](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3]) =
+  def constructor[OWNER, IN1, IN2, IN3](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11)))
 
-  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11],  in12: Manifest[IN12]) =
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11],  in12: Manifest[IN12]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11), typeRef(in12)))
 
   def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
@@ -634,18 +634,20 @@ object IntermediateRepresentation {
 
   def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name)
 
-  def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]) = Cast(typeRef(to), expression)
+  def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]): Cast = Cast(typeRef(to), expression)
 
-  def instanceOf[T](expression: IntermediateRepresentation)(implicit t: Manifest[T]) = InstanceOf(typeRef(t), expression)
+  def instanceOf[T](expression: IntermediateRepresentation)(implicit t: Manifest[T]): InstanceOf = InstanceOf(typeRef(t), expression)
 
   def loadField(field: Field): IntermediateRepresentation = LoadField(field)
 
   def setField(field: Field, value: IntermediateRepresentation): IntermediateRepresentation = SetField(field, value)
 
-  def getStatic[OUT](name: String)(implicit out: Manifest[OUT]) = GetStatic(None, typeRef(out), name)
+  def getStatic[OUT](name: String)(implicit out: Manifest[OUT]): GetStatic = GetStatic(None, typeRef(out), name)
 
-  def getStatic[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]) =
+  def getStatic[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]): GetStatic =
     GetStatic(Some(typeRef(owner)), typeRef(out), name)
+
+  def getStatic(field: StaticField): GetStatic = GetStatic(None, field.typ, field.name)
 
   def noValue: IntermediateRepresentation = getStatic[Values, Value]("NO_VALUE")
 
@@ -721,13 +723,13 @@ object IntermediateRepresentation {
 
   def break(labelName: String): IntermediateRepresentation = Break(labelName)
 
-  def declare[TYPE](name: String)(implicit typ: Manifest[TYPE]) = DeclareLocalVariable(typeRef(typ), name)
+  def declare[TYPE](name: String)(implicit typ: Manifest[TYPE]): DeclareLocalVariable = DeclareLocalVariable(typeRef(typ), name)
 
-  def declare(typeReference: codegen.TypeReference, name: String) = DeclareLocalVariable(typeReference, name)
+  def declare(typeReference: codegen.TypeReference, name: String): DeclareLocalVariable = DeclareLocalVariable(typeReference, name)
 
-  def assign(name: String, value: IntermediateRepresentation) = AssignToLocalVariable(name, value)
+  def assign(name: String, value: IntermediateRepresentation): AssignToLocalVariable = AssignToLocalVariable(name, value)
 
-  def assign(variable: LocalVariable, value: IntermediateRepresentation) = AssignToLocalVariable(variable.name, value)
+  def assign(variable: LocalVariable, value: IntermediateRepresentation): AssignToLocalVariable = AssignToLocalVariable(variable.name, value)
 
   def declareAndAssign(typeReference: TypeReference, name: String, value: IntermediateRepresentation): IntermediateRepresentation =
     block(declare(typeReference, name), assign(name, value))
@@ -735,12 +737,12 @@ object IntermediateRepresentation {
   def returns(value: IntermediateRepresentation): IntermediateRepresentation = Returns(value)
 
   def tryCatch[E](name: String)(ops: IntermediateRepresentation)(onError: IntermediateRepresentation)
-                 (implicit typ: Manifest[E]) =
+                 (implicit typ: Manifest[E]): TryCatch =
     TryCatch(ops, onError, typeRef(typ), name)
 
-  def fail(error: IntermediateRepresentation) = Throw(error)
+  def fail(error: IntermediateRepresentation): Throw = Throw(error)
 
-  def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
+  def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): BooleanAnd = BooleanAnd(lhs, rhs)
 
   def and(ands: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ands.isEmpty) constant(true)
@@ -759,22 +761,22 @@ object IntermediateRepresentation {
 
   def isNotNull(test: IntermediateRepresentation): IntermediateRepresentation = Not(IsNull(test))
 
-  def newInstance(constructor: Constructor, params: IntermediateRepresentation*) = NewInstance(constructor, params)
+  def newInstance(constructor: Constructor, params: IntermediateRepresentation*): NewInstance = NewInstance(constructor, params)
 
-  def newInstance(inner: ExtendClass, params: IntermediateRepresentation*) = NewInstanceInnerClass(inner, params)
+  def newInstance(inner: ExtendClass, params: IntermediateRepresentation*): NewInstanceInnerClass = NewInstanceInnerClass(inner, params)
 
-  def newArray(baseType: codegen.TypeReference, size: Int) = NewArray(baseType, size)
+  def newArray(baseType: codegen.TypeReference, size: Int): NewArray = NewArray(baseType, size)
 
-  def not(test: IntermediateRepresentation) = Not(test)
+  def not(test: IntermediateRepresentation): Not = Not(test)
 
   def oneTime(expression: IntermediateRepresentation): IntermediateRepresentation = OneTime(expression)(used = false)
 
   def print(value: IntermediateRepresentation): IntermediateRepresentation =
     invokeSideEffect(getStatic[System, PrintStream]("out"), method[PrintStream, Unit, Object]("println"), value )
 
-  def box(expression: IntermediateRepresentation) = Box(expression)
+  def box(expression: IntermediateRepresentation): Box = Box(expression)
 
-  def unbox(expression: IntermediateRepresentation) = Unbox(expression)
+  def unbox(expression: IntermediateRepresentation): Unbox = Unbox(expression)
 
   def self(): IntermediateRepresentation = Self
 }
