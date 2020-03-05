@@ -161,7 +161,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(10)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -183,7 +183,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -205,7 +205,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.sort(Seq(Ascending("y")))
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -233,7 +233,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(LIMIT)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -257,7 +257,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .expandAll("(b1)<--(a1)")
       .limit(10)
       .expandAll("(x)-->(b1)")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -285,7 +285,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .limit(18)
       .limit(19)
       .limit(20)
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
@@ -345,7 +345,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.argument()
       .expand("(x)-[rel]->(y)")
       .limit(1)
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
