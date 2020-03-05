@@ -27,14 +27,14 @@ Additionally, include (as appropriate) log-files, stacktraces, and other debug o
 
 I discovered that when I mount `data/` to a volume on my host, and then stop the container, the `write.lock` is not removed as well as a number of other files not being cleaned up properly.
 
-**Neo4j Version:** 3.0M03  
-**Operating System:** Ubuntu 15.10  
+**Neo4j Version:** 3.0M03
+**Operating System:** Ubuntu 15.10
 **API:** Docker
 
 ### Steps to reproduce
 1. Pull the image: `docker pull neo4j/neo4j:3.0.0-M03`
 2. Create a directory on the host that will be a mount for the data: `mkdir /home/neo4j-data`
-3. Start a new container that mounts to this directory: `docker run -d --name neo4j-test -p 7474:7474 -v /home/neo4j:/data neo4j/neo4j:3.0.0-M03`
+3. Start a new container that mounts to this directory: `docker run -d --name neo4j-test -p 7474:7474 -v /home/neo4j-data:/data neo4j/neo4j:3.0.0-M03`
 4. Navigate to the `write.lock` file located in the directory: `/data/databases/graph.db/schema/label/lucene/labelStore/1/`
 5. Stop the container: `docker stop neo4j-test`
 
