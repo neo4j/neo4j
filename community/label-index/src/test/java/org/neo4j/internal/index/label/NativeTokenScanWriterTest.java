@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.internal.index.label.TokenScanReader.NO_ID;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.flipRandom;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.getLabels;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.nodesWithLabel;
@@ -66,12 +66,12 @@ class NativeTokenScanWriterTest
     @Inject
     private TestDirectory directory;
 
-    private GBPTree<LabelScanKey,LabelScanValue> tree;
+    private GBPTree<TokenScanKey,TokenScanValue> tree;
 
     @BeforeEach
     void openTree()
     {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new LabelScanLayout() ).build();
+        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new TokenScanLayout() ).build();
     }
 
     @AfterEach
@@ -102,7 +102,7 @@ class NativeTokenScanWriterTest
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
             long[] actualNodeIds = asArray( new LabelScanValueIterator(
-                    tree.seek( new LabelScanKey( i, 0 ), new LabelScanKey( i, Long.MAX_VALUE ), NULL ), NO_ID ) );
+                    tree.seek( new TokenScanKey( i, 0 ), new TokenScanKey( i, Long.MAX_VALUE ), NULL ), NO_ID ) );
             assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
     }
@@ -188,11 +188,11 @@ class NativeTokenScanWriterTest
         tree.visit( new GBPTreeVisitor.Adaptor<>()
         {
             @Override
-            public void key( LabelScanKey labelScanKey, boolean isLeaf, long offloadId )
+            public void key( TokenScanKey tokenScanKey, boolean isLeaf, long offloadId )
             {
                 if ( isLeaf )
                 {
-                    assertTrue( expected.remove( labelScanKey.idRange ) );
+                    assertTrue( expected.remove( tokenScanKey.idRange ) );
                 }
             }
         }, NULL );

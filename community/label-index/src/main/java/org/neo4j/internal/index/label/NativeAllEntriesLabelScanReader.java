@@ -34,7 +34,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 import static java.lang.Long.min;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link AllEntriesLabelScanReader} for {@link NativeTokenScanStore}.
@@ -46,11 +46,11 @@ import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
  */
 class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
-    private final IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider;
-    private final List<Seeker<LabelScanKey,LabelScanValue>> cursors = new ArrayList<>();
+    private final IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider;
+    private final List<Seeker<TokenScanKey,TokenScanValue>> cursors = new ArrayList<>();
     private final int highestLabelId;
 
-    NativeAllEntriesLabelScanReader( IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider,
+    NativeAllEntriesLabelScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
             int highestLabelId )
     {
         this.seekProvider = seekProvider;
@@ -78,7 +78,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
             closeCursors();
             for ( int labelId = 0; labelId <= highestLabelId; labelId++ )
             {
-                Seeker<LabelScanKey,LabelScanValue> cursor = seekProvider.apply( labelId );
+                Seeker<TokenScanKey,TokenScanValue> cursor = seekProvider.apply( labelId );
 
                 // Bootstrap the cursor, which also provides a great opportunity to exclude if empty
                 if ( cursor.next() )
@@ -97,7 +97,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 
     private void closeCursors() throws IOException
     {
-        for ( Seeker<LabelScanKey,LabelScanValue> cursor : cursors )
+        for ( Seeker<TokenScanKey,TokenScanValue> cursor : cursors )
         {
             cursor.close();
         }
@@ -138,7 +138,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
             try
             {
                 // One "rangeSize" range at a time
-                for ( Seeker<LabelScanKey,LabelScanValue> cursor : cursors )
+                for ( Seeker<TokenScanKey,TokenScanValue> cursor : cursors )
                 {
                     long idRange = cursor.key().idRange;
                     if ( idRange < currentRange )

@@ -21,7 +21,7 @@ package org.neo4j.internal.index.label;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
 
-class AddMerger implements ValueMerger<LabelScanKey,LabelScanValue>
+class AddMerger implements ValueMerger<TokenScanKey,TokenScanValue>
 {
     private final NativeTokenScanWriter.WriteMonitor monitor;
 
@@ -31,7 +31,7 @@ class AddMerger implements ValueMerger<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public MergeResult merge( LabelScanKey existingKey, LabelScanKey newKey, LabelScanValue existingValue, LabelScanValue newValue )
+    public MergeResult merge( TokenScanKey existingKey, TokenScanKey newKey, TokenScanValue existingValue, TokenScanValue newValue )
     {
         monitor.mergeAdd( existingValue, newValue );
         existingValue.add( newValue );

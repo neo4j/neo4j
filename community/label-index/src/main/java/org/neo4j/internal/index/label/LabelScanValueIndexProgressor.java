@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
- * {@link IndexProgressor} which steps over multiple {@link LabelScanValue} and for each
+ * {@link IndexProgressor} which steps over multiple {@link TokenScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
  */
@@ -36,7 +36,7 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
 {
     private final NodeLabelClient client;
 
-    LabelScanValueIndexProgressor( Seeker<LabelScanKey,LabelScanValue> cursor, NodeLabelClient client )
+    LabelScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, NodeLabelClient client )
     {
         super( cursor );
         this.client = client;
@@ -45,8 +45,8 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
     /**
      *  Progress through the index until the next accepted entry.
      *
-     *  Progress the cursor to the current {@link LabelScanValue}, if this is not accepted by the client or if current
-     *  value has been exhausted it continues to the next {@link LabelScanValue} by progressing the {@link Seeker}.
+     *  Progress the cursor to the current {@link TokenScanValue}, if this is not accepted by the client or if current
+     *  value has been exhausted it continues to the next {@link TokenScanValue} by progressing the {@link Seeker}.
      * @return <code>true</code> if it found an accepted entry, <code>false</code> otherwise
      */
     @Override
@@ -76,8 +76,8 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
                 throw new UncheckedIOException( e );
             }
 
-            LabelScanKey key = cursor.key();
-            baseNodeId = key.idRange * LabelScanValue.RANGE_SIZE;
+            TokenScanKey key = cursor.key();
+            baseNodeId = key.idRange * TokenScanValue.RANGE_SIZE;
             bits = cursor.value().bits;
 
             //noinspection AssertWithSideEffects

@@ -20,9 +20,9 @@
 package org.neo4j.internal.index.label;
 
 /**
- * A small bit set of maximum 64 bits. Used in {@link LabelScanLayout}.
+ * A small bit set of maximum 64 bits. Used in {@link TokenScanLayout}.
  */
-class LabelScanValue
+class TokenScanValue
 {
     static final int RANGE_SIZE = Long.SIZE;
     static final int RANGE_SIZE_BYTES = Long.BYTES;
@@ -37,7 +37,7 @@ class LabelScanValue
      *
      * @param index index into the bit set of the bit to set.
      */
-    LabelScanValue set( int index )
+    TokenScanValue set( int index )
     {
         long mask = 1L << index;
         bits |= mask;
@@ -51,7 +51,7 @@ class LabelScanValue
      * @param other value containing bits to add.
      * @return this instance, now with added bits from {@code other}.
      */
-    LabelScanValue add( LabelScanValue other )
+    TokenScanValue add( TokenScanValue other )
     {
         bits |= other.bits;
         return this;
@@ -65,7 +65,7 @@ class LabelScanValue
      * @param other value containing bits to remove.
      * @return this instance, now with removed bits from {@code other}.
      */
-    LabelScanValue remove( LabelScanValue other )
+    TokenScanValue remove( TokenScanValue other )
     {
         bits &= ~other.bits;
         return this;

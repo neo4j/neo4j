@@ -28,12 +28,12 @@ import java.util.NoSuchElementException;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.offsetOf;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 
 /**
- * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each
+ * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
  * The provided {@link Seeker} is managed externally, e.g. {@link NativeTokenScanReader},
@@ -50,7 +50,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
      * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets, and the fromId may
      * be somewhere inside a bit-set range.
      */
-    LabelScanValueIterator( Seeker<LabelScanKey,LabelScanValue> cursor, long fromId )
+    LabelScanValueIterator( Seeker<TokenScanKey,TokenScanValue> cursor, long fromId )
     {
         super( cursor );
         this.fromId = fromId;
@@ -79,8 +79,8 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
     }
 
     /**
-     * @return next node id in the current {@link LabelScanValue} or, if current value exhausted,
-     * goes to next {@link LabelScanValue} by progressing the {@link Seeker}. Returns {@code true}
+     * @return next node id in the current {@link TokenScanValue} or, if current value exhausted,
+     * goes to next {@link TokenScanValue} by progressing the {@link Seeker}. Returns {@code true}
      * if it found next node id, otherwise {@code false}.
      */
     protected boolean fetchNext()
@@ -109,7 +109,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
                 throw new UncheckedIOException( e );
             }
 
-            LabelScanKey key = cursor.key();
+            TokenScanKey key = cursor.key();
             baseNodeId = key.idRange * RANGE_SIZE;
             bits = cursor.value().bits;
 

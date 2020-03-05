@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link TokenScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
@@ -59,14 +59,14 @@ class NativeTokenScanWriter implements TokenScanWriter
             Comparator.comparingLong( NodeLabelUpdate::getNodeId );
 
     /**
-     * {@link ValueMerger} used for adding token->entity mappings, see {@link LabelScanValue#add(LabelScanValue)}.
+     * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
      */
-    private final ValueMerger<LabelScanKey,LabelScanValue> addMerger;
+    private final ValueMerger<TokenScanKey,TokenScanValue> addMerger;
 
     /**
-     * {@link ValueMerger} used for removing token->entity mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
+     * {@link ValueMerger} used for removing token->entity mappings, see {@link TokenScanValue#remove(TokenScanValue)}.
      */
-    private final ValueMerger<LabelScanKey,LabelScanValue> removeMerger;
+    private final ValueMerger<TokenScanKey,TokenScanValue> removeMerger;
 
     private final WriteMonitor monitor;
 
@@ -74,18 +74,18 @@ class NativeTokenScanWriter implements TokenScanWriter
      * {@link Writer} acquired when acquiring this {@link NativeTokenScanWriter},
      * acquired from {@link GBPTree#writer(PageCursorTracer)}.
      */
-    private Writer<LabelScanKey,LabelScanValue> writer;
+    private Writer<TokenScanKey,TokenScanValue> writer;
 
     /**
-     * Instance of {@link LabelScanKey} acting as place to read keys into and to set for each applied update.
+     * Instance of {@link TokenScanKey} acting as place to read keys into and to set for each applied update.
      */
-    private final LabelScanKey key = new LabelScanKey();
+    private final TokenScanKey key = new TokenScanKey();
 
     /**
-     * Instance of {@link LabelScanValue} acting as place to read values into and to update
+     * Instance of {@link TokenScanValue} acting as place to read values into and to update
      * for each applied update.
      */
-    private final LabelScanValue value = new LabelScanValue();
+    private final TokenScanValue value = new TokenScanValue();
 
     /**
      * Batch currently building up as {@link #write(NodeLabelUpdate) updates} come in. Cursor for where
@@ -104,7 +104,7 @@ class NativeTokenScanWriter implements TokenScanWriter
      * There are two levels of batching, one for {@link NodeLabelUpdate updates} and one when applying.
      * This variable helps keeping track of the second level where updates to the actual {@link GBPTree}
      * are batched per entity id range, i.e. to add several tokenId->entityId mappings falling into the same
-     * range, all of those updates are made into one {@link LabelScanValue} and then issues as one update
+     * range, all of those updates are made into one {@link TokenScanValue} and then issues as one update
      * to the tree. There are additions and removals, this variable keeps track of which.
      */
     private boolean addition;
@@ -131,11 +131,11 @@ class NativeTokenScanWriter implements TokenScanWriter
         {
         }
 
-        default void mergeAdd( LabelScanValue existingValue, LabelScanValue newValue )
+        default void mergeAdd( TokenScanValue existingValue, TokenScanValue newValue )
         {
         }
 
-        default void mergeRemove( LabelScanValue existingValue, LabelScanValue newValue )
+        default void mergeRemove( TokenScanValue existingValue, TokenScanValue newValue )
         {
         }
 
@@ -175,7 +175,7 @@ class NativeTokenScanWriter implements TokenScanWriter
         this.monitor = monitor;
     }
 
-    NativeTokenScanWriter initialize( Writer<LabelScanKey,LabelScanValue> writer )
+    NativeTokenScanWriter initialize( Writer<TokenScanKey,TokenScanValue> writer )
     {
         this.writer = writer;
         this.pendingUpdatesCursor = 0;

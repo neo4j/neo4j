@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 
 /**
@@ -46,9 +46,9 @@ class NativeTokenScanReader implements TokenScanReader
     /**
      * Index that is queried when calling the methods below.
      */
-    private final GBPTree<LabelScanKey,LabelScanValue> index;
+    private final GBPTree<TokenScanKey,TokenScanValue> index;
 
-    NativeTokenScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
+    NativeTokenScanReader( GBPTree<TokenScanKey,TokenScanValue> index )
     {
         this.index = index;
     }
@@ -56,7 +56,7 @@ class NativeTokenScanReader implements TokenScanReader
     @Override
     public PrimitiveLongResourceIterator nodesWithLabel( int tokenId, PageCursorTracer cursorTracer )
     {
-        Seeker<LabelScanKey,LabelScanValue> cursor;
+        Seeker<TokenScanKey,TokenScanValue> cursor;
         try
         {
             cursor = seekerForLabel( 0, tokenId, cursorTracer );
@@ -92,8 +92,8 @@ class NativeTokenScanReader implements TokenScanReader
 
     private long highestNodeIdForLabel( int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( tokenId, Long.MAX_VALUE ),
-                new LabelScanKey( tokenId, Long.MIN_VALUE ), cursorTracer ) )
+        try ( Seeker<TokenScanKey,TokenScanValue> seeker = index.seek( new TokenScanKey( tokenId, Long.MAX_VALUE ),
+                new TokenScanKey( tokenId, Long.MIN_VALUE ), cursorTracer ) )
         {
             return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }
@@ -106,7 +106,7 @@ class NativeTokenScanReader implements TokenScanReader
         {
             for ( int tokenId : tokenIds )
             {
-                Seeker<LabelScanKey,LabelScanValue> cursor = seekerForLabel( fromId, tokenId, cursorTracer );
+                Seeker<TokenScanKey,TokenScanValue> cursor = seekerForLabel( fromId, tokenId, cursorTracer );
                 iterators.add( new LabelScanValueIterator( cursor, fromId ) );
             }
         }
@@ -117,17 +117,17 @@ class NativeTokenScanReader implements TokenScanReader
         return iterators;
     }
 
-    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForLabel( long startId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
-        LabelScanKey from = new LabelScanKey( tokenId, rangeOf( startId ) );
-        LabelScanKey to = new LabelScanKey( tokenId, Long.MAX_VALUE );
+        TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
+        TokenScanKey to = new TokenScanKey( tokenId, Long.MAX_VALUE );
         return index.seek( from, to, cursorTracer );
     }
 
-    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, long stopId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForLabel( long startId, long stopId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
-        LabelScanKey from = new LabelScanKey( tokenId, rangeOf( startId ) );
-        LabelScanKey to = new LabelScanKey( tokenId, rangeOf( stopId ) );
+        TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
+        TokenScanKey to = new TokenScanKey( tokenId, rangeOf( stopId ) );
 
         return index.seek( from, to, cursorTracer );
     }
@@ -170,7 +170,7 @@ class NativeTokenScanReader implements TokenScanReader
 
         private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop, PageCursorTracer cursorTracer )
         {
-            Seeker<LabelScanKey,LabelScanValue> cursor;
+            Seeker<TokenScanKey,TokenScanValue> cursor;
             try
             {
                 cursor = seekerForLabel( start, stop, tokenId, cursorTracer );

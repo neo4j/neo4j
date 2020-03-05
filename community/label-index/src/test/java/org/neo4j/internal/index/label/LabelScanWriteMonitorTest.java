@@ -79,18 +79,18 @@ class LabelScanWriteMonitorTest
     {
         // given
         LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         writeMonitor.range( 3, 0 );
         writeMonitor.prepareAdd( 123, 4 );
         writeMonitor.prepareAdd( 123, 5 );
-        writeMonitor.mergeAdd( new LabelScanValue(), value.set( 4 ).set( 5 ) );
+        writeMonitor.mergeAdd( new TokenScanValue(), value.set( 4 ).set( 5 ) );
         writeMonitor.flushPendingUpdates();
         writeMonitor.prepareRemove( 124, 5 );
-        writeMonitor.mergeRemove( value, new LabelScanValue().set( 5 ) );
+        writeMonitor.mergeRemove( value, new TokenScanValue().set( 5 ) );
         writeMonitor.writeSessionEnded();
         writeMonitor.range( 5, 1 );
         writeMonitor.prepareAdd( 125, 10 );
-        writeMonitor.mergeAdd( new LabelScanValue().set( 9 ), new LabelScanValue().set( 10 ) );
+        writeMonitor.mergeAdd( new TokenScanValue().set( 9 ), new TokenScanValue().set( 10 ) );
         writeMonitor.flushPendingUpdates();
         writeMonitor.writeSessionEnded();
         writeMonitor.close();
@@ -188,7 +188,7 @@ class LabelScanWriteMonitorTest
         {
             writeMonitor.range( i, 1 );
             writeMonitor.prepareAdd( i, 5 );
-            writeMonitor.mergeAdd( new LabelScanValue(), new LabelScanValue().set( 5 ) );
+            writeMonitor.mergeAdd( new TokenScanValue(), new TokenScanValue().set( 5 ) );
             writeMonitor.writeSessionEnded();
         }
 
@@ -217,7 +217,7 @@ class LabelScanWriteMonitorTest
         {
             writeMonitor.range( i, 1 );
             writeMonitor.prepareAdd( i, 5 );
-            writeMonitor.mergeAdd( new LabelScanValue(), new LabelScanValue().set( 5 ) );
+            writeMonitor.mergeAdd( new TokenScanValue(), new TokenScanValue().set( 5 ) );
             writeMonitor.writeSessionEnded();
         }
         long loopEnded = currentTimeMillis();

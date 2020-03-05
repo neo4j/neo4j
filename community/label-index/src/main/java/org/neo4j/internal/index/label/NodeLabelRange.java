@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
  * Represents a range of nodes and label ids attached to those nodes. All nodes in the range are present in

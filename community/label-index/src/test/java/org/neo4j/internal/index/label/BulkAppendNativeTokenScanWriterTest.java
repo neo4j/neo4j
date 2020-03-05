@@ -85,7 +85,7 @@ class BulkAppendNativeTokenScanWriterTest
             treeWriter.verifyNoMorePuts();
 
             // when
-            long nodeId3 = LabelScanValue.RANGE_SIZE + 5;
+            long nodeId3 = TokenScanValue.RANGE_SIZE + 5;
             writer.write( labelChanges( nodeId3, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
 
             // then
@@ -135,31 +135,31 @@ class BulkAppendNativeTokenScanWriterTest
         treeWriter.verifyMerged( key( 3, 0 ), value( 0b1000 ) );
     }
 
-    private static LabelScanKey key( int labelId, long idRange )
+    private static TokenScanKey key( int labelId, long idRange )
     {
-        return new LabelScanKey( labelId, idRange );
+        return new TokenScanKey( labelId, idRange );
     }
 
-    private static LabelScanValue value( long bits )
+    private static TokenScanValue value( long bits )
     {
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         value.bits = bits;
         return value;
     }
 
-    private static class TrackingWriter implements Writer<LabelScanKey,LabelScanValue>
+    private static class TrackingWriter implements Writer<TokenScanKey,TokenScanValue>
     {
-        final List<Pair<LabelScanKey,LabelScanValue>> merged = new ArrayList<>();
+        final List<Pair<TokenScanKey,TokenScanValue>> merged = new ArrayList<>();
 
         @Override
-        public void put( LabelScanKey key, LabelScanValue value )
+        public void put( TokenScanKey key, TokenScanValue value )
         {
             throw new UnsupportedOperationException();
         }
 
-        void verifyMerged( LabelScanKey key, LabelScanValue value )
+        void verifyMerged( TokenScanKey key, TokenScanValue value )
         {
-            Pair<LabelScanKey,LabelScanValue> entry = merged.remove( 0 );
+            Pair<TokenScanKey,TokenScanValue> entry = merged.remove( 0 );
             assertEquals( key.idRange, entry.getKey().idRange, "Wrong id range" );
             assertEquals( key.labelId, entry.getKey().labelId, "Wrong label id" );
             assertEquals( value.bits, entry.getValue().bits, "Wrong bits" );
@@ -171,19 +171,19 @@ class BulkAppendNativeTokenScanWriterTest
         }
 
         @Override
-        public void merge( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanKey,LabelScanValue> valueMerger )
+        public void merge( TokenScanKey key, TokenScanValue value, ValueMerger<TokenScanKey,TokenScanValue> valueMerger )
         {
             merged.add( Pair.of( key( key.labelId, key.idRange ), value( value.bits ) ) );
         }
 
         @Override
-        public void mergeIfExists( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanKey,LabelScanValue> valueMerger )
+        public void mergeIfExists( TokenScanKey key, TokenScanValue value, ValueMerger<TokenScanKey,TokenScanValue> valueMerger )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public LabelScanValue remove( LabelScanKey key )
+        public TokenScanValue remove( TokenScanKey key )
         {
             throw new UnsupportedOperationException();
         }

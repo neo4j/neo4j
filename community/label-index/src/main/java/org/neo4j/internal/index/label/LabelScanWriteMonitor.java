@@ -162,18 +162,18 @@ public class LabelScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     }
 
     @Override
-    public void mergeAdd( LabelScanValue existingValue, LabelScanValue newValue )
+    public void mergeAdd( TokenScanValue existingValue, TokenScanValue newValue )
     {
         merge( TYPE_MERGE_ADD, existingValue, newValue );
     }
 
     @Override
-    public void mergeRemove( LabelScanValue existingValue, LabelScanValue newValue )
+    public void mergeRemove( TokenScanValue existingValue, TokenScanValue newValue )
     {
         merge( TYPE_MERGE_REMOVE, existingValue, newValue );
     }
 
-    private void merge( byte type, LabelScanValue existingValue, LabelScanValue newValue )
+    private void merge( byte type, TokenScanValue existingValue, TokenScanValue newValue )
     {
         try
         {

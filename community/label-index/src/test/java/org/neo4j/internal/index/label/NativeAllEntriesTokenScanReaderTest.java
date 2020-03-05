@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
 class NativeAllEntriesTokenScanReaderTest
@@ -155,7 +155,7 @@ class NativeAllEntriesTokenScanReaderTest
         SortedMap<Long,List<Long>> result = new TreeMap<>();
         for ( Labels label : data )
         {
-            for ( Pair<LabelScanKey,LabelScanValue> entry : label.entries )
+            for ( Pair<TokenScanKey,TokenScanValue> entry : label.entries )
             {
                 if ( entry.first().idRange == rangeId )
                 {
@@ -178,13 +178,13 @@ class NativeAllEntriesTokenScanReaderTest
         long highest = 0;
         for ( Labels labels : data )
         {
-            Pair<LabelScanKey,LabelScanValue> highestEntry = labels.entries.get( labels.entries.size() - 1 );
+            Pair<TokenScanKey,TokenScanValue> highestEntry = labels.entries.get( labels.entries.size() - 1 );
             highest = max( highest, highestEntry.first().idRange );
         }
         return highest;
     }
 
-    private static IntFunction<Seeker<LabelScanKey,LabelScanValue>> store( Labels... labels )
+    private static IntFunction<Seeker<TokenScanKey,TokenScanValue>> store( Labels... labels )
     {
         final MutableIntObjectMap<Labels> labelsMap = new IntObjectHashMap<>( labels.length );
         for ( Labels item : labels )
@@ -201,9 +201,9 @@ class NativeAllEntriesTokenScanReaderTest
 
     private static Labels labels( int labelId, long... nodeIds )
     {
-        List<Pair<LabelScanKey,LabelScanValue>> entries = new ArrayList<>();
+        List<Pair<TokenScanKey,TokenScanValue>> entries = new ArrayList<>();
         long currentRange = 0;
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         for ( long nodeId : nodeIds )
         {
             long range = nodeId / RANGE_SIZE;
@@ -211,8 +211,8 @@ class NativeAllEntriesTokenScanReaderTest
             {
                 if ( value.bits != 0 )
                 {
-                    entries.add( Pair.of( new LabelScanKey().set( labelId, currentRange ), value ) );
-                    value = new LabelScanValue();
+                    entries.add( Pair.of( new TokenScanKey().set( labelId, currentRange ), value ) );
+                    value = new TokenScanValue();
                 }
             }
             value.set( toIntExact( nodeId % RANGE_SIZE ) );
@@ -221,7 +221,7 @@ class NativeAllEntriesTokenScanReaderTest
 
         if ( value.bits != 0 )
         {
-            entries.add( Pair.of( new LabelScanKey().set( labelId, currentRange ), value ) );
+            entries.add( Pair.of( new TokenScanKey().set( labelId, currentRange ), value ) );
         }
 
         return new Labels( labelId, entries );
@@ -230,28 +230,28 @@ class NativeAllEntriesTokenScanReaderTest
     private static class Labels
     {
         private final int labelId;
-        private final List<Pair<LabelScanKey,LabelScanValue>> entries;
+        private final List<Pair<TokenScanKey,TokenScanValue>> entries;
 
-        Labels( int labelId, List<Pair<LabelScanKey,LabelScanValue>> entries )
+        Labels( int labelId, List<Pair<TokenScanKey,TokenScanValue>> entries )
         {
             this.labelId = labelId;
             this.entries = entries;
         }
 
-        Seeker<LabelScanKey,LabelScanValue> cursor()
+        Seeker<TokenScanKey,TokenScanValue> cursor()
         {
             return new Seeker<>()
             {
                 int cursor = -1;
 
                 @Override
-                public LabelScanKey key()
+                public TokenScanKey key()
                 {
                     return entries.get( cursor ).first();
                 }
 
                 @Override
-                public LabelScanValue value()
+                public TokenScanValue value()
                 {
                     return entries.get( cursor ).other();
                 }
@@ -275,7 +275,7 @@ class NativeAllEntriesTokenScanReaderTest
         }
     }
 
-    private static final Seeker<LabelScanKey,LabelScanValue> EMPTY_CURSOR = new Seeker<>()
+    private static final Seeker<TokenScanKey,TokenScanValue> EMPTY_CURSOR = new Seeker<>()
     {
         @Override
         public boolean next()
@@ -289,13 +289,13 @@ class NativeAllEntriesTokenScanReaderTest
         }
 
         @Override
-        public LabelScanKey key()
+        public TokenScanKey key()
         {
             throw new IllegalStateException();
         }
 
         @Override
-        public LabelScanValue value()
+        public TokenScanValue value()
         {
             throw new IllegalStateException();
         }

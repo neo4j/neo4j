@@ -30,24 +30,24 @@ import org.neo4j.index.internal.gbptree.Seeker;
 abstract class LabelScanValueIndexAccessor
 {
     /**
-     * {@link Seeker} to lazily read new {@link LabelScanValue} from.
+     * {@link Seeker} to lazily read new {@link TokenScanValue} from.
      */
-    protected final Seeker<LabelScanKey,LabelScanValue> cursor;
+    protected final Seeker<TokenScanKey,TokenScanValue> cursor;
 
     /**
-     * Current base nodeId, i.e. the {@link LabelScanKey#idRange} of the current {@link LabelScanKey}.
+     * Current base nodeId, i.e. the {@link TokenScanKey#idRange} of the current {@link TokenScanKey}.
      */
     long baseNodeId;
     /**
-     * Bit set of the current {@link LabelScanValue}.
+     * Bit set of the current {@link TokenScanValue}.
      */
     protected long bits;
     /**
-     * LabelId of previously retrieved {@link LabelScanKey}, for debugging and asserting purposes.
+     * LabelId of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
      */
     private int prevLabel = -1;
     /**
-     * IdRange of previously retrieved {@link LabelScanKey}, for debugging and asserting purposes.
+     * IdRange of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
      */
     private long prevRange = -1;
     /**
@@ -55,12 +55,12 @@ abstract class LabelScanValueIndexAccessor
      */
     protected boolean closed;
 
-    LabelScanValueIndexAccessor( Seeker<LabelScanKey,LabelScanValue> cursor )
+    LabelScanValueIndexAccessor( Seeker<TokenScanKey,TokenScanValue> cursor )
     {
         this.cursor = cursor;
     }
 
-    boolean keysInOrder( LabelScanKey key )
+    boolean keysInOrder( TokenScanKey key )
     {
         assert key.labelId >= prevLabel : "Expected to get ordered results, got " + key +
                 " where previous label was " + prevLabel;

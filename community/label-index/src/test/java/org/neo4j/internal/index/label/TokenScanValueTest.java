@@ -26,17 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @Execution( CONCURRENT )
-class LabelScanValueTest
+class TokenScanValueTest
 {
     @Test
     void shouldAddBits()
     {
         // GIVEN
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         value.bits = 0b0000__1000_0100__0010_0001;
 
         // WHEN
-        LabelScanValue other = new LabelScanValue();
+        TokenScanValue other = new TokenScanValue();
         other.bits = 0b1100__0100_0100__0100_0100;
         value.add( other );
 
@@ -48,11 +48,11 @@ class LabelScanValueTest
     void shouldRemoveBits()
     {
         // GIVEN
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         value.bits = 0b1100__1000_0100__0010_0001;
 
         // WHEN
-        LabelScanValue other = new LabelScanValue();
+        TokenScanValue other = new TokenScanValue();
         other.bits = 0b1000__0100_0100__0100_0100;
         value.remove( other );
 

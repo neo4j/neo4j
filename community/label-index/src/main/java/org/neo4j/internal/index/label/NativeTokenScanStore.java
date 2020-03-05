@@ -53,7 +53,7 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
@@ -142,7 +142,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
      * The index which backs this token scan store. Instantiated in {@link #init()} and considered
      * started after call to {@link #start()}.
      */
-    private GBPTree<LabelScanKey,LabelScanValue> index;
+    private GBPTree<TokenScanKey,TokenScanValue> index;
 
     /**
      * Set during {@link #init()} if {@link #start()} will need to rebuild the whole token scan store from
@@ -295,13 +295,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges( long fromEntityId, long toEntityId )
     {
-        IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider = tokenId ->
+        IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {
             try
             {
                 return index.seek(
-                        new LabelScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
-                        new LabelScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), NULL );
+                        new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
+                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), NULL );
             }
             catch ( IOException e )
             {
@@ -310,9 +310,9 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         };
 
         int highestTokenId = -1;
-        try ( Seeker<LabelScanKey,LabelScanValue> cursor = index.seek(
-                new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new LabelScanKey().set( 0, -1 ), NULL ) )
+        try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
+                new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
+                new TokenScanKey().set( 0, -1 ), NULL ) )
         {
             if ( cursor.next() )
             {
@@ -401,7 +401,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         try
         {
-            index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), 0, monitor, readRebuilding,
+            index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), 0, monitor, readRebuilding,
                     needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL, immutable.empty() );
             return isRebuilding.getValue();
         }
@@ -475,9 +475,9 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     @Override
     public boolean isEmpty() throws IOException
     {
-        try ( Seeker<LabelScanKey,LabelScanValue> cursor = index.seek(
-                new LabelScanKey( 0, 0 ),
-                new LabelScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), NULL ) )
+        try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
+                new TokenScanKey( 0, 0 ),
+                new TokenScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), NULL ) )
         {
             return !cursor.next();
         }
@@ -517,7 +517,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
         return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<LabelScanKey> visitor, PageCursorTracer cursorTracer )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, PageCursorTracer cursorTracer )
     {
         try
         {

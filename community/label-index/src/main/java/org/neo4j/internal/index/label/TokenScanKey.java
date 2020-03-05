@@ -20,20 +20,20 @@
 package org.neo4j.internal.index.label;
 
 /**
- * Keys in {@link LabelScanLayout}, each key consists of {@code labelId} and {@code nodeIdRange}, i.e.
- * {@code nodeId/rangeSize}, where each range is a small bit set of size {@link LabelScanValue#RANGE_SIZE}.
+ * Keys in {@link TokenScanLayout}, each key consists of {@code labelId} and {@code nodeIdRange}, i.e.
+ * {@code nodeId/rangeSize}, where each range is a small bit set of size {@link TokenScanValue#RANGE_SIZE}.
  */
-class LabelScanKey
+class TokenScanKey
 {
     int labelId;
     long idRange;
 
-    LabelScanKey()
+    TokenScanKey()
     {
         clear();
     }
 
-    LabelScanKey( int labelId, long idRange )
+    TokenScanKey( int labelId, long idRange )
     {
         set( labelId, idRange );
     }
@@ -45,7 +45,7 @@ class LabelScanKey
      * @param idRange node idRange for this key.
      * @return this key instance, for convenience.
      */
-    final LabelScanKey set( int labelId, long idRange )
+    final TokenScanKey set( int labelId, long idRange )
     {
         this.labelId = labelId;
         this.idRange = idRange;

@@ -51,8 +51,8 @@ class NativeTokenScanReaderTest
     void shouldFindMultipleNodesInEachRange() throws Exception
     {
         // GIVEN
-        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, true, false );
         when( cursor.key() ).thenReturn(
                 key( 0 ),
@@ -63,7 +63,7 @@ class NativeTokenScanReaderTest
                 value( 0b0000_0010__0000_1000L ),
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) )
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
                 .thenReturn( cursor );
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
@@ -86,12 +86,12 @@ class NativeTokenScanReaderTest
     void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
     {
         // GIVEN
-        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        Seeker<LabelScanKey,LabelScanValue> cursor1 = mock( Seeker.class );
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor1 = mock( Seeker.class );
         when( cursor1.next() ).thenReturn( false );
-        Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
@@ -122,12 +122,12 @@ class NativeTokenScanReaderTest
     void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
     {
         // GIVEN
-        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        Seeker<LabelScanKey,LabelScanValue> cursor1 = mock( Seeker.class );
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor1 = mock( Seeker.class );
         when( cursor1.next() ).thenReturn( false );
-        Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
@@ -150,8 +150,8 @@ class NativeTokenScanReaderTest
     void shouldStartFromGivenId() throws IOException
     {
         // given
-        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+        Seeker<TokenScanKey,TokenScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, false );
         when( cursor.key() ).thenReturn(
                 key( 1 ),
@@ -162,11 +162,11 @@ class NativeTokenScanReaderTest
                 //                     ^--fromId, i.e. ids after this id should be visible
                 value( 0b0010_0000__1010_0001L ),
                 null );
-        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ), eq( NULL ) ) )
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
                 .thenReturn( cursor );
 
         // when
-        long fromId = LabelScanValue.RANGE_SIZE + 3;
+        long fromId = TokenScanValue.RANGE_SIZE + 3;
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, new int[]{LABEL_ID}, NULL ) )
         {
@@ -181,16 +181,16 @@ class NativeTokenScanReaderTest
         }
     }
 
-    private static LabelScanValue value( long bits )
+    private static TokenScanValue value( long bits )
     {
-        LabelScanValue value = new LabelScanValue();
+        TokenScanValue value = new TokenScanValue();
         value.bits = bits;
         return value;
     }
 
-    private static LabelScanKey key( long idRange )
+    private static TokenScanKey key( long idRange )
     {
-        return new LabelScanKey( LABEL_ID, idRange );
+        return new TokenScanKey( LABEL_ID, idRange );
     }
 
     private static void exhaust( LongIterator iterator )

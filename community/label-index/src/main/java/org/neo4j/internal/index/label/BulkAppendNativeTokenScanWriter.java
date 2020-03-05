@@ -43,11 +43,11 @@ import static org.neo4j.util.Preconditions.checkArgument;
  */
 class BulkAppendNativeTokenScanWriter implements TokenScanWriter
 {
-    private final Writer<LabelScanKey,LabelScanValue> writer;
-    private final ValueMerger<LabelScanKey,LabelScanValue> merger;
-    private MutableIntObjectMap<Pair<LabelScanKey,LabelScanValue>> ranges = IntObjectMaps.mutable.empty();
+    private final Writer<TokenScanKey,TokenScanValue> writer;
+    private final ValueMerger<TokenScanKey,TokenScanValue> merger;
+    private MutableIntObjectMap<Pair<TokenScanKey,TokenScanValue>> ranges = IntObjectMaps.mutable.empty();
 
-    BulkAppendNativeTokenScanWriter( Writer<LabelScanKey,LabelScanValue> writer )
+    BulkAppendNativeTokenScanWriter( Writer<TokenScanKey,TokenScanValue> writer )
     {
         this.writer = writer;
         this.merger = new AddMerger( NativeTokenScanWriter.EMPTY );
@@ -64,8 +64,8 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
             int intTokenId = toIntExact( tokenId );
             checkArgument( intTokenId > previousTokenId, "Detected unsorted labels in %s", update );
             previousTokenId = intTokenId;
-            Pair<LabelScanKey,LabelScanValue> range =
-                    ranges.getIfAbsentPutWithKey( intTokenId, id -> Pair.of( new LabelScanKey( id, idRange ), new LabelScanValue() ) );
+            Pair<TokenScanKey,TokenScanValue> range =
+                    ranges.getIfAbsentPutWithKey( intTokenId, id -> Pair.of( new TokenScanKey( id, idRange ), new TokenScanValue() ) );
             if ( range.getKey().idRange != idRange )
             {
                 if ( range.getKey().idRange != -1 )
@@ -84,7 +84,7 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
     {
         try
         {
-            for ( Pair<LabelScanKey,LabelScanValue> range : ranges )
+            for ( Pair<TokenScanKey,TokenScanValue> range : ranges )
             {
                 if ( range != null )
                 {

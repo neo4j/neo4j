@@ -36,11 +36,11 @@ import org.neo4j.io.pagecache.PageCursor;
  * </li>
  * </ul>
  */
-public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
+public class TokenScanLayout extends Layout.Adapter<TokenScanKey,TokenScanValue>
 {
-    public LabelScanLayout()
+    public TokenScanLayout()
     {
-        super( true, Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE ), 0, 1 );
+        super( true, Layout.namedIdentifier( IDENTIFIER_NAME, TokenScanValue.RANGE_SIZE ), 0, 1 );
     }
 
     /**
@@ -49,28 +49,28 @@ public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     private static final String IDENTIFIER_NAME = "LSL";
 
     /**
-     * Size of each {@link LabelScanKey}.
+     * Size of each {@link TokenScanKey}.
      */
     private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + 6/*idRange*/;
 
     /**
-     * Compares {@link LabelScanKey}, giving ascending order of {@code labelId} then {@code nodeIdRange}.
+     * Compares {@link TokenScanKey}, giving ascending order of {@code labelId} then {@code nodeIdRange}.
      */
     @Override
-    public int compare( LabelScanKey o1, LabelScanKey o2 )
+    public int compare( TokenScanKey o1, TokenScanKey o2 )
     {
         int labelComparison = Integer.compare( o1.labelId, o2.labelId );
         return labelComparison != 0 ? labelComparison : Long.compare( o1.idRange, o2.idRange );
     }
 
     @Override
-    public LabelScanKey newKey()
+    public TokenScanKey newKey()
     {
-        return new LabelScanKey();
+        return new TokenScanKey();
     }
 
     @Override
-    public LabelScanKey copyKey( LabelScanKey key, LabelScanKey into )
+    public TokenScanKey copyKey( TokenScanKey key, TokenScanKey into )
     {
         into.labelId = key.labelId;
         into.idRange = key.idRange;
@@ -78,25 +78,25 @@ public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public LabelScanValue newValue()
+    public TokenScanValue newValue()
     {
-        return new LabelScanValue();
+        return new TokenScanValue();
     }
 
     @Override
-    public int keySize( LabelScanKey key )
+    public int keySize( TokenScanKey key )
     {
         return KEY_SIZE;
     }
 
     @Override
-    public int valueSize( LabelScanValue value )
+    public int valueSize( TokenScanValue value )
     {
-        return LabelScanValue.RANGE_SIZE_BYTES;
+        return TokenScanValue.RANGE_SIZE_BYTES;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, LabelScanKey key )
+    public void writeKey( PageCursor cursor, TokenScanKey key )
     {
         cursor.putInt( key.labelId );
         put6ByteLong( cursor, key.idRange );
@@ -109,13 +109,13 @@ public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void writeValue( PageCursor cursor, LabelScanValue value )
+    public void writeValue( PageCursor cursor, TokenScanValue value )
     {
         cursor.putLong( value.bits );
     }
 
     @Override
-    public void readKey( PageCursor cursor, LabelScanKey into, int keySize )
+    public void readKey( PageCursor cursor, TokenScanKey into, int keySize )
     {
         into.labelId = cursor.getInt();
         into.idRange = get6ByteLong( cursor );
@@ -129,19 +129,19 @@ public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void readValue( PageCursor cursor, LabelScanValue into, int valueSize )
+    public void readValue( PageCursor cursor, TokenScanValue into, int valueSize )
     {
         into.bits = cursor.getLong();
     }
 
     @Override
-    public void initializeAsLowest( LabelScanKey key )
+    public void initializeAsLowest( TokenScanKey key )
     {
         key.set( Integer.MIN_VALUE, Long.MIN_VALUE );
     }
 
     @Override
-    public void initializeAsHighest( LabelScanKey key )
+    public void initializeAsHighest( TokenScanKey key )
     {
         key.set( Integer.MAX_VALUE, Long.MAX_VALUE );
     }
