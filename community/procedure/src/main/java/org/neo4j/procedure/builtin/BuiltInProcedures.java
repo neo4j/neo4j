@@ -19,8 +19,13 @@
  */
 package org.neo4j.procedure.builtin;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -32,11 +37,14 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -64,8 +72,12 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.string.HexString;
 import org.neo4j.values.storable.Value;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
@@ -73,6 +85,8 @@ import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
 import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
+import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
@@ -94,6 +108,17 @@ public class BuiltInProcedures
 
     @Context
     public ProcedureCallContext callContext;
+
+    @SystemProcedure
+    @Description( "Provides information regarding the database." )
+    @Procedure( name = "db.info", mode = READ )
+    public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException
+    {
+        var storeId = graphDatabaseAPI.storeId();
+        var creationTime = formatTime( storeId.getCreationTime(), getConfiguredTimeZone() );
+        var id = decodeId( storeId );
+        return Stream.of( new DatabaseInfo( id, graphDatabaseAPI.databaseName(), creationTime ) );
+    }
 
     @SystemProcedure
     @Description( "List all available labels in the database." )
@@ -488,6 +513,12 @@ public class BuiltInProcedures
         return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, indexProviderDescriptor, config );
     }
 
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
     private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
@@ -526,6 +557,20 @@ public class BuiltInProcedures
         private PropertyKeyResult( String propertyKey )
         {
             this.propertyKey = propertyKey;
+        }
+    }
+
+    public static class DatabaseInfo
+    {
+        public final String id;
+        public final String name;
+        public final String creationDate;
+
+        public DatabaseInfo( String id, String name, String creationDate )
+        {
+            this.id = id;
+            this.name = name;
+            this.creationDate = creationDate;
         }
     }
 

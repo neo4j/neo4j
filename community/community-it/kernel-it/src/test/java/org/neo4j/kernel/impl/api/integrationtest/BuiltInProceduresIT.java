@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -62,14 +64,22 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItemInArray;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -92,10 +102,36 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" )} ) ) );
+    }
+
+    @Test
+    void databaseInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbInfoRow = procedureResult.get( 0 );
+        assertThat( dbInfoRow, hasItemInArray( stringValue( db.databaseName() ) ) );
+        assertThat( dbInfoRow, arrayWithSize( 3 ) );
+    }
+
+    @Test
+    void dbmsInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbmsInfoRow = procedureResult.get( 0 );
+        assertThat( dbmsInfoRow, hasItemInArray( stringValue( SYSTEM_DATABASE_NAME ) ) );
+        assertThat( dbmsInfoRow, arrayWithSize( 3 ) );
     }
 
     @Test
@@ -132,7 +168,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // When
         constraintLatch.await();
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], EMPTY );
 
         // Then
         try
@@ -157,7 +193,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0], EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyProp" )} ) ) );
@@ -177,7 +213,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" )} ) ) );
@@ -199,7 +235,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "Neo4j Kernel" ),
@@ -240,7 +276,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        EMPTY );
 
         Set<AnyValue[]> result = new HashSet<>();
         while ( stream.hasNext() )
@@ -370,7 +406,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        EMPTY );
 
         Set<Object[]> result = new HashSet<>();
         while ( stream.hasNext() )
