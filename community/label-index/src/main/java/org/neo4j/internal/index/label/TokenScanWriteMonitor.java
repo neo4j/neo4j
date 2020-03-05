@@ -119,13 +119,13 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     }
 
     @Override
-    public void range( long range, int labelId )
+    public void range( long range, int tokenId )
     {
         try
         {
             channel.put( TYPE_RANGE );
             channel.putLong( range );
-            channel.putInt( labelId );
+            channel.putInt( tokenId );
             position.add( 1 + 8 + 4 );
         }
         catch ( IOException e )
@@ -308,7 +308,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     }
 
     /**
-     * Dumps a label scan write log as plain text. Arguments:
+     * Dumps a token scan write log as plain text. Arguments:
      * <ul>
      *     <li>{@value #ARG_TOFILE}: dumps to a .txt file next to the writelog</li>
      *     <li>{@value #ARG_TXFILTER}: filter for which tx ids to include in the dump.
@@ -322,55 +322,55 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
      * How to interpret the dump, e.g:
      * <pre>
      * === ..../neostore.labelscanstore.db.writelog ===
-     * [1,1]+tx:6,node:0,label:0
-     * [1,1]+tx:3,node:20,label:0
-     * [1,1]+tx:4,node:40,label:0
-     * [1,1]+tx:5,node:60,label:0
-     * [2,1]+tx:8,node:80,label:1
-     * [3,1]+tx:10,node:41,label:1
-     * [4,1]+tx:9,node:21,label:1
-     * [4,1]+tx:11,node:61,label:1
-     * [4,1]+range:0,labelId:1
+     * [1,1]+tx:6,entity:0,token:0
+     * [1,1]+tx:3,entity:20,token:0
+     * [1,1]+tx:4,entity:40,token:0
+     * [1,1]+tx:5,entity:60,token:0
+     * [2,1]+tx:8,entity:80,token:1
+     * [3,1]+tx:10,entity:41,token:1
+     * [4,1]+tx:9,entity:21,token:1
+     * [4,1]+tx:11,entity:61,token:1
+     * [4,1]+range:0,tokenId:1
      *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000]
      *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000]
-     * [5,1]+tx:12,node:81,label:1
-     * [5,1]+range:1,labelId:1
+     * [5,1]+tx:12,entity:81,token:1
+     * [5,1]+range:1,tokenId:1
      *  [00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000]
      *  [00000000 00000000 00000000 00000000 00000000 00000010 00000000 00000000]
-     * [6,1]+tx:13,node:1,label:1
-     * [6,1]+range:0,labelId:1
+     * [6,1]+tx:13,entity:1,token:1
+     * [6,1]+range:0,tokenId:1
      *  [00100000 00000000 00000010 00000000 00000000 00100000 00000000 00000000]
      *  [00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000010]
-     * [7,1]+tx:14,node:62,label:1
-     * [7,1]+range:0,labelId:1
+     * [7,1]+tx:14,entity:62,token:1
+     * [7,1]+range:0,tokenId:1
      * </pre>
      * How to interpret a message like:
      * <pre>
-     * [1,1]+tx:6,node:0,label:0
-     *  ▲ ▲ ▲   ▲      ▲       ▲
-     *  │ │ │   │      │       └──── label id of the change
-     *  │ │ │   │      └──────────── node id of the change
+     * [1,1]+tx:6,entity:0,token:0
+     *  ▲ ▲ ▲   ▲        ▲       ▲
+     *  │ │ │   │        │       └── token id of the change
+     *  │ │ │   │        └────────── entity id of the change
      *  │ │ │   └─────────────────── id of transaction making this particular change
      *  │ │ └─────────────────────── addition, a minus means removal
      *  │ └───────────────────────── flush, local to each write session, incremented when a batch of changes is flushed internally in a writer session
-     *  └─────────────────────────── write session, incremented for each {@link LabelScanStore#newWriter()}
+     *  └─────────────────────────── write session, incremented for each {@link TokenScanStore#newWriter()}
      * </pre>
      * How to interpret a message like:
      * <pre>
-     * [4,1]+range:0,labelId:1
+     * [4,1]+range:0,tokenId:1
      *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000]
      *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000]
      * </pre>
      * First the first line (parts within bracket same as above):
      * <pre>
-     * [4,1]+range:0,labelId:1
+     * [4,1]+range:0,tokenId:1
      *             ▲         ▲
-     *             │         └── label id of the changed bitset to apply
+     *             │         └── token id of the changed bitset to apply
      *             └──────────── range, i.e. which bitset to apply this change for
      * </pre>
      * Then the bitsets are printed
      * <pre>
-     *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000] : state of the bitset for this label id before the change
+     *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000] : state of the bitset for this token id before the change
      *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000] : bits that applied to this bitset
      *                                                                              for addition the 1-bits denotes bits to be added
      *                                                                              for removal the 1-bits denotes bits to be removed
@@ -423,7 +423,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ) ) )
         {
             long range = -1;
-            int labelId = -1;
+            int tokenId = -1;
             long flush = 0;
             //noinspection InfiniteLoopStatement
             while ( true )
@@ -433,7 +433,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
                 {
                 case TYPE_RANGE:
                     range = channel.getLong();
-                    labelId = channel.getInt();
+                    tokenId = channel.getInt();
                     if ( txFilter != null )
                     {
                         txFilter.clear();
@@ -441,11 +441,11 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
                     break;
                 case TYPE_PREPARE_ADD:
                 case TYPE_PREPARE_REMOVE:
-                    dumpPrepare( dumper, type, channel, range, labelId, txFilter, session, flush );
+                    dumpPrepare( dumper, type, channel, range, tokenId, txFilter, session, flush );
                     break;
                 case TYPE_MERGE_ADD:
                 case TYPE_MERGE_REMOVE:
-                    dumpMerge( dumper, type, channel, range, labelId, txFilter, session, flush );
+                    dumpMerge( dumper, type, channel, range, tokenId, txFilter, session, flush );
                     break;
                 case TYPE_FLUSH:
                     flush++;
@@ -467,27 +467,27 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         return session;
     }
 
-    private static void dumpMerge( Dumper dumper, byte type, ReadableChannel channel, long range, int labelId, TxFilter txFilter,
+    private static void dumpMerge( Dumper dumper, byte type, ReadableChannel channel, long range, int tokenId, TxFilter txFilter,
             long session, long flush ) throws IOException
     {
         long existingBits = channel.getLong();
         long newBits = channel.getLong();
         if ( txFilter == null || txFilter.contains() )
         {
-            dumper.merge( type == TYPE_MERGE_ADD, session, flush, range, labelId, existingBits, newBits );
+            dumper.merge( type == TYPE_MERGE_ADD, session, flush, range, tokenId, existingBits, newBits );
         }
     }
 
-    private static void dumpPrepare( Dumper dumper, byte type, ReadableChannel channel, long range, int labelId, TxFilter txFilter, long session, long flush )
+    private static void dumpPrepare( Dumper dumper, byte type, ReadableChannel channel, long range, int tokenId, TxFilter txFilter, long session, long flush )
             throws IOException
     {
         long txId = channel.getLong();
         int offset = channel.get();
-        long nodeId = range * 64 + offset;
+        long entityId = range * 64 + offset;
         if ( txFilter == null || txFilter.contains( txId ) )
         {
             // I.e. if the txId this update comes from is within the txFilter
-            dumper.prepare( type == TYPE_PREPARE_ADD, session, flush, txId, nodeId, labelId );
+            dumper.prepare( type == TYPE_PREPARE_ADD, session, flush, txId, entityId, tokenId );
         }
     }
 
@@ -557,9 +557,9 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     {
         void file( File file );
 
-        void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId );
+        void prepare( boolean add, long session, long flush, long txId, long entityId, int tokenId );
 
-        void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits );
+        void merge( boolean add, long session, long flush, long range, int tokenId, long existingBits, long newBits );
     }
 
     public static class PrintStreamDumper implements Dumper
@@ -580,15 +580,15 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
 
         @Override
-        public void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId )
+        public void prepare( boolean add, long session, long flush, long txId, long entityId, int tokenId )
         {
-            out.println( format( "[%d,%d]%stx:%d,node:%d,label:%d", session, flush, add ? '+' : '-', txId, nodeId, labelId ) );
+            out.println( format( "[%d,%d]%stx:%d,entity:%d,token:%d", session, flush, add ? '+' : '-', txId, entityId, tokenId ) );
         }
 
         @Override
-        public void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits )
+        public void merge( boolean add, long session, long flush, long range, int tokenId, long existingBits, long newBits )
         {
-            out.println( format( "[%d,%d]%srange:%d,labelId:%d%n [%s]%n [%s]", session, flush, add ? '+' : '-', range, labelId,
+            out.println( format( "[%d,%d]%srange:%d,tokenId:%d%n [%s]%n [%s]", session, flush, add ? '+' : '-', range, tokenId,
                     bits( existingBits, bitsAsChars ), bits( newBits, bitsAsChars ) ) );
         }
 
