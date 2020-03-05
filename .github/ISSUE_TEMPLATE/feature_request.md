@@ -10,7 +10,7 @@ assignees: ''
 ## Guidelines
 
 Please note that GitHub issues are only meant for bug reports/feature requests.
-If you have questions on how to use Neo4j, please ask on [StackOverflow](http://stackoverflow.com/questions/tagged/neo4j) instead of creating an issue here.
+If you have questions on how to use Neo4j, please ask on [StackOverflow](https://stackoverflow.com/questions/tagged/neo4j) instead of creating an issue here.
 
 ## Feature request template
 
