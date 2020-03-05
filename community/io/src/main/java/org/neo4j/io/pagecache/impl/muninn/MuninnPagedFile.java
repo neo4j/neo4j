@@ -111,12 +111,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
-     * @param noChannelStriping when true, overrides channel striping behaviour,
-     * setting it to a single channel per mapped file.
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean noChannelStriping, boolean useDirectIo )
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo )
             throws IOException
     {
         super( pageCache.pages );
@@ -143,7 +141,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists, noChannelStriping, useDirectIo );
+        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists, useDirectIo );
         if ( truncateExisting )
         {
             swapper.truncate();

@@ -49,8 +49,6 @@ public interface PageSwapperFactory
      * the responsibility of informing the PagedFile via this callback.
      * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an
      * exception.
-     * @param noChannelStriping When true, overrides channel striping behaviour,
-     * setting it to a single channel per mapped file.
      * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
      * Option supported only on Linux with certain limitations.
      * @return A working PageSwapper instance for the given file.
@@ -63,7 +61,6 @@ public interface PageSwapperFactory
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
-            boolean noChannelStriping,
             boolean useDirectIO ) throws IOException;
 
     /**

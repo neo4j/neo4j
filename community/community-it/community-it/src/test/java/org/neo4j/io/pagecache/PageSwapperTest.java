@@ -1164,11 +1164,20 @@ public abstract class PageSwapperTest
             File file,
             int filePageSize,
             PageEvictionCallback callback,
+            boolean createIfNotExist ) throws IOException
+    {
+        return createSwapper( factory, file, filePageSize, callback, createIfNotExist, false );
+    }
+
+    protected PageSwapper createSwapper(
+            PageSwapperFactory factory,
+            File file,
+            int filePageSize,
+            PageEvictionCallback callback,
             boolean createIfNotExist,
-            boolean noChannelStriping,
             boolean useDirectIO ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( file, filePageSize, callback, createIfNotExist, noChannelStriping, useDirectIO );
+        PageSwapper swapper = factory.createPageSwapper( file, filePageSize, callback, createIfNotExist, useDirectIO );
         openedSwappers.add( swapper );
         return swapper;
     }
@@ -1250,24 +1259,18 @@ public abstract class PageSwapperTest
 
     private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, boolean useDirectIO ) throws IOException
     {
-        return createSwapper( factory, file, cachePageSize(), NO_CALLBACK, true, false, useDirectIO );
+        return createSwapper( factory, file, cachePageSize(), NO_CALLBACK, true, useDirectIO );
     }
 
     private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize, boolean useDirectIO ) throws IOException
     {
-        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false, useDirectIO );
+        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, useDirectIO );
     }
 
     private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize )
             throws IOException
     {
-        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false, false );
-    }
-
-    public PageSwapper createSwapper( PageSwapperFactory factory, File file, int filePageSize, PageEvictionCallback callback, boolean createIfNotExist,
-            boolean noChannelStriping ) throws IOException
-    {
-        return createSwapper( factory, file, filePageSize, callback, createIfNotExist, noChannelStriping, false );
+        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false );
     }
 
     private File file( String filename ) throws IOException

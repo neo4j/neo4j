@@ -48,7 +48,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
-            boolean noChannelStriping,
             boolean useDirectIO ) throws IOException
     {
         if ( !createIfNotExist && !fs.fileExists( file ) )
