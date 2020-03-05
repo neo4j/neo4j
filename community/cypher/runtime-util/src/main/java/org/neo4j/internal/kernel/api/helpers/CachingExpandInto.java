@@ -68,14 +68,12 @@ public class CachingExpandInto
 
     private static final int NOT_DENSE_DEGREE = -1;
 
-    private RelationshipCache relationshipCache = new RelationshipCache();
+    private final RelationshipCache relationshipCache;
     private long fromNode = -1L;
     private long toNode = -1L;
 
     private final Read read;
     private final Direction direction;
-    private final QueryMemoryTracker memoryTracker;
-    private final int operatorId;
 
     //NOTE: this constructor is here for legacy compiled runtime where we don't track memory
     //when we remove the legacy_compiled this should go as well.
@@ -88,9 +86,8 @@ public class CachingExpandInto
     public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )
     {
         this.read = read;
-        this.memoryTracker = memoryTracker;
         this.direction = direction;
-        this.operatorId = operatorId;
+        this.relationshipCache = new RelationshipCache( memoryTracker, operatorId );
     }
 
     /**
@@ -522,15 +519,12 @@ public class CachingExpandInto
                 if ( allRelationships.otherNodeReference() == otherNode )
                 {
                     connections.add( relationship( allRelationships ) );
-                    memoryTracker.allocated( RELATIONSHIP_SIZE, operatorId );
+
                     return true;
                 }
             }
 
-            if ( relationshipCache.add( fromNode, toNode, direction, connections ) )
-            {
-                memoryTracker.allocated( 2 * Long.BYTES, operatorId );
-            }
+            relationshipCache.add( fromNode, toNode, direction, connections );
             done();
             close();
             return false;
@@ -579,27 +573,30 @@ public class CachingExpandInto
 
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
         private final int capacity;
+        private final QueryMemoryTracker memoryTracker;
+        private final int operatorId;
 
-        RelationshipCache()
+        RelationshipCache( QueryMemoryTracker memoryTracker, int operatorId )
         {
-            this( DEFAULT_CAPACITY );
+            this( DEFAULT_CAPACITY, memoryTracker, operatorId );
         }
 
-        RelationshipCache( int capacity )
+        RelationshipCache( int capacity, QueryMemoryTracker memoryTracker, int operatorId )
         {
             this.capacity = capacity;
+            this.memoryTracker = memoryTracker;
+            this.operatorId = operatorId;
         }
 
-        public boolean add( long start, long end, Direction direction, List<Relationship> relationships )
+        public void add( long start, long end, Direction direction, List<Relationship> relationships )
         {
             if ( map.size() < capacity )
             {
                 map.put( key( start, end, direction ), relationships );
-                return true;
-            }
-            else
-            {
-                return false;
+                //two longs for the key
+                memoryTracker.allocated( 2 * Long.BYTES, operatorId );
+                //relationship.size * RELATIONSHIP_SIZE for the value
+                memoryTracker.allocated( relationships.size() * RELATIONSHIP_SIZE, operatorId );
             }
         }
 
@@ -668,7 +665,7 @@ public class CachingExpandInto
         }
     }
 
-    static Relationship relationship( RelationshipSelectionCursor allRelationships )
+    private static Relationship relationship( RelationshipSelectionCursor allRelationships )
     {
         return new Relationship(
                 allRelationships.relationshipReference(),
