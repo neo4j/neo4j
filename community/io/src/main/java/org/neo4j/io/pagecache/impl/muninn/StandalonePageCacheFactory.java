@@ -44,15 +44,20 @@ public final class StandalonePageCacheFactory
     {
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
-        return createPageCache( factory, jobScheduler );
+        return createPageCache( factory, jobScheduler, cacheTracer );
     }
 
     public static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler )
     {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        return createPageCache( factory, jobScheduler, cacheTracer );
+    }
+
+    private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
+    {
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock() );

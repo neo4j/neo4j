@@ -66,6 +66,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
@@ -812,10 +813,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             File... targetFiles ) throws Exception
     {
         List<File> treeFiles = new ArrayList<>();
+        final PageCacheTracer cacheTracer = NULL;
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
-              PageCache pageCache = createPageCache( fs, jobScheduler ) )
+              PageCache pageCache = createPageCache( fs, jobScheduler, cacheTracer ) )
         {
-            GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, layoutBootstrapper, readOnly, NULL );
+            GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, layoutBootstrapper, readOnly, cacheTracer );
             for ( File file : targetFiles )
             {
                 GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file );

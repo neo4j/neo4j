@@ -27,6 +27,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.NativeIndexHeaderWriter;
 import org.neo4j.kernel.impl.index.schema.NativeIndexes;
@@ -49,7 +50,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
     @Override
     protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException
     {
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, JobSchedulerFactory.createInitialisedScheduler() );
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, JobSchedulerFactory.createInitialisedScheduler(), PageCacheTracer.NULL );
         int filesChanged = setInitialState( fs, indexDirectoryStructure.rootDirectory(), pageCache );
         assertThat( filesChanged ).as( "couldn't find any index to set state on" ).isGreaterThanOrEqualTo( 1 );
     }

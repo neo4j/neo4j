@@ -66,13 +66,14 @@ public class StoreInfoCommand extends AbstractCommand
         Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
 
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
+        var cacheTracer = PageCacheTracer.NULL;
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout );
               JobScheduler jobScheduler = createInitialisedScheduler();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler ) )
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler, cacheTracer ) )
         {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( ctx.fs(), databaseLayout, Config.defaults(), pageCache,
-                    NullLogService.getInstance(), PageCacheTracer.NULL );
+                    NullLogService.getInstance(), cacheTracer );
             String storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
                     .orElseThrow( () -> new CommandFailedException( format( "Could not find version metadata in store '%s'", storePath ) ) );
 

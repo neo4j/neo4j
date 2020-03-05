@@ -42,6 +42,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -88,7 +89,7 @@ class DatabaseStartupTest
         // mess up the version in the metadatastore
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-              PageCache pageCache = createPageCache( fileSystem, scheduler ) )
+              PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), NULL );
@@ -131,7 +132,7 @@ class DatabaseStartupTest
         String badStoreVersion = "bad";
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-              PageCache pageCache = createPageCache( fileSystem, scheduler ) )
+              PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
                     MetaDataStore.versionStringToLong( badStoreVersion ), NULL );
@@ -173,7 +174,7 @@ class DatabaseStartupTest
         // Change store id component
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache = createPageCache( fileSystem, scheduler ) )
+                PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             long newTime = System.currentTimeMillis() + 1;
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, NULL );

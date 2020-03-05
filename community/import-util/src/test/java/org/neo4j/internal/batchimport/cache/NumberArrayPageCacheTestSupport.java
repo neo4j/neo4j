@@ -26,6 +26,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -37,7 +38,7 @@ public class NumberArrayPageCacheTestSupport
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
         File dir = testDirectory.prepareDirectoryForTest( "test" );
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler );
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler, PageCacheTracer.NULL );
         return new Fixture( pageCache, fileSystem, dir, scheduler );
     }
 

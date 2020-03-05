@@ -510,14 +510,16 @@ class FulltextIndexProviderTest
         // Modify the full-text index such that it has an analyzer configured that does not exist.
         controller.restartDbms( builder ->
         {
+            var cacheTracer = NULL;
             FileSystemAbstraction fs = builder.getFileSystem();
             DatabaseLayout databaseLayout = Neo4jLayout.of( builder.getHomeDirectory() ).databaseLayout( DEFAULT_DATABASE_NAME );
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore() );
             try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                  PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler ) )
+                  PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, cacheTracer ) )
             {
 
-                StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(), NULL );
+                StoreFactory factory =
+                        new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(), cacheTracer );
                 var cursorTracer = PageCursorTracer.NULL;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
                 {
