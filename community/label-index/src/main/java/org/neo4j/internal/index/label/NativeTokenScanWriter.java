@@ -48,7 +48,7 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
  * This conversion is done like so mostly to reduce garbage.
  *
- * @see PhysicalToLogicalLabelChanges
+ * @see PhysicalToLogicalTokenChanges
  */
 class NativeTokenScanWriter implements TokenScanWriter
 {
@@ -197,7 +197,7 @@ class NativeTokenScanWriter implements TokenScanWriter
         }
 
         pendingUpdates[pendingUpdatesCursor++] = update;
-        PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
+        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
         checkNextTokenId( update.getLabelsBefore() );
         checkNextTokenId( update.getLabelsAfter() );
     }

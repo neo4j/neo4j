@@ -21,9 +21,9 @@ package org.neo4j.internal.index.label;
 
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
-class PhysicalToLogicalLabelChanges
+class PhysicalToLogicalTokenChanges
 {
-    private PhysicalToLogicalLabelChanges()
+    private PhysicalToLogicalTokenChanges()
     {
     }
 
@@ -86,11 +86,11 @@ class PhysicalToLogicalLabelChanges
         return id != -1 && (otherId == -1 || id < otherId);
     }
 
-    private static void terminateWithMinusOneIfNeeded( long[] labelIds, int actualLength )
+    private static void terminateWithMinusOneIfNeeded( long[] tokenIds, int actualLength )
     {
-        if ( actualLength < labelIds.length )
+        if ( actualLength < tokenIds.length )
         {
-            labelIds[actualLength] = -1;
+            tokenIds[actualLength] = -1;
         }
     }
 }
