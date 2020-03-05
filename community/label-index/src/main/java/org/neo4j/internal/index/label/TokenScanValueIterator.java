@@ -39,7 +39,7 @@ import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
  * The provided {@link Seeker} is managed externally, e.g. {@link NativeTokenScanReader},
  * this because implemented interface lacks close-method.
  */
-class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
+class TokenScanValueIterator extends TokenScanValueIndexAccessor implements PrimitiveLongResourceIterator
 {
     private long fromId;
     private boolean hasNextDecided;
@@ -50,7 +50,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
      * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets, and the fromId may
      * be somewhere inside a bit-set range.
      */
-    LabelScanValueIterator( Seeker<TokenScanKey,TokenScanValue> cursor, long fromId )
+    TokenScanValueIterator( Seeker<TokenScanKey,TokenScanValue> cursor, long fromId )
     {
         super( cursor );
         this.fromId = fromId;

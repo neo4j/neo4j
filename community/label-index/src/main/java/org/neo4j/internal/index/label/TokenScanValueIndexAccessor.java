@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 /**
  * Base class for iterator and index-progressor of label scans.
  */
-abstract class LabelScanValueIndexAccessor
+abstract class TokenScanValueIndexAccessor
 {
     /**
      * {@link Seeker} to lazily read new {@link TokenScanValue} from.
@@ -55,7 +55,7 @@ abstract class LabelScanValueIndexAccessor
      */
     protected boolean closed;
 
-    LabelScanValueIndexAccessor( Seeker<TokenScanKey,TokenScanValue> cursor )
+    TokenScanValueIndexAccessor( Seeker<TokenScanKey,TokenScanValue> cursor )
     {
         this.cursor = cursor;
     }

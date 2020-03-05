@@ -66,7 +66,7 @@ class NativeTokenScanReader implements TokenScanReader
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIterator( cursor, TokenScanReader.NO_ID );
+        return new TokenScanValueIterator( cursor, TokenScanReader.NO_ID );
     }
 
     @Override
@@ -107,7 +107,7 @@ class NativeTokenScanReader implements TokenScanReader
             for ( int tokenId : tokenIds )
             {
                 Seeker<TokenScanKey,TokenScanValue> cursor = seekerForLabel( fromId, tokenId, cursorTracer );
-                iterators.add( new LabelScanValueIterator( cursor, fromId ) );
+                iterators.add( new TokenScanValueIterator( cursor, fromId ) );
             }
         }
         catch ( IOException e )
@@ -180,7 +180,7 @@ class NativeTokenScanReader implements TokenScanReader
                 throw new UncheckedIOException( e );
             }
 
-            return new LabelScanValueIndexProgressor( cursor, client );
+            return new TokenScanValueIndexProgressor( cursor, client );
         }
 
         private long roundUp( long sizeHint )

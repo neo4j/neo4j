@@ -32,11 +32,11 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
  */
-public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implements IndexProgressor, Resource
+public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource
 {
     private final NodeLabelClient client;
 
-    LabelScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, NodeLabelClient client )
+    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, NodeLabelClient client )
     {
         super( cursor );
         this.client = client;
