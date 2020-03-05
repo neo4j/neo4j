@@ -233,10 +233,6 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(rowCount(expectedRowCount))
   }
 
-}
-
-trait ApplyUnionTestBase[CONTEXT <: RuntimeContext] {
-  self: ApplyTestBase[CONTEXT] =>
 
   test("apply union with aliased variables") {
     // given
