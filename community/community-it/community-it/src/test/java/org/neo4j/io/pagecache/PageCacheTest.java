@@ -51,6 +51,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
@@ -2604,6 +2606,90 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         assertThat( readCount.get() ).as( "wrong read pin count" ).isEqualTo( pinsForRead );
         assertThat( writeCount.get() ).as( "wrong write pin count" ).isEqualTo( pinsForWrite );
+    }
+
+    @Test
+    void restartByShouldRetryMustCarryOverExistingPin() throws IOException
+    {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+        getPageCache( fs, maxPages, tracer );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+
+        try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
+              PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "test" ) )
+        {
+            try ( PageCursor reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+            {
+                assertTrue( reader.next() );
+
+                // Cause the page under the reader cursor to be evicted.
+                try ( PagedFile otherPagedFile = map( existingFile( "b" ), filePageSize );
+                      PageCursor writer = otherPagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                {
+                    while ( !reader.shouldRetry() )
+                    {
+                        for ( int i = 0; i < maxPages * 10; i++ )
+                        {
+                            assertTrue( writer.next( i ) );
+                        }
+                    }
+                }
+            }
+        }
+        // Then we should see pins and unpins pair up exactly.
+        assertThat( tracer.unpins() ).isEqualTo( tracer.pins() );
+    }
+
+    @Test
+    void pinEventShouldCompleteIfRepinFromShouldRetryThrows() throws IOException
+    {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+        RandomAdversary adversary = new RandomAdversary( 0.0, 0.9, 0.0 );
+        adversary.setProbabilityFactor( 0.0 );
+        AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
+        getPageCache( afs, maxPages, tracer );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+
+        try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
+              PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "test" ) )
+        {
+            try ( PageCursor reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+            {
+                assertTrue( reader.next() );
+
+                // Cause the page under the reader cursor to be evicted.
+                try ( PagedFile otherPagedFile = map( existingFile( "b" ), filePageSize ) )
+                {
+                    IOException ioe = assertThrows( IOException.class, () ->
+                    {
+                        //noinspection InfiniteLoopStatement
+                        for ( ;; )
+                        {
+                            adversary.setProbabilityFactor( 1.0 );
+                            try
+                            {
+                                reader.shouldRetry();
+                            }
+                            finally
+                            {
+                                adversary.setProbabilityFactor( 0.0 );
+                            }
+                            try ( PageCursor writer = otherPagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                            {
+                                for ( int i = 0; i < maxPages * 10; i++ )
+                                {
+                                    assertTrue( writer.next( i ) );
+                                }
+                            }
+                            otherPagedFile.flushAndForce();
+                        }
+                    } );
+                    ioe.printStackTrace();
+                }
+            }
+        }
+        // Then we should see pins and unpins pair up exactly.
+        assertThat( tracer.unpins() ).isEqualTo( tracer.pins() );
     }
 
     @Test

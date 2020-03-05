@@ -63,7 +63,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private static final int SIZE_OF_LONG = Long.BYTES;
 
     private final long victimPage;
-    private final PageCursorTracer tracer;
+    protected final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
     protected int swapperId;
@@ -289,12 +289,10 @@ public abstract class MuninnPageCursor extends PageCursor
     /**
      * Pin the desired file page to this cursor, page faulting it into memory if it isn't there already.
      * @param filePageId The file page id we want to pin this cursor to.
-     * @param writeLock 'true' if we will be taking a write lock on the page as part of the pin.
      * @throws IOException if anything goes wrong with the pin, most likely during a page fault.
      */
-    protected void pin( long filePageId, boolean writeLock ) throws IOException
+    protected void pin( long filePageId ) throws IOException
     {
-        pinEvent = tracer.beginPin( writeLock, filePageId, swapper );
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
@@ -407,7 +405,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
         catch ( Throwable throwable )
         {
-            // Make sure to unstuck the page fault latch.
+            // Make sure to release the page fault latch.
             abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }
@@ -425,7 +423,7 @@ public abstract class MuninnPageCursor extends PageCursor
         {
             // Make sure to unlock the page, so the eviction thread can pick up our trash.
             pagedFile.unlockExclusive( pageRef );
-            // Make sure to unstuck the page fault latch.
+            // Make sure to release the page fault latch.
             abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }

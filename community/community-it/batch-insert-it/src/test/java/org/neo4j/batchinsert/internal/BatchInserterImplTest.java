@@ -56,7 +56,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -128,11 +127,12 @@ class BatchInserterImplTest
             }
         }
 
-        assertThat( pageCacheTracer.pins() ).isGreaterThan( 0 );
-        assertThat( pageCacheTracer.unpins() ).isCloseTo( pageCacheTracer.pins(), offset( 10L ) ); // BatchInserter sometimes leaves cursors pinned!?
-        assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 );
-        assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 );
-        assertThat( pageCacheTracer.flushes() ).isGreaterThan( 0 );
+        long pins = pageCacheTracer.pins();
+        assertThat( pins ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( pins );
+        assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat( pageCacheTracer.flushes() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
     }
 
     @Test

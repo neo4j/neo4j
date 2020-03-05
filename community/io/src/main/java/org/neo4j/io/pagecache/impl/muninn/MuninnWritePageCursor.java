@@ -96,7 +96,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         }
         storeCurrentPageId( nextPageId );
         nextPageId++;
-        pin( loadPlainCurrentPageId(), true );
+        long filePageId = loadPlainCurrentPageId();
+        pinEvent = tracer.beginPin( true, filePageId, swapper );
+        pin( filePageId );
         return true;
     }
 

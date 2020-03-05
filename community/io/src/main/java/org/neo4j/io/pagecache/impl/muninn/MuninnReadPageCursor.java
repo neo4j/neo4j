@@ -58,7 +58,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         }
         storeCurrentPageId( nextPageId );
         nextPageId++;
-        pin( loadPlainCurrentPageId(), false );
+        long filePageId = loadPlainCurrentPageId();
+        pinEvent = tracer.beginPin( false, filePageId, swapper );
+        pin( filePageId );
         verifyContext();
         return true;
     }
@@ -141,11 +143,11 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // lock during the faulting, and then an optimistic read lock once the
             // fault itself is over.
             // First, forget about this page in case pin() throws and the cursor
-            // is closed; we don't want unpinCurrentPage() to try unlocking
-            // this page.
+            // is closed, or in case we have PF_NO_FAULT and the page is no longer
+            // in memory.
             clearPageReference();
             // Then try pin again.
-            pin( loadPlainCurrentPageId(), false );
+            pin( loadPlainCurrentPageId() );
         }
     }
 
