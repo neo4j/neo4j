@@ -28,6 +28,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -45,7 +46,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should handle requesting one record at a time") {
     //Given
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = runtimeResult(subscriber,
                                Array("1", 1),
                                Array("2", 2),
@@ -83,7 +84,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should handle requesting more data than available") {
     //Given
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = runtimeResult(subscriber,
                                Array(1),
                                Array(2),
@@ -105,7 +106,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should handle requesting data multiple times") {
     //Given
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = runtimeResult(subscriber,
                                Array(1),
                                Array(2),
@@ -127,7 +128,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should handle request overflowing the demand") {
     //Given
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = runtimeResult(subscriber,
                                Array(1),
                                Array(2),
@@ -150,7 +151,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should handle cancel stream") {
     //Given
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = runtimeResult(subscriber,
                                Array(1),
                                Array(2),
@@ -173,7 +174,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   test("should handle cancel stream and close cursors") {
     val nodes = given { nodeGraph(3) }
 
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .allNodeScan("x")
@@ -198,7 +199,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   test("should handle multiple times cancel stream and close cursors") {
     val nodes = given { nodeGraph(3) }
 
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .allNodeScan("x")
@@ -235,7 +236,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
 
     // When
-    val result = execute(logicalQuery, runtime, stream, new TestSubscriber)
+    val result = execute(logicalQuery, runtime, stream, TestSubscriber.concurrent)
 
     // Then
     result.request(1)
@@ -278,7 +279,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       .build()
 
     val input = inputValues(Array(1), Array(2)).stream()
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val result = execute(logicalQuery, runtime, input, subscriber)
 
     // when

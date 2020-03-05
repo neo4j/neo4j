@@ -25,6 +25,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_count
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -96,7 +97,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
   private def oneAtaTimeCount(logicalQuery: LogicalQuery): Int = count(logicalQuery, () => 1)
 
   private def count(logicalQuery: LogicalQuery, request: () => Int): Int = {
-    val subscriber = new TestSubscriber
+    val subscriber = TestSubscriber.concurrent
     val data = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
     val runtimeResult = execute(logicalQuery, runtime, data.stream(), subscriber)
     var hasMore = true
