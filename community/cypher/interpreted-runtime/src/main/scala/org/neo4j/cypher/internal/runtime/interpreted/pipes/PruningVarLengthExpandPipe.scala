@@ -248,7 +248,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     def ensureExpanded(queryState: QueryState, row: CypherRow, node: VirtualNodeValue): Unit = {
       if ( rels == null ) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
-        val builder = ArrayBuffer.newBuilder[RelationshipValue]
+        val builder = Array.newBuilder[RelationshipValue]
         while (allRels.hasNext) {
           val rel = allRels.next()
           if (filteringStep.filterRelationship(row, queryState)(rel) &&
@@ -257,7 +257,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
             memoryTracker.allocated(rel, id.x)
           }
         }
-        rels = builder.result().toArray
+        rels = builder.result()
         depths = new Array[Byte](rels.length)
         memoryTracker.allocated(rels.length * java.lang.Byte.BYTES, id.x)
       }
