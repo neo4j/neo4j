@@ -73,7 +73,7 @@ class NativeTokenScanReader implements TokenScanReader
     public PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
     {
         List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( fromId, cursorTracer, tokenIds );
-        return new CompositeLabelScanValueIterator( iterators, false );
+        return new CompositeTokenScanValueIterator( iterators, false );
     }
 
     @Override

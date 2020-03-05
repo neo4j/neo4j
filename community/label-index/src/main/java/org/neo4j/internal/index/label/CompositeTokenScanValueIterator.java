@@ -35,23 +35,23 @@ import org.neo4j.graphdb.ResourceUtils;
  * <p>
  * Source iterators must be sorted in ascending order.
  */
-class CompositeLabelScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
-    private final int atLeastNumberOfLabels;
+    private final int atLeastNumberOfTokens;
     private final List<PrimitiveLongResourceIterator> toClose;
     private long last = -1;
 
     /**
-     * Constructs a {@link CompositeLabelScanValueIterator}.
+     * Constructs a {@link CompositeTokenScanValueIterator}.
      *
      * @param iterators {@link LongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
-    CompositeLabelScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
+    CompositeTokenScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
     {
         this.toClose = iterators;
-        this.atLeastNumberOfLabels = trueForAll ? iterators.size() : 1;
+        this.atLeastNumberOfTokens = trueForAll ? iterators.size() : 1;
         for ( LongIterator iterator : iterators )
         {
             if ( iterator.hasNext() )
@@ -64,9 +64,9 @@ class CompositeLabelScanValueIterator extends AbstractPrimitiveLongBaseIterator 
     @Override
     protected boolean fetchNext()
     {
-        int numberOfLabels = 0;
+        int numberOfTokens = 0;
         long next = last;
-        while ( next == last || numberOfLabels < atLeastNumberOfLabels )
+        while ( next == last || numberOfTokens < atLeastNumberOfTokens )
         {
             IdAndSource idAndSource = sortedIterators.poll();
             if ( idAndSource == null )
@@ -76,12 +76,12 @@ class CompositeLabelScanValueIterator extends AbstractPrimitiveLongBaseIterator 
 
             if ( idAndSource.latestReturned == next )
             {
-                numberOfLabels++;
+                numberOfTokens++;
             }
             else
             {
                 next = idAndSource.latestReturned;
-                numberOfLabels = 1;
+                numberOfTokens = 1;
             }
 
             if ( idAndSource.source.hasNext() )

@@ -43,7 +43,7 @@ import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterato
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 
 @Execution( CONCURRENT )
-class CompositeLabelScanValueIteratorTest
+class CompositeTokenScanValueIteratorTest
 {
     @Test
     void mustHandleEmptyListOfIterators()
@@ -52,7 +52,7 @@ class CompositeLabelScanValueIteratorTest
         List<PrimitiveLongResourceIterator> iterators = emptyList();
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertFalse( iterator.hasNext() );
@@ -66,7 +66,7 @@ class CompositeLabelScanValueIteratorTest
         List<PrimitiveLongResourceIterator> iterators = singletonList( emptyIterator() );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertFalse( iterator.hasNext() );
@@ -80,7 +80,7 @@ class CompositeLabelScanValueIteratorTest
                 asMutableList( emptyIterator(), emptyIterator(), emptyIterator() );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertFalse( iterator.hasNext() );
@@ -95,7 +95,7 @@ class CompositeLabelScanValueIteratorTest
         List<PrimitiveLongResourceIterator> iterators = Collections.singletonList( iterator( null, expected ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
@@ -114,7 +114,7 @@ class CompositeLabelScanValueIteratorTest
                 iterator( closeCounter::incrementAndGet, secondIter ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
@@ -141,7 +141,7 @@ class CompositeLabelScanValueIteratorTest
                 iterator( closeCounter::incrementAndGet, thirdIter ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
@@ -170,7 +170,7 @@ class CompositeLabelScanValueIteratorTest
                 iterator( closeCounter::incrementAndGet, fourthIter ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, false );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, false );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
@@ -198,7 +198,7 @@ class CompositeLabelScanValueIteratorTest
                 iterator( closeCounter::incrementAndGet, thirdIter ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, true );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, true );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
@@ -227,7 +227,7 @@ class CompositeLabelScanValueIteratorTest
                 iterator( closeCounter::incrementAndGet, fourthIter ) );
 
         // when
-        CompositeLabelScanValueIterator iterator = new CompositeLabelScanValueIterator( iterators, true );
+        CompositeTokenScanValueIterator iterator = new CompositeTokenScanValueIterator( iterators, true );
 
         // then
         assertArrayEquals( expected, PrimitiveLongCollections.asArray( iterator ) );
