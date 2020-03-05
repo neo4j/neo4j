@@ -6,7 +6,7 @@ Learn more on the https://neo4j.com[Neo4j website].
 
 == Using Neo4j ==
 
-Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or http://console.neo4j.org[try online].
+Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or https://console.neo4j.org[try online].
 
 == Extending Neo4j ==
 
@@ -14,9 +14,9 @@ We encourage experimentation with Neo4j. You can build extensions to Neo4j, deve
 
 == Dependencies ==
 
-Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
+Neo4j is built using https://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
 
-OS X users need to have http://brew.sh/[Homebrew] installed.
+OS X users need to have https://brew.sh/[Homebrew] installed.
 
 === With brew on OS X ===
 
@@ -32,7 +32,7 @@ On top of that, to build Debian packages and Neo4j Desktop:
 
   apt install debhelper devscripts dos2unix dpkg make xmlstarlet
   # You will need a license for install4j, which is only needed for Neo4j Desktop
-  curl -O http://download-keycdn.ej-technologies.com/install4j/install4j_linux_6_1_4.deb
+  curl -O https://download-keycdn.ej-technologies.com/install4j/install4j_linux_6_1_4.deb
   dpkg -i install4j_linux_6_1_4.deb
 
 == Building Neo4j ==

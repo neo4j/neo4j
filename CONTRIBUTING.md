@@ -21,7 +21,7 @@ If you simply want to get started or have a question on how to use a particular 
 If you think you might have hit a bug in our software (it happens occasionally!) or you have specific feature request then use the issue feature on the relevant GitHub repository.
 Check first though as someone else may have already raised something similar.
 
-[StackOverflow](http://stackoverflow.com/questions/tagged/neo4j) also hosts a ton of questions and might already have a discussion around your problem.
+[StackOverflow](https://stackoverflow.com/questions/tagged/neo4j) also hosts a ton of questions and might already have a discussion around your problem.
 Make sure you have a look there too.
 
 Include as much information as you can in any request you make:
