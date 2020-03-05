@@ -87,11 +87,11 @@ class ProcessorStepTest
     {
         StageControl control = mock( StageControl.class );
         var cacheTracer = new DefaultPageCacheTracer();
+        int batches = 10;
         try ( MyProcessorStep step = new MyProcessorStep( control, 0, cacheTracer ) )
         {
             step.start( Step.ORDER_SEND_DOWNSTREAM );
 
-            int batches = 10;
             for ( int i = 0; i < batches; i++ )
             {
                 step.receive( i, i );
@@ -99,10 +99,11 @@ class ProcessorStepTest
             step.endOfUpstream();
             step.awaitCompleted();
 
-            assertThat( cacheTracer.pins() ).isEqualTo( batches );
-            assertThat( cacheTracer.unpins() ).isEqualTo( batches );
             assertEquals( batches, step.nextExpected.get() );
         }
+
+        assertThat( cacheTracer.pins() ).isEqualTo( batches );
+        assertThat( cacheTracer.unpins() ).isEqualTo( batches );
     }
 
     @Test
