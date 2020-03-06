@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -524,7 +523,6 @@ public class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id ) throws FlipFailedKernelException
     {
         FlippableIndexProxy indexProxy = mock( FlippableIndexProxy.class );
-        when( indexProxy.getState() ).thenReturn( InternalIndexState.ONLINE );
         doAnswer( invocation ->
         {
             Callable argument = invocation.getArgument( 0 );
