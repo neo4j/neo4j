@@ -43,6 +43,7 @@ import static java.lang.System.nanoTime;
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
+    private static final String IMPORT_STEP_TAG_PREFIX = "importStep:";
     private TaskExecutor<Sender> executor;
     // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
@@ -77,7 +78,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             assertHealthy();
             sender.initialize( ticket );
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( name() ) )
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( IMPORT_STEP_TAG_PREFIX + name() ) )
             {
                 long startTime = nanoTime();
                 process( batch, sender, cursorTracer );
