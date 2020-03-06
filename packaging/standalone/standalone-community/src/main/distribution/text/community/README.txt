@@ -8,8 +8,7 @@ start building applications that can model, persist and explore graph-like data.
 In the box
 ----------
 
-Neo4j runs as a server application, exposing a Web-based management
-interface and RESTful endpoints for data access.
+Neo4j runs as a server application, exposing a Web-based management interface.
 
 Here in the installation directory, you'll find:
 
@@ -33,11 +32,8 @@ look at the web interface ...
 2. Start the server:
    * Windows, use: bin\neo4j console
    * Linux/Mac, use: ./bin/neo4j console
-3. In a browser, open http://localhost:#{default.http.port}/
-4. From any REST client or browser, open http://localhost:#{default.http.port}/db/data
-   in order to get a REST starting point, e.g.
-   curl -v http://localhost:#{default.http.port}/db/data
-5. Shutdown the server by typing Ctrl-C in the console.
+3. In a browser, open http://localhost:7474/
+4. Shutdown the server by typing Ctrl-C in the console.
 
 Learn more
 ----------
