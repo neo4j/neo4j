@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.runtime.NoMemoryTracker$;
+import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
 import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
@@ -59,7 +59,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @DbmsExtension( configurationCallback = "config" )
 class CachingExpandIntoTest
 {
-    private static final NoMemoryTracker$ MEMORY_TRACKER = NoMemoryTracker$.MODULE$;
+    private static final QueryMemoryTracker MEMORY_TRACKER = QueryMemoryTracker.NO_MEMORY_TRACKER();
     private static final int INVALID_ID = Id.INVALID_ID();
     @Inject
     private Kernel kernel;

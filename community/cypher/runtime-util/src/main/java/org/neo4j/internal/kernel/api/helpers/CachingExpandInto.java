@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cypher.internal.runtime.NoMemoryTracker$;
 import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
 import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.graphdb.Direction;
@@ -80,7 +79,7 @@ public class CachingExpandInto
     @Deprecated
     public CachingExpandInto( Read read, Direction direction )
     {
-        this( read, direction, NoMemoryTracker$.MODULE$, Id.INVALID_ID() );
+        this( read, direction, QueryMemoryTracker.NO_MEMORY_TRACKER(), Id.INVALID_ID() );
     }
 
     public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )

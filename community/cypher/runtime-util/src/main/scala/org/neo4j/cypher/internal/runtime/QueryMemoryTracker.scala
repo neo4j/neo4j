@@ -107,6 +107,11 @@ object QueryMemoryTracker {
   }
 
   /**
+   * This is here to facilitate using from compiled code
+   */
+  val NO_MEMORY_TRACKER: QueryMemoryTracker = NoMemoryTracker
+
+  /**
    * Convert a value returned from `totalAllocatedMemory` or `maxMemoryOfOperator` to a value to be given to a QueryProfile.
    */
   def memoryAsProfileData(value: Long): Long = value match {
