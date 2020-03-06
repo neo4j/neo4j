@@ -165,9 +165,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
     private final PageCacheTracer cacheTracer;
+    private BatchImporterFactory batchImporterFactory;
 
     public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
+            LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
+            BatchImporterFactory batchImporterFactory )
     {
         super( "Store files" );
         this.fileSystem = fileSystem;
@@ -176,6 +178,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         this.logService = logService;
         this.jobScheduler = jobScheduler;
         this.cacheTracer = cacheTracer;
+        this.batchImporterFactory = batchImporterFactory;
     }
 
     @Override
@@ -443,7 +446,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDirectoryStructure,
+            BatchImporter importer = batchImporterFactory.instantiate( migrationDirectoryStructure,
                     fileSystem, pageCache, cacheTracer, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector,

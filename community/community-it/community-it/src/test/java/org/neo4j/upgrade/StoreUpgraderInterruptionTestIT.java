@@ -39,6 +39,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -86,6 +87,7 @@ public class StoreUpgraderInterruptionTestIT
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory )
@@ -134,7 +136,7 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory )
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
@@ -158,7 +160,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
@@ -185,7 +187,7 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory )
         {
             @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
@@ -210,7 +212,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );

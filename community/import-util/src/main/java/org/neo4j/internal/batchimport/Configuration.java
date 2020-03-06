@@ -26,6 +26,7 @@ import org.neo4j.io.os.OsBeanUtil;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.upgrade_processors;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 
 /**
@@ -224,7 +225,12 @@ public interface Configuration
         @Override
         public int maxNumberOfProcessors()
         {
-            return defaults.maxNumberOfProcessors();
+            Integer upgradeProcessors = config.get( upgrade_processors );
+            if ( upgradeProcessors == 0 )
+            {
+                return defaults.maxNumberOfProcessors();
+            }
+            return upgradeProcessors;
         }
 
         @Override

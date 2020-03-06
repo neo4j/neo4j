@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
@@ -107,7 +108,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
             JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer )
     {
-        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer );
+        BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
+        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer,
+                batchImporterFactory );
         IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config, cacheTracer );
         return List.of( recordStorageMigrator, idGeneratorMigrator );
     }

@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -113,6 +114,7 @@ class RecordStorageMigratorIT
     private DatabaseLayout databaseLayout;
 
     private DatabaseLayout migrationLayout;
+    private BatchImporterFactory batchImporterFactory;
 
     private final MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
@@ -130,6 +132,7 @@ class RecordStorageMigratorIT
     void setup() throws IOException
     {
         migrationLayout = Neo4jLayout.of( testDirectory.homeDir( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        batchImporterFactory = BatchImporterFactory.withHighestPriority();
         testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory() );
     }
 
@@ -154,11 +157,12 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // WHEN simulating resuming the migration
-        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, batchImporterFactory );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
@@ -184,7 +188,8 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -214,7 +219,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
@@ -245,7 +251,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -270,7 +277,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -361,7 +369,8 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+                batchImporterFactory );
 
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );

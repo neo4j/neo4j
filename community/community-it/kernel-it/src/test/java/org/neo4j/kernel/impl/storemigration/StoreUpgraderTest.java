@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -478,7 +479,9 @@ public class StoreUpgraderTest
             MigrationProgressMonitor progressMonitor ) throws IOException
     {
         NullLogService instance = NullLogService.getInstance();
-        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, NULL );
+        BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
+        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, NULL,
+                batchImporterFactory );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
 

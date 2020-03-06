@@ -149,6 +149,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Whether to allow an upgrade in case the current version of the database starts against an older version." )
     public static final Setting<Boolean> allow_upgrade = newBuilder( "dbms.allow_upgrade", BOOL, false ).build();
 
+    @Description( "(advanced) Max number of processors used when upgrading the store. Defaults to the number of available processors reported by the JVM. " +
+            "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this " +
+            "value. For optimal performance this value shouldn't be greater than the number of available processors." )
+    public static final Setting<Integer> upgrade_processors = newBuilder( "dbms.upgrade_max_processors", INT, 0 ).dynamic().build();
+
     @Description( "Database record format. Valid values: `standard`, `high_limit`. " +
             "The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
