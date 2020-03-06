@@ -139,7 +139,7 @@ public class EntityTokenRange
     public String toString()
     {
         String rangeString = lowRangeId + "-" + (highRangeId + 1);
-        String prefix = this.getClass().getSimpleName() + "[idRange=" + rangeString;
+        String prefix = "NodeLabelRange[idRange=" + rangeString;
         return toString( prefix, entities, tokens );
     }
 
