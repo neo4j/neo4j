@@ -1,0 +1,88 @@
+org.neo4j.harness.Neo4j public abstract interface implements java.lang.AutoCloseable
+org.neo4j.harness.Neo4j::boltURI() java.net.URI public abstract
+org.neo4j.harness.Neo4j::close() void public abstract
+org.neo4j.harness.Neo4j::config() org.neo4j.graphdb.config.Configuration public abstract
+org.neo4j.harness.Neo4j::databaseManagementService() org.neo4j.dbms.api.DatabaseManagementService public abstract
+org.neo4j.harness.Neo4j::defaultDatabaseService() org.neo4j.graphdb.GraphDatabaseService public abstract
+org.neo4j.harness.Neo4j::httpURI() java.net.URI public abstract
+org.neo4j.harness.Neo4j::httpsURI() java.net.URI public abstract
+org.neo4j.harness.Neo4j::printLogs(java.io.PrintStream) void public abstract
+org.neo4j.harness.Neo4jBuilder public abstract interface implements org.neo4j.harness.Neo4jConfigurator<org.neo4j.harness.Neo4jBuilder>
+org.neo4j.harness.Neo4jBuilder::build() org.neo4j.harness.Neo4j public abstract
+org.neo4j.harness.Neo4jBuilders public final class extends java.lang.Object
+org.neo4j.harness.Neo4jBuilders::newInProcessBuilder() org.neo4j.harness.Neo4jBuilder public static
+org.neo4j.harness.Neo4jBuilders::newInProcessBuilder(java.io.File) org.neo4j.harness.Neo4jBuilder public static
+org.neo4j.harness.Neo4jConfigurator<T extends org.neo4j.harness.Neo4jConfigurator> public abstract interface
+org.neo4j.harness.Neo4jConfigurator<T>::<U extends java.lang.Object>withConfig(org.neo4j.graphdb.config.Setting<U>, #U) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::copyFrom(java.io.File) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withAggregationFunction(java.lang.Class<?>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withDisabledServer() #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withExtensionFactories(java.lang.Iterable<org.neo4j.kernel.extension.ExtensionFactory<?>>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withFixture(java.io.File) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withFixture(java.lang.String) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withFixture(java.util.function.Function<org.neo4j.graphdb.GraphDatabaseService,java.lang.Void>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withFunction(java.lang.Class<?>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withProcedure(java.lang.Class<?>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withUnmanagedExtension(java.lang.String, java.lang.Class<?>) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withUnmanagedExtension(java.lang.String, java.lang.String) #T public abstract
+org.neo4j.harness.Neo4jConfigurator<T>::withWorkingDir(java.io.File) #T public abstract
+org.neo4j.harness.internal.InProcessNeo4j public class extends java.lang.Object implements org.neo4j.harness.Neo4j
+org.neo4j.harness.internal.InProcessNeo4j::InProcessNeo4j(java.io.File, java.io.File, java.io.File, org.neo4j.server.NeoServer, java.io.Closeable) void public
+org.neo4j.harness.internal.InProcessNeo4j::boltURI() java.net.URI public
+org.neo4j.harness.internal.InProcessNeo4j::close() void public
+org.neo4j.harness.internal.InProcessNeo4j::config() org.neo4j.graphdb.config.Configuration public
+org.neo4j.harness.internal.InProcessNeo4j::databaseManagementService() org.neo4j.dbms.api.DatabaseManagementService public
+org.neo4j.harness.internal.InProcessNeo4j::defaultDatabaseService() org.neo4j.graphdb.GraphDatabaseService public
+org.neo4j.harness.internal.InProcessNeo4j::httpURI() java.net.URI public
+org.neo4j.harness.internal.InProcessNeo4j::httpsURI() java.net.URI public
+org.neo4j.harness.internal.InProcessNeo4j::printLogs(java.io.PrintStream) void public
+org.neo4j.harness.internal.InProcessNeo4j::start() void public
+org.neo4j.harness.junit.extension.Neo4jExtension public class extends java.lang.Object implements org.junit.jupiter.api.extension.BeforeAllCallback, org.junit.jupiter.api.extension.AfterAllCallback, org.junit.jupiter.api.extension.ParameterResolver
+org.neo4j.harness.junit.extension.Neo4jExtension::Neo4jExtension() void public
+org.neo4j.harness.junit.extension.Neo4jExtension::Neo4jExtension(org.neo4j.harness.Neo4jBuilder) void protected
+org.neo4j.harness.junit.extension.Neo4jExtension::afterAll(org.junit.jupiter.api.extension.ExtensionContext) void public
+org.neo4j.harness.junit.extension.Neo4jExtension::beforeAll(org.junit.jupiter.api.extension.ExtensionContext) void public
+org.neo4j.harness.junit.extension.Neo4jExtension::builder() org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public static
+org.neo4j.harness.junit.extension.Neo4jExtension::resolveParameter(org.junit.jupiter.api.extension.ParameterContext, org.junit.jupiter.api.extension.ExtensionContext) java.lang.Object public throws org.junit.jupiter.api.extension.ParameterResolutionException
+org.neo4j.harness.junit.extension.Neo4jExtension::supportsParameter(org.junit.jupiter.api.extension.ParameterContext, org.junit.jupiter.api.extension.ExtensionContext) boolean public throws org.junit.jupiter.api.extension.ParameterResolutionException
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public class extends java.lang.Object
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::<T extends java.lang.Object>withConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::Neo4jExtensionBuilder(org.neo4j.harness.Neo4jBuilder) void protected
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::build() org.neo4j.harness.junit.extension.Neo4jExtension public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::copyFrom(java.io.File) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withAggregationFunction(java.lang.Class<?>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withDisabledServer() org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withExtensionFactories(java.lang.Iterable<org.neo4j.kernel.extension.ExtensionFactory<?>>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withFixture(java.io.File) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withFixture(java.lang.String) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withFixture(java.util.function.Function<org.neo4j.graphdb.GraphDatabaseService,java.lang.Void>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withFolder(java.io.File) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withFunction(java.lang.Class<?>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withProcedure(java.lang.Class<?>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withUnmanagedExtension(java.lang.String, java.lang.Class<?>) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.extension.Neo4jExtensionBuilder::withUnmanagedExtension(java.lang.String, java.lang.String) org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public
+org.neo4j.harness.junit.rule.Neo4jRule public class extends java.lang.Object implements org.junit.rules.TestRule
+org.neo4j.harness.junit.rule.Neo4jRule::<T extends java.lang.Object>withConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::Neo4jRule() void public
+org.neo4j.harness.junit.rule.Neo4jRule::Neo4jRule(java.io.File) void public
+org.neo4j.harness.junit.rule.Neo4jRule::Neo4jRule(org.neo4j.harness.Neo4jBuilder) void protected
+org.neo4j.harness.junit.rule.Neo4jRule::apply(org.junit.runners.model.Statement, org.junit.runner.Description) org.junit.runners.model.Statement public
+org.neo4j.harness.junit.rule.Neo4jRule::boltURI() java.net.URI public
+org.neo4j.harness.junit.rule.Neo4jRule::config() org.neo4j.graphdb.config.Configuration public
+org.neo4j.harness.junit.rule.Neo4jRule::copyFrom(java.io.File) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::databaseManagementService() org.neo4j.dbms.api.DatabaseManagementService public
+org.neo4j.harness.junit.rule.Neo4jRule::defaultDatabaseService() org.neo4j.graphdb.GraphDatabaseService public
+org.neo4j.harness.junit.rule.Neo4jRule::dumpLogsOnFailure(java.io.PrintStream) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::dumpLogsOnFailure(java.util.function.Supplier<java.io.PrintStream>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::httpURI() java.net.URI public
+org.neo4j.harness.junit.rule.Neo4jRule::httpsURI() java.net.URI public
+org.neo4j.harness.junit.rule.Neo4jRule::withAggregationFunction(java.lang.Class<?>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withDisabledServer() org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withExtensionFactories(java.lang.Iterable<org.neo4j.kernel.extension.ExtensionFactory<?>>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withFixture(java.io.File) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withFixture(java.lang.String) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withFixture(java.util.function.Function<org.neo4j.graphdb.GraphDatabaseService,java.lang.Void>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withFunction(java.lang.Class<?>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withProcedure(java.lang.Class<?>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withUnmanagedExtension(java.lang.String, java.lang.Class<?>) org.neo4j.harness.junit.rule.Neo4jRule public
+org.neo4j.harness.junit.rule.Neo4jRule::withUnmanagedExtension(java.lang.String, java.lang.String) org.neo4j.harness.junit.rule.Neo4jRule public

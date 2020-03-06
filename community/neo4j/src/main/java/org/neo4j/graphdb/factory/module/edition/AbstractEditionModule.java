@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -72,6 +73,7 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
  * Edition module for {@link DatabaseManagementServiceFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
  */
+@IgnoreApiCheck
 public abstract class AbstractEditionModule
 {
     private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();

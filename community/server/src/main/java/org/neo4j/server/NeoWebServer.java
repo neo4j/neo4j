@@ -22,11 +22,13 @@ package org.neo4j.server;
 import java.net.URI;
 import java.util.Optional;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
+@IgnoreApiCheck
 public interface NeoWebServer extends Lifecycle
 {
     Config getConfig();

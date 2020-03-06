@@ -1,0 +1,182 @@
+org.neo4j.kernel.api.exceptions.Status public abstract interface
+org.neo4j.kernel.api.exceptions.Status.Classification public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Classification>
+org.neo4j.kernel.api.exceptions.Status.Classification::ClientError org.neo4j.kernel.api.exceptions.Status.Classification public static final
+org.neo4j.kernel.api.exceptions.Status.Classification::ClientNotification org.neo4j.kernel.api.exceptions.Status.Classification public static final
+org.neo4j.kernel.api.exceptions.Status.Classification::DatabaseError org.neo4j.kernel.api.exceptions.Status.Classification public static final
+org.neo4j.kernel.api.exceptions.Status.Classification::TransientError org.neo4j.kernel.api.exceptions.Status.Classification public static final
+org.neo4j.kernel.api.exceptions.Status.Classification::description() java.lang.String public
+org.neo4j.kernel.api.exceptions.Status.Classification::rollbackTransaction() boolean public
+org.neo4j.kernel.api.exceptions.Status.Classification::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Classification public static
+org.neo4j.kernel.api.exceptions.Status.Classification::values() org.neo4j.kernel.api.exceptions.Status.Classification[] public static
+org.neo4j.kernel.api.exceptions.Status.Cluster public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Cluster> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Cluster::NotALeader org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::ReplicationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Cluster::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Cluster public static
+org.neo4j.kernel.api.exceptions.Status.Cluster::values() org.neo4j.kernel.api.exceptions.Status.Cluster[] public static
+org.neo4j.kernel.api.exceptions.Status.Code public static class extends java.lang.Object
+org.neo4j.kernel.api.exceptions.Status.Code::all() java.util.Collection<org.neo4j.kernel.api.exceptions.Status> public static
+org.neo4j.kernel.api.exceptions.Status.Code::classification() org.neo4j.kernel.api.exceptions.Status.Classification public
+org.neo4j.kernel.api.exceptions.Status.Code::description() java.lang.String public final
+org.neo4j.kernel.api.exceptions.Status.Code::equals(java.lang.Object) boolean public
+org.neo4j.kernel.api.exceptions.Status.Code::hashCode() int public
+org.neo4j.kernel.api.exceptions.Status.Code::serialize() java.lang.String public final
+org.neo4j.kernel.api.exceptions.Status.Code::toString() java.lang.String public
+org.neo4j.kernel.api.exceptions.Status.Database public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Database> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Database::DatabaseLimitReached org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::DatabaseNotFound org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::DatabaseUnavailable org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::ExistingDatabaseFound org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::UnableToStartDatabase org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::Unknown org.neo4j.kernel.api.exceptions.Status.Database public static final
+org.neo4j.kernel.api.exceptions.Status.Database::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Database::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Database public static
+org.neo4j.kernel.api.exceptions.Status.Database::values() org.neo4j.kernel.api.exceptions.Status.Database[] public static
+org.neo4j.kernel.api.exceptions.Status.Fabric public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Fabric> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Fabric::AccessMode org.neo4j.kernel.api.exceptions.Status.Fabric public static final
+org.neo4j.kernel.api.exceptions.Status.Fabric::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Fabric public static final
+org.neo4j.kernel.api.exceptions.Status.Fabric::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Fabric::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Fabric public static
+org.neo4j.kernel.api.exceptions.Status.Fabric::values() org.neo4j.kernel.api.exceptions.Status.Fabric[] public static
+org.neo4j.kernel.api.exceptions.Status.General public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.General> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.General::ForbiddenOnReadOnlyDatabase org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::IndexCorruptionDetected org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::InvalidArguments org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::OutOfMemoryError org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::SchemaCorruptionDetected org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::StackOverFlowError org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::StorageDamageDetected org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::TransactionMemoryLimit org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::TransactionOutOfMemoryError org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::UnknownError org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.General::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.General public static
+org.neo4j.kernel.api.exceptions.Status.General::values() org.neo4j.kernel.api.exceptions.Status.General[] public static
+org.neo4j.kernel.api.exceptions.Status.HasStatus public abstract static interface
+org.neo4j.kernel.api.exceptions.Status.HasStatus::status() org.neo4j.kernel.api.exceptions.Status public abstract
+org.neo4j.kernel.api.exceptions.Status.Procedure public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Procedure> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureCallFailed org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureNotFound org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureRegistrationFailed org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureTimedOut org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureWarning org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::TypeError org.neo4j.kernel.api.exceptions.Status.Procedure public static final
+org.neo4j.kernel.api.exceptions.Status.Procedure::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Procedure::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Procedure public static
+org.neo4j.kernel.api.exceptions.Status.Procedure::values() org.neo4j.kernel.api.exceptions.Status.Procedure[] public static
+org.neo4j.kernel.api.exceptions.Status.Request public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Request> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Request::Invalid org.neo4j.kernel.api.exceptions.Status.Request public static final
+org.neo4j.kernel.api.exceptions.Status.Request::InvalidFormat org.neo4j.kernel.api.exceptions.Status.Request public static final
+org.neo4j.kernel.api.exceptions.Status.Request::InvalidUsage org.neo4j.kernel.api.exceptions.Status.Request public static final
+org.neo4j.kernel.api.exceptions.Status.Request::NoThreadsAvailable org.neo4j.kernel.api.exceptions.Status.Request public static final
+org.neo4j.kernel.api.exceptions.Status.Request::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Request::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Request public static
+org.neo4j.kernel.api.exceptions.Status.Request::values() org.neo4j.kernel.api.exceptions.Status.Request[] public static
+org.neo4j.kernel.api.exceptions.Status.Schema public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Schema> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintCreationFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintDropFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintNotFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintValidationFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintViolation org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintWithNameAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::EquivalentSchemaRuleAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::ForbiddenOnConstraintIndex org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexCreationFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexDropFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexMultipleFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexNotApplicable org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexNotFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexWithNameAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::LabelAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::PropertyKeyAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::RelationshipTypeAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::RepeatedLabelInSchema org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::RepeatedPropertyInCompositeSchema org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::RepeatedRelationshipTypeInSchema org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::SchemaRuleAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::SchemaRuleDuplicateFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::TokenLimitReached org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::TokenNameError org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Schema::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Schema public static
+org.neo4j.kernel.api.exceptions.Status.Schema::values() org.neo4j.kernel.api.exceptions.Status.Schema[] public static
+org.neo4j.kernel.api.exceptions.Status.Security public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Security> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Security::AuthProviderFailed org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::AuthProviderTimeout org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::AuthenticationRateLimit org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::AuthorizationExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::CredentialsExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::Forbidden org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::ModifiedConcurrently org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::Unauthorized org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Security::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Security public static
+org.neo4j.kernel.api.exceptions.Status.Security::values() org.neo4j.kernel.api.exceptions.Status.Security[] public static
+org.neo4j.kernel.api.exceptions.Status.Statement public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Statement> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Statement::ArgumentError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ArithmeticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::CartesianProductWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::CodeGenerationFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ConstraintVerificationFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::DynamicPropertyWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::EagerOperatorWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::EntityNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ExhaustiveShortestPathWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ExperimentalFeature org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ExternalResourceFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::FeatureDeprecationWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::JoinHintUnfulfillableWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::NoApplicableIndexWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseOnLeaderError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::SemanticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::SuboptimalIndexForWildcardQuery org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::SyntaxError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::TypeError org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::UnboundedVariableLengthPatternWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::UnknownLabelWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::UnknownPropertyKeyWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::UnknownRelationshipTypeWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Statement::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Statement public static
+org.neo4j.kernel.api.exceptions.Status.Statement::values() org.neo4j.kernel.api.exceptions.Status.Statement[] public static
+org.neo4j.kernel.api.exceptions.Status.Transaction public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Transaction> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Transaction::BookmarkTimeout org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::ConstraintsChanged org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::DeadlockDetected org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::ForbiddenDueToTransactionType org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::Interrupted org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::InvalidBookmark org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::InvalidBookmarkMixture org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::LeaseExpired org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::LockAcquisitionTimeout org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::LockClientStopped org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::MaximumTransactionLimitReached org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::Outdated org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::Terminated org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionAccessedConcurrently org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionCommitFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionHookFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionLogError org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionMarkedAsFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionNotFound org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionRollbackFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionStartFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionTimedOut org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionValidationFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Transaction::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Transaction public static
+org.neo4j.kernel.api.exceptions.Status.Transaction::values() org.neo4j.kernel.api.exceptions.Status.Transaction[] public static
+org.neo4j.kernel.api.exceptions.Status::code() org.neo4j.kernel.api.exceptions.Status.Code public abstract
+org.neo4j.kernel.api.exceptions.Status::statusCodeOf(java.lang.Throwable) org.neo4j.kernel.api.exceptions.Status public static
+org.neo4j.string.SecureString public class extends java.lang.Object
+org.neo4j.string.SecureString::SecureString(java.lang.String) void public
+org.neo4j.string.SecureString::getString() java.lang.String public
+org.neo4j.string.SecureString::toString() java.lang.String public

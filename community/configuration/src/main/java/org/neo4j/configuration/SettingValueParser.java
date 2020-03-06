@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -26,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
  *
  * @param <T> the type of the object handled by a specific parser
  */
+@IgnoreApiCheck
 public interface SettingValueParser<T>
 {
     /**

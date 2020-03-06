@@ -19,12 +19,15 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * This class is simply a progress counter of indexing population progress. It has the constraint that
  * {@code 0 <= completed <= total}
  * <p>
  * Use IndexPopulationProgress.NONE if you need an object without any particular progress.
  */
+@PublicApi
 public class IndexPopulationProgress
 {
     public static final IndexPopulationProgress NONE = new IndexPopulationProgress( 0, 0 );

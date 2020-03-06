@@ -1,0 +1,22 @@
+org.neo4j.annotations.api.PublicClass.InnerClass public class extends java.lang.Object
+org.neo4j.annotations.api.PublicClass.InnerEnum public static final enum extends java.lang.Enum<org.neo4j.annotations.api.PublicClass.InnerEnum>
+org.neo4j.annotations.api.PublicClass.InnerEnum::E1 org.neo4j.annotations.api.PublicClass.InnerEnum public static final
+org.neo4j.annotations.api.PublicClass.InnerEnum::E2 org.neo4j.annotations.api.PublicClass.InnerEnum public static final
+org.neo4j.annotations.api.PublicClass.InnerEnum::valueOf(java.lang.String) org.neo4j.annotations.api.PublicClass.InnerEnum public static
+org.neo4j.annotations.api.PublicClass.InnerEnum::values() org.neo4j.annotations.api.PublicClass.InnerEnum[] public static
+org.neo4j.annotations.api.PublicClass.InnerInterface public abstract static interface implements java.io.Serializable
+org.neo4j.annotations.api.PublicClass.InnerInterface::<V extends java.lang.Object>defaultMethod(#V) int public default
+org.neo4j.annotations.api.PublicClass.InnerInterface::test(int) long public abstract
+org.neo4j.annotations.api.PublicClass.InnerInterface::varArgs1(int[]) void public abstract
+org.neo4j.annotations.api.PublicClass.InnerInterface::varArgs2(int...) void public abstract
+org.neo4j.annotations.api.PublicClass.InnerInterface::varArgs3(int[]...) void public abstract
+org.neo4j.annotations.api.PublicClass<T extends java.lang.Object, V extends java.io.Serializable & java.lang.Comparable<? super org.neo4j.annotations.api.PublicClass>> public class extends java.util.ArrayList<T> implements java.io.Serializable, java.lang.Cloneable, java.lang.Comparable<org.neo4j.annotations.api.PublicClass<T,V>>
+org.neo4j.annotations.api.PublicClass<T,V>.InnerClass::InnerClass(int) void public
+org.neo4j.annotations.api.PublicClass<T,V>.InnerClass::test() java.lang.String public
+org.neo4j.annotations.api.PublicClass<T,V>::NUMBER long public static final = 42
+org.neo4j.annotations.api.PublicClass<T,V>::PublicClass() void public
+org.neo4j.annotations.api.PublicClass<T,V>::compareTo(org.neo4j.annotations.api.PublicClass<T,V>) int public
+org.neo4j.annotations.api.PublicClass<T,V>::manyArguments(boolean, java.util.List<java.lang.String>, java.util.function.Supplier<? extends org.neo4j.annotations.api.PublicClass<T,V>>) void public throws java.io.IOException
+org.neo4j.annotations.api.PublicClass<T,V>::name java.lang.String public final = constant
+org.neo4j.annotations.api.PublicClass<T,V>::stringMethod() java.lang.String public
+org.neo4j.annotations.api.PublicClass<T,V>::value #T public

@@ -169,7 +169,7 @@
     <pluginManagement>
       <plugins>
 
-        <!-- Here we define our public API, it should be kept in sync with revapi settings below -->
+        <!-- Here we define our public API -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -244,63 +244,6 @@
               *.impl.*:*.internal.*
             </excludePackageNames>
           </configuration>
-        </plugin>
-
-        <!-- Define what packages to treat as public API, it should be kept in sync with javadoc settings above -->
-        <plugin>
-          <groupId>org.revapi</groupId>
-          <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.11.2</version>
-          <configuration>
-            <skip>true</skip>
-            <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
-            <analysisConfiguration>
-              <revapi.java>
-                <reportUsesFor>all-differences</reportUsesFor>
-                <missing-classes>
-                  <behavior>report</behavior>
-                  <ignoreMissingAnnotations>false</ignoreMissingAnnotations>
-                </missing-classes>
-              </revapi.java>
-              <revapi.java.filter.annotated>
-                <regex>true</regex>
-                <include>
-                  <item>@org\.neo4j\.annotations\.api\.PublicApi</item>
-                </include>
-              </revapi.java.filter.annotated>
-              <revapi.reclassify>
-                <item>
-                  <code>java.class.added</code>
-                  <classify>
-                    <BINARY>BREAKING</BINARY>
-                    <SOURCE>BREAKING</SOURCE>
-                  </classify>
-                </item>
-              </revapi.reclassify>
-              <revapi.semver.ignore>
-                <enabled>true</enabled>
-                <versionIncreaseAllows>
-                  <major>breaking</major>
-                  <minor>nonBreaking</minor>
-                  <patch>equivalent</patch>
-                </versionIncreaseAllows>
-              </revapi.semver.ignore>
-            </analysisConfiguration>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.revapi</groupId>
-              <artifactId>revapi-java</artifactId>
-              <version>0.20.0</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- Testing setup -->

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -98,6 +99,7 @@ import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 /**
  * Global module for {@link DatabaseManagementServiceFactory}. This creates all global services and components from DBMS.
  */
+@IgnoreApiCheck
 public class GlobalModule
 {
     private final PageCache pageCache;

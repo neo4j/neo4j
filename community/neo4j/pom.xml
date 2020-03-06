@@ -50,22 +50,6 @@
         </license>
     </licenses>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.revapi</groupId>
-                <artifactId>revapi-maven-plugin</artifactId>
-                <configuration>
-                    <oldArtifacts>
-                        <oldArtifact>
-                            org.neo4j:neo4j:jar:LATEST
-                        </oldArtifact>
-                    </oldArtifacts>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>

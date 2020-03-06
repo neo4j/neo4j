@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.service;
-
-import org.neo4j.annotations.api.IgnoreApiCheck;
+package org.neo4j.annotations.api;
 
 /**
- * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
+ * Should throw since class is not visible
  */
-@IgnoreApiCheck
-public interface NamedService
+@PublicApi
+class NonPublicClass
 {
-    String getName();
+    public static final long NUMBER = 42;
 }

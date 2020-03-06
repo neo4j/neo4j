@@ -1,1 +1,2 @@
 org.neo4j.annotations.service.ServiceAnnotationProcessor
+org.neo4j.annotations.api.PublicApiAnnotationProcessor
