@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.service;
+package org.neo4j.annotations.api;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 
 /**
- * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
+ * Marked classes will not be processed by the annotation processor for api validation.
+ * This is useful for certain interfaces that are exposed inadvertently.
  */
-@IgnoreApiCheck
-public interface NamedService
+@Target( {ElementType.TYPE} )
+public @interface IgnoreApiCheck
 {
-    String getName();
 }

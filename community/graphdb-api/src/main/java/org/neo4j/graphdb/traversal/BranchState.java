@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
+
 /**
  * Accessor for a state associated with a {@link TraversalBranch} during a
  * traversal. A {@link TraversalBranch} can have an associated state which
@@ -31,6 +33,7 @@ package org.neo4j.graphdb.traversal;
  *
  * @param <STATE> the type of object the state is.
  */
+@IgnoreApiCheck
 public interface BranchState<STATE>
 {
     /**

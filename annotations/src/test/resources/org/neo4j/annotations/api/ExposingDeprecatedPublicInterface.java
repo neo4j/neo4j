@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.service;
-
-import org.neo4j.annotations.api.IgnoreApiCheck;
+package org.neo4j.annotations.api;
 
 /**
- * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
+ * Should not throw since method is marked as deprecated
  */
-@IgnoreApiCheck
-public interface NamedService
+@PublicApi
+public interface ExposingDeprecatedPublicInterface
 {
-    String getName();
+    @Deprecated
+    NotMarkedNestedClass i();
 }

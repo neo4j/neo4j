@@ -1,0 +1,7 @@
+org.neo4j.graphdb.schema.AnalyzerProvider public abstract class extends java.lang.Object implements org.neo4j.service.NamedService
+org.neo4j.graphdb.schema.AnalyzerProvider::AnalyzerProvider(java.lang.String) void protected
+org.neo4j.graphdb.schema.AnalyzerProvider::cleanStopWordSet(org.apache.lucene.analysis.CharArraySet) org.apache.lucene.analysis.CharArraySet public static
+org.neo4j.graphdb.schema.AnalyzerProvider::createAnalyzer() org.apache.lucene.analysis.Analyzer public abstract
+org.neo4j.graphdb.schema.AnalyzerProvider::description() java.lang.String public
+org.neo4j.graphdb.schema.AnalyzerProvider::getName() java.lang.String public
+org.neo4j.graphdb.schema.AnalyzerProvider::stopwords() java.util.List<java.lang.String> public

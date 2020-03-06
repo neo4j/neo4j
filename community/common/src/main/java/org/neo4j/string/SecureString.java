@@ -27,8 +27,11 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@PublicApi
 public class SecureString
 {
     private static final SecureRandom random = new SecureRandom();

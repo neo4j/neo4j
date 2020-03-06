@@ -1,0 +1,41 @@
+org.neo4j.logging.Level public final enum extends java.lang.Enum<org.neo4j.logging.Level>
+org.neo4j.logging.Level::DEBUG org.neo4j.logging.Level public static final
+org.neo4j.logging.Level::ERROR org.neo4j.logging.Level public static final
+org.neo4j.logging.Level::INFO org.neo4j.logging.Level public static final
+org.neo4j.logging.Level::NONE org.neo4j.logging.Level public static final
+org.neo4j.logging.Level::WARN org.neo4j.logging.Level public static final
+org.neo4j.logging.Level::valueOf(java.lang.String) org.neo4j.logging.Level public static
+org.neo4j.logging.Level::values() org.neo4j.logging.Level[] public static
+org.neo4j.logging.Log public abstract interface
+org.neo4j.logging.Log::bulk(java.util.function.Consumer<org.neo4j.logging.Log>) void public abstract
+org.neo4j.logging.Log::debug(java.lang.String) void public abstract
+org.neo4j.logging.Log::debug(java.lang.String, java.lang.Object...) void public abstract
+org.neo4j.logging.Log::debug(java.lang.String, java.lang.Throwable) void public abstract
+org.neo4j.logging.Log::debugLogger() org.neo4j.logging.Logger public abstract
+org.neo4j.logging.Log::error(java.lang.String) void public abstract
+org.neo4j.logging.Log::error(java.lang.String, java.lang.Object...) void public abstract
+org.neo4j.logging.Log::error(java.lang.String, java.lang.Throwable) void public abstract
+org.neo4j.logging.Log::errorLogger() org.neo4j.logging.Logger public abstract
+org.neo4j.logging.Log::info(java.lang.String) void public abstract
+org.neo4j.logging.Log::info(java.lang.String, java.lang.Object...) void public abstract
+org.neo4j.logging.Log::info(java.lang.String, java.lang.Throwable) void public abstract
+org.neo4j.logging.Log::infoLogger() org.neo4j.logging.Logger public abstract
+org.neo4j.logging.Log::isDebugEnabled() boolean public abstract
+org.neo4j.logging.Log::warn(java.lang.String) void public abstract
+org.neo4j.logging.Log::warn(java.lang.String, java.lang.Object...) void public abstract
+org.neo4j.logging.Log::warn(java.lang.String, java.lang.Throwable) void public abstract
+org.neo4j.logging.Log::warnLogger() org.neo4j.logging.Logger public abstract
+org.neo4j.logging.LogProvider public abstract interface
+org.neo4j.logging.LogProvider::getLog(java.lang.Class<?>) org.neo4j.logging.Log public abstract
+org.neo4j.logging.LogProvider::getLog(java.lang.String) org.neo4j.logging.Log public abstract
+org.neo4j.logging.LogTimeZone public enum extends java.lang.Enum<org.neo4j.logging.LogTimeZone>
+org.neo4j.logging.LogTimeZone::SYSTEM org.neo4j.logging.LogTimeZone public static final
+org.neo4j.logging.LogTimeZone::UTC org.neo4j.logging.LogTimeZone public static final
+org.neo4j.logging.LogTimeZone::getZoneId() java.time.ZoneId public abstract
+org.neo4j.logging.LogTimeZone::valueOf(java.lang.String) org.neo4j.logging.LogTimeZone public static
+org.neo4j.logging.LogTimeZone::values() org.neo4j.logging.LogTimeZone[] public static
+org.neo4j.logging.Logger public abstract interface
+org.neo4j.logging.Logger::bulk(java.util.function.Consumer<org.neo4j.logging.Logger>) void public abstract
+org.neo4j.logging.Logger::log(java.lang.String) void public abstract
+org.neo4j.logging.Logger::log(java.lang.String, java.lang.Object...) void public abstract
+org.neo4j.logging.Logger::log(java.lang.String, java.lang.Throwable) void public abstract

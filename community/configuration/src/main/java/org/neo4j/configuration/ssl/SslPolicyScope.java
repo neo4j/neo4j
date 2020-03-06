@@ -19,10 +19,13 @@
  */
 package org.neo4j.configuration.ssl;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static org.neo4j.configuration.ssl.ClientAuth.NONE;
 import static org.neo4j.configuration.ssl.ClientAuth.OPTIONAL;
 import static org.neo4j.configuration.ssl.ClientAuth.REQUIRE;
 
+@PublicApi
 public enum SslPolicyScope
 {
     BOLT( OPTIONAL, "certificates/bolt" ),

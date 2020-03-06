@@ -1,0 +1,26 @@
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder public class extends java.lang.Object
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::<T extends java.lang.Object>setConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::DatabaseManagementServiceBuilder(java.io.File) void public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::addDatabaseListener(org.neo4j.graphdb.event.DatabaseEventListener) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::addURLAccessRule(java.lang.String, org.neo4j.graphdb.security.URLAccessRule) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::augmentConfig(org.neo4j.configuration.Config) org.neo4j.configuration.Config protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::build() org.neo4j.dbms.api.DatabaseManagementService public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::config org.neo4j.configuration.Config.Builder protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::databaseDependencies() org.neo4j.graphdb.facade.ExternalDependencies protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::databaseEventListeners java.util.List<org.neo4j.graphdb.event.DatabaseEventListener> protected final
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::dependencies org.neo4j.common.DependencyResolver protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::extensions java.util.List<org.neo4j.kernel.extension.ExtensionFactory<?>> protected final
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getDatabaseInfo() org.neo4j.kernel.impl.factory.DatabaseInfo protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEdition() java.lang.String public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEditionFactory() java.util.function.Function<org.neo4j.graphdb.factory.module.GlobalModule,org.neo4j.graphdb.factory.module.edition.AbstractEditionModule> protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::homeDirectory java.io.File protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::loadPropertiesFromFile(java.lang.String) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public throws java.lang.IllegalArgumentException
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::monitors org.neo4j.monitoring.Monitors protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::newDatabaseManagementService(org.neo4j.configuration.Config, org.neo4j.graphdb.facade.ExternalDependencies) org.neo4j.dbms.api.DatabaseManagementService protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setConfig(java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object>) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setConfigRaw(java.util.Map<java.lang.String,java.lang.String>) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setExternalDependencies(org.neo4j.common.DependencyResolver) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setMonitors(org.neo4j.monitoring.Monitors) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setUserLogProvider(org.neo4j.logging.LogProvider) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::urlAccessRules java.util.Map<java.lang.String,org.neo4j.graphdb.security.URLAccessRule> protected final
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::userLogProvider org.neo4j.logging.LogProvider protected

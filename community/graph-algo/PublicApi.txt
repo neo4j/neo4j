@@ -1,0 +1,31 @@
+org.neo4j.graphalgo.BasicEvaluationContext public class extends java.lang.Object implements org.neo4j.graphalgo.EvaluationContext
+org.neo4j.graphalgo.BasicEvaluationContext::BasicEvaluationContext(org.neo4j.graphdb.Transaction, org.neo4j.graphdb.GraphDatabaseService) void public
+org.neo4j.graphalgo.BasicEvaluationContext::databaseService() org.neo4j.graphdb.GraphDatabaseService public
+org.neo4j.graphalgo.BasicEvaluationContext::transaction() org.neo4j.graphdb.Transaction public
+org.neo4j.graphalgo.CostAccumulator<T extends java.lang.Object> public abstract interface
+org.neo4j.graphalgo.CostAccumulator<T>::addCosts(#T, #T) #T public abstract
+org.neo4j.graphalgo.CostEvaluator<T extends java.lang.Object> public abstract interface
+org.neo4j.graphalgo.CostEvaluator<T>::getCost(org.neo4j.graphdb.Relationship, org.neo4j.graphdb.Direction) #T public abstract
+org.neo4j.graphalgo.EstimateEvaluator<T extends java.lang.Object> public abstract interface
+org.neo4j.graphalgo.EstimateEvaluator<T>::getCost(org.neo4j.graphdb.Node, org.neo4j.graphdb.Node) #T public abstract
+org.neo4j.graphalgo.EvaluationContext public abstract interface
+org.neo4j.graphalgo.EvaluationContext::databaseService() org.neo4j.graphdb.GraphDatabaseService public abstract
+org.neo4j.graphalgo.EvaluationContext::transaction() org.neo4j.graphdb.Transaction public abstract
+org.neo4j.graphalgo.GraphAlgoFactory public abstract class extends java.lang.Object
+org.neo4j.graphalgo.GraphAlgoFactory::GraphAlgoFactory() void public
+org.neo4j.graphalgo.GraphAlgoFactory::aStar(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, org.neo4j.graphalgo.CostEvaluator<java.lang.Double>, org.neo4j.graphalgo.EstimateEvaluator<java.lang.Double>) org.neo4j.graphalgo.PathFinder<org.neo4j.graphalgo.WeightedPath> public static
+org.neo4j.graphalgo.GraphAlgoFactory::allPaths(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphdb.Path> public static
+org.neo4j.graphalgo.GraphAlgoFactory::allSimplePaths(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphdb.Path> public static
+org.neo4j.graphalgo.GraphAlgoFactory::dijkstra(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander<java.lang.Double>, java.lang.String) org.neo4j.graphalgo.PathFinder<org.neo4j.graphalgo.WeightedPath> public static
+org.neo4j.graphalgo.GraphAlgoFactory::dijkstra(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander<java.lang.Double>, org.neo4j.graphalgo.CostEvaluator<java.lang.Double>) org.neo4j.graphalgo.PathFinder<org.neo4j.graphalgo.WeightedPath> public static
+org.neo4j.graphalgo.GraphAlgoFactory::dijkstra(org.neo4j.graphdb.PathExpander<java.lang.Double>, java.lang.String, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphalgo.WeightedPath> public static
+org.neo4j.graphalgo.GraphAlgoFactory::dijkstra(org.neo4j.graphdb.PathExpander<java.lang.Double>, org.neo4j.graphalgo.CostEvaluator<java.lang.Double>, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphalgo.WeightedPath> public static
+org.neo4j.graphalgo.GraphAlgoFactory::pathsWithLength(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphdb.Path> public static
+org.neo4j.graphalgo.GraphAlgoFactory::shortestPath(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphdb.Path> public static
+org.neo4j.graphalgo.GraphAlgoFactory::shortestPath(org.neo4j.graphalgo.EvaluationContext, org.neo4j.graphdb.PathExpander, int, int) org.neo4j.graphalgo.PathFinder<org.neo4j.graphdb.Path> public static
+org.neo4j.graphalgo.PathFinder<P extends org.neo4j.graphdb.Path> public abstract interface
+org.neo4j.graphalgo.PathFinder<P>::findAllPaths(org.neo4j.graphdb.Node, org.neo4j.graphdb.Node) java.lang.Iterable<P> public abstract
+org.neo4j.graphalgo.PathFinder<P>::findSinglePath(org.neo4j.graphdb.Node, org.neo4j.graphdb.Node) #P public abstract
+org.neo4j.graphalgo.PathFinder<P>::metadata() org.neo4j.graphdb.traversal.TraversalMetadata public abstract
+org.neo4j.graphalgo.WeightedPath public abstract interface implements org.neo4j.graphdb.Path
+org.neo4j.graphalgo.WeightedPath::weight() double public abstract

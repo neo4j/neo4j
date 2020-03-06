@@ -21,10 +21,12 @@ package org.neo4j.server;
 
 import java.net.URI;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.configuration.Config;
 import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
+@IgnoreApiCheck
 public interface NeoServer
 {
     void start();

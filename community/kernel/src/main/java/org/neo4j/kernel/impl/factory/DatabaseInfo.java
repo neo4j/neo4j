@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.common.Edition;
 
+@IgnoreApiCheck
 public enum DatabaseInfo
 {
     UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),

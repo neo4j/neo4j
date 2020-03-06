@@ -21,11 +21,13 @@ package org.neo4j.graphdb.security;
 
 import java.net.URL;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 
 /**
  * A rule to evaluate if Neo4j is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
  */
+@IgnoreApiCheck
 public interface URLAccessRule
 {
     /**

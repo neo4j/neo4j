@@ -20,8 +20,6 @@
 package org.neo4j.annotations.api;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -31,7 +29,6 @@ import java.lang.annotation.Target;
  * <p>
  * <li>Any external applications must only use types that are explicitly marked with {@code PublicApi}</li>
  */
-@Retention( RetentionPolicy.SOURCE )
 @Target( {ElementType.TYPE} )
 public @interface PublicApi
 {

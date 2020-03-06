@@ -1,0 +1,441 @@
+org.neo4j.dbms.api.DatabaseExistsException public class extends org.neo4j.dbms.api.DatabaseManagementException
+org.neo4j.dbms.api.DatabaseExistsException::DatabaseExistsException() void public
+org.neo4j.dbms.api.DatabaseExistsException::DatabaseExistsException(java.lang.String) void public
+org.neo4j.dbms.api.DatabaseExistsException::DatabaseExistsException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseExistsException::DatabaseExistsException(java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseExistsException::status() org.neo4j.kernel.api.exceptions.Status public
+org.neo4j.dbms.api.DatabaseLimitReachedException public class extends org.neo4j.dbms.api.DatabaseManagementException
+org.neo4j.dbms.api.DatabaseLimitReachedException::DatabaseLimitReachedException(java.lang.String) void public
+org.neo4j.dbms.api.DatabaseLimitReachedException::status() org.neo4j.kernel.api.exceptions.Status public
+org.neo4j.dbms.api.DatabaseManagementException public class extends java.lang.RuntimeException implements org.neo4j.kernel.api.exceptions.Status.HasStatus
+org.neo4j.dbms.api.DatabaseManagementException::DatabaseManagementException() void public
+org.neo4j.dbms.api.DatabaseManagementException::DatabaseManagementException(java.lang.String) void public
+org.neo4j.dbms.api.DatabaseManagementException::DatabaseManagementException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseManagementException::DatabaseManagementException(java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseManagementException::status() org.neo4j.kernel.api.exceptions.Status public
+org.neo4j.dbms.api.DatabaseManagementException::wrap(java.lang.Throwable) org.neo4j.dbms.api.DatabaseManagementException public static
+org.neo4j.dbms.api.DatabaseManagementService public abstract interface
+org.neo4j.dbms.api.DatabaseManagementService::createDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseExistsException
+org.neo4j.dbms.api.DatabaseManagementService::database(java.lang.String) org.neo4j.graphdb.GraphDatabaseService public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
+org.neo4j.dbms.api.DatabaseManagementService::dropDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
+org.neo4j.dbms.api.DatabaseManagementService::listDatabases() java.util.List<java.lang.String> public abstract
+org.neo4j.dbms.api.DatabaseManagementService::registerDatabaseEventListener(org.neo4j.graphdb.event.DatabaseEventListener) void public abstract
+org.neo4j.dbms.api.DatabaseManagementService::registerTransactionEventListener(java.lang.String, org.neo4j.graphdb.event.TransactionEventListener<?>) void public abstract
+org.neo4j.dbms.api.DatabaseManagementService::shutdown() void public abstract
+org.neo4j.dbms.api.DatabaseManagementService::shutdownDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
+org.neo4j.dbms.api.DatabaseManagementService::startDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
+org.neo4j.dbms.api.DatabaseManagementService::unregisterDatabaseEventListener(org.neo4j.graphdb.event.DatabaseEventListener) void public abstract
+org.neo4j.dbms.api.DatabaseManagementService::unregisterTransactionEventListener(java.lang.String, org.neo4j.graphdb.event.TransactionEventListener<?>) void public abstract
+org.neo4j.dbms.api.DatabaseNotFoundException public class extends org.neo4j.dbms.api.DatabaseManagementException
+org.neo4j.dbms.api.DatabaseNotFoundException::DatabaseNotFoundException() void public
+org.neo4j.dbms.api.DatabaseNotFoundException::DatabaseNotFoundException(java.lang.String) void public
+org.neo4j.dbms.api.DatabaseNotFoundException::DatabaseNotFoundException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseNotFoundException::DatabaseNotFoundException(java.lang.Throwable) void public
+org.neo4j.dbms.api.DatabaseNotFoundException::status() org.neo4j.kernel.api.exceptions.Status public
+org.neo4j.graphdb.ConstraintViolationException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.ConstraintViolationException::ConstraintViolationException(java.lang.String) void public
+org.neo4j.graphdb.ConstraintViolationException::ConstraintViolationException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.Direction public final enum extends java.lang.Enum<org.neo4j.graphdb.Direction>
+org.neo4j.graphdb.Direction::BOTH org.neo4j.graphdb.Direction public static final
+org.neo4j.graphdb.Direction::INCOMING org.neo4j.graphdb.Direction public static final
+org.neo4j.graphdb.Direction::OUTGOING org.neo4j.graphdb.Direction public static final
+org.neo4j.graphdb.Direction::reverse() org.neo4j.graphdb.Direction public
+org.neo4j.graphdb.Direction::valueOf(java.lang.String) org.neo4j.graphdb.Direction public static
+org.neo4j.graphdb.Direction::values() org.neo4j.graphdb.Direction[] public static
+org.neo4j.graphdb.Entity public abstract interface
+org.neo4j.graphdb.Entity::getAllProperties() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.Entity::getId() long public abstract
+org.neo4j.graphdb.Entity::getProperties(java.lang.String...) java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.Entity::getProperty(java.lang.String) java.lang.Object public abstract
+org.neo4j.graphdb.Entity::getProperty(java.lang.String, java.lang.Object) java.lang.Object public abstract
+org.neo4j.graphdb.Entity::getPropertyKeys() java.lang.Iterable<java.lang.String> public abstract
+org.neo4j.graphdb.Entity::hasProperty(java.lang.String) boolean public abstract
+org.neo4j.graphdb.Entity::removeProperty(java.lang.String) java.lang.Object public abstract
+org.neo4j.graphdb.Entity::setProperty(java.lang.String, java.lang.Object) void public abstract
+org.neo4j.graphdb.ExecutionPlanDescription public abstract interface
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics public abstract static interface
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getDbHits() long public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getPageCacheHitRatio() double public default
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getPageCacheHits() long public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getPageCacheMisses() long public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getRows() long public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::getTime() long public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::hasDbHits() boolean public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::hasPageCacheStats() boolean public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::hasRows() boolean public abstract
+org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics::hasTime() boolean public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::getArguments() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::getChildren() java.util.List<org.neo4j.graphdb.ExecutionPlanDescription> public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::getIdentifiers() java.util.Set<java.lang.String> public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::getName() java.lang.String public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::getProfilerStatistics() org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics public abstract
+org.neo4j.graphdb.ExecutionPlanDescription::hasProfilerStatistics() boolean public abstract
+org.neo4j.graphdb.GraphDatabaseService public abstract interface
+org.neo4j.graphdb.GraphDatabaseService::<T extends java.lang.Object>executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>, org.neo4j.graphdb.ResultTransformer<T>) #T public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.GraphDatabaseService::<T extends java.lang.Object>executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>, org.neo4j.graphdb.ResultTransformer<T>, java.time.Duration) #T public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.GraphDatabaseService::beginTx() org.neo4j.graphdb.Transaction public abstract
+org.neo4j.graphdb.GraphDatabaseService::beginTx(long, java.util.concurrent.TimeUnit) org.neo4j.graphdb.Transaction public abstract
+org.neo4j.graphdb.GraphDatabaseService::databaseName() java.lang.String public abstract
+org.neo4j.graphdb.GraphDatabaseService::executeTransactionally(java.lang.String) void public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.GraphDatabaseService::executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>) void public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.GraphDatabaseService::isAvailable(long) boolean public abstract
+org.neo4j.graphdb.InputPosition public final class extends java.lang.Object
+org.neo4j.graphdb.InputPosition::InputPosition(int, int, int) void public
+org.neo4j.graphdb.InputPosition::empty org.neo4j.graphdb.InputPosition public static final
+org.neo4j.graphdb.InputPosition::equals(java.lang.Object) boolean public
+org.neo4j.graphdb.InputPosition::getColumn() int public
+org.neo4j.graphdb.InputPosition::getLine() int public
+org.neo4j.graphdb.InputPosition::getOffset() int public
+org.neo4j.graphdb.InputPosition::hashCode() int public
+org.neo4j.graphdb.InputPosition::toString() java.lang.String public
+org.neo4j.graphdb.Label public abstract interface
+org.neo4j.graphdb.Label::label(java.lang.String) org.neo4j.graphdb.Label public static
+org.neo4j.graphdb.Label::name() java.lang.String public abstract
+org.neo4j.graphdb.Lock public abstract interface
+org.neo4j.graphdb.Lock::release() void public abstract
+org.neo4j.graphdb.MultipleFoundException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.MultipleFoundException::MultipleFoundException() void public
+org.neo4j.graphdb.MultipleFoundException::MultipleFoundException(java.lang.String) void public
+org.neo4j.graphdb.MultipleFoundException::MultipleFoundException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.MultipleFoundException::MultipleFoundException(java.lang.Throwable) void public
+org.neo4j.graphdb.Node public abstract interface implements org.neo4j.graphdb.Entity
+org.neo4j.graphdb.Node::addLabel(org.neo4j.graphdb.Label) void public abstract
+org.neo4j.graphdb.Node::createRelationshipTo(org.neo4j.graphdb.Node, org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.Relationship public abstract
+org.neo4j.graphdb.Node::delete() void public abstract
+org.neo4j.graphdb.Node::getDegree() int public abstract
+org.neo4j.graphdb.Node::getDegree(org.neo4j.graphdb.Direction) int public abstract
+org.neo4j.graphdb.Node::getDegree(org.neo4j.graphdb.RelationshipType) int public abstract
+org.neo4j.graphdb.Node::getDegree(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) int public abstract
+org.neo4j.graphdb.Node::getLabels() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
+org.neo4j.graphdb.Node::getRelationshipTypes() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
+org.neo4j.graphdb.Node::getRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction, org.neo4j.graphdb.RelationshipType...) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.RelationshipType...) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getSingleRelationship(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) org.neo4j.graphdb.Relationship public abstract
+org.neo4j.graphdb.Node::hasLabel(org.neo4j.graphdb.Label) boolean public abstract
+org.neo4j.graphdb.Node::hasRelationship() boolean public abstract
+org.neo4j.graphdb.Node::hasRelationship(org.neo4j.graphdb.Direction) boolean public abstract
+org.neo4j.graphdb.Node::hasRelationship(org.neo4j.graphdb.Direction, org.neo4j.graphdb.RelationshipType...) boolean public abstract
+org.neo4j.graphdb.Node::hasRelationship(org.neo4j.graphdb.RelationshipType...) boolean public abstract
+org.neo4j.graphdb.Node::removeLabel(org.neo4j.graphdb.Label) void public abstract
+org.neo4j.graphdb.NotFoundException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.NotFoundException::NotFoundException() void public
+org.neo4j.graphdb.NotFoundException::NotFoundException(java.lang.String) void public
+org.neo4j.graphdb.NotFoundException::NotFoundException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.NotFoundException::NotFoundException(java.lang.Throwable) void public
+org.neo4j.graphdb.NotInTransactionException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.NotInTransactionException::NotInTransactionException() void public
+org.neo4j.graphdb.NotInTransactionException::NotInTransactionException(java.lang.String) void public
+org.neo4j.graphdb.NotInTransactionException::NotInTransactionException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.NotInTransactionException::NotInTransactionException(java.lang.Throwable) void public
+org.neo4j.graphdb.Notification public abstract interface
+org.neo4j.graphdb.Notification::getCode() java.lang.String public abstract
+org.neo4j.graphdb.Notification::getDescription() java.lang.String public abstract
+org.neo4j.graphdb.Notification::getPosition() org.neo4j.graphdb.InputPosition public abstract
+org.neo4j.graphdb.Notification::getSeverity() org.neo4j.graphdb.SeverityLevel public abstract
+org.neo4j.graphdb.Notification::getTitle() java.lang.String public abstract
+org.neo4j.graphdb.Path public abstract interface implements java.lang.Iterable<org.neo4j.graphdb.Entity>
+org.neo4j.graphdb.Path::endNode() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Path::iterator() java.util.Iterator<org.neo4j.graphdb.Entity> public abstract
+org.neo4j.graphdb.Path::lastRelationship() org.neo4j.graphdb.Relationship public abstract
+org.neo4j.graphdb.Path::length() int public abstract
+org.neo4j.graphdb.Path::nodes() java.lang.Iterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Path::relationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Path::reverseNodes() java.lang.Iterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Path::reverseRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Path::startNode() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Path::toString() java.lang.String public abstract
+org.neo4j.graphdb.PathExpander<STATE extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.PathExpander<STATE>::expand(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.PathExpander<STATE>::reverse() org.neo4j.graphdb.PathExpander<STATE> public abstract
+org.neo4j.graphdb.QueryExecutionException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.QueryExecutionException::QueryExecutionException(java.lang.String, java.lang.Throwable, java.lang.String) void public
+org.neo4j.graphdb.QueryExecutionException::getStatusCode() java.lang.String public
+org.neo4j.graphdb.QueryExecutionType public final class extends java.lang.Object
+org.neo4j.graphdb.QueryExecutionType.QueryType public static final enum extends java.lang.Enum<org.neo4j.graphdb.QueryExecutionType.QueryType>
+org.neo4j.graphdb.QueryExecutionType.QueryType::DBMS org.neo4j.graphdb.QueryExecutionType.QueryType public static final
+org.neo4j.graphdb.QueryExecutionType.QueryType::READ_ONLY org.neo4j.graphdb.QueryExecutionType.QueryType public static final
+org.neo4j.graphdb.QueryExecutionType.QueryType::READ_WRITE org.neo4j.graphdb.QueryExecutionType.QueryType public static final
+org.neo4j.graphdb.QueryExecutionType.QueryType::SCHEMA_WRITE org.neo4j.graphdb.QueryExecutionType.QueryType public static final
+org.neo4j.graphdb.QueryExecutionType.QueryType::WRITE org.neo4j.graphdb.QueryExecutionType.QueryType public static final
+org.neo4j.graphdb.QueryExecutionType.QueryType::valueOf(java.lang.String) org.neo4j.graphdb.QueryExecutionType.QueryType public static
+org.neo4j.graphdb.QueryExecutionType.QueryType::values() org.neo4j.graphdb.QueryExecutionType.QueryType[] public static
+org.neo4j.graphdb.QueryExecutionType::canContainResults() boolean public
+org.neo4j.graphdb.QueryExecutionType::canUpdateData() boolean public
+org.neo4j.graphdb.QueryExecutionType::canUpdateSchema() boolean public
+org.neo4j.graphdb.QueryExecutionType::explained(org.neo4j.graphdb.QueryExecutionType.QueryType) org.neo4j.graphdb.QueryExecutionType public static
+org.neo4j.graphdb.QueryExecutionType::isExplained() boolean public
+org.neo4j.graphdb.QueryExecutionType::isProfiled() boolean public
+org.neo4j.graphdb.QueryExecutionType::profiled(org.neo4j.graphdb.QueryExecutionType.QueryType) org.neo4j.graphdb.QueryExecutionType public static
+org.neo4j.graphdb.QueryExecutionType::query(org.neo4j.graphdb.QueryExecutionType.QueryType) org.neo4j.graphdb.QueryExecutionType public static
+org.neo4j.graphdb.QueryExecutionType::queryType() org.neo4j.graphdb.QueryExecutionType.QueryType public
+org.neo4j.graphdb.QueryExecutionType::requestedExecutionPlanDescription() boolean public
+org.neo4j.graphdb.QueryExecutionType::toString() java.lang.String public
+org.neo4j.graphdb.QueryStatistics public abstract interface
+org.neo4j.graphdb.QueryStatistics::EMPTY org.neo4j.graphdb.QueryStatistics public static final
+org.neo4j.graphdb.QueryStatistics::containsSystemUpdates() boolean public abstract
+org.neo4j.graphdb.QueryStatistics::containsUpdates() boolean public abstract
+org.neo4j.graphdb.QueryStatistics::getConstraintsAdded() int public abstract
+org.neo4j.graphdb.QueryStatistics::getConstraintsRemoved() int public abstract
+org.neo4j.graphdb.QueryStatistics::getIndexesAdded() int public abstract
+org.neo4j.graphdb.QueryStatistics::getIndexesRemoved() int public abstract
+org.neo4j.graphdb.QueryStatistics::getLabelsAdded() int public abstract
+org.neo4j.graphdb.QueryStatistics::getLabelsRemoved() int public abstract
+org.neo4j.graphdb.QueryStatistics::getNodesCreated() int public abstract
+org.neo4j.graphdb.QueryStatistics::getNodesDeleted() int public abstract
+org.neo4j.graphdb.QueryStatistics::getPropertiesSet() int public abstract
+org.neo4j.graphdb.QueryStatistics::getRelationshipsCreated() int public abstract
+org.neo4j.graphdb.QueryStatistics::getRelationshipsDeleted() int public abstract
+org.neo4j.graphdb.QueryStatistics::getSystemUpdates() int public abstract
+org.neo4j.graphdb.Relationship public abstract interface implements org.neo4j.graphdb.Entity
+org.neo4j.graphdb.Relationship::delete() void public abstract
+org.neo4j.graphdb.Relationship::getEndNode() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Relationship::getEndNodeId() long public default
+org.neo4j.graphdb.Relationship::getNodes() org.neo4j.graphdb.Node[] public abstract
+org.neo4j.graphdb.Relationship::getOtherNode(org.neo4j.graphdb.Node) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Relationship::getOtherNodeId(long) long public default
+org.neo4j.graphdb.Relationship::getStartNode() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Relationship::getStartNodeId() long public default
+org.neo4j.graphdb.Relationship::getType() org.neo4j.graphdb.RelationshipType public abstract
+org.neo4j.graphdb.Relationship::isType(org.neo4j.graphdb.RelationshipType) boolean public abstract
+org.neo4j.graphdb.RelationshipType public abstract interface
+org.neo4j.graphdb.RelationshipType::name() java.lang.String public abstract
+org.neo4j.graphdb.RelationshipType::withName(java.lang.String) org.neo4j.graphdb.RelationshipType public static
+org.neo4j.graphdb.Resource public abstract interface implements java.lang.AutoCloseable
+org.neo4j.graphdb.Resource::EMPTY org.neo4j.graphdb.Resource public static final
+org.neo4j.graphdb.Resource::close() void public abstract
+org.neo4j.graphdb.ResourceIterable<T extends java.lang.Object> public abstract interface implements java.lang.Iterable<T>
+org.neo4j.graphdb.ResourceIterable<T>::iterator() org.neo4j.graphdb.ResourceIterator<T> public abstract
+org.neo4j.graphdb.ResourceIterable<T>::stream() java.util.stream.Stream<T> public default
+org.neo4j.graphdb.ResourceIterator<T extends java.lang.Object> public abstract interface implements java.util.Iterator<T>, org.neo4j.graphdb.Resource
+org.neo4j.graphdb.ResourceIterator<T>::<R extends java.lang.Object>map(java.util.function.Function<T,R>) org.neo4j.graphdb.ResourceIterator<R> public default
+org.neo4j.graphdb.ResourceIterator<T>::close() void public abstract
+org.neo4j.graphdb.ResourceIterator<T>::stream() java.util.stream.Stream<T> public default
+org.neo4j.graphdb.Result public abstract interface implements org.neo4j.graphdb.ResourceIterator<java.util.Map<java.lang.String,java.lang.Object>>
+org.neo4j.graphdb.Result.ResultRow public abstract static interface
+org.neo4j.graphdb.Result.ResultRow::get(java.lang.String) java.lang.Object public abstract
+org.neo4j.graphdb.Result.ResultRow::getBoolean(java.lang.String) java.lang.Boolean public abstract
+org.neo4j.graphdb.Result.ResultRow::getNode(java.lang.String) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Result.ResultRow::getNumber(java.lang.String) java.lang.Number public abstract
+org.neo4j.graphdb.Result.ResultRow::getPath(java.lang.String) org.neo4j.graphdb.Path public abstract
+org.neo4j.graphdb.Result.ResultRow::getRelationship(java.lang.String) org.neo4j.graphdb.Relationship public abstract
+org.neo4j.graphdb.Result.ResultRow::getString(java.lang.String) java.lang.String public abstract
+org.neo4j.graphdb.Result.ResultVisitor<VisitationException extends java.lang.Exception> public abstract static interface
+org.neo4j.graphdb.Result.ResultVisitor<VisitationException>::visit(org.neo4j.graphdb.Result.ResultRow) boolean public abstract throws #VisitationException
+org.neo4j.graphdb.Result::<T extends java.lang.Object>columnAs(java.lang.String) org.neo4j.graphdb.ResourceIterator<T> public abstract
+org.neo4j.graphdb.Result::<VisitationException extends java.lang.Exception>accept(org.neo4j.graphdb.Result.ResultVisitor<VisitationException>) void public abstract throws #VisitationException
+org.neo4j.graphdb.Result::close() void public abstract
+org.neo4j.graphdb.Result::columns() java.util.List<java.lang.String> public abstract
+org.neo4j.graphdb.Result::getExecutionPlanDescription() org.neo4j.graphdb.ExecutionPlanDescription public abstract
+org.neo4j.graphdb.Result::getNotifications() java.lang.Iterable<org.neo4j.graphdb.Notification> public abstract
+org.neo4j.graphdb.Result::getQueryExecutionType() org.neo4j.graphdb.QueryExecutionType public abstract
+org.neo4j.graphdb.Result::getQueryStatistics() org.neo4j.graphdb.QueryStatistics public abstract
+org.neo4j.graphdb.Result::hasNext() boolean public abstract
+org.neo4j.graphdb.Result::next() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.Result::remove() void public abstract
+org.neo4j.graphdb.Result::resultAsString() java.lang.String public abstract
+org.neo4j.graphdb.Result::writeAsStringTo(java.io.PrintWriter) void public abstract
+org.neo4j.graphdb.ResultTransformer<T extends java.lang.Object> public abstract interface implements java.util.function.Function<org.neo4j.graphdb.Result,T>
+org.neo4j.graphdb.ResultTransformer<T>::EMPTY_TRANSFORMER org.neo4j.graphdb.ResultTransformer<java.lang.Void> public static final
+org.neo4j.graphdb.SeverityLevel public final enum extends java.lang.Enum<org.neo4j.graphdb.SeverityLevel>
+org.neo4j.graphdb.SeverityLevel::INFORMATION org.neo4j.graphdb.SeverityLevel public static final
+org.neo4j.graphdb.SeverityLevel::WARNING org.neo4j.graphdb.SeverityLevel public static final
+org.neo4j.graphdb.SeverityLevel::valueOf(java.lang.String) org.neo4j.graphdb.SeverityLevel public static
+org.neo4j.graphdb.SeverityLevel::values() org.neo4j.graphdb.SeverityLevel[] public static
+org.neo4j.graphdb.StringSearchMode public final enum extends java.lang.Enum<org.neo4j.graphdb.StringSearchMode>
+org.neo4j.graphdb.StringSearchMode::CONTAINS org.neo4j.graphdb.StringSearchMode public static final
+org.neo4j.graphdb.StringSearchMode::EXACT org.neo4j.graphdb.StringSearchMode public static final
+org.neo4j.graphdb.StringSearchMode::PREFIX org.neo4j.graphdb.StringSearchMode public static final
+org.neo4j.graphdb.StringSearchMode::SUFFIX org.neo4j.graphdb.StringSearchMode public static final
+org.neo4j.graphdb.StringSearchMode::valueOf(java.lang.String) org.neo4j.graphdb.StringSearchMode public static
+org.neo4j.graphdb.StringSearchMode::values() org.neo4j.graphdb.StringSearchMode[] public static
+org.neo4j.graphdb.Transaction public abstract interface implements java.lang.AutoCloseable
+org.neo4j.graphdb.Transaction::acquireReadLock(org.neo4j.graphdb.Entity) org.neo4j.graphdb.Lock public abstract
+org.neo4j.graphdb.Transaction::acquireWriteLock(org.neo4j.graphdb.Entity) org.neo4j.graphdb.Lock public abstract
+org.neo4j.graphdb.Transaction::bidirectionalTraversalDescription() org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.Transaction::close() void public abstract
+org.neo4j.graphdb.Transaction::commit() void public abstract
+org.neo4j.graphdb.Transaction::createNode() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Transaction::createNode(org.neo4j.graphdb.Label...) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Transaction::execute(java.lang.String) org.neo4j.graphdb.Result public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.Transaction::execute(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>) org.neo4j.graphdb.Result public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.Transaction::findNode(org.neo4j.graphdb.Label, java.lang.String, java.lang.Object) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.lang.String, java.lang.String, org.neo4j.graphdb.StringSearchMode) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.util.Map<java.lang.String,java.lang.Object>) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::getAllLabels() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
+org.neo4j.graphdb.Transaction::getAllLabelsInUse() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
+org.neo4j.graphdb.Transaction::getAllNodes() org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.Transaction::getAllPropertyKeys() java.lang.Iterable<java.lang.String> public abstract
+org.neo4j.graphdb.Transaction::getAllRelationshipTypes() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
+org.neo4j.graphdb.Transaction::getAllRelationshipTypesInUse() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
+org.neo4j.graphdb.Transaction::getAllRelationships() org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Transaction::getNodeById(long) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Transaction::getRelationshipById(long) org.neo4j.graphdb.Relationship public abstract
+org.neo4j.graphdb.Transaction::rollback() void public abstract
+org.neo4j.graphdb.Transaction::schema() org.neo4j.graphdb.schema.Schema public abstract
+org.neo4j.graphdb.Transaction::terminate() void public abstract
+org.neo4j.graphdb.Transaction::traversalDescription() org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.TransactionFailureException public class extends java.lang.RuntimeException
+org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String) void public
+org.neo4j.graphdb.TransactionFailureException::TransactionFailureException(java.lang.String, java.lang.Throwable) void public
+org.neo4j.graphdb.TransactionTerminatedException public class extends org.neo4j.graphdb.TransactionFailureException implements org.neo4j.kernel.api.exceptions.Status.HasStatus
+org.neo4j.graphdb.TransactionTerminatedException::TransactionTerminatedException(org.neo4j.kernel.api.exceptions.Status) void public
+org.neo4j.graphdb.TransactionTerminatedException::TransactionTerminatedException(org.neo4j.kernel.api.exceptions.Status, java.lang.String) void protected
+org.neo4j.graphdb.TransactionTerminatedException::status() org.neo4j.kernel.api.exceptions.Status public
+org.neo4j.graphdb.config.Configuration public abstract interface
+org.neo4j.graphdb.config.Configuration::<T extends java.lang.Object>get(org.neo4j.graphdb.config.Setting<T>) #T public abstract
+org.neo4j.graphdb.config.Configuration::EMPTY org.neo4j.graphdb.config.Configuration public static final
+org.neo4j.graphdb.config.Setting<T extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.config.Setting<T>::defaultValue() #T public abstract
+org.neo4j.graphdb.config.Setting<T>::description() java.lang.String public abstract
+org.neo4j.graphdb.config.Setting<T>::dynamic() boolean public abstract
+org.neo4j.graphdb.config.Setting<T>::internal() boolean public abstract
+org.neo4j.graphdb.config.Setting<T>::name() java.lang.String public abstract
+org.neo4j.graphdb.event.DatabaseEventContext public abstract interface
+org.neo4j.graphdb.event.DatabaseEventContext::getDatabaseName() java.lang.String public abstract
+org.neo4j.graphdb.event.DatabaseEventListener public abstract interface
+org.neo4j.graphdb.event.DatabaseEventListener::databasePanic(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
+org.neo4j.graphdb.event.DatabaseEventListener::databaseShutdown(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
+org.neo4j.graphdb.event.DatabaseEventListener::databaseStart(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
+org.neo4j.graphdb.event.LabelEntry public abstract interface
+org.neo4j.graphdb.event.LabelEntry::label() org.neo4j.graphdb.Label public abstract
+org.neo4j.graphdb.event.LabelEntry::node() org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.event.PropertyEntry<T extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.event.PropertyEntry<T>::entity() #T public abstract
+org.neo4j.graphdb.event.PropertyEntry<T>::key() java.lang.String public abstract
+org.neo4j.graphdb.event.PropertyEntry<T>::previouslyCommittedValue() java.lang.Object public abstract
+org.neo4j.graphdb.event.PropertyEntry<T>::value() java.lang.Object public abstract
+org.neo4j.graphdb.event.TransactionData public abstract interface
+org.neo4j.graphdb.event.TransactionData::assignedLabels() java.lang.Iterable<org.neo4j.graphdb.event.LabelEntry> public abstract
+org.neo4j.graphdb.event.TransactionData::assignedNodeProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Node>> public abstract
+org.neo4j.graphdb.event.TransactionData::assignedRelationshipProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Relationship>> public abstract
+org.neo4j.graphdb.event.TransactionData::createdNodes() java.lang.Iterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.event.TransactionData::createdRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.event.TransactionData::deletedNodes() java.lang.Iterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.event.TransactionData::deletedRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.event.TransactionData::getCommitTime() long public default
+org.neo4j.graphdb.event.TransactionData::getTransactionId() long public default
+org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Node) boolean public abstract
+org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Relationship) boolean public abstract
+org.neo4j.graphdb.event.TransactionData::metaData() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.event.TransactionData::removedLabels() java.lang.Iterable<org.neo4j.graphdb.event.LabelEntry> public abstract
+org.neo4j.graphdb.event.TransactionData::removedNodeProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Node>> public abstract
+org.neo4j.graphdb.event.TransactionData::removedRelationshipProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Relationship>> public abstract
+org.neo4j.graphdb.event.TransactionData::username() java.lang.String public abstract
+org.neo4j.graphdb.event.TransactionEventListener<T extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.event.TransactionEventListener<T>::afterCommit(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
+org.neo4j.graphdb.event.TransactionEventListener<T>::afterRollback(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
+org.neo4j.graphdb.event.TransactionEventListener<T>::beforeCommit(org.neo4j.graphdb.event.TransactionData, org.neo4j.graphdb.Transaction, org.neo4j.graphdb.GraphDatabaseService) #T public abstract throws java.lang.Exception
+org.neo4j.graphdb.schema.ConstraintCreator public abstract interface
+org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyExists(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsNodeKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsUnique(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::create() org.neo4j.graphdb.schema.ConstraintDefinition public abstract throws org.neo4j.graphdb.ConstraintViolationException
+org.neo4j.graphdb.schema.ConstraintCreator::withIndexConfiguration(java.util.Map<org.neo4j.graphdb.schema.IndexSetting,java.lang.Object>) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::withIndexType(org.neo4j.graphdb.schema.IndexType) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::withName(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition public abstract interface
+org.neo4j.graphdb.schema.ConstraintDefinition::drop() void public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getConstraintType() org.neo4j.graphdb.schema.ConstraintType public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getLabel() org.neo4j.graphdb.Label public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getName() java.lang.String public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getPropertyKeys() java.lang.Iterable<java.lang.String> public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getRelationshipType() org.neo4j.graphdb.RelationshipType public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::isConstraintType(org.neo4j.graphdb.schema.ConstraintType) boolean public abstract
+org.neo4j.graphdb.schema.ConstraintType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.ConstraintType>
+org.neo4j.graphdb.schema.ConstraintType::NODE_KEY org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::NODE_PROPERTY_EXISTENCE org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::RELATIONSHIP_PROPERTY_EXISTENCE org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::UNIQUENESS org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::valueOf(java.lang.String) org.neo4j.graphdb.schema.ConstraintType public static
+org.neo4j.graphdb.schema.ConstraintType::values() org.neo4j.graphdb.schema.ConstraintType[] public static
+org.neo4j.graphdb.schema.IndexCreator public abstract interface
+org.neo4j.graphdb.schema.IndexCreator::create() org.neo4j.graphdb.schema.IndexDefinition public abstract throws org.neo4j.graphdb.ConstraintViolationException
+org.neo4j.graphdb.schema.IndexCreator::on(java.lang.String) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.IndexCreator::withIndexConfiguration(java.util.Map<org.neo4j.graphdb.schema.IndexSetting,java.lang.Object>) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.IndexCreator::withIndexType(org.neo4j.graphdb.schema.IndexType) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.IndexCreator::withName(java.lang.String) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.IndexDefinition public abstract interface
+org.neo4j.graphdb.schema.IndexDefinition::drop() void public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getIndexConfiguration() java.util.Map<org.neo4j.graphdb.schema.IndexSetting,java.lang.Object> public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getIndexType() org.neo4j.graphdb.schema.IndexType public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getLabels() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getName() java.lang.String public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getPropertyKeys() java.lang.Iterable<java.lang.String> public abstract
+org.neo4j.graphdb.schema.IndexDefinition::getRelationshipTypes() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
+org.neo4j.graphdb.schema.IndexDefinition::isCompositeIndex() boolean public abstract
+org.neo4j.graphdb.schema.IndexDefinition::isConstraintIndex() boolean public abstract
+org.neo4j.graphdb.schema.IndexDefinition::isMultiTokenIndex() boolean public abstract
+org.neo4j.graphdb.schema.IndexDefinition::isNodeIndex() boolean public abstract
+org.neo4j.graphdb.schema.IndexDefinition::isRelationshipIndex() boolean public abstract
+org.neo4j.graphdb.schema.IndexPopulationProgress public class extends java.lang.Object
+org.neo4j.graphdb.schema.IndexPopulationProgress::DONE org.neo4j.graphdb.schema.IndexPopulationProgress public static final
+org.neo4j.graphdb.schema.IndexPopulationProgress::IndexPopulationProgress(long, long) void public
+org.neo4j.graphdb.schema.IndexPopulationProgress::NONE org.neo4j.graphdb.schema.IndexPopulationProgress public static final
+org.neo4j.graphdb.schema.IndexPopulationProgress::getCompletedPercentage() float public
+org.neo4j.graphdb.schema.IndexPopulationProgress::toString() java.lang.String public
+org.neo4j.graphdb.schema.IndexSetting public abstract interface
+org.neo4j.graphdb.schema.IndexSetting::fulltext_Analyzer() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::fulltext_Eventually_Consistent() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::getSettingName() java.lang.String public abstract
+org.neo4j.graphdb.schema.IndexSetting::getType() java.lang.Class<?> public abstract
+org.neo4j.graphdb.schema.IndexSetting::spatial_Cartesian_3D_Max() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Cartesian_3D_Min() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Cartesian_Max() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Cartesian_Min() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Max() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Min() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Max() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Min() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.IndexType>
+org.neo4j.graphdb.schema.IndexType::BTREE org.neo4j.graphdb.schema.IndexType public static final
+org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final
+org.neo4j.graphdb.schema.IndexType::valueOf(java.lang.String) org.neo4j.graphdb.schema.IndexType public static
+org.neo4j.graphdb.schema.IndexType::values() org.neo4j.graphdb.schema.IndexType[] public static
+org.neo4j.graphdb.schema.Schema public abstract interface
+org.neo4j.graphdb.schema.Schema.IndexState public static final enum extends java.lang.Enum<org.neo4j.graphdb.schema.Schema.IndexState>
+org.neo4j.graphdb.schema.Schema.IndexState::FAILED org.neo4j.graphdb.schema.Schema.IndexState public static final
+org.neo4j.graphdb.schema.Schema.IndexState::ONLINE org.neo4j.graphdb.schema.Schema.IndexState public static final
+org.neo4j.graphdb.schema.Schema.IndexState::POPULATING org.neo4j.graphdb.schema.Schema.IndexState public static final
+org.neo4j.graphdb.schema.Schema.IndexState::valueOf(java.lang.String) org.neo4j.graphdb.schema.Schema.IndexState public static
+org.neo4j.graphdb.schema.Schema.IndexState::values() org.neo4j.graphdb.schema.Schema.IndexState[] public static
+org.neo4j.graphdb.schema.Schema::awaitIndexOnline(java.lang.String, long, java.util.concurrent.TimeUnit) void public abstract
+org.neo4j.graphdb.schema.Schema::awaitIndexOnline(org.neo4j.graphdb.schema.IndexDefinition, long, java.util.concurrent.TimeUnit) void public abstract
+org.neo4j.graphdb.schema.Schema::awaitIndexesOnline(long, java.util.concurrent.TimeUnit) void public abstract
+org.neo4j.graphdb.schema.Schema::constraintFor(org.neo4j.graphdb.Label) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.Schema::constraintFor(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.Schema::getConstraintByName(java.lang.String) org.neo4j.graphdb.schema.ConstraintDefinition public abstract
+org.neo4j.graphdb.schema.Schema::getConstraints() java.lang.Iterable<org.neo4j.graphdb.schema.ConstraintDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::getConstraints(org.neo4j.graphdb.Label) java.lang.Iterable<org.neo4j.graphdb.schema.ConstraintDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::getConstraints(org.neo4j.graphdb.RelationshipType) java.lang.Iterable<org.neo4j.graphdb.schema.ConstraintDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::getIndexByName(java.lang.String) org.neo4j.graphdb.schema.IndexDefinition public abstract
+org.neo4j.graphdb.schema.Schema::getIndexFailure(org.neo4j.graphdb.schema.IndexDefinition) java.lang.String public abstract
+org.neo4j.graphdb.schema.Schema::getIndexPopulationProgress(org.neo4j.graphdb.schema.IndexDefinition) org.neo4j.graphdb.schema.IndexPopulationProgress public abstract
+org.neo4j.graphdb.schema.Schema::getIndexState(org.neo4j.graphdb.schema.IndexDefinition) org.neo4j.graphdb.schema.Schema.IndexState public abstract
+org.neo4j.graphdb.schema.Schema::getIndexes() java.lang.Iterable<org.neo4j.graphdb.schema.IndexDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::getIndexes(org.neo4j.graphdb.Label) java.lang.Iterable<org.neo4j.graphdb.schema.IndexDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label...) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.spatial.CRS public abstract interface
+org.neo4j.graphdb.spatial.CRS::getCode() int public abstract
+org.neo4j.graphdb.spatial.CRS::getHref() java.lang.String public abstract
+org.neo4j.graphdb.spatial.CRS::getType() java.lang.String public abstract
+org.neo4j.graphdb.spatial.Coordinate public final class extends java.lang.Object
+org.neo4j.graphdb.spatial.Coordinate::Coordinate(double...) void public
+org.neo4j.graphdb.spatial.Coordinate::equals(java.lang.Object) boolean public
+org.neo4j.graphdb.spatial.Coordinate::getCoordinate() java.util.List<java.lang.Double> public
+org.neo4j.graphdb.spatial.Coordinate::hashCode() int public
+org.neo4j.graphdb.spatial.Geometry public abstract interface
+org.neo4j.graphdb.spatial.Geometry::getCRS() org.neo4j.graphdb.spatial.CRS public abstract
+org.neo4j.graphdb.spatial.Geometry::getCoordinates() java.util.List<org.neo4j.graphdb.spatial.Coordinate> public abstract
+org.neo4j.graphdb.spatial.Geometry::getGeometryType() java.lang.String public abstract
+org.neo4j.graphdb.spatial.Point public abstract interface implements org.neo4j.graphdb.spatial.Geometry
+org.neo4j.graphdb.spatial.Point::getCoordinate() org.neo4j.graphdb.spatial.Coordinate public default
+org.neo4j.graphdb.spatial.Point::getGeometryType() java.lang.String public default

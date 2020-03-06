@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
@@ -41,6 +43,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientErr
  * guaranteed. Instead, the automatically generated documentation derived from this class and available in the Neo4j
  * manual should be considered a user-level API.
  */
+@PublicApi
 public interface Status
 {
     /*

@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.service;
+package org.neo4j.annotations.api;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
-
-/**
- * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
- */
-@IgnoreApiCheck
-public interface NamedService
+public class NotMarkedNestedClass
 {
-    String getName();
+    public static class Nested
+    {
+    }
 }

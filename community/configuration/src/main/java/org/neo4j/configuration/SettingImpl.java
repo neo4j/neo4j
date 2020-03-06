@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.format;
 
+@IgnoreApiCheck
 public final class SettingImpl<T> implements Setting<T>
 {
     private final String name;
