@@ -103,6 +103,7 @@ org.neo4j.configuration.GraphDatabaseSettings::bolt_outbound_buffer_throttle org
 org.neo4j.configuration.GraphDatabaseSettings::bolt_outbound_buffer_throttle_high_water_mark org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::bolt_outbound_buffer_throttle_low_water_mark org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::bolt_outbound_buffer_throttle_max_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.GraphDatabaseSettings::bolt_worker_threads_contain_database_name org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::bookmark_ready_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_time org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_tx org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
