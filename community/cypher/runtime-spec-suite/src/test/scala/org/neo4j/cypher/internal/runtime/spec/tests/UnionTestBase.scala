@@ -225,6 +225,31 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
   }
 
+  test("should union different cached properties from left and right") {
+    val size = sizeHint / 2
+    given {
+      nodePropertyGraph(size, { case i => Map("foo" -> s"foo-$i", "bar" -> s"bar-$i") })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("foo", "bar")
+      .projection("cache[x.foo] AS foo", "cache[x.bar] AS bar")
+      .union()
+      .|.cacheProperties("cache[x.bar]")
+      .|.allNodeScan("x")
+      .cacheProperties("cache[x.foo]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    val expected = ((0 until size) ++ (0 until size)).map(i => Array(s"foo-$i", s"bar-$i"))
+
+    // then
+    runtimeResult should beColumns("foo", "bar").withRows(expected)
+  }
+
   test("should unwind after union") {
     val size = sizeHint / 2
     // given
@@ -282,7 +307,6 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("res").withRows(expected)
   }
-
 
   test("should work with limit on RHS") {
     val size = sizeHint / 2
@@ -615,34 +639,34 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected)
   }
 
-    test("should union with reducers") {
-      val size = sizeHint / 3
-      // given
-      val (as, bs) = given {
-        val as = nodeGraph(size, "A")
-        val bs = nodeGraph(size, "B")
-        nodeGraph(size, "C")
-        (as, bs)
-      }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .sort(Seq(Ascending("x")))
-        .union()
-        .|.sort(Seq(Ascending("x")))
-        .|.nodeByLabelScan("x", "B")
-        .sort(Seq(Ascending("x")))
-        .nodeByLabelScan("x", "A")
-        .build()
-
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = for {
-        x <- (as ++ bs).sortBy(_.getId)
-      } yield Array(x)
-
-      runtimeResult should beColumns("x").withRows(inOrder(expected))
+  test("should union with reducers") {
+    val size = sizeHint / 3
+    // given
+    val (as, bs) = given {
+      val as = nodeGraph(size, "A")
+      val bs = nodeGraph(size, "B")
+      nodeGraph(size, "C")
+      (as, bs)
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort(Seq(Ascending("x")))
+      .union()
+      .|.sort(Seq(Ascending("x")))
+      .|.nodeByLabelScan("x", "B")
+      .sort(Seq(Ascending("x")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      x <- (as ++ bs).sortBy(_.getId)
+    } yield Array(x)
+
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
 }
