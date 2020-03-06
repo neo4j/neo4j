@@ -219,10 +219,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val executableQuery = try {
       getOrCompile(context, query, tracer, params)
     } catch {
-      case t: Throwable =>
+      case up: Throwable =>
         if (isOutermostQuery)
-          queryExecutionMonitor.endFailure(context.executingQuery(), null)
-        throw t
+          queryExecutionMonitor.endFailure(context.executingQuery(), up)
+        throw up
     }
     if (query.options.executionMode.name != "explain") {
       checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
