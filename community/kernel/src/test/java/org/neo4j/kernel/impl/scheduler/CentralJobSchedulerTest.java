@@ -42,8 +42,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.resources.Profiler;
-import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
@@ -429,7 +429,7 @@ class CentralJobSchedulerTest
             handle.waitTermination();
         }
 
-        assertThat( max.get() ).isEqualTo( 3 );
+        assertThat( max.get() ).isLessThanOrEqualTo( 3 );
     }
 
     @Test
