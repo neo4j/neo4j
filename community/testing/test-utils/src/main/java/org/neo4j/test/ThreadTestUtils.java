@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.function.Predicate;
 
 public class ThreadTestUtils
 {
@@ -48,6 +49,12 @@ public class ThreadTestUtils
 
     public static void awaitThreadState( Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest )
     {
+        awaitThreadState( thread, maxWaitMillis, s -> true, first, rest );
+    }
+
+    public static void awaitThreadState( Thread thread, long maxWaitMillis, Predicate<StackTraceElement[]> positionFilter, Thread.State first,
+            Thread.State... rest )
+    {
         EnumSet<Thread.State> set = EnumSet.of( first, rest );
         long deadline = maxWaitMillis + System.currentTimeMillis();
         Thread.State currentState;
@@ -56,12 +63,9 @@ public class ThreadTestUtils
             currentState = thread.getState();
             if ( System.currentTimeMillis() > deadline )
             {
-                throw new AssertionError(
-                        "Timed out waiting for thread state of <" +
-                                set + ">: " + thread + " (state = " +
-                                thread.getState() + ")" );
+                throw new AssertionError( "Timed out waiting for thread state of <" + set + ">: " + thread + " (state = " + thread.getState() + ")" );
             }
         }
-        while ( !set.contains( currentState ) );
+        while ( !set.contains( currentState ) || !positionFilter.test( thread.getStackTrace() ) );
     }
 }
