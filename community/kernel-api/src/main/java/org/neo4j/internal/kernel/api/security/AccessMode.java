@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -241,6 +243,11 @@ public interface AccessMode
 
     AuthorizationViolationException onViolation( String msg );
     String name();
+
+    default Set<String> roles()
+    {
+        return Collections.emptySet();
+    }
 
     default boolean isOverridden()
     {

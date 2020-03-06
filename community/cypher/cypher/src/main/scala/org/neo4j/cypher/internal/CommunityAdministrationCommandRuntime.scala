@@ -350,10 +350,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       result.reduceOption(_ && _)
     }
 
-    val username = securityContext.subject().username()
-    val roles = transaction.findNode(Label.label("User"), "name", username).getRelationships(Direction.OUTGOING, withName("HAS_ROLE")).asScala.foldLeft[Seq[String]](Seq.empty)(
-      (acc, roleRel) => acc :+ roleRel.getEndNode.getProperty("name").toString
-    )
+    val roles = securityContext.mode().roles()
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
     val allDatabaseAccess = accessForDatabase(allDatabaseNode, roles)
