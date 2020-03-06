@@ -39,7 +39,9 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
@@ -62,6 +65,32 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         // This makes sure that "db" is always system in this file.
         // It is not initialized with the security model and you should never try to change to a user db
         return SYSTEM_DATABASE_NAME;
+    }
+
+    @Test
+    void databaseInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbInfoRow = procedureResult.get( 0 );
+        assertThat( dbInfoRow, hasItemInArray( stringValue( SYSTEM_DATABASE_NAME ) ) );
+        assertThat( dbInfoRow, arrayWithSize( 3 ) );
+    }
+
+    @Test
+    void dbmsInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbmsInfoRow = procedureResult.get( 0 );
+        assertThat( dbmsInfoRow, hasItemInArray( stringValue( SYSTEM_DATABASE_NAME ) ) );
+        assertThat( dbmsInfoRow, arrayWithSize( 3 ) );
     }
 
     @Test
