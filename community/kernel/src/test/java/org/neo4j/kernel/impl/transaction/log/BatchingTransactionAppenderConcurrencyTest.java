@@ -40,6 +40,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.ClassGuardedAdversary;
@@ -96,7 +97,10 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 public class BatchingTransactionAppenderConcurrencyTest
 {
     private static final long MILLISECONDS_TO_WAIT = TimeUnit.MINUTES.toMillis( 1 );
+    private static final Predicate<StackTraceElement[]> IN_CORRECT_FORCE_AFTER_APPEND_METHOD =
+            stackTrace -> Stream.of( stackTrace ).anyMatch( e -> e.getMethodName().equals( "forceAfterAppend" ) );
     private static ExecutorService executor;
+
     @Inject
     private LifeSupport life;
     @Inject
@@ -199,7 +203,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         }
         for ( Thread otherThread : otherThreads )
         {
-            awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
+            awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, IN_CORRECT_FORCE_AFTER_APPEND_METHOD, Thread.State.TIMED_WAITING );
         }
 
         assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.dummy );
