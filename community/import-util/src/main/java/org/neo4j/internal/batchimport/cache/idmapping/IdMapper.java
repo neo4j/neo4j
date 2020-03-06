@@ -57,7 +57,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable
     /**
      * After all mappings have been {@link #put(Object, long, Group)} call this method to prepare for
      * {@link #get(Object, Group)}.
-     *  @param inputIdLookup can return input id of supplied node id. Used in the event of difficult collisions
+     * @param inputIdLookup can return input id of supplied node id. Used in the event of difficult collisions
      * so that more information have to be read from the input data again, data that normally isn't necessary
      * and hence discarded.
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
