@@ -207,15 +207,26 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         tracer: QueryCompilationEvent,
                         subscriber: QuerySubscriber): QueryExecution = {
 
-    val executableQuery = getOrCompile(context, query, tracer, params)
-    if (query.options.executionMode.name != "explain") {
-      checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
+    def parseAndCompile: (ExecutableQuery, MapValue) = {
+      try {
+        val executableQuery = getOrCompile(context, query, tracer, params)
+        if (query.options.executionMode.name != "explain") {
+          checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
+        }
+        val combinedParams = params.updatedWith(executableQuery.extractedParams)
+
+        if (isOutermostQuery)
+          context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, () => executableQuery.planDescription())
+
+        (executableQuery, combinedParams)
+      } catch {
+        case up: Throwable =>
+          // log failures in query compilation, the execute method that comes next handles itself
+          queryExecutionMonitor.endFailure(context.executingQuery(), up)
+          throw up
+      }
     }
-    val combinedParams = params.updatedWith(executableQuery.extractedParams)
-
-    if (isOutermostQuery)
-      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, () => executableQuery.planDescription())
-
+    val (executableQuery, combinedParams) = parseAndCompile
     executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, subscriber)
   }
 
