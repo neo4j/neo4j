@@ -39,10 +39,6 @@
         <!-- other filter properties -->
         <neo4j.version>${project.version}</neo4j.version>
 
-        <!-- conf/neo4j.conf filter properties -->
-        <default.http.port>7474</default.http.port>
-        <default.https.port>7473</default.https.port>
-
         <skip.shell.tests>false</skip.shell.tests>
     </properties>
 

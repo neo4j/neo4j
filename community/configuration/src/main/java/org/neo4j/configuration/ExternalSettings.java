@@ -27,8 +27,8 @@ import org.neo4j.graphdb.config.Setting;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.INT;
-import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
@@ -57,7 +57,7 @@ public class ExternalSettings implements SettingsDeclaration
             newBuilder( "dbms.logs.gc.rotation.keep_number", INT, 0 ).build();
 
     @Description( "Size of each GC log that is kept." )
-    public static final Setting<Long> gc_logging_rotation_size = newBuilder( "dbms.logs.gc.rotation.size", LONG, null ).build();
+    public static final Setting<Long> gc_logging_rotation_size = newBuilder( "dbms.logs.gc.rotation.size", BYTES, null ).build();
 
     @Description( "Enable GC Logging" )
     public static final Setting<Boolean> gc_logging_enabled = newBuilder( "dbms.logs.gc.enabled", BOOL, false ).build();
