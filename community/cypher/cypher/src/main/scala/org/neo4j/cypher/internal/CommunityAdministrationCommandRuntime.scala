@@ -346,7 +346,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   }
 
   private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false, dbName: Option[String] = None ): MapValue = {
-    def accessForDatabase(database: Node, roles: Seq[String]): Option[Boolean] = {
+    def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty
       database.getRelationships(Direction.INCOMING, withName("FOR")).forEach { f =>
@@ -369,10 +369,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       result.reduceOption(_ && _)
     }
 
-    val username = securityContext.subject().username()
-    val roles = transaction.findNode(Label.label("User"), "name", username).getRelationships(Direction.OUTGOING, withName("HAS_ROLE")).asScala.foldLeft[Seq[String]](Seq.empty)(
-      (acc, roleRel) => acc :+ roleRel.getEndNode.getProperty("name").toString
-    )
+    val roles = securityContext.mode().roles()
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
     val allDatabaseAccess = accessForDatabase(allDatabaseNode, roles)
