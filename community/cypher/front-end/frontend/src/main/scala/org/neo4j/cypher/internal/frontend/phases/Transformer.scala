@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.util.AssertionUtils.ifAssertionsEnabled
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 
 trait Transformer[-C <: BaseContext, -FROM, TO] {
   def transform(from: FROM, context: C): TO
@@ -32,8 +32,8 @@ trait Transformer[-C <: BaseContext, -FROM, TO] {
 }
 
 object Transformer {
-  val identity = new Transformer[BaseContext, Unit, Unit] {
-    override def transform(from: Unit, context: BaseContext) = ()
+  val identity: Transformer[BaseContext, Unit, Unit] = new Transformer[BaseContext, Unit, Unit] {
+    override def transform(from: Unit, context: BaseContext): Unit = ()
 
     override def name: String = "identity"
   }
@@ -42,8 +42,8 @@ object Transformer {
     * Transformer that can be inserted when debugging, to help detect
     * what part of the compilation that introduces an ast issue.
     */
-  def printAst(tag: String) = new Transformer[BaseContext, BaseState, BaseState] {
-    override def transform(from: BaseState, context: BaseContext) = {
+  def printAst(tag: String): Transformer[BaseContext, BaseState, BaseState] = new Transformer[BaseContext, BaseState, BaseState] {
+    override def transform(from: BaseState, context: BaseContext): BaseState = {
       println("     |||||||| PRINT AST: "+tag)
       println(Prettifier(ExpressionStringifier()).asString(from.maybeStatement.get))
       from
@@ -59,14 +59,14 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
     val step1 = first.transform(from, context)
 
     // Checking conditions inside assert so they are not run in production
-    ifAssertionsEnabled(accumulateAndCheckConditions(step1, first))
+    checkOnlyWhenAssertionsAreEnabled(accumulateAndCheckConditions(step1, first))
     val step2 = after.transform(step1, context)
-    ifAssertionsEnabled(accumulateAndCheckConditions(step2, after))
+    checkOnlyWhenAssertionsAreEnabled(accumulateAndCheckConditions(step2, after))
 
     step2
   }
 
-  private def accumulateAndCheckConditions[D <: C, STATE](from: STATE, transformer: Transformer[D, _, _]): Unit = {
+  private def accumulateAndCheckConditions[D <: C, STATE](from: STATE, transformer: Transformer[D, _, _]): Boolean = {
     (from, transformer) match {
       case (f: BaseState, phase: Phase[_, _, _]) =>
         val conditions = f.accumulatedConditions ++ phase.postConditions
@@ -76,6 +76,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
         }
       case _ =>
     }
+    true
   }
 
   override def name: String = first.name + ", " + after.name
