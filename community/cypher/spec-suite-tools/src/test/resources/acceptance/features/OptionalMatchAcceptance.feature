@@ -103,3 +103,29 @@ Feature: OptionalMatchAcceptance
       | 'b'     | 'c'     | null    |
       | 'b'     | 'a'     | null    |
     And no side effects
+
+  Scenario: optional match followed by match with repeated null relationship
+    Given an empty graph
+    When executing query:
+      """
+       OPTIONAL MATCH (n)-[r]->(m)
+       WITH n, r, m
+       MATCH (n)-[r]->(m2)
+       RETURN n, r, m, m2
+      """
+    Then the result should be:
+      | n    | r    | m    | m2   |
+    And no side effects
+
+  Scenario: double optional match with repeated null relationship
+    Given an empty graph
+    When executing query:
+      """
+       OPTIONAL MATCH (n)-[r]->(m)
+       OPTIONAL MATCH (n)-[r]->(m2)
+       RETURN n, r, m, m2
+      """
+    Then the result should be:
+      | n    | r    | m    | m2   |
+      | null | null | null | null |
+    And no side effects

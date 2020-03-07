@@ -80,6 +80,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
       val relValue = context(relName) match {
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case _ =>  return None
       }
       val rel = Some(relValue).filter(hasAllowedType)
     rel.flatMap( rel => pickStartAndEnd(rel, rel, context, qtx) )
@@ -110,6 +111,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
       val next = iterator.next() match {
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case _ =>  return false
       }
       if (!hasAllowedType(next)) return false
     }
