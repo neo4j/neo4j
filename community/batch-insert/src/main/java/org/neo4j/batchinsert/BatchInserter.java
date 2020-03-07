@@ -296,6 +296,7 @@ public interface BatchInserter extends AutoCloseable
     /**
      * Synonymous with {@link #shutdown()}, allowing the BatchInserter to be used in try-with-resources clauses.
      */
+    @Override
     default void close()
     {
         shutdown();

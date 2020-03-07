@@ -115,6 +115,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         return hasMore;
     }
 
+    @Override
     public boolean discardRecords( DiscardingRecordConsumer consumer, long size ) throws Throwable
     {
         Preconditions.checkArgument( size == STREAM_LIMIT_UNLIMITED,

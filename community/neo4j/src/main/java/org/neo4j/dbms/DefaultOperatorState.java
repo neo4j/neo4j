@@ -32,6 +32,7 @@ enum DefaultOperatorState implements OperatorState
         this.description = description;
     }
 
+    @Override
     public String description()
     {
         return description;

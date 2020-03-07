@@ -233,12 +233,15 @@ public interface ConsistencyReport
         @Documented( "This record points to a next record that was already part of this dynamic record chain." )
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
+        @Override
         @Documented( "This node was not found in the expected index." )
         void notIndexed( IndexDescriptor index, Object[] propertyValues );
 
+        @Override
         @Documented( "This node was found in the expected index, although multiple times" )
         void indexedMultipleTimes( IndexDescriptor index, Object[] propertyValues, long count );
 
+        @Override
         @Documented( "There is another node in the unique index with the same property value(s)." )
         void uniqueIndexNotUnique( IndexDescriptor index, Object[] propertyValues, long duplicateNodeId );
 
@@ -312,12 +315,15 @@ public interface ConsistencyReport
         @Documented( "The next record in the target chain does not have this record as its previous record." )
         void targetNextDoesNotReferenceBack( RelationshipRecord relationship );
 
+        @Override
         @Documented( "This relationship was not found in the expected index." )
         void notIndexed( IndexDescriptor index, Object[] propertyValues );
 
+        @Override
         @Documented( "This relationship was found in the expected index, although multiple times" )
         void indexedMultipleTimes( IndexDescriptor index, Object[] propertyValues, long count );
 
+        @Override
         @Documented( "There is another relationship in the unique index with the same property value(s)." )
         void uniqueIndexNotUnique( IndexDescriptor index, Object[] propertyValues, long duplicateEntityId );
     }

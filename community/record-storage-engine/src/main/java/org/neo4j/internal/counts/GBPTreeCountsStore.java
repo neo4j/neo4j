@@ -154,6 +154,7 @@ public class GBPTreeCountsStore implements CountsStore
 
     // === Life cycle ===
 
+    @Override
     public void start( PageCursorTracer cursorTracer ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
@@ -181,6 +182,7 @@ public class GBPTreeCountsStore implements CountsStore
 
     // === Writes ===
 
+    @Override
     public CountsAccessor.Updater apply( long txId, PageCursorTracer cursorTracer )
     {
         Preconditions.checkState( !readOnly, "This counts store is read-only" );

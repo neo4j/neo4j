@@ -72,6 +72,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         this.secureHasher = secureHasher;
     }
 
+    @Override
     public void initializeSecurityGraph() throws Exception
     {
         initializeSecurityGraph( getSystemDb() );

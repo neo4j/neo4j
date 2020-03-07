@@ -1283,6 +1283,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * NOTE: No {@link #checkpoint(IOLimiter, PageCursorTracer)} checkpoint} is performed.
      * @throws IOException on error closing resources.
      */
+    @Override
     public void close() throws IOException
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) )

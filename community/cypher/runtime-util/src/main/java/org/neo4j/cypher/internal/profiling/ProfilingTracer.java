@@ -92,6 +92,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         return executeOperator( operatorId, true );
     }
 
+    @Override
     public OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime )
     {
         ProfilingTracerData operatorData = this.data.get( operatorId.x() );

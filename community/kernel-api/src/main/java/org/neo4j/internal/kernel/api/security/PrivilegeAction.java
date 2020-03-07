@@ -109,6 +109,7 @@ public enum PrivilegeAction
 
     CONSTRAINT
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
@@ -124,6 +125,7 @@ public enum PrivilegeAction
 
     INDEX
             {
+                @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )

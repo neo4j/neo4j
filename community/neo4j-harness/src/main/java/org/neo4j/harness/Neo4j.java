@@ -79,5 +79,6 @@ public interface Neo4j extends AutoCloseable
     /**
      * Shutdown neo4j test instance.
      */
+    @Override
     void close();
 }

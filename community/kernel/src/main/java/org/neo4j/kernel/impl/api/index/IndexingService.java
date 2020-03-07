@@ -184,10 +184,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         {   // Do nothing
         }
 
+        @Override
         public void populationCancelled()
         {   // Do nothing
         }
 
+        @Override
         public void populationJobCompleted( long peakDirectMemoryUsage )
         {   // Do nothing
         }

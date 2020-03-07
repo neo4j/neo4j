@@ -116,6 +116,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     /**
      * @return The name of this index.
      */
+    @Override
     public String getName()
     {
         return name;
@@ -135,6 +136,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     /**
      * @return the {@link IndexConfig}
      */
+    @Override
     public IndexConfig getIndexConfig()
     {
         return indexConfig;
@@ -145,6 +147,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * @param indexConfig The index config of the new index descriptor.
      * @return A new index descriptor with the given index config.
      */
+    @Override
     public IndexDescriptor withIndexConfig( IndexConfig indexConfig )
     {
         return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );

@@ -204,6 +204,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
+    @Override
     public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
     {
         config.setRaw( raw );

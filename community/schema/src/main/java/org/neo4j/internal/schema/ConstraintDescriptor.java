@@ -121,5 +121,6 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return the id of this constraint descriptor.
      * @see SchemaRule#getId()
      */
+    @Override
     long getId();
 }
