@@ -91,6 +91,8 @@ class LogHeaderReaderTest
         when( channel.read( buffer ) ).thenAnswer( new Answer<>()
         {
             private int count;
+
+            @Override
             public Integer answer( InvocationOnMock invocation )
             {
                 count++;
@@ -125,6 +127,8 @@ class LogHeaderReaderTest
         when( channel.read( buffer ) ).thenAnswer( new Answer<>()
         {
             private int count;
+
+            @Override
             public Integer answer( InvocationOnMock invocation )
             {
                 count++;

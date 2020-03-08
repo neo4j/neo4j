@@ -19,9 +19,10 @@
  */
 package org.neo4j.logging;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
@@ -132,10 +133,10 @@ public class DuplicatingLog extends AbstractLog
     @Override
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
-        bulk( new LinkedList<>( logs ), new ArrayList<>( logs.size() ), consumer );
+        bulk( new ArrayDeque<>( logs ), new ArrayList<>( logs.size() ), consumer );
     }
 
-    private static void bulk( final LinkedList<Log> remaining, final ArrayList<Log> bulkLogs, final Consumer<Log> finalConsumer )
+    private static void bulk( final Deque<Log> remaining, final ArrayList<Log> bulkLogs, final Consumer<Log> finalConsumer )
     {
         if ( !remaining.isEmpty() )
         {
@@ -197,10 +198,10 @@ public class DuplicatingLog extends AbstractLog
         @Override
         public void bulk( @Nonnull Consumer<Logger> consumer )
         {
-            bulk( new LinkedList<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
+            bulk( new ArrayDeque<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
         }
 
-        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers,
+        private static void bulk( final Deque<Logger> remaining, final ArrayList<Logger> bulkLoggers,
                 final Consumer<Logger> finalConsumer )
         {
             if ( !remaining.isEmpty() )

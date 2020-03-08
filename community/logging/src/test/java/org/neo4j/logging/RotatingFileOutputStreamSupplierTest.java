@@ -62,7 +62,6 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -581,7 +580,7 @@ class RotatingFileOutputStreamSupplierTest
         assertThrows( ClosedChannelException.class, () -> stream.write( 0 ) );
     }
 
-    private class LockingPrintWriter extends PrintWriter
+    private static class LockingPrintWriter extends PrintWriter
     {
         LockingPrintWriter( OutputStream out )
         {

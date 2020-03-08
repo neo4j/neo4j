@@ -99,7 +99,7 @@ public abstract class ExtensionFactoryContractTest
     {
         try
         {
-            return extClass.newInstance();
+            return extClass.getDeclaredConstructor().newInstance();
         }
         catch ( Exception cause )
         {

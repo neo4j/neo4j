@@ -144,7 +144,7 @@ class RunnablesTest
         }
     }
 
-    private class Task implements Runnable
+    private static class Task implements Runnable
     {
         private boolean run;
 

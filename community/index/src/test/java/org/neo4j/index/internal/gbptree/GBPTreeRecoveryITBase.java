@@ -26,8 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -386,7 +386,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
     private List<Action> generateLoad()
     {
-        List<Action> actions = new LinkedList<>();
+        List<Action> actions = new ArrayList<>( loadCountTransactions );
         boolean hasCheckPoint = false;
         for ( int i = 0; i < loadCountTransactions; i++ )
         {

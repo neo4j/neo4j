@@ -19,7 +19,7 @@
  */
 package org.neo4j.harness.internal;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.exceptions.KernelException;
@@ -27,9 +27,9 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 
 class HarnessRegisteredProcs
 {
-    private final List<Class<?>> procs = new LinkedList<>();
-    private final List<Class<?>> functions = new LinkedList<>();
-    private final List<Class<?>> aggregationFunctions = new LinkedList<>();
+    private final List<Class<?>> procs = new ArrayList<>();
+    private final List<Class<?>> functions = new ArrayList<>();
+    private final List<Class<?>> aggregationFunctions = new ArrayList<>();
 
     void addProcedure( Class<?> procedureClass )
     {

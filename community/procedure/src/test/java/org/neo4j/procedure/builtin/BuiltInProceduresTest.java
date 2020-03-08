@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -97,9 +96,9 @@ import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 class BuiltInProceduresTest
 {
-    private final List<IndexDescriptor> indexes = new LinkedList<>();
-    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
-    private final List<ConstraintDescriptor> constraints = new LinkedList<>();
+    private final List<IndexDescriptor> indexes = new ArrayList<>();
+    private final List<IndexDescriptor> uniqueIndexes = new ArrayList<>();
+    private final List<ConstraintDescriptor> constraints = new ArrayList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
     private final Map<Integer,String> relTypes = new HashMap<>();

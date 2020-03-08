@@ -53,7 +53,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -897,7 +896,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
         private DynamicByteBuffer fileAsBuffer;
         private DynamicByteBuffer forcedBuffer;
-        private final Collection<WeakReference<EphemeralFileChannel>> channels = new LinkedList<>();
+        private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
         private int size;
         private int forcedSize;
         private int locked;

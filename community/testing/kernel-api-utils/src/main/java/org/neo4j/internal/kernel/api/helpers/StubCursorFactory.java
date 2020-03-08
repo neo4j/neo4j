@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -37,17 +37,17 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public class StubCursorFactory implements CursorFactory
 {
     private final boolean continueWithLastItem;
-    private Queue<NodeCursor> nodeCursors = new LinkedList<>();
-    private Queue<NodeCursor> fullNodeCursors = new LinkedList<>();
-    private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>();
-    private Queue<RelationshipScanCursor> fullRelationshipScanCursors = new LinkedList<>();
-    private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>();
-    private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
-    private Queue<PropertyCursor> fullPropertyCursors = new LinkedList<>();
-    private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
-    private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
-    private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
-    private Queue<RelationshipIndexCursor> relationshipIndexCursors = new LinkedList<>();
+    private final Queue<NodeCursor> nodeCursors = new ArrayDeque<>();
+    private final Queue<NodeCursor> fullNodeCursors = new ArrayDeque<>();
+    private final Queue<RelationshipScanCursor> relationshipScanCursors = new ArrayDeque<>();
+    private final Queue<RelationshipScanCursor> fullRelationshipScanCursors = new ArrayDeque<>();
+    private final Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new ArrayDeque<>();
+    private final Queue<PropertyCursor> propertyCursors = new ArrayDeque<>();
+    private final Queue<PropertyCursor> fullPropertyCursors = new ArrayDeque<>();
+    private final Queue<RelationshipGroupCursor> groupCursors = new ArrayDeque<>();
+    private final Queue<NodeValueIndexCursor> nodeValueIndexCursors = new ArrayDeque<>();
+    private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
+    private final Queue<RelationshipIndexCursor> relationshipIndexCursors = new ArrayDeque<>();
 
     public StubCursorFactory()
     {

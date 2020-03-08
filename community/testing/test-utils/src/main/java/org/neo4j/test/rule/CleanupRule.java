@@ -23,7 +23,8 @@ import org.junit.rules.ExternalResource;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Simple means of cleaning up after a test. It has two purposes:
@@ -49,7 +50,7 @@ import java.util.LinkedList;
 public class CleanupRule extends ExternalResource
 {
     private static final String[] COMMON_CLOSE_METHOD_NAMES = {"close", "stop", "shutdown", "shutDown"};
-    private final LinkedList<AutoCloseable> toCloseAfterwards = new LinkedList<>();
+    private final Deque<AutoCloseable> toCloseAfterwards = new ArrayDeque<>();
 
     @Override
     protected void after()

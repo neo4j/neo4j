@@ -189,7 +189,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     {   // no-op until we decide to use value for something
     }
 
-    private class RandomValueGenerator extends PrefetchingIterator<Value>
+    private static class RandomValueGenerator extends PrefetchingIterator<Value>
     {
         private final Set<Value> uniqueCompareValues;
         private final List<Value> uniqueValues;

@@ -21,8 +21,8 @@ package org.neo4j.collection;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -41,7 +41,7 @@ class RawIteratorTest
 
     private static List<Integer> list( RawIterator<Integer, RuntimeException> iter )
     {
-        LinkedList<Integer> out = new LinkedList<>();
+        List<Integer> out = new ArrayList<>();
         while ( iter.hasNext() )
         {
             out.add( iter.next() );

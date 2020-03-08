@@ -178,7 +178,7 @@ public class PopulatingIndexProxy implements IndexProxy
         return getClass().getSimpleName() + "[job:" + job + "]";
     }
 
-    private abstract class PopulatingIndexUpdater implements IndexUpdater
+    private abstract static class PopulatingIndexUpdater implements IndexUpdater
     {
         @Override
         public void close()

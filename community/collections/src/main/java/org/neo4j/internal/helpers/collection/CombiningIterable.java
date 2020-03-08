@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Combining one or more {@link Iterable}s, making them look like they were
@@ -30,7 +31,7 @@ import java.util.LinkedList;
  */
 public class CombiningIterable<T> implements Iterable<T>
 {
-    private Iterable<Iterable<T>> iterables;
+    private final Iterable<Iterable<T>> iterables;
 
     @SuppressWarnings( "unchecked" )
     <INNER extends Iterable<T>> CombiningIterable( Iterable<INNER> iterables )
@@ -41,7 +42,7 @@ public class CombiningIterable<T> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        LinkedList<Iterator<T>> iterators = new LinkedList<>();
+        List<Iterator<T>> iterators = new ArrayList<>();
         for ( Iterable<T> iterable : iterables )
         {
             iterators.add( iterable.iterator() );

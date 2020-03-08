@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -225,9 +226,13 @@ class ArchiveTest
 
     private Map<Path,Description> describeRecursively( Path directory ) throws IOException
     {
-        return Files.walk( directory ).map( path -> pair( directory.relativize( path ), describe( path ) ) ).collect( HashMap::new,
-                ( pathDescriptionHashMap, pathDescriptionPair ) -> pathDescriptionHashMap.put( pathDescriptionPair.first(), pathDescriptionPair.other() ),
-                HashMap::putAll );
+        try ( Stream<Path> walk = Files.walk( directory ) )
+        {
+            return walk.map( path -> pair( directory.relativize( path ), describe( path ) ) )
+                    .collect( HashMap::new, ( pathDescriptionHashMap, pathDescriptionPair ) ->
+                                    pathDescriptionHashMap.put( pathDescriptionPair.first(), pathDescriptionPair.other() ),
+                    HashMap::putAll );
+        }
     }
 
     private Description describe( Path file )

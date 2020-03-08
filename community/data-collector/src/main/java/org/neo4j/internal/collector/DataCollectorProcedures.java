@@ -37,6 +37,8 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.values.ValueMapper;
 
+import static java.lang.String.format;
+
 @SuppressWarnings( "WeakerAccess" )
 public class DataCollectorProcedures
 {
@@ -181,7 +183,8 @@ public class DataCollectorProcedures
         {
         case Sections.TOKENS:
         case Sections.GRAPH_COUNTS:
-            throw new InvalidArgumentsException( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved." );
+            throw new InvalidArgumentsException(
+                    format( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved.", section ) );
         case Sections.QUERIES:
             return dataCollector.getQueryCollector();
         default:

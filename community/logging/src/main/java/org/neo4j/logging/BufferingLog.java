@@ -21,7 +21,7 @@ package org.neo4j.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
@@ -54,7 +54,7 @@ public class BufferingLog extends AbstractLog
         void printTo( PrintWriter pw );
     }
 
-    private final Queue<LogMessage> buffer = new LinkedList<>();
+    private final Queue<LogMessage> buffer = new ArrayDeque<>();
 
     private abstract class BufferingLogger implements Logger
     {

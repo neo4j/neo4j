@@ -21,7 +21,7 @@ package org.neo4j.collection.pool;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -158,7 +158,7 @@ class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
-        List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        List<FlyweightHolder<Object>> holders = new ArrayList<>();
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
 
         // when
@@ -191,7 +191,7 @@ class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
-        List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        List<FlyweightHolder<Object>> holders = new ArrayList<>();
 
         // when
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
@@ -242,7 +242,7 @@ class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
-        List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        List<FlyweightHolder<Object>> holders = new ArrayList<>();
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
 
         // when
@@ -305,7 +305,7 @@ class LinkedQueuePoolTest
 
     private static <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
     {
-        List<FlyweightHolder<R>> acquirers = new LinkedList<>();
+        List<FlyweightHolder<R>> acquirers = new ArrayList<>();
         for ( int i = 0; i < times; i++ )
         {
             FlyweightHolder<R> holder = new FlyweightHolder<>( pool );
@@ -358,19 +358,19 @@ class LinkedQueuePoolTest
         }
 
         @Override
-        public void created( Object Object )
+        public void created( Object resource )
         {
             this.created.incrementAndGet();
         }
 
         @Override
-        public void acquired( Object Object )
+        public void acquired( Object resource )
         {
             this.acquired.incrementAndGet();
         }
 
         @Override
-        public void disposed( Object Object )
+        public void disposed( Object resource )
         {
             this.disposed.incrementAndGet();
         }

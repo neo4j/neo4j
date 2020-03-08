@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -35,10 +35,10 @@ import org.neo4j.graphdb.Transaction;
  */
 public class Fixtures
 {
-    private final List<String> fixtureStatements = new LinkedList<>();
-    private final List<Function<GraphDatabaseService, Void>> fixtureFunctions = new LinkedList<>();
+    private final List<String> fixtureStatements = new ArrayList<>();
+    private final List<Function<GraphDatabaseService, Void>> fixtureFunctions = new ArrayList<>();
 
-    private final String cypherSuffix = "cyp";
+    private static final String cypherSuffix = "cyp";
 
     private final FileFilter cypherFileOrDirectoryFilter = file ->
     {

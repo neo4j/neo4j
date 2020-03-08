@@ -27,13 +27,13 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -364,7 +364,7 @@ public class Config implements Configuration
     private void evaluateSettingValues( Collection<SettingImpl<?>> settingsToEvaluate, Map<String,String> settingValueStrings,
             Map<String,Object> settingValueObjects,Map<String,String> overriddenDefaultStrings, Map<String,Object> overriddenDefaultObjects, Config fromConfig )
     {
-        Deque<SettingImpl<?>> newSettings = new LinkedList<>( settingsToEvaluate );
+        Deque<SettingImpl<?>> newSettings = new ArrayDeque<>( settingsToEvaluate );
         while ( !newSettings.isEmpty() )
         {
             boolean modified = false;

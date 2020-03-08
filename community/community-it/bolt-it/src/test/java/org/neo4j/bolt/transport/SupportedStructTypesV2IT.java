@@ -84,7 +84,7 @@ public class SupportedStructTypesV2IT
     public void setUp() throws Exception
     {
         address = server.lookupDefaultConnector();
-        connection = connectionClass.newInstance();
+        connection = connectionClass.getDeclaredConstructor().newInstance();
         util = new TransportTestUtil( new Neo4jPackV2() );
     }
 

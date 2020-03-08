@@ -181,7 +181,7 @@ public class LoggingPhaseTracker implements PhaseTracker
         }
     }
 
-    public class Counter
+    public static class Counter
     {
         private final Phase phase;
         long totalTime;
