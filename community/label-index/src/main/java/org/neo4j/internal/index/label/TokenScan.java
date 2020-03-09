@@ -23,12 +23,12 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
- * LabelScans are used for accessing nodes with a given label.
+ * TokenScans are used for accessing entities with a given token.
  */
 public interface TokenScan
 {
     /**
-     * Initialize the client for scanning for a label.
+     * Initialize the client for scanning for a token.
      *
      * @param client the client used for consuming data
      * @param cursorTracer underlying page cursor tracer
@@ -37,7 +37,7 @@ public interface TokenScan
     IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer );
 
     /**
-     * Initialize the client for reading a batch of labels.
+     * Initialize the client for reading a batch of tokens.
      *
      * @param client the client used for consuming data
      * @param sizeHint the approximate size of the batch
