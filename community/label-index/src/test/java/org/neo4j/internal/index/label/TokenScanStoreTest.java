@@ -83,6 +83,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
+import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStore;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
@@ -197,6 +198,22 @@ public class TokenScanStoreTest
         assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
+        assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Label scan store" ) ) );
+    }
+
+    @Test
+    void shouldNotStartIfRelationshipTypeScanStoreIndexDoesNotExistInReadOnlyMode()
+    {
+        // WHEN
+        life = new LifeSupport();
+        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        life.add( store );
+
+        final Exception exception = assertThrows( Exception.class, () -> life.start() );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
+        assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Relationship type scan store" ) ) );
     }
 
     @Test
@@ -555,7 +572,7 @@ public class TokenScanStoreTest
     {
         // When
         RelationshipTypeScanStore labelScanStore =
-                TokenScanStore.relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+                relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
 
         // When
         assertThat( labelScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );

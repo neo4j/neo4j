@@ -420,8 +420,9 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Rel
         }
         catch ( TreeFileNotFoundException e )
         {
+            String token = entityType == EntityType.NODE ? "Label" : "Relationship type";
             throw new IllegalStateException(
-                    "Label scan store file could not be found, most likely this database needs to be recovered, file:" + storeFile, e );
+                    token + " scan store file could not be found, most likely this database needs to be recovered, file:" + storeFile, e );
         }
     }
 
