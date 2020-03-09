@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
 public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 {

@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.junit.jupiter.api.Test;
+
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class DefaultNonUniqueIndexSamplerTest
 {
-    // We make sure to load this class here before we fork the tests for parallel execution.
-    // The reason for this is we often deadlock on class loading together with BridgingIndexProgressorTest.
-    @SuppressWarnings( "unused" )
-    private static final Class<?> forceClassLoad = DefaultNonUniqueIndexSampler.class;
     private final String value = "aaa";
 
     @Test

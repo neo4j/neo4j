@@ -35,7 +35,7 @@ import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.index.DefaultNonUniqueIndexSampler;
+import org.neo4j.kernel.api.impl.schema.populator.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;

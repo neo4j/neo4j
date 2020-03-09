@@ -26,7 +26,6 @@ import java.io.IOException;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
