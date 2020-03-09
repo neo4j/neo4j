@@ -321,7 +321,7 @@ abstract class Read implements TxStateHolder,
         if ( accessMode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
-            LabelScan labelScan = labelScanReader().nodeLabelScan( label, cursorTracer );
+            LabelScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
             indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer );
         }
         else if ( accessMode.disallowsTraverseLabel( label ) )
@@ -332,7 +332,7 @@ abstract class Read implements TxStateHolder,
         else
         {
             // some nodes of this label might be blocked. we need to filter
-            LabelScan labelScan = labelScanReader().nodeLabelScan( label, cursorTracer );
+            LabelScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
             indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ), cursorTracer );
         }
         // TODO: When we have a blacklisted label, perhaps we should not consider labels added within the current transaction
@@ -404,7 +404,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        return new NodeLabelIndexCursorScan( this, label, labelScanReader().nodeLabelScan( label, cursorTracer ), cursorTracer );
+        return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorTracer ), cursorTracer );
     }
 
     @Override

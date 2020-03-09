@@ -103,7 +103,7 @@ class LabelScanStoreStartupIT
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
     {
-        return closingAsArray( labelScanStore.newReader().nodesWithLabel( labelId, NULL ) );
+        return closingAsArray( labelScanStore.newReader().entityWithToken( labelId, NULL ) );
     }
 
     private void createTestNode()
@@ -145,7 +145,7 @@ class LabelScanStoreStartupIT
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
         TokenScanReader labelScanReader = labelScanStore.newReader();
-        try ( PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId, NULL ) )
+        try ( PrimitiveLongResourceIterator iterator = labelScanReader.entityWithToken( labelId, NULL ) )
         {
             assertEquals( 1, iterator.next() );
         }

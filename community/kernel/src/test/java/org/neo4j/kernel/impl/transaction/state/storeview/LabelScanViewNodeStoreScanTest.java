@@ -67,7 +67,7 @@ class LabelScanViewNodeStoreScanTest
             cursors.withNode( i );
         }
         int[] labelIds = new int[]{1, 2};
-        when( labelScanReader.nodesWithAnyOfLabels( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
+        when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
         LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();

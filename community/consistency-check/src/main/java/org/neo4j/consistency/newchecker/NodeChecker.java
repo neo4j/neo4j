@@ -123,7 +123,7 @@ class NodeChecker implements Checker
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
               RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
               RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-              AllEntriesTokenScanReader labelIndexReader = context.labelScanStore.allNodeLabelRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
+              AllEntriesTokenScanReader labelIndexReader = context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer ) )
         {

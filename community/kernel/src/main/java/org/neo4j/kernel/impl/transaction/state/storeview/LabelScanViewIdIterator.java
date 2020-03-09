@@ -42,7 +42,7 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
         this.labelScanReader = labelScanReader;
         this.entityCursor = entityCursor;
         this.cursorTracer = cursorTracer;
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds, cursorTracer );
+        this.idIterator = labelScanReader.entitiesWithAnyOfTokens( labelIds, cursorTracer );
         this.labelIds = labelIds;
     }
 
@@ -72,6 +72,6 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( lastReturnedId, labelIds, cursorTracer );
+        this.idIterator = labelScanReader.entitiesWithAnyOfTokens( lastReturnedId, labelIds, cursorTracer );
     }
 }

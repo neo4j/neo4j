@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public interface TokenScanReader
 {
     /**
-     * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[], PageCursorTracer)}.
+     * Used as a marker to ignore the "fromId" in calls to {@link #entitiesWithAnyOfTokens(long, int[], PageCursorTracer)}.
      */
     long NO_ID = -1;
 
@@ -37,23 +37,23 @@ public interface TokenScanReader
      * @param cursorTracer underlying page cursor tracer
      * @return entity ids with the given {@code tokenId}.
      */
-    PrimitiveLongResourceIterator nodesWithLabel( int tokenId, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator entityWithToken( int tokenId, PageCursorTracer cursorTracer );
 
     /**
      * Sets the client up for a token scan on <code>tokenId</code>
      *
      * @param tokenId token id
      */
-    LabelScan nodeLabelScan( int tokenId, PageCursorTracer cursorTracer );
+    LabelScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer );
 
     /**
      * @param tokenIds token ids.
      * @param cursorTracer underlying page cursor tracer
      * @return entity ids with any of the given token ids.
      */
-    default PrimitiveLongResourceIterator nodesWithAnyOfLabels( int[] tokenIds, PageCursorTracer cursorTracer )
+    default PrimitiveLongResourceIterator entitiesWithAnyOfTokens( int[] tokenIds, PageCursorTracer cursorTracer )
     {
-        return nodesWithAnyOfLabels( NO_ID, tokenIds, cursorTracer );
+        return entitiesWithAnyOfTokens( NO_ID, tokenIds, cursorTracer );
     }
 
     /**
@@ -62,5 +62,5 @@ public interface TokenScanReader
      * @param cursorTracer underlying page cursor tracer
      * @return entity ids with any of the given token ids.
      */
-    PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] tokenIds, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer );
 }

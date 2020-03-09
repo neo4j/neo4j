@@ -104,7 +104,7 @@ class NativeTokenScanReaderIT
         long fromId = random.nextInt( highNodeId );
         int nextExpectedId = expected.nextSetBit( toIntExact( fromId + 1 ) );
         TokenScanReader reader = store.newReader();
-        try ( PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId}, NULL ) )
+        try ( PrimitiveLongResourceIterator ids = reader.entitiesWithAnyOfTokens( fromId, new int[] {labelId}, NULL ) )
         {
             // then
             while ( nextExpectedId != -1 )

@@ -59,7 +59,7 @@ class DynamicIndexStoreViewTest
     @BeforeEach
     void setUp()
     {
-        when( labelScanStore.allNodeLabelRanges()).thenReturn( nodeLabelRanges );
+        when( labelScanStore.allEntityTokenRanges()).thenReturn( nodeLabelRanges );
     }
 
     @Test
@@ -71,7 +71,7 @@ class DynamicIndexStoreViewTest
 
         long[] nodeIds = {1, 2, 3, 4, 5, 6, 7, 8};
         PrimitiveLongResourceIterator labeledNodesIterator = PrimitiveLongResourceCollections.iterator( null, nodeIds );
-        when( labelScanReader.nodesWithAnyOfLabels( eq( new int[]{2, 6} ), any() ) ).thenReturn( labeledNodesIterator );
+        when( labelScanReader.entitiesWithAnyOfTokens( eq( new int[]{2, 6} ), any() ) ).thenReturn( labeledNodesIterator );
         for ( long nodeId : nodeIds )
         {
             cursors.withNode( nodeId ).propertyId( 1 ).relationship( 1 ).labels( 2, 6 );

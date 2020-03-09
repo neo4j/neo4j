@@ -294,7 +294,7 @@ public class LabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = store.allNodeLabelRanges();
+        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges();
         EntityTokenRange range = single( reader.iterator() );
 
         // THEN
@@ -318,7 +318,7 @@ public class LabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = store.allNodeLabelRanges();
+        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges();
         Iterator<EntityTokenRange> iterator = reader.iterator();
         EntityTokenRange range1 = iterator.next();
         EntityTokenRange range2 = iterator.next();
@@ -350,7 +350,7 @@ public class LabelScanStoreTest
 
         // when
         TokenScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) labelId, NULL ) );
+        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.entityWithToken( (int) labelId, NULL ) );
 
         // then
         assertEquals( nodes, nodesWithLabel );
@@ -376,7 +376,7 @@ public class LabelScanStoreTest
 
         // then
         TokenScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id, NULL ) );
+        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.entityWithToken( (int) label0Id, NULL ) );
         assertEquals( nodes, nodesWithLabel0 );
     }
 
@@ -392,7 +392,7 @@ public class LabelScanStoreTest
 
         // when
         MutableInt count = new MutableInt();
-        AllEntriesTokenScanReader nodeLabelRanges = store.allNodeLabelRanges();
+        AllEntriesTokenScanReader nodeLabelRanges = store.allEntityTokenRanges();
         nodeLabelRanges.forEach( nlr ->
         {
             for ( long nodeId : nlr.entities() )
@@ -457,7 +457,7 @@ public class LabelScanStoreTest
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
         TokenScanReader reader = store.newReader();
-        PrimitiveLongResourceIterator nodes = reader.nodesWithLabel( labelId, NULL );
+        PrimitiveLongResourceIterator nodes = reader.entityWithToken( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );
@@ -493,13 +493,13 @@ public class LabelScanStoreTest
         TokenScanReader reader = store.newReader();
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 6, 7},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2}, NULL ) ) );
+                closingAsArray( reader.entitiesWithAnyOfTokens( new int[]{labelId1, labelId2}, NULL ) ) );
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 8, 9},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId3}, NULL ) ) );
+                closingAsArray( reader.entitiesWithAnyOfTokens( new int[]{labelId1, labelId3}, NULL ) ) );
         assertArrayEquals(
                 new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9},
-                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2, labelId3}, NULL ) ) );
+                closingAsArray( reader.entitiesWithAnyOfTokens( new int[]{labelId1, labelId2, labelId3}, NULL ) ) );
     }
 
     @Test
@@ -527,7 +527,7 @@ public class LabelScanStoreTest
         // then
         for ( Long labelId : possibleLabelIds )
         {
-            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().nodesWithLabel( labelId.intValue(), NULL );
+            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().entityWithToken( labelId.intValue(), NULL );
             Iterator<NodeLabelUpdate> expected =
                     updates.stream().filter( update -> LongStream.of( update.getLabelsAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
             while ( nodesWithLabel.hasNext() )
@@ -618,7 +618,7 @@ public class LabelScanStoreTest
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
-        LongIterator nodes = store.newReader().nodesWithLabel( labelId, NULL );
+        LongIterator nodes = store.newReader().entityWithToken( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );

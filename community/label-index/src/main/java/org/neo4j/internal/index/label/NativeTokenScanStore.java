@@ -204,10 +204,10 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * Returns {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * Returns {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * Only a single writer is allowed at any given point in time.
      *
-     * @return {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
@@ -229,7 +229,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     /**
      * Returns a {@link TokenScanWriter} like that from {@link #newWriter()}, but is specialized in bulk-writing new data.
      *
-     * @return {@link TokenScanWriter} capable of making changes to this {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
@@ -273,7 +273,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     /**
-     * Forces all changes to {@link PageCache} and creates a checkpoint so that the {@link LabelScanStore}
+     * Forces all changes to {@link PageCache} and creates a checkpoint so that the {@link TokenScanStore}
      * is recoverable from this point, given that the same transactions which will be applied after this point
      * and non-clean shutdown will be applied again on next startup.
      *
@@ -287,13 +287,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public AllEntriesTokenScanReader allNodeLabelRanges()
+    public AllEntriesTokenScanReader allEntityTokenRanges()
     {
-        return allNodeLabelRanges( 0, Long.MAX_VALUE );
+        return allEntityTokenRanges( 0, Long.MAX_VALUE );
     }
 
     @Override
-    public AllEntriesTokenScanReader allNodeLabelRanges( long fromEntityId, long toEntityId )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {

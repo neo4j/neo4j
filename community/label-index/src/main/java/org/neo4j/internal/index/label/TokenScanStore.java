@@ -57,14 +57,14 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a writer for updating the store.
      *
-     * @return {@link TokenScanWriter} that can modify the {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
     TokenScanWriter newWriter();
 
     /**
      * Acquire a writer that is specialized in bulk-append writing, e.g. building from initial data.
      *
-     * @return {@link TokenScanWriter} that can modify the {@link LabelScanStore}.
+     * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
     TokenScanWriter newBulkAppendWriter();
 
@@ -82,14 +82,14 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      *
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allNodeLabelRanges();
+    AllEntriesTokenScanReader allEntityTokenRanges();
 
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allNodeLabelRanges( long fromEntityId, long toEntityId );
+    AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId );
 
     ResourceIterator<File> snapshotStoreFiles();
 

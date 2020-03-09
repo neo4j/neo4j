@@ -67,7 +67,7 @@ class NativeTokenScanReaderTest
                 .thenReturn( cursor );
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID, NULL ) )
+        try ( PrimitiveLongResourceIterator iterator = reader.entityWithToken( LABEL_ID, NULL ) )
         {
             // THEN
             assertArrayEquals( new long[]{
@@ -95,8 +95,8 @@ class NativeTokenScanReaderTest
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID, NULL );
-              PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID, NULL ) )
+        try ( PrimitiveLongResourceIterator first = reader.entityWithToken( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator second = reader.entityWithToken( LABEL_ID, NULL ) )
         {
             // first check test invariants
             verify( cursor1, never() ).close();
@@ -131,8 +131,8 @@ class NativeTokenScanReaderTest
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID, NULL );
-              PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID, NULL )
+        try ( PrimitiveLongResourceIterator ignore1 = reader.entityWithToken( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator ignore2 = reader.entityWithToken( LABEL_ID, NULL )
         )
         {
             // first check test invariants
@@ -168,7 +168,7 @@ class NativeTokenScanReaderTest
         // when
         long fromId = TokenScanValue.RANGE_SIZE + 3;
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, new int[]{LABEL_ID}, NULL ) )
+        try ( PrimitiveLongResourceIterator iterator = reader.entitiesWithAnyOfTokens( fromId, new int[]{LABEL_ID}, NULL ) )
         {
             // then
             assertArrayEquals( new long[] {

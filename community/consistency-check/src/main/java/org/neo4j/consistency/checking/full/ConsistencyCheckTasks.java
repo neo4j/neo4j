@@ -201,7 +201,7 @@ class ConsistencyCheckTasks
         {
             long highId = nativeStores.getNodeStore().getHighId();
             tasks.add( recordScanner( "LabelScanStore",
-                    new GapFreeAllEntriesTokenScanReader( labelScanStore.allNodeLabelRanges(), highId ),
+                    new GapFreeAllEntriesTokenScanReader( labelScanStore.allEntityTokenRanges(), highId ),
                     new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
                     ROUND_ROBIN ) );
         }

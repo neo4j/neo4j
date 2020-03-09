@@ -54,12 +54,12 @@ class NativeTokenScanReader implements TokenScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesWithLabel( int tokenId, PageCursorTracer cursorTracer )
+    public PrimitiveLongResourceIterator entityWithToken( int tokenId, PageCursorTracer cursorTracer )
     {
         Seeker<TokenScanKey,TokenScanValue> cursor;
         try
         {
-            cursor = seekerForLabel( 0, tokenId, cursorTracer );
+            cursor = seekerForToken( 0, tokenId, cursorTracer );
         }
         catch ( IOException e )
         {
@@ -70,18 +70,18 @@ class NativeTokenScanReader implements TokenScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesWithAnyOfLabels( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
+    public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
     {
-        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( fromId, cursorTracer, tokenIds );
+        List<PrimitiveLongResourceIterator> iterators = iteratorsForTokens( fromId, cursorTracer, tokenIds );
         return new CompositeTokenScanValueIterator( iterators, false );
     }
 
     @Override
-    public LabelScan nodeLabelScan( int tokenId, PageCursorTracer cursorTracer )
+    public LabelScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
     {
         try
         {
-            long highestEntityIdForToken = highestNodeIdForLabel( tokenId, cursorTracer );
+            long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorTracer );
             return new NativeLabelScan( tokenId, highestEntityIdForToken );
         }
         catch ( IOException e )
@@ -90,7 +90,7 @@ class NativeTokenScanReader implements TokenScanReader
         }
     }
 
-    private long highestNodeIdForLabel( int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private long highestEntityIdForToken( int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
         try ( Seeker<TokenScanKey,TokenScanValue> seeker = index.seek( new TokenScanKey( tokenId, Long.MAX_VALUE ),
                 new TokenScanKey( tokenId, Long.MIN_VALUE ), cursorTracer ) )
@@ -99,14 +99,14 @@ class NativeTokenScanReader implements TokenScanReader
         }
     }
 
-    private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, PageCursorTracer cursorTracer, int[] tokenIds )
+    private List<PrimitiveLongResourceIterator> iteratorsForTokens( long fromId, PageCursorTracer cursorTracer, int[] tokenIds )
     {
         List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
         try
         {
             for ( int tokenId : tokenIds )
             {
-                Seeker<TokenScanKey,TokenScanValue> cursor = seekerForLabel( fromId, tokenId, cursorTracer );
+                Seeker<TokenScanKey,TokenScanValue> cursor = seekerForToken( fromId, tokenId, cursorTracer );
                 iterators.add( new TokenScanValueIterator( cursor, fromId ) );
             }
         }
@@ -117,14 +117,14 @@ class NativeTokenScanReader implements TokenScanReader
         return iterators;
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForLabel( long startId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
         TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
         TokenScanKey to = new TokenScanKey( tokenId, Long.MAX_VALUE );
         return index.seek( from, to, cursorTracer );
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForLabel( long startId, long stopId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
         TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
         TokenScanKey to = new TokenScanKey( tokenId, rangeOf( stopId ) );
@@ -173,7 +173,7 @@ class NativeTokenScanReader implements TokenScanReader
             Seeker<TokenScanKey,TokenScanValue> cursor;
             try
             {
-                cursor = seekerForLabel( start, stop, tokenId, cursorTracer );
+                cursor = seekerForToken( start, stop, tokenId, cursorTracer );
             }
             catch ( IOException e )
             {

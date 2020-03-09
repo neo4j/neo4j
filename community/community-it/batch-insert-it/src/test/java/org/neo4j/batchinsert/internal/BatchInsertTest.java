@@ -1433,7 +1433,7 @@ class BatchInsertTest
         TokenScanReader labelScanReader = labelScanStore.newReader();
         List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
         List<Long> actualNodeIds;
-        try ( PrimitiveLongResourceIterator itr = labelScanReader.nodesWithLabel( labelId, NULL ) )
+        try ( PrimitiveLongResourceIterator itr = labelScanReader.entityWithToken( labelId, NULL ) )
         {
             actualNodeIds = extractPrimitiveLongIteratorAsList( itr );
         }
