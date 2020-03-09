@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -58,7 +58,7 @@ class IndexBatchTransactionApplierTest
         // GIVEN
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
         OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
+        WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
@@ -84,7 +84,7 @@ class IndexBatchTransactionApplierTest
         // given
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
         OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
+        WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
@@ -150,7 +150,7 @@ class IndexBatchTransactionApplierTest
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }
 
-    private static class OrderVerifyingUpdateListener implements NodeLabelUpdateListener
+    private static class OrderVerifyingUpdateListener implements EntityTokenUpdateListener
     {
         private final long[] expectedNodeIds;
         private int cursor;

@@ -52,7 +52,7 @@ import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -87,7 +87,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
             DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
-            IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
+            IndexUpdateListener indexUpdateListener, EntityTokenUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
@@ -119,7 +119,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
-        private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
+        private EntityTokenUpdateListener entityTokenUpdateListener = new EntityTokenUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
         private TokenHolders tokenHolders = new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) );
         private Config config = Config.defaults();
@@ -177,9 +177,9 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder nodeLabelUpdateListener( NodeLabelUpdateListener nodeLabelUpdateListener )
+        public Builder nodeLabelUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener )
         {
-            this.nodeLabelUpdateListener = nodeLabelUpdateListener;
+            this.entityTokenUpdateListener = entityTokenUpdateListener;
             return this;
         }
 
@@ -216,7 +216,7 @@ public class RecordStorageEngineRule extends ExternalResource
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
-                    nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
+                    entityTokenUpdateListener, lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
         }
     }
 

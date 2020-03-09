@@ -75,7 +75,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -114,7 +114,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
-    private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
+    private WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
@@ -124,7 +124,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
-    private NodeLabelUpdateListener nodeLabelUpdateListener;
+    private EntityTokenUpdateListener nodeLabelUpdateListener;
 
     public RecordStorageEngine( DatabaseLayout databaseLayout,
             Config config,
@@ -234,7 +234,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void addNodeLabelUpdateListener( NodeLabelUpdateListener listener )
+    public void addNodeLabelUpdateListener( EntityTokenUpdateListener listener )
     {
         Preconditions.checkState( this.nodeLabelUpdateListener == null,
                 "Only supports a single listener. Tried to add " + listener + ", but " + this.nodeLabelUpdateListener + " has already been added" );

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -42,16 +42,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class NeoTransactionIndexApplierTest
 {
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
+    private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
     private final LockGroup lockGroup = new LockGroup();

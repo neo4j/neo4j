@@ -50,7 +50,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
@@ -79,7 +79,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * <p>
  * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
  */
-public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, NodeLabelUpdateListener
+public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, EntityTokenUpdateListener
 {
     /**
      * Written in header to indicate native token scan store is clean
@@ -336,7 +336,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public NodeLabelUpdateListener updateListener()
+    public EntityTokenUpdateListener updateListener()
     {
         return this;
     }

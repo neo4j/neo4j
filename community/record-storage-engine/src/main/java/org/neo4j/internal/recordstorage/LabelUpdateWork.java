@@ -22,12 +22,12 @@ package org.neo4j.internal.recordstorage;
 import java.util.List;
 
 import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.util.concurrent.Work;
 
 import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_ENTITY_ID;
 
-public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdateWork>
+public class LabelUpdateWork implements Work<EntityTokenUpdateListener,LabelUpdateWork>
 {
     private final List<EntityTokenUpdate> labelUpdates;
 
@@ -44,7 +44,7 @@ public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdate
     }
 
     @Override
-    public void apply( NodeLabelUpdateListener listener )
+    public void apply( EntityTokenUpdateListener listener )
     {
         labelUpdates.sort( SORT_BY_ENTITY_ID );
         listener.applyUpdates( labelUpdates );

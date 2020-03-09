@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
@@ -91,7 +91,7 @@ class NeoStoreTransactionApplierTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-    private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
+    private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 
@@ -111,7 +111,7 @@ class NeoStoreTransactionApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
-    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final IndexActivator indexActivator = new IndexActivator( indexingService );

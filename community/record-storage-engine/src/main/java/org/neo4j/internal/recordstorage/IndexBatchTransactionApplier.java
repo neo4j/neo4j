@@ -36,7 +36,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final IndexUpdateListener indexUpdateListener;
-    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final IndexActivator indexActivator;
@@ -64,7 +64,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private PageCursorTracer cursorTracer;
 
     public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
-            WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync,
+            WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore,
             PropertyStore propertyStore, StorageEngine storageEngine,

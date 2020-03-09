@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface NodeLabelUpdateListener
+public interface EntityTokenUpdateListener
 {
     /**
      * Applies node label updates from changes in underlying storage.
@@ -27,7 +27,7 @@ public interface NodeLabelUpdateListener
      */
     void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates );
 
-    class Adapter implements NodeLabelUpdateListener
+    class Adapter implements EntityTokenUpdateListener
     {
         @Override
         public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates )

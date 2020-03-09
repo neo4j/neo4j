@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -76,9 +76,9 @@ class SchemaRuleCommandTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
-    private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
+    private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
     private NeoStoreBatchTransactionApplier storeApplier;
-    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer,
