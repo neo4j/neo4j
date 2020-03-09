@@ -27,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -37,7 +38,6 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 
 public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -78,11 +79,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseNodeCursor()
     {
-        NodeCursor c1 = cursors.allocateNodeCursor();
+        NodeCursor c1 = cursors.allocateNodeCursor( NULL );
         read.singleNode( startNode, c1 );
         c1.close();
 
-        NodeCursor c2 = cursors.allocateNodeCursor();
+        NodeCursor c2 = cursors.allocateNodeCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -90,11 +91,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseFullAccessNodeCursor()
     {
-        NodeCursor c1 = cursors.allocateFullAccessNodeCursor();
+        NodeCursor c1 = cursors.allocateFullAccessNodeCursor( NULL );
         read.singleNode( startNode, c1 );
         c1.close();
 
-        NodeCursor c2 = cursors.allocateFullAccessNodeCursor();
+        NodeCursor c2 = cursors.allocateFullAccessNodeCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -102,11 +103,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseRelationshipScanCursor()
     {
-        RelationshipScanCursor c1 = cursors.allocateRelationshipScanCursor();
+        RelationshipScanCursor c1 = cursors.allocateRelationshipScanCursor( NULL );
         read.singleRelationship( relationship, c1 );
         c1.close();
 
-        RelationshipScanCursor c2 = cursors.allocateRelationshipScanCursor();
+        RelationshipScanCursor c2 = cursors.allocateRelationshipScanCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -114,11 +115,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseFullAccessRelationshipScanCursor()
     {
-        RelationshipScanCursor c1 = cursors.allocateFullAccessRelationshipScanCursor();
+        RelationshipScanCursor c1 = cursors.allocateFullAccessRelationshipScanCursor( NULL );
         read.singleRelationship( relationship, c1 );
         c1.close();
 
-        RelationshipScanCursor c2 = cursors.allocateFullAccessRelationshipScanCursor();
+        RelationshipScanCursor c2 = cursors.allocateFullAccessRelationshipScanCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -126,8 +127,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseRelationshipGroupCursor()
     {
-        NodeCursor node = cursors.allocateNodeCursor();
-        RelationshipGroupCursor c1 = cursors.allocateRelationshipGroupCursor();
+        NodeCursor node = cursors.allocateNodeCursor( NULL );
+        RelationshipGroupCursor c1 = cursors.allocateRelationshipGroupCursor( NULL );
 
         read.singleNode( startNode, node );
         node.next();
@@ -136,7 +137,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         node.close();
         c1.close();
 
-        RelationshipGroupCursor c2 = cursors.allocateRelationshipGroupCursor();
+        RelationshipGroupCursor c2 = cursors.allocateRelationshipGroupCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -144,9 +145,9 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseRelationshipTraversalCursor()
     {
-        NodeCursor node = cursors.allocateNodeCursor();
-        RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-        RelationshipTraversalCursor c1 = cursors.allocateRelationshipTraversalCursor();
+        NodeCursor node = cursors.allocateNodeCursor( NULL );
+        RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
+        RelationshipTraversalCursor c1 = cursors.allocateRelationshipTraversalCursor( NULL );
 
         read.singleNode( startNode, node );
         node.next();
@@ -157,7 +158,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         group.close();
         c1.close();
 
-        RelationshipTraversalCursor c2 = cursors.allocateRelationshipTraversalCursor();
+        RelationshipTraversalCursor c2 = cursors.allocateRelationshipTraversalCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -165,8 +166,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReusePropertyCursor()
     {
-        NodeCursor node = cursors.allocateNodeCursor();
-        PropertyCursor c1 = cursors.allocatePropertyCursor();
+        NodeCursor node = cursors.allocateNodeCursor( NULL );
+        PropertyCursor c1 = cursors.allocatePropertyCursor( NULL );
 
         read.singleNode( propNode, node );
         node.next();
@@ -175,7 +176,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         node.close();
         c1.close();
 
-        PropertyCursor c2 = cursors.allocatePropertyCursor();
+        PropertyCursor c2 = cursors.allocatePropertyCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -183,8 +184,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseFullAccessPropertyCursor()
     {
-        NodeCursor node = cursors.allocateNodeCursor();
-        PropertyCursor c1 = cursors.allocateFullAccessPropertyCursor();
+        NodeCursor node = cursors.allocateNodeCursor( NULL );
+        PropertyCursor c1 = cursors.allocateFullAccessPropertyCursor( NULL );
 
         read.singleNode( propNode, node );
         node.next();
@@ -193,7 +194,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         node.close();
         c1.close();
 
-        PropertyCursor c2 = cursors.allocateFullAccessPropertyCursor();
+        PropertyCursor c2 = cursors.allocateFullAccessPropertyCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -207,7 +208,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
 
         NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor();
-        read.nodeIndexSeek( indexSession, c1, IndexOrder.NONE, false, IndexQuery.exact( prop, "zero" ) );
+        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
         c1.close();
 
         NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor();
@@ -257,7 +258,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( index ) == ONLINE, 1, MINUTES );
 
         RelationshipIndexCursor c1 = cursors.allocateRelationshipIndexCursor();
-        read.relationshipIndexSeek( index, c1, IndexQuery.fulltextSearch( "hello" ) );
+        read.relationshipIndexSeek( index, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
         c1.close();
 
         RelationshipIndexCursor c2 = cursors.allocateRelationshipIndexCursor();
