@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -162,7 +163,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             if ( !testExecution )
             {
                 // Verify files
-                Path path = Path.of( file.toUri().getPath() );
+                Path path = Paths.get( file.toUri() );
                 Path metaPath = getAndAssertParent( path, "META-INF" );
                 Path classesPath = getAndAssertParent( metaPath, "classes" );
                 Path targetPath = getAndAssertParent( classesPath, "target" );
