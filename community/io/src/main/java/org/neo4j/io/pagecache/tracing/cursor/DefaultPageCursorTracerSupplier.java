@@ -26,7 +26,7 @@ public class DefaultPageCursorTracerSupplier implements PageCursorTracerSupplier
 {
     private final ThreadLocal<DefaultPageCursorTracer> tracer;
 
-    public static final DefaultPageCursorTracerSupplier TRACER_SUPPLIER = new DefaultPageCursorTracerSupplier( DefaultPageCacheTracer.TRACER );
+    public static final DefaultPageCursorTracerSupplier TRACER_SUPPLIER = new DefaultPageCursorTracerSupplier( new DefaultPageCacheTracer() );
 
     private DefaultPageCursorTracerSupplier( PageCacheTracer pageCacheTracer )
     {
