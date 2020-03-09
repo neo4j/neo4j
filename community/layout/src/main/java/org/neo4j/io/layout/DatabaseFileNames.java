@@ -27,6 +27,7 @@ final class DatabaseFileNames
     static final String METADATA_STORE = "neostore";
 
     static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
+    static final String RELATIONSHIP_TYPE_SCAN_STORE = "neostore.relationshiptypescanstore.db";
 
     static final String COUNTS_STORE = "neostore.counts.db";
 

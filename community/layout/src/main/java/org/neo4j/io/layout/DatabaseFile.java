@@ -69,7 +69,9 @@ public enum DatabaseFile
 
     INDEX_STATISTICS_STORE( DatabaseFileNames.INDEX_STATISTICS_STORE, false ),
 
-    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE, false );
+    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE, false ),
+
+    RELATIONSHIP_TYPE_SCAN_STORE( DatabaseFileNames.RELATIONSHIP_TYPE_SCAN_STORE, false );
 
     private final String name;
     private final boolean hasIdFile;

@@ -116,6 +116,11 @@ public class DatabaseLayout
         return file( DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
+    public File relationshipTypeScanStore()
+    {
+        return file( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() );
+    }
+
     public File countStore()
     {
         return file( DatabaseFile.COUNTS_STORE.getName() );

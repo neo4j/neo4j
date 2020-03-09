@@ -189,7 +189,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Rel
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
-        this.storeFile = directoryStructure.labelScanStore();
+        this.storeFile = entityType == EntityType.NODE ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );

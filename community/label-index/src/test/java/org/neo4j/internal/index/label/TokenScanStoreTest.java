@@ -83,6 +83,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
+import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStore;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -214,6 +215,28 @@ public class TokenScanStoreTest
         assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
         assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Relationship type scan store" ) ) );
+    }
+
+    @Test
+    void shouldUseLabelScanStoreFile()
+    {
+        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        ResourceIterator<File> files = store.snapshotStoreFiles();
+        assertTrue( files.hasNext() );
+        File storeFile = files.next();
+        assertThat( storeFile ).isEqualTo( databaseLayout.labelScanStore() );
+        assertFalse( files.hasNext() );
+    }
+
+    @Test
+    void shouldUseRelationshipTypeScanStoreFile()
+    {
+        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        ResourceIterator<File> files = store.snapshotStoreFiles();
+        assertTrue( files.hasNext() );
+        File storeFile = files.next();
+        assertThat( storeFile ).isEqualTo( databaseLayout.relationshipTypeScanStore() );
+        assertFalse( files.hasNext() );
     }
 
     @Test
@@ -590,7 +613,7 @@ public class TokenScanStoreTest
     private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
     {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate() );
+        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate() );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
