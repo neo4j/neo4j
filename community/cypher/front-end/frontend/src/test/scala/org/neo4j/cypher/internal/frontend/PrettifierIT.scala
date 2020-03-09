@@ -1053,7 +1053,16 @@ class PrettifierIT extends CypherFunSuite {
             s"$action SHOW USER ON DBMS $preposition role",
 
           s"$action alter user on dbms $preposition role" ->
-            s"$action ALTER USER ON DBMS $preposition role"
+            s"$action ALTER USER ON DBMS $preposition role",
+
+          s"$action database management on dbms $preposition role" ->
+            s"$action DATABASE MANAGEMENT ON DBMS $preposition role",
+
+          s"$action create database on dbms $preposition role" ->
+            s"$action CREATE DATABASE ON DBMS $preposition role",
+
+          s"$action drop database on dbms $preposition role" ->
+            s"$action DROP DATABASE ON DBMS $preposition role"
         )
     }
   }

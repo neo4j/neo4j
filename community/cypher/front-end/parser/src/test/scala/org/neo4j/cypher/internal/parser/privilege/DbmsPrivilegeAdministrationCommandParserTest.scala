@@ -23,17 +23,20 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
 
   def privilegeTests(command: String, preposition: String, privilegeFunc: dbmsPrivilegeFunc): Unit = {
     Seq(
-      ("ROLE MANAGEMENT", ast.AllRoleActions),
       ("CREATE ROLE", ast.CreateRoleAction),
       ("DROP ROLE", ast.DropRoleAction),
       ("SHOW ROLE", ast.ShowRoleAction),
       ("ASSIGN ROLE", ast.AssignRoleAction),
       ("REMOVE ROLE", ast.RemoveRoleAction),
+      ("ROLE MANAGEMENT", ast.AllRoleActions),
       ("CREATE USER", ast.CreateUserAction),
       ("DROP USER", ast.DropUserAction),
       ("SHOW USER", ast.ShowUserAction),
       ("ALTER USER", ast.AlterUserAction),
-      ("USER MANAGEMENT", ast.AllUserActions)
+      ("USER MANAGEMENT", ast.AllUserActions),
+      ("CREATE DATABASE", ast.CreateDatabaseAction),
+      ("DROP DATABASE", ast.DropDatabaseAction),
+      ("DATABASE MANAGEMENT", ast.AllDatabaseManagementActions)
     ).foreach {
       case (privilege: String, action: ast.AdminAction) =>
 

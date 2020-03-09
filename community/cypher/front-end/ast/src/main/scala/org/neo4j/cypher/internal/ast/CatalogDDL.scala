@@ -324,8 +324,6 @@ case object TerminateTransactionAction extends TransactionManagementAction("TERM
 abstract class DbmsAdminAction(override val name: String) extends AdminAction
 
 case object AllAdminAction extends DbmsAdminAction("ALL ADMIN PRIVILEGES")
-case object CreateDatabaseAction extends DbmsAdminAction("CREATE DATABASE")
-case object DropDatabaseAction extends DbmsAdminAction("DROP DATABASE")
 
 abstract class UserManagementAction(override val name: String) extends DbmsAdminAction(name)
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")
@@ -341,6 +339,11 @@ case object CreateRoleAction extends RoleManagementAction("CREATE ROLE")
 case object DropRoleAction extends RoleManagementAction("DROP ROLE")
 case object AssignRoleAction extends RoleManagementAction("ASSIGN ROLE")
 case object RemoveRoleAction extends RoleManagementAction("REMOVE ROLE")
+
+abstract class DatabaseManagementAction(override val name: String) extends DbmsAdminAction(name)
+case object AllDatabaseManagementActions extends DatabaseManagementAction("DATABASE MANAGEMENT")
+case object CreateDatabaseAction extends DatabaseManagementAction("CREATE DATABASE")
+case object DropDatabaseAction extends DatabaseManagementAction("DROP DATABASE")
 
 abstract class PrivilegeManagementAction(override val name: String) extends DbmsAdminAction(name)
 case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEGES")

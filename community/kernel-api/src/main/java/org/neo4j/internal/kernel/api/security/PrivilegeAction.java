@@ -86,6 +86,8 @@ public enum PrivilegeAction
                            PRIVILEGE_MANAGEMENT.satisfies( action ) ||
                            TRANSACTION_MANAGEMENT.satisfies( action ) ||
                            DATABASE_MANAGEMENT.satisfies( action ) ||
+                           START_DATABASE.satisfies( action ) ||
+                           STOP_DATABASE.satisfies( action ) ||
                            this == action;
                 }
             },
@@ -148,8 +150,6 @@ public enum PrivilegeAction
                     {
                     case CREATE_DATABASE:
                     case DROP_DATABASE:
-                    case START_DATABASE:
-                    case STOP_DATABASE:
                         return true;
                     default:
                         return this == action;
