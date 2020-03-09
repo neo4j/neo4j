@@ -414,11 +414,6 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x").withNoRows()
   }
-}
-
-// Supported by interpreted, slotted
-trait AntiSemiApplyWithRhsAggregationTestBase[CONTEXT <: RuntimeContext] {
-  self: AntiSemiApplyTestBase[CONTEXT] =>
 
   test("should only let through rows that do not match, with RHS aggregation") {
     val inputRows = for {

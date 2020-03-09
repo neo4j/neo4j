@@ -370,11 +370,6 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
   }
-}
-
-// Supported by interpreted, slotted
-trait SemiApplyWithRhsAggregationTestBase[CONTEXT <: RuntimeContext] {
-  self: SemiApplyTestBase[CONTEXT] =>
 
   test("should only let through rows that match, with RHS aggregation") {
     val inputRows = for {
