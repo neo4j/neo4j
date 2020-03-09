@@ -199,7 +199,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     {
                         labelUpdates = new ArrayList<>();
                     }
-                    labelUpdates.add( EntityTokenUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
+                    labelUpdates.add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
                 }
             }
 

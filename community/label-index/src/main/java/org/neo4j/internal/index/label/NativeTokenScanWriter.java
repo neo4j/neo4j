@@ -44,7 +44,7 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * <p>
  * Incoming {@link EntityTokenUpdate updates} are actually modified from representing physical before/after
  * state to represent logical to-add/to-remove state. These changes are done directly inside the provided
- * {@link EntityTokenUpdate#getLabelsAfter()} and {@link EntityTokenUpdate#getLabelsBefore()} arrays,
+ * {@link EntityTokenUpdate#getTokensAfter()} and {@link EntityTokenUpdate#getTokensBefore()} arrays,
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
  * This conversion is done like so mostly to reduce garbage.
  *
@@ -56,7 +56,7 @@ class NativeTokenScanWriter implements TokenScanWriter
      * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
      */
     private static final Comparator<EntityTokenUpdate> UPDATE_SORTER =
-            Comparator.comparingLong( EntityTokenUpdate::getNodeId );
+            Comparator.comparingLong( EntityTokenUpdate::getEntityId );
 
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
@@ -198,8 +198,8 @@ class NativeTokenScanWriter implements TokenScanWriter
 
         pendingUpdates[pendingUpdatesCursor++] = update;
         PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
-        checkNextTokenId( update.getLabelsBefore() );
-        checkNextTokenId( update.getLabelsAfter() );
+        checkNextTokenId( update.getTokensBefore() );
+        checkNextTokenId( update.getTokensAfter() );
     }
 
     private void checkNextTokenId( long[] tokens )
@@ -223,9 +223,9 @@ class NativeTokenScanWriter implements TokenScanWriter
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
                 EntityTokenUpdate update = pendingUpdates[i];
-                long entityId = update.getNodeId();
-                nextTokenId = extractChange( update.getLabelsAfter(), currentTokenId, entityId, nextTokenId, true, update.getTxId() );
-                nextTokenId = extractChange( update.getLabelsBefore(), currentTokenId, entityId, nextTokenId, false, update.getTxId() );
+                long entityId = update.getEntityId();
+                nextTokenId = extractChange( update.getTokensAfter(), currentTokenId, entityId, nextTokenId, true, update.getTxId() );
+                nextTokenId = extractChange( update.getTokensBefore(), currentTokenId, entityId, nextTokenId, false, update.getTxId() );
             }
             currentTokenId = nextTokenId;
         }

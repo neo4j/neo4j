@@ -165,7 +165,7 @@ class IndexBatchTransactionApplierTest
         {
             for ( EntityTokenUpdate update : labelUpdates )
             {
-                assertEquals( expectedNodeIds[cursor], update.getNodeId() );
+                assertEquals( expectedNodeIds[cursor], update.getEntityId() );
                 cursor++;
             }
         }

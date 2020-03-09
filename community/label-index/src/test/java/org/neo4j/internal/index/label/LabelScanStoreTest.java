@@ -82,7 +82,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -219,7 +219,7 @@ public class LabelScanStoreTest
         start();
 
         // WHEN
-        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
 
         // THEN
         assertNodesForLabel( labelId, nodeId );
@@ -233,11 +233,11 @@ public class LabelScanStoreTest
         int labelId2 = 2;
         long nodeId = 10;
         start();
-        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, NO_LABELS, new long[]{labelId1} ) ) );
         assertNodesForLabel( labelId2 );
 
         // WHEN
-        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
 
         // THEN
         assertNodesForLabel( labelId1, nodeId );
@@ -252,12 +252,12 @@ public class LabelScanStoreTest
         int labelId2 = 2;
         long nodeId = 10;
         start();
-        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
         assertNodesForLabel( labelId1, nodeId );
         assertNodesForLabel( labelId2, nodeId );
 
         // WHEN
-        write( iterator( labelChanges( nodeId, new long[]{labelId1, labelId2}, new long[]{labelId2} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, new long[]{labelId1, labelId2}, new long[]{labelId2} ) ) );
 
         // THEN
         assertNodesForLabel( labelId1 );
@@ -271,10 +271,10 @@ public class LabelScanStoreTest
         int labelId = 1;
         long nodeId = 10;
         start();
-        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
 
         // WHEN
-        write( iterator( labelChanges( nodeId, new long[]{labelId}, NO_LABELS ) ) );
+        write( iterator( EntityTokenUpdate.tokenChanges( nodeId, new long[]{labelId}, NO_LABELS ) ) );
 
         // THEN
         assertNodesForLabel( labelId );
@@ -289,8 +289,8 @@ public class LabelScanStoreTest
         long nodeId1 = 10;
         long nodeId2 = 11;
         start( asList(
-                labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
-                labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
+                EntityTokenUpdate.tokenChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
+                EntityTokenUpdate.tokenChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
         ) );
 
         // WHEN
@@ -313,8 +313,8 @@ public class LabelScanStoreTest
         long nodeId1 = 10;
         long nodeId2 = 1280;
         start( asList(
-                labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
-                labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
+                EntityTokenUpdate.tokenChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
+                EntityTokenUpdate.tokenChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
         ) );
 
         // WHEN
@@ -342,7 +342,7 @@ public class LabelScanStoreTest
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
-            updates.add( labelChanges( i, new long[]{}, new long[]{labelId} ) );
+            updates.add( EntityTokenUpdate.tokenChanges( i, new long[]{}, new long[]{labelId} ) );
             nodes.add( (long) i );
         }
 
@@ -365,7 +365,7 @@ public class LabelScanStoreTest
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
-            label0Updates.add( labelChanges( i, new long[]{}, new long[]{label0Id} ) );
+            label0Updates.add( EntityTokenUpdate.tokenChanges( i, new long[]{}, new long[]{label0Id} ) );
             nodes.add( (long) i );
         }
 
@@ -386,7 +386,7 @@ public class LabelScanStoreTest
         // given
         long labelId = 0;
         List<EntityTokenUpdate> labelUpdates = new ArrayList<>();
-        labelUpdates.add( labelChanges( 0L, new long[]{}, new long[]{labelId} ) );
+        labelUpdates.add( EntityTokenUpdate.tokenChanges( 0L, new long[]{}, new long[]{labelId} ) );
 
         start( labelUpdates );
 
@@ -408,8 +408,8 @@ public class LabelScanStoreTest
     {
         // GIVEN a start of the store with existing data in it
         start( asList(
-                labelChanges( 1, NO_LABELS, new long[]{1} ),
-                labelChanges( 2, NO_LABELS, new long[]{1, 2} )
+                EntityTokenUpdate.tokenChanges( 1, NO_LABELS, new long[]{1} ),
+                EntityTokenUpdate.tokenChanges( 2, NO_LABELS, new long[]{1, 2} )
         ) );
 
         // THEN
@@ -423,8 +423,8 @@ public class LabelScanStoreTest
     {
         // GIVEN a start of the store with existing data in it
         List<EntityTokenUpdate> data = asList(
-                labelChanges( 1, NO_LABELS, new long[]{1} ),
-                labelChanges( 2, NO_LABELS, new long[]{1, 2} ) );
+                EntityTokenUpdate.tokenChanges( 1, NO_LABELS, new long[]{1} ),
+                EntityTokenUpdate.tokenChanges( 2, NO_LABELS, new long[]{1, 2} ) );
         start( data, false );
 
         // WHEN the index is corrupted and then started again
@@ -450,7 +450,7 @@ public class LabelScanStoreTest
             @Override
             protected EntityTokenUpdate fetchNextOrNull()
             {
-                return ++i < nodeCount ? labelChanges( i, NO_LABELS, new long[]{labelId} ) : null;
+                return ++i < nodeCount ? EntityTokenUpdate.tokenChanges( i, NO_LABELS, new long[]{labelId} ) : null;
             }
         } );
 
@@ -479,15 +479,15 @@ public class LabelScanStoreTest
 
         // WHEN
         write( iterator(
-                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
-                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
-                labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
-                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
-                labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
-                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
-                labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
+                EntityTokenUpdate.tokenChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
+                EntityTokenUpdate.tokenChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                EntityTokenUpdate.tokenChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
+                EntityTokenUpdate.tokenChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
+                EntityTokenUpdate.tokenChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                EntityTokenUpdate.tokenChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                EntityTokenUpdate.tokenChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
+                EntityTokenUpdate.tokenChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                EntityTokenUpdate.tokenChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
 
         // THEN
         TokenScanReader reader = store.newReader();
@@ -512,7 +512,7 @@ public class LabelScanStoreTest
         for ( long nodeId = 0; nodeId < 10_000; nodeId++ )
         {
             long[] longLabels = Arrays.stream( random.selection( possibleLabelIds, 0, 5, false ) ).mapToLong( Long::longValue ).sorted().toArray();
-            updates.add( labelChanges( nodeId, EMPTY_LONG_ARRAY, longLabels ) );
+            updates.add( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, longLabels ) );
         }
 
         // when
@@ -529,11 +529,11 @@ public class LabelScanStoreTest
         {
             PrimitiveLongResourceIterator nodesWithLabel = store.newReader().entityWithToken( labelId.intValue(), NULL );
             Iterator<EntityTokenUpdate> expected =
-                    updates.stream().filter( update -> LongStream.of( update.getLabelsAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
+                    updates.stream().filter( update -> LongStream.of( update.getTokensAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
             while ( nodesWithLabel.hasNext() )
             {
                 long node = nodesWithLabel.next();
-                assertEquals( expected.next().getNodeId(), node );
+                assertEquals( expected.next().getEntityId(), node );
             }
             assertFalse( expected.hasNext() );
         }
@@ -597,7 +597,7 @@ public class LabelScanStoreTest
         start();
         try ( TokenScanWriter labelScanWriter = store.newWriter() )
         {
-            labelScanWriter.write( labelChanges( 1, new long[]{}, new long[]{1} ) );
+            labelScanWriter.write( EntityTokenUpdate.tokenChanges( 1, new long[]{}, new long[]{1} ) );
         }
         store.shutdown();
     }

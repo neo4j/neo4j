@@ -84,10 +84,10 @@ class PhysicalToLogicalTokenChangesTest
 
     private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
-        EntityTokenUpdate update = EntityTokenUpdate.labelChanges( 0, before, after );
+        EntityTokenUpdate update = EntityTokenUpdate.tokenChanges( 0, before, after );
         PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
-        assertArrayEquals( terminate( update.getLabelsBefore() ), expectedRemoved );
-        assertArrayEquals( terminate( update.getLabelsAfter() ), expectedAdded );
+        assertArrayEquals( terminate( update.getTokensBefore() ), expectedRemoved );
+        assertArrayEquals( terminate( update.getTokensAfter() ), expectedAdded );
     }
 
     private static long[] terminate( long[] labels )

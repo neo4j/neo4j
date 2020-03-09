@@ -106,7 +106,7 @@ class LabelScanStoreRebuildTest
     {
         // given
         List<EntityTokenUpdate> existingData = new ArrayList<>();
-        existingData.add( EntityTokenUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
+        existingData.add( EntityTokenUpdate.tokenChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
         try

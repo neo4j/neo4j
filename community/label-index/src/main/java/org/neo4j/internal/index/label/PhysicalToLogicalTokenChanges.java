@@ -37,13 +37,13 @@ class PhysicalToLogicalTokenChanges
      */
     static void convertToAdditionsAndRemovals( EntityTokenUpdate update )
     {
-        int beforeLength = update.getLabelsBefore().length;
-        int afterLength = update.getLabelsAfter().length;
+        int beforeLength = update.getTokensBefore().length;
+        int afterLength = update.getTokensAfter().length;
 
         int bc = 0;
         int ac = 0;
-        long[] before = update.getLabelsBefore();
-        long[] after = update.getLabelsAfter();
+        long[] before = update.getTokensBefore();
+        long[] after = update.getTokensAfter();
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
         {
             long beforeId = bi < beforeLength ? before[bi] : -1;
@@ -60,7 +60,7 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( beforeId, afterId ) && bi < beforeLength )
                 {
                     // looks like there's an id in before which isn't in after ==> REMOVE
-                    update.getLabelsBefore()[bc++] = beforeId;
+                    update.getTokensBefore()[bc++] = beforeId;
                     bi++;
                     beforeId = bi < beforeLength ? before[bi] : -1;
                 }
@@ -70,15 +70,15 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( afterId, beforeId ) && ai < afterLength )
                 {
                     // looks like there's an id in after which isn't in before ==> ADD
-                    update.getLabelsAfter()[ac++] = afterId;
+                    update.getTokensAfter()[ac++] = afterId;
                     ai++;
                     afterId = ai < afterLength ? after[ai] : -1;
                 }
             }
         }
 
-        terminateWithMinusOneIfNeeded( update.getLabelsBefore(), bc );
-        terminateWithMinusOneIfNeeded( update.getLabelsAfter(), ac );
+        terminateWithMinusOneIfNeeded( update.getTokensBefore(), bc );
+        terminateWithMinusOneIfNeeded( update.getTokensAfter(), ac );
     }
 
     private static boolean smaller( long id, long otherId )

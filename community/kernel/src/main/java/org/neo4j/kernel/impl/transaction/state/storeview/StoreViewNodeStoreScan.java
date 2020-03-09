@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.lock.LockService.LockType.READ_LOCK;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
@@ -70,7 +69,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
         if ( labelUpdateVisitor != null )
         {
             // Notify the label update visitor
-            labelUpdateVisitor.visit( labelChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) );
+            labelUpdateVisitor.visit( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) );
         }
 
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )

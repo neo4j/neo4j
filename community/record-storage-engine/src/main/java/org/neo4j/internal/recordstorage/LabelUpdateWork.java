@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.util.concurrent.Work;
 
-import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_NODE_ID;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_ENTITY_ID;
 
 public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdateWork>
 {
@@ -46,7 +46,7 @@ public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdate
     @Override
     public void apply( NodeLabelUpdateListener listener )
     {
-        labelUpdates.sort( SORT_BY_NODE_ID );
+        labelUpdates.sort( SORT_BY_ENTITY_ID );
         listener.applyUpdates( labelUpdates );
     }
 }

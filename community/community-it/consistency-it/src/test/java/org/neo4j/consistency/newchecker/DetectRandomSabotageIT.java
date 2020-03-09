@@ -741,7 +741,7 @@ public class DetectRandomSabotageIT
                                     long[] labelsAfter = Arrays.copyOf( labelsBefore, labelsBefore.length + 1 );
                                     labelsAfter[labelsBefore.length] = labelId;
                                     Arrays.sort( labelsAfter );
-                                    writer.write( EntityTokenUpdate.labelChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
+                                    writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
                                 }
                                 else
                                 {
@@ -749,14 +749,14 @@ public class DetectRandomSabotageIT
                                     MutableLongList labels = LongLists.mutable.of( Arrays.copyOf( labelsBefore, labelsBefore.length ) );
                                     labelId = (int) labels.removeAtIndex( random.nextInt( labels.size() ) );
                                     long[] labelsAfter = labels.toSortedArray(); // With one of the labels removed
-                                    writer.write( EntityTokenUpdate.labelChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
+                                    writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
                                 }
                             }
                             else // Getting here means the we're adding something (see above when selecting the node)
                             {
                                 // Add a label to a non-existent node (in the label index only)
                                 labelId = tokenHolders.labelTokens().getIdByName( random.among( TOKEN_NAMES ) );
-                                writer.write( EntityTokenUpdate.labelChanges( nodeRecord.getId(), EMPTY_LONG_ARRAY, new long[]{labelId} ) );
+                                writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), EMPTY_LONG_ARRAY, new long[]{labelId} ) );
                             }
                         }
                         return new Sabotage( String.format( "%s labelId:%d node:%s", add ? "Add" : "Remove", labelId, nodeRecord ), nodeRecord.toString() );

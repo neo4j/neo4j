@@ -118,7 +118,7 @@ class NativeTokenScanWriterTest
                 writer.initialize( tree.writer( NULL ) );
 
                 // WHEN
-                writer.write( EntityTokenUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
+                writer.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
                 // we can't do the usual "fail( blabla )" here since the actual write will happen
                 // when closing this writer, i.e. in the curly bracket below.
             }
@@ -145,7 +145,7 @@ class NativeTokenScanWriterTest
                 long baseNodeId = i * RANGE_SIZE;
                 for ( int j = 0; j < numberOfNodesInEach; j++ )
                 {
-                    writer.write( EntityTokenUpdate.labelChanges( baseNodeId + j, EMPTY_LONG_ARRAY, labels ) );
+                    writer.write( EntityTokenUpdate.tokenChanges( baseNodeId + j, EMPTY_LONG_ARRAY, labels ) );
                 }
             }
         }
@@ -159,7 +159,7 @@ class NativeTokenScanWriterTest
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
             for ( int i = 0; i < numberOfNodesInEach; i++ )
             {
-                writer.write( EntityTokenUpdate.labelChanges( baseNodeId + i, labels, EMPTY_LONG_ARRAY ) );
+                writer.write( EntityTokenUpdate.tokenChanges( baseNodeId + i, labels, EMPTY_LONG_ARRAY ) );
             }
         }
 
@@ -180,7 +180,7 @@ class NativeTokenScanWriterTest
             labels = flipRandom( labels, LABEL_COUNT, random.random() );
         }
         expected[nodeId] = labels;
-        return EntityTokenUpdate.labelChanges( nodeId, before, getLabels( labels ) );
+        return EntityTokenUpdate.tokenChanges( nodeId, before, getLabels( labels ) );
     }
 
     private void assertTreeHasKeysRepresentingIdRanges( MutableLongSet expected ) throws IOException

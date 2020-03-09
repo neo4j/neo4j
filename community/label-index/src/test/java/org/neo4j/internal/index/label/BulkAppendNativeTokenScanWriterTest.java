@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 @PageCacheExtension
 class BulkAppendNativeTokenScanWriterTest
@@ -57,7 +58,7 @@ class BulkAppendNativeTokenScanWriterTest
         {
             // when
             long nodeId = 5;
-            writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
 
             // then
             treeWriter.verifyNoMorePuts();
@@ -78,15 +79,15 @@ class BulkAppendNativeTokenScanWriterTest
             // when
             long nodeId1 = 5;
             long nodeId2 = 7;
-            writer.write( labelChanges( nodeId1, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
-            writer.write( labelChanges( nodeId2, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId1, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId2, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
 
             // then
             treeWriter.verifyNoMorePuts();
 
             // when
             long nodeId3 = TokenScanValue.RANGE_SIZE + 5;
-            writer.write( labelChanges( nodeId3, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId3, EMPTY_LONG_ARRAY, new long[]{1, 2, 3} ) );
 
             // then
             treeWriter.verifyMerged( key( 1, 0 ), value( 0b10100000 ) );
@@ -109,7 +110,7 @@ class BulkAppendNativeTokenScanWriterTest
         {
             // when/then
             IllegalArgumentException failure =
-                    assertThrows( IllegalArgumentException.class, () -> writer.write( labelChanges( 3, new long[]{1, 2}, new long[]{2, 3} ) ) );
+                    assertThrows( IllegalArgumentException.class, () -> writer.write( EntityTokenUpdate.tokenChanges( 3, new long[]{1, 2}, new long[]{2, 3} ) ) );
             assertThat( failure.getMessage() ).contains( "Was expecting no labels before" );
         }
     }
@@ -121,14 +122,14 @@ class BulkAppendNativeTokenScanWriterTest
         long nodeId = 3;
         try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( new TrackingWriter() ) )
         {
-            writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{2} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{2} ) );
         }
 
         // when
         TrackingWriter treeWriter = new TrackingWriter();
         try ( BulkAppendNativeTokenScanWriter writer = new BulkAppendNativeTokenScanWriter( treeWriter ) )
         {
-            writer.write( labelChanges( 3, EMPTY_LONG_ARRAY, new long[]{3} ) );
+            writer.write( EntityTokenUpdate.tokenChanges( 3, EMPTY_LONG_ARRAY, new long[]{3} ) );
         }
 
         // then

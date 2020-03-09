@@ -56,10 +56,10 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
     @Override
     public void write( EntityTokenUpdate update )
     {
-        checkArgument( update.getLabelsBefore().length == 0, "Was expecting no labels before, was %s", Arrays.toString( update.getLabelsBefore() ) );
-        long idRange = rangeOf( update.getNodeId() );
+        checkArgument( update.getTokensBefore().length == 0, "Was expecting no labels before, was %s", Arrays.toString( update.getTokensBefore() ) );
+        long idRange = rangeOf( update.getEntityId() );
         int previousTokenId = -1;
-        for ( long tokenId : update.getLabelsAfter() )
+        for ( long tokenId : update.getTokensAfter() )
         {
             int intTokenId = toIntExact( tokenId );
             checkArgument( intTokenId > previousTokenId, "Detected unsorted labels in %s", update );
@@ -75,7 +75,7 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
                 range.getKey().idRange = idRange;
                 range.getValue().clear();
             }
-            range.getValue().set( offsetOf( update.getNodeId() ) );
+            range.getValue().set( offsetOf( update.getEntityId() ) );
         }
     }
 

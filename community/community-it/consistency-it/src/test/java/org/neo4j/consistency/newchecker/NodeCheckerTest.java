@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +47,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 class NodeCheckerTest extends CheckerTestBase
 {
@@ -116,7 +117,7 @@ class NodeCheckerTest extends CheckerTestBase
             // Label index having (N) which is not in use in the store
             try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
-                writer.write( labelChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -139,14 +140,14 @@ class NodeCheckerTest extends CheckerTestBase
                 for ( int i = 0; i < 10; i++ )
                 {
                     long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL, label1 );
-                    writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                    writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
                 }
             }
 
             // Label index having (N) which is not in use in the store
             try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
-                writer.write( labelChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -246,7 +247,7 @@ class NodeCheckerTest extends CheckerTestBase
             long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
             try ( TokenScanWriter writer = labelIndex.newWriter() )
             {
-                writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -287,7 +288,7 @@ class NodeCheckerTest extends CheckerTestBase
                 {
                     long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL, label1, label2 );
                     // node 10 missing label2 in index
-                    writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY,
+                    writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY,
                             i == 10 ? new long[]{label1} : new long[]{label1, label2} ) );
                 }
             }

@@ -158,7 +158,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
@@ -310,7 +310,7 @@ public class FullCheckIntegrationTest
 
         LabelScanStore labelScanStore = fixture.directStoreAccess().labelScanStore();
         Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable(
-                labelChanges( nodeId1, new long[]{}, new long[]{labelId} )
+                EntityTokenUpdate.tokenChanges( nodeId1, new long[]{}, new long[]{labelId} )
         );
         write( labelScanStore, nodeLabelUpdates );
 
@@ -417,7 +417,7 @@ public class FullCheckIntegrationTest
         labels.remove( 1 );
         long[] after = asArray( labels );
 
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( labelChanges( 42, before, after ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( EntityTokenUpdate.tokenChanges( 42, before, after ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -454,7 +454,7 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( labelChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( EntityTokenUpdate.tokenChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();

@@ -142,7 +142,7 @@ class LabelScanStoreStartupIT
         int labelId = 1;
         try ( TokenScanWriter labelScanWriter = labelScanStore.newWriter() )
         {
-            labelScanWriter.write( EntityTokenUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
+            labelScanWriter.write( EntityTokenUpdate.tokenChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
         TokenScanReader labelScanReader = labelScanStore.newReader();
         try ( PrimitiveLongResourceIterator iterator = labelScanReader.entityWithToken( labelId, NULL ) )

@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -46,7 +47,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -95,7 +96,7 @@ class NativeTokenScanReaderIT
             for ( int i = 0; i < updates; i++ )
             {
                 int nodeId = random.nextInt( highNodeId );
-                writer.write( labelChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
+                writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
                 expected.set( nodeId );
             }
         }

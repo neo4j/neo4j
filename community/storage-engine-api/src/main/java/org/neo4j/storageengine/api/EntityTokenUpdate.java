@@ -24,35 +24,35 @@ import java.util.Comparator;
 
 public class EntityTokenUpdate
 {
-    public static final Comparator<? super EntityTokenUpdate> SORT_BY_NODE_ID =
-            Comparator.comparingLong( EntityTokenUpdate::getNodeId );
+    public static final Comparator<? super EntityTokenUpdate> SORT_BY_ENTITY_ID =
+            Comparator.comparingLong( EntityTokenUpdate::getEntityId );
 
-    private final long nodeId;
-    private final long[] labelsBefore;
-    private final long[] labelsAfter;
+    private final long entityId;
+    private final long[] tokensBefore;
+    private final long[] tokensAfter;
     private final long txId;
 
-    private EntityTokenUpdate( long nodeId, long[] labelsBefore, long[] labelsAfter, long txId )
+    private EntityTokenUpdate( long entityId, long[] tokensBefore, long[] tokensAfter, long txId )
     {
-        this.nodeId = nodeId;
-        this.labelsBefore = labelsBefore;
-        this.labelsAfter = labelsAfter;
+        this.entityId = entityId;
+        this.tokensBefore = tokensBefore;
+        this.tokensAfter = tokensAfter;
         this.txId = txId;
     }
 
-    public long getNodeId()
+    public long getEntityId()
     {
-        return nodeId;
+        return entityId;
     }
 
-    public long[] getLabelsBefore()
+    public long[] getTokensBefore()
     {
-        return labelsBefore;
+        return tokensBefore;
     }
 
-    public long[] getLabelsAfter()
+    public long[] getTokensAfter()
     {
-        return labelsAfter;
+        return tokensAfter;
     }
 
     public long getTxId()
@@ -63,18 +63,18 @@ public class EntityTokenUpdate
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[node:" + nodeId + ", labelsBefore:" + Arrays.toString( labelsBefore ) +
-                ", labelsAfter:" + Arrays.toString( labelsAfter ) + "]";
+        return getClass().getSimpleName() + "[entity:" + entityId + ", tokensBefore:" + Arrays.toString( tokensBefore ) +
+                ", tokensAfter:" + Arrays.toString( tokensAfter ) + "]";
     }
 
-    public static EntityTokenUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange )
+    public static EntityTokenUpdate tokenChanges( long tokenId, long[] tokensBeforeChange, long[] tokensAfterChange )
     {
-        return labelChanges( nodeId, labelsBeforeChange, labelsAfterChange, -1 );
+        return tokenChanges( tokenId, tokensBeforeChange, tokensAfterChange, -1 );
     }
 
-    public static EntityTokenUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange, long txId )
+    public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange, long txId )
     {
-        return new EntityTokenUpdate( nodeId, labelsBeforeChange, labelsAfterChange, txId );
+        return new EntityTokenUpdate( entityId, tokensBeforeChange, tokensAfterChange, txId );
     }
 
     @Override
@@ -91,23 +91,23 @@ public class EntityTokenUpdate
 
         EntityTokenUpdate that = (EntityTokenUpdate) o;
 
-        if ( nodeId != that.nodeId )
+        if ( entityId != that.entityId )
         {
             return false;
         }
-        if ( !Arrays.equals( labelsAfter, that.labelsAfter ) )
+        if ( !Arrays.equals( tokensAfter, that.tokensAfter ) )
         {
             return false;
         }
-        return Arrays.equals( labelsBefore, that.labelsBefore );
+        return Arrays.equals( tokensBefore, that.tokensBefore );
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (nodeId ^ (nodeId >>> 32));
-        result = 31 * result + (labelsBefore != null ? Arrays.hashCode( labelsBefore ) : 0);
-        result = 31 * result + (labelsAfter != null ? Arrays.hashCode( labelsAfter ) : 0);
+        int result = (int) (entityId ^ (entityId >>> 32));
+        result = 31 * result + (tokensBefore != null ? Arrays.hashCode( tokensBefore ) : 0);
+        result = 31 * result + (tokensAfter != null ? Arrays.hashCode( tokensAfter ) : 0);
         return result;
     }
 }
