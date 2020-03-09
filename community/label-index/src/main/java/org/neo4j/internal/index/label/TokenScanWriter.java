@@ -22,17 +22,17 @@ package org.neo4j.internal.index.label;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 public interface TokenScanWriter extends Closeable
 {
     /**
-     * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending entity id.
+     * Store a {@link EntityTokenUpdate}. Calls to this method MUST be ordered by ascending entity id.
      *
      * @param update entity token update to store
      * @throws IOException some kind of I/O exception has occurred
      */
-    void write( NodeLabelUpdate update ) throws IOException;
+    void write( EntityTokenUpdate update ) throws IOException;
 
     /**
      * Close this writer and flush pending changes to the store.

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.Arrays;
 
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -84,7 +84,7 @@ class PhysicalToLogicalTokenChangesTest
 
     private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
-        NodeLabelUpdate update = NodeLabelUpdate.labelChanges( 0, before, after );
+        EntityTokenUpdate update = EntityTokenUpdate.labelChanges( 0, before, after );
         PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
         assertArrayEquals( terminate( update.getLabelsBefore() ), expectedRemoved );
         assertArrayEquals( terminate( update.getLabelsAfter() ), expectedAdded );

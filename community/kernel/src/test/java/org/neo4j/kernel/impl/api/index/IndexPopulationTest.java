@@ -42,9 +42,9 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
@@ -125,8 +125,8 @@ class IndexPopulationTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                    PageCursorTracer cursorTracer )
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate, FAILURE>labelUpdateVisitor,
+            boolean forceStoreScan, PageCursorTracer cursorTracer )
             {
                 //noinspection unchecked
                 return new StoreScan()

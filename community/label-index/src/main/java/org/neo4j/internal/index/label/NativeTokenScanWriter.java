@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
@@ -37,14 +37,14 @@ import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
  * {@link TokenScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
- * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
+ * {@link #write(EntityTokenUpdate) updates} are queued up to a maximum batch size and, for performance,
  * applied in sorted order (by the token and entity id) when reaches batch size or on {@link #close()}.
  * <p>
  * Updates aren't visible to {@link TokenScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
- * Incoming {@link NodeLabelUpdate updates} are actually modified from representing physical before/after
+ * Incoming {@link EntityTokenUpdate updates} are actually modified from representing physical before/after
  * state to represent logical to-add/to-remove state. These changes are done directly inside the provided
- * {@link NodeLabelUpdate#getLabelsAfter()} and {@link NodeLabelUpdate#getLabelsBefore()} arrays,
+ * {@link EntityTokenUpdate#getLabelsAfter()} and {@link EntityTokenUpdate#getLabelsBefore()} arrays,
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
  * This conversion is done like so mostly to reduce garbage.
  *
@@ -55,8 +55,8 @@ class NativeTokenScanWriter implements TokenScanWriter
     /**
      * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
      */
-    private static final Comparator<NodeLabelUpdate> UPDATE_SORTER =
-            Comparator.comparingLong( NodeLabelUpdate::getNodeId );
+    private static final Comparator<EntityTokenUpdate> UPDATE_SORTER =
+            Comparator.comparingLong( EntityTokenUpdate::getNodeId );
 
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
@@ -88,20 +88,20 @@ class NativeTokenScanWriter implements TokenScanWriter
     private final TokenScanValue value = new TokenScanValue();
 
     /**
-     * Batch currently building up as {@link #write(NodeLabelUpdate) updates} come in. Cursor for where
+     * Batch currently building up as {@link #write(EntityTokenUpdate) updates} come in. Cursor for where
      * to place new updates is {@link #pendingUpdatesCursor}. The constructor set the length of this queue
      * and the length defines the maximum batch size.
      */
-    private final NodeLabelUpdate[] pendingUpdates;
+    private final EntityTokenUpdate[] pendingUpdates;
 
     /**
-     * Cursor into {@link #pendingUpdates}, where to place new {@link #write(NodeLabelUpdate) updates}.
+     * Cursor into {@link #pendingUpdates}, where to place new {@link #write(EntityTokenUpdate) updates}.
      * When full the batch is applied and this cursor reset to {@code 0}.
      */
     private int pendingUpdatesCursor;
 
     /**
-     * There are two levels of batching, one for {@link NodeLabelUpdate updates} and one when applying.
+     * There are two levels of batching, one for {@link EntityTokenUpdate updates} and one when applying.
      * This variable helps keeping track of the second level where updates to the actual {@link GBPTree}
      * are batched per entity id range, i.e. to add several tokenId->entityId mappings falling into the same
      * range, all of those updates are made into one {@link TokenScanValue} and then issues as one update
@@ -110,7 +110,7 @@ class NativeTokenScanWriter implements TokenScanWriter
     private boolean addition;
 
     /**
-     * When applying {@link NodeLabelUpdate updates} (when batch full or in {@link #close()}), updates are
+     * When applying {@link EntityTokenUpdate updates} (when batch full or in {@link #close()}), updates are
      * applied tokenId by tokenId. All updates are scanned through multiple times, with one token in mind at a time.
      * For each round the current round tries to figure out which is the closest higher tokenId to apply
      * in the next round. This variable keeps track of that next tokenId.
@@ -162,7 +162,7 @@ class NativeTokenScanWriter implements TokenScanWriter
 
     NativeTokenScanWriter( int batchSize, WriteMonitor monitor )
     {
-        this.pendingUpdates = new NodeLabelUpdate[batchSize];
+        this.pendingUpdates = new EntityTokenUpdate[batchSize];
         this.addMerger = new AddMerger( monitor );
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
@@ -185,11 +185,11 @@ class NativeTokenScanWriter implements TokenScanWriter
     }
 
     /**
-     * Queues a {@link NodeLabelUpdate} to this writer for applying when batch gets full,
+     * Queues a {@link EntityTokenUpdate} to this writer for applying when batch gets full,
      * or when {@link #close() closing}.
      */
     @Override
-    public void write( NodeLabelUpdate update ) throws IOException
+    public void write( EntityTokenUpdate update ) throws IOException
     {
         if ( pendingUpdatesCursor == pendingUpdates.length )
         {
@@ -222,7 +222,7 @@ class NativeTokenScanWriter implements TokenScanWriter
             long nextTokenId = Long.MAX_VALUE;
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
-                NodeLabelUpdate update = pendingUpdates[i];
+                EntityTokenUpdate update = pendingUpdates[i];
                 long entityId = update.getNodeId();
                 nextTokenId = extractChange( update.getLabelsAfter(), currentTokenId, entityId, nextTokenId, true, update.getTxId() );
                 nextTokenId = extractChange( update.getLabelsBefore(), currentTokenId, entityId, nextTokenId, false, update.getTxId() );
@@ -330,8 +330,8 @@ class NativeTokenScanWriter implements TokenScanWriter
     }
 
     /**
-     * Applies {@link #write(NodeLabelUpdate) queued updates} which has not yet been applied.
-     * No more {@link #write(NodeLabelUpdate) updates} can be applied after this call.
+     * Applies {@link #write(EntityTokenUpdate) queued updates} which has not yet been applied.
+     * No more {@link #write(EntityTokenUpdate) updates} can be applied after this call.
      */
     @Override
     public void close() throws IOException

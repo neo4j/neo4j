@@ -82,7 +82,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -501,7 +501,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan, PageCursorTracer cursorTracer )
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
@@ -518,7 +518,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private final Runnable customAction;
 
         LabelScanViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
-                LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                LabelScanStore labelScanStore, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelScanViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )

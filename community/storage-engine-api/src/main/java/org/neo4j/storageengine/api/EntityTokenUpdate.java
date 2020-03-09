@@ -22,17 +22,17 @@ package org.neo4j.storageengine.api;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class NodeLabelUpdate
+public class EntityTokenUpdate
 {
-    public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID =
-            Comparator.comparingLong( NodeLabelUpdate::getNodeId );
+    public static final Comparator<? super EntityTokenUpdate> SORT_BY_NODE_ID =
+            Comparator.comparingLong( EntityTokenUpdate::getNodeId );
 
     private final long nodeId;
     private final long[] labelsBefore;
     private final long[] labelsAfter;
     private final long txId;
 
-    private NodeLabelUpdate( long nodeId, long[] labelsBefore, long[] labelsAfter, long txId )
+    private EntityTokenUpdate( long nodeId, long[] labelsBefore, long[] labelsAfter, long txId )
     {
         this.nodeId = nodeId;
         this.labelsBefore = labelsBefore;
@@ -67,14 +67,14 @@ public class NodeLabelUpdate
                 ", labelsAfter:" + Arrays.toString( labelsAfter ) + "]";
     }
 
-    public static NodeLabelUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange )
+    public static EntityTokenUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange )
     {
         return labelChanges( nodeId, labelsBeforeChange, labelsAfterChange, -1 );
     }
 
-    public static NodeLabelUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange, long txId )
+    public static EntityTokenUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange, long txId )
     {
-        return new NodeLabelUpdate( nodeId, labelsBeforeChange, labelsAfterChange, txId );
+        return new EntityTokenUpdate( nodeId, labelsBeforeChange, labelsAfterChange, txId );
     }
 
     @Override
@@ -89,7 +89,7 @@ public class NodeLabelUpdate
             return false;
         }
 
-        NodeLabelUpdate that = (NodeLabelUpdate) o;
+        EntityTokenUpdate that = (EntityTokenUpdate) o;
 
         if ( nodeId != that.nodeId )
         {

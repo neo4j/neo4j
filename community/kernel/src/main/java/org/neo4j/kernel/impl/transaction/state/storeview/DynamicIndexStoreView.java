@@ -33,7 +33,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
@@ -66,7 +66,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
             IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+            Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
         if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )

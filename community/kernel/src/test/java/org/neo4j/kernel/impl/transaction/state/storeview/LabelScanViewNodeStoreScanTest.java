@@ -32,7 +32,7 @@ import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +47,7 @@ class LabelScanViewNodeStoreScanTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final TokenScanReader labelScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final Visitor<EntityTokenUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @BeforeEach

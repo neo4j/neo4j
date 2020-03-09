@@ -113,7 +113,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -158,7 +158,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
@@ -309,7 +309,7 @@ public class FullCheckIntegrationTest
         long labelId = idGenerator.label() - 1;
 
         LabelScanStore labelScanStore = fixture.directStoreAccess().labelScanStore();
-        Iterable<NodeLabelUpdate> nodeLabelUpdates = asIterable(
+        Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable(
                 labelChanges( nodeId1, new long[]{}, new long[]{labelId} )
         );
         write( labelScanStore, nodeLabelUpdates );
@@ -322,12 +322,12 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
+    private void write( LabelScanStore labelScanStore, Iterable<EntityTokenUpdate> nodeLabelUpdates )
             throws IOException
     {
         try ( TokenScanWriter writer = labelScanStore.newWriter() )
         {
-            for ( NodeLabelUpdate update : nodeLabelUpdates )
+            for ( EntityTokenUpdate update : nodeLabelUpdates )
             {
                 writer.write( update );
             }

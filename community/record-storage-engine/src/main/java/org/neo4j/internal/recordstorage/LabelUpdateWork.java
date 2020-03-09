@@ -21,17 +21,17 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.List;
 
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.util.concurrent.Work;
 
-import static org.neo4j.storageengine.api.NodeLabelUpdate.SORT_BY_NODE_ID;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_NODE_ID;
 
 public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdateWork>
 {
-    private final List<NodeLabelUpdate> labelUpdates;
+    private final List<EntityTokenUpdate> labelUpdates;
 
-    LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
+    LabelUpdateWork( List<EntityTokenUpdate> labelUpdates )
     {
         this.labelUpdates = labelUpdates;
     }

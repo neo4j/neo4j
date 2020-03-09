@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 @PageCacheExtension
 class BulkAppendNativeTokenScanWriterTest

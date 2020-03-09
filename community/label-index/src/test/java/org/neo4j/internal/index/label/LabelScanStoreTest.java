@@ -56,7 +56,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -82,7 +82,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -338,7 +338,7 @@ public class LabelScanStoreTest
     {
         // given
         long labelId = 0;
-        List<NodeLabelUpdate> updates = new ArrayList<>();
+        List<EntityTokenUpdate> updates = new ArrayList<>();
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
@@ -361,7 +361,7 @@ public class LabelScanStoreTest
     {
         // given
         long label0Id = 0;
-        List<NodeLabelUpdate> label0Updates = new ArrayList<>();
+        List<EntityTokenUpdate> label0Updates = new ArrayList<>();
         Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
@@ -385,7 +385,7 @@ public class LabelScanStoreTest
     {
         // given
         long labelId = 0;
-        List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
+        List<EntityTokenUpdate> labelUpdates = new ArrayList<>();
         labelUpdates.add( labelChanges( 0L, new long[]{}, new long[]{labelId} ) );
 
         start( labelUpdates );
@@ -422,7 +422,7 @@ public class LabelScanStoreTest
     void rebuildCorruptedIndexIndexOnStartup() throws Exception
     {
         // GIVEN a start of the store with existing data in it
-        List<NodeLabelUpdate> data = asList(
+        List<EntityTokenUpdate> data = asList(
                 labelChanges( 1, NO_LABELS, new long[]{1} ),
                 labelChanges( 2, NO_LABELS, new long[]{1, 2} ) );
         start( data, false );
@@ -448,7 +448,7 @@ public class LabelScanStoreTest
             private int i = -1;
 
             @Override
-            protected NodeLabelUpdate fetchNextOrNull()
+            protected EntityTokenUpdate fetchNextOrNull()
             {
                 return ++i < nodeCount ? labelChanges( i, NO_LABELS, new long[]{labelId} ) : null;
             }
@@ -507,7 +507,7 @@ public class LabelScanStoreTest
     {
         // given
         start();
-        List<NodeLabelUpdate> updates = new ArrayList<>();
+        List<EntityTokenUpdate> updates = new ArrayList<>();
         Long[] possibleLabelIds = new Long[]{0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L};
         for ( long nodeId = 0; nodeId < 10_000; nodeId++ )
         {
@@ -518,7 +518,7 @@ public class LabelScanStoreTest
         // when
         try ( TokenScanWriter writer = store.newBulkAppendWriter() )
         {
-            for ( NodeLabelUpdate update : updates )
+            for ( EntityTokenUpdate update : updates )
             {
                 writer.write( update );
             }
@@ -528,7 +528,7 @@ public class LabelScanStoreTest
         for ( Long labelId : possibleLabelIds )
         {
             PrimitiveLongResourceIterator nodesWithLabel = store.newReader().entityWithToken( labelId.intValue(), NULL );
-            Iterator<NodeLabelUpdate> expected =
+            Iterator<EntityTokenUpdate> expected =
                     updates.stream().filter( update -> LongStream.of( update.getLabelsAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
             while ( nodesWithLabel.hasNext() )
             {
@@ -560,7 +560,7 @@ public class LabelScanStoreTest
         scrambleFile( lssFile );
     }
 
-    private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
+    private void write( Iterator<EntityTokenUpdate> iterator ) throws IOException
     {
         try ( TokenScanWriter writer = store.newWriter() )
         {
@@ -650,12 +650,12 @@ public class LabelScanStoreTest
         start( Collections.emptyList(), readOnly );
     }
 
-    private void start( List<NodeLabelUpdate> existingData )
+    private void start( List<EntityTokenUpdate> existingData )
     {
         start( existingData, false );
     }
 
-    private void start( List<NodeLabelUpdate> existingData,
+    private void start( List<EntityTokenUpdate> existingData,
                         boolean readOnly )
     {
         life = new LifeSupport();
@@ -669,7 +669,7 @@ public class LabelScanStoreTest
         assertTrue( monitor.initCalled );
     }
 
-    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
+    private void scrambleIndexFilesAndRestart( List<EntityTokenUpdate> data ) throws IOException
     {
         shutdown();
         corruptIndex( databaseLayout );

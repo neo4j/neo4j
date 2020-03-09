@@ -26,7 +26,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -40,7 +40,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     private final PageCursorTracer cursorTracer;
 
     public LabelScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
-            LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+            LabelScanStore labelScanStore, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {

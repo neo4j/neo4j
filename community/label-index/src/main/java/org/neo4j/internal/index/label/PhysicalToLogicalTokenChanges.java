@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 class PhysicalToLogicalTokenChanges
 {
@@ -29,13 +29,13 @@ class PhysicalToLogicalTokenChanges
 
     /**
      * Converts physical before/after state to logical remove/add state. This conversion reuses the existing
-     * long[] arrays in {@link NodeLabelUpdate}, 'before' is used for removals and 'after' is used for adds,
+     * long[] arrays in {@link EntityTokenUpdate}, 'before' is used for removals and 'after' is used for adds,
      * by shuffling numbers around and possible terminates them with -1 because the logical change set will be
      * equally big or smaller than the physical change set.
      *
-     * @param update {@link NodeLabelUpdate} containing physical before/after state.
+     * @param update {@link EntityTokenUpdate} containing physical before/after state.
      */
-    static void convertToAdditionsAndRemovals( NodeLabelUpdate update )
+    static void convertToAdditionsAndRemovals( EntityTokenUpdate update )
     {
         int beforeLength = update.getLabelsBefore().length;
         int afterLength = update.getLabelsAfter().length;

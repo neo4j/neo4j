@@ -77,7 +77,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -429,7 +429,7 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean(), any() ) )
+                ArgumentMatchers.<Visitor<EntityTokenUpdate,RuntimeException>>any(), anyBoolean(), any() ) )
                 .thenReturn(storeScan );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
@@ -606,7 +606,7 @@ class IndexPopulationJobTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
                     PageCursorTracer cursorTracer )
             {
                 return new StoreScan<>()

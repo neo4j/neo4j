@@ -32,7 +32,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -92,7 +92,7 @@ class NativeTokenScanWriterTest
             // WHEN
             for ( int i = 0; i < NODE_COUNT * 3; i++ )
             {
-                NodeLabelUpdate update = randomUpdate( expected );
+                EntityTokenUpdate update = randomUpdate( expected );
                 writer.write( update );
             }
         }
@@ -118,7 +118,7 @@ class NativeTokenScanWriterTest
                 writer.initialize( tree.writer( NULL ) );
 
                 // WHEN
-                writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
+                writer.write( EntityTokenUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
                 // we can't do the usual "fail( blabla )" here since the actual write will happen
                 // when closing this writer, i.e. in the curly bracket below.
             }
@@ -145,7 +145,7 @@ class NativeTokenScanWriterTest
                 long baseNodeId = i * RANGE_SIZE;
                 for ( int j = 0; j < numberOfNodesInEach; j++ )
                 {
-                    writer.write( NodeLabelUpdate.labelChanges( baseNodeId + j, EMPTY_LONG_ARRAY, labels ) );
+                    writer.write( EntityTokenUpdate.labelChanges( baseNodeId + j, EMPTY_LONG_ARRAY, labels ) );
                 }
             }
         }
@@ -159,7 +159,7 @@ class NativeTokenScanWriterTest
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
             for ( int i = 0; i < numberOfNodesInEach; i++ )
             {
-                writer.write( NodeLabelUpdate.labelChanges( baseNodeId + i, labels, EMPTY_LONG_ARRAY ) );
+                writer.write( EntityTokenUpdate.labelChanges( baseNodeId + i, labels, EMPTY_LONG_ARRAY ) );
             }
         }
 
@@ -169,7 +169,7 @@ class NativeTokenScanWriterTest
         assertTreeHasKeysRepresentingIdRanges( expected );
     }
 
-    private NodeLabelUpdate randomUpdate( long[] expected )
+    private EntityTokenUpdate randomUpdate( long[] expected )
     {
         int nodeId = random.nextInt( expected.length );
         long labels = expected[nodeId];
@@ -180,7 +180,7 @@ class NativeTokenScanWriterTest
             labels = flipRandom( labels, LABEL_COUNT, random.random() );
         }
         expected[nodeId] = labels;
-        return NodeLabelUpdate.labelChanges( nodeId, before, getLabels( labels ) );
+        return EntityTokenUpdate.labelChanges( nodeId, before, getLabels( labels ) );
     }
 
     private void assertTreeHasKeysRepresentingIdRanges( MutableLongSet expected ) throws IOException

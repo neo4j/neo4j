@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -105,8 +105,8 @@ class LabelScanStoreRebuildTest
     void shouldFailOnUnsortedLabelsFromFullStoreChangeStream() throws Exception
     {
         // given
-        List<NodeLabelUpdate> existingData = new ArrayList<>();
-        existingData.add( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
+        List<EntityTokenUpdate> existingData = new ArrayList<>();
+        existingData.add( EntityTokenUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
         try

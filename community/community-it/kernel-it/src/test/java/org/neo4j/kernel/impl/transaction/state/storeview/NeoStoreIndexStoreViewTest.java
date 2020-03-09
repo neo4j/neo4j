@@ -59,7 +59,7 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -150,7 +150,7 @@ class NeoStoreIndexStoreViewTest
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
-        Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
                 storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL );
 
@@ -189,7 +189,7 @@ class NeoStoreIndexStoreViewTest
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
-        Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL );
 
         // when

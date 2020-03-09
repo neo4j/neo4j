@@ -47,7 +47,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
@@ -144,7 +144,7 @@ class MultipleIndexPopulatorUpdatesTest
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan, PageCursorTracer cursorTracer )
         {
 
@@ -163,7 +163,7 @@ class MultipleIndexPopulatorUpdatesTest
         private final Listener<StorageNodeCursor> processListener;
 
         ListenableNodeScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Listener<StorageNodeCursor> processListener, PageCursorTracer cursorTracer )
         {

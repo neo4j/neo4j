@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
 {

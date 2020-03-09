@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 /**
  * Stream of changes used to rebuild a {@link LabelScanStore}.
@@ -34,12 +34,12 @@ public interface FullStoreChangeStream
 
     long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer ) throws IOException;
 
-    static FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
+    static FullStoreChangeStream asStream( final List<EntityTokenUpdate> existingData )
     {
         return ( writer, cursorTracer ) ->
         {
             long count = 0;
-            for ( NodeLabelUpdate update : existingData )
+            for ( EntityTokenUpdate update : existingData )
             {
                 writer.write( update );
                 count++;

@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
@@ -52,7 +52,7 @@ class DynamicIndexStoreViewTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final Visitor<EntityTokenUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesTokenScanReader nodeLabelRanges = mock( AllEntriesTokenScanReader.class );
 

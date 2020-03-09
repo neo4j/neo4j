@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
@@ -161,9 +161,9 @@ class IndexBatchTransactionApplierTest
         }
 
         @Override
-        public void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates )
+        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates )
         {
-            for ( NodeLabelUpdate update : labelUpdates )
+            for ( EntityTokenUpdate update : labelUpdates )
             {
                 assertEquals( expectedNodeIds[cursor], update.getNodeId() );
                 cursor++;

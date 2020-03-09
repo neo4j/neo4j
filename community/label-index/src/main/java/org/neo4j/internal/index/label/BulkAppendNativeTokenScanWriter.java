@@ -28,7 +28,7 @@ import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.offsetOf;
@@ -54,7 +54,7 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
     }
 
     @Override
-    public void write( NodeLabelUpdate update )
+    public void write( EntityTokenUpdate update )
     {
         checkArgument( update.getLabelsBefore().length == 0, "Was expecting no labels before, was %s", Arrays.toString( update.getLabelsBefore() ) );
         long idRange = rangeOf( update.getNodeId() );

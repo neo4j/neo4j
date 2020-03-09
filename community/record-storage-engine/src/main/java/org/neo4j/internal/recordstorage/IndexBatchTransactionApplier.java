@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.AsyncApply;
@@ -58,7 +58,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final StorageEngine storageEngine;
     private final SchemaCache schemaCache;
 
-    private List<NodeLabelUpdate> labelUpdates;
+    private List<EntityTokenUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
     private long txId;
     private PageCursorTracer cursorTracer;
@@ -199,7 +199,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     {
                         labelUpdates = new ArrayList<>();
                     }
-                    labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
+                    labelUpdates.add( EntityTokenUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
                 }
             }
 

@@ -29,14 +29,14 @@ import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
 /**
  * {@link FullStoreChangeStream} using a {@link IndexStoreView} to get its data.
  */
-public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabelUpdate,IOException>
+public class FullLabelStream implements FullStoreChangeStream, Visitor<EntityTokenUpdate,IOException>
 {
     private final IndexStoreView indexStoreView;
     private TokenScanWriter writer;
@@ -58,7 +58,7 @@ public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabel
     }
 
     @Override
-    public boolean visit( NodeLabelUpdate update ) throws IOException
+    public boolean visit( EntityTokenUpdate update ) throws IOException
     {
         writer.write( update );
         count++;

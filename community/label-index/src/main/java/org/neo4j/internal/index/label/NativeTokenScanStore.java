@@ -49,7 +49,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
@@ -257,11 +257,11 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
     }
 
     @Override
-    public void applyUpdates( Iterable<NodeLabelUpdate> tokenUpdates )
+    public void applyUpdates( Iterable<EntityTokenUpdate> tokenUpdates )
     {
         try ( TokenScanWriter writer = newWriter() )
         {
-            for ( NodeLabelUpdate update : tokenUpdates )
+            for ( EntityTokenUpdate update : tokenUpdates )
             {
                 writer.write( update );
             }

@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -142,7 +142,7 @@ class LabelScanStoreStartupIT
         int labelId = 1;
         try ( TokenScanWriter labelScanWriter = labelScanStore.newWriter() )
         {
-            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
+            labelScanWriter.write( EntityTokenUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
         TokenScanReader labelScanReader = labelScanStore.newReader();
         try ( PrimitiveLongResourceIterator iterator = labelScanReader.entityWithToken( labelId, NULL ) )

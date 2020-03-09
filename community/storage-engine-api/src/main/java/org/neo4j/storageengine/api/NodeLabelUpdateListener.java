@@ -25,12 +25,12 @@ public interface NodeLabelUpdateListener
      * Applies node label updates from changes in underlying storage.
      * @param labelUpdates stream of updates to apply.
      */
-    void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates );
+    void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates );
 
     class Adapter implements NodeLabelUpdateListener
     {
         @Override
-        public void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates )
+        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates )
         {
         }
     }

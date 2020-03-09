@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -50,7 +50,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
             final Visitor<EntityUpdates, FAILURE> propertyUpdatesVisitor,
-            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
+            final Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
         return new StoreViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,

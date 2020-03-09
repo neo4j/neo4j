@@ -46,7 +46,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 class NodeCheckerTest extends CheckerTestBase
 {

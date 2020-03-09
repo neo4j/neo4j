@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /** The indexing services view of the universe. */
@@ -40,7 +40,7 @@ public interface IndexStoreView
      * @param labelIds array of label ids to generate updates for. Empty array means all.
      * @param propertyKeyIdFilter property key ids to generate updates for.
      * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}.
-     * @param labelUpdateVisitor visitor which will see all generated {@link NodeLabelUpdate}.
+     * @param labelUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param cursorTracer underlying page cursor events tracer.
@@ -49,7 +49,7 @@ public interface IndexStoreView
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             int[] labelIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
+            Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer );
 
     /**
@@ -101,7 +101,7 @@ public interface IndexStoreView
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan, PageCursorTracer cursorTracer )
+                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan, PageCursorTracer cursorTracer )
         {
             return EMPTY_SCAN;
         }

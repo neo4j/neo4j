@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -50,7 +50,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
+import static org.neo4j.storageengine.api.EntityTokenUpdate.labelChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -115,7 +115,7 @@ class LabelScanStoreIT
     {
         try ( var scanWriter = store.newWriter() )
         {
-            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+            scanWriter.write( EntityTokenUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -140,7 +140,7 @@ class LabelScanStoreIT
     {
         try ( var scanWriter = store.newWriter() )
         {
-            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+            scanWriter.write( EntityTokenUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -172,7 +172,7 @@ class LabelScanStoreIT
     {
         try ( var scanWriter = store.newWriter() )
         {
-            scanWriter.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+            scanWriter.write( EntityTokenUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -248,7 +248,7 @@ class LabelScanStoreIT
                 long[] labelsAfter = getLabels( labels );
                 editedNodes.set( nodeId );
 
-                NodeLabelUpdate labelChanges = labelChanges( nodeId, labelsBefore, labelsAfter );
+                EntityTokenUpdate labelChanges = labelChanges( nodeId, labelsBefore, labelsAfter );
                 writer.write( labelChanges );
                 expected[nodeId] = labels;
             }
