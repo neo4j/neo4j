@@ -44,6 +44,7 @@ import java.util.stream.LongStream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -76,13 +77,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -537,6 +538,27 @@ public class LabelScanStoreTest
             }
             assertFalse( expected.hasNext() );
         }
+    }
+
+    @Test
+    void shouldReportNodeEntityIfLabelScanStore()
+    {
+        // When
+        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, false, new Monitors() );
+
+        // Then
+        assertThat( scanStore.entityType() ).isEqualTo( EntityType.NODE );
+    }
+
+    @Test
+    void shouldReportRelationshipEntityIfRelationshipTypeScanStore()
+    {
+        // When
+        RelationshipTypeScanStore labelScanStore =
+                TokenScanStore.relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+
+        // When
+        assertThat( labelScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,

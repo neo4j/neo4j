@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -79,7 +80,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * <p>
  * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
  */
-public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, EntityTokenUpdateListener
+public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, RelationshipTypeScanStore, EntityTokenUpdateListener
 {
     /**
      * Written in header to indicate native token scan store is clean
@@ -90,6 +91,11 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Ent
      * Written in header to indicate native token scan store is rebuilding
      */
     private static final byte NEEDS_REBUILDING = (byte) 0x01;
+
+    /**
+     * The type of entity this scan store is backing.
+     */
+    private final EntityType entityType;
 
     /**
      * Whether or not this token scan store is read-only.
@@ -177,7 +183,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Ent
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType )
     {
         this.pageCache = pageCache;
         this.fs = fs;
@@ -189,6 +195,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Ent
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.fileSystem = fs;
+        this.entityType = entityType;
+    }
+
+    @Override
+    public EntityType entityType()
+    {
+        return entityType;
     }
 
     /**

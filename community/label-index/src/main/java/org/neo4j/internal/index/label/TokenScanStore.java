@@ -22,6 +22,7 @@ package org.neo4j.internal.index.label;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,6 +34,9 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 /**
  * Stores token-->entities mappings. It receives updates in the form of condensed token->entity transaction data
@@ -46,8 +50,23 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector );
+        return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE );
     }
+
+    /**
+     * Create a new {@link RelationshipTypeScanStore}.
+     */
+    static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+                RELATIONSHIP );
+    }
+
+    /**
+     * @return The entity type of this token scan store.
+     */
+    EntityType entityType();
 
     /**
      * @return a {@link TokenScanReader} capable of retrieving entities for tokens.
