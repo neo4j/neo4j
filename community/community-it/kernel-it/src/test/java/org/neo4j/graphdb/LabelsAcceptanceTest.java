@@ -734,9 +734,9 @@ class LabelsAcceptanceTest
                     }
 
                     TokenSet labels = nodes.labels();
-                    for ( int i = 0; i < labels.numberOfLabels(); i++ )
+                    for ( int i = 0; i < labels.numberOfTokens(); i++ )
                     {
-                        seenLabels.add( labels.label( i ) );
+                        seenLabels.add( labels.token( i ) );
                     }
                 }
             }

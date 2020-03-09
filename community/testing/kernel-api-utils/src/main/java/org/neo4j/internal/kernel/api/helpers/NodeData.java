@@ -42,23 +42,23 @@ class NodeData
         return new TokenSet()
         {
             @Override
-            public int numberOfLabels()
+            public int numberOfTokens()
             {
                 return labels.length;
             }
 
             @Override
-            public int label( int offset )
+            public int token( int offset )
             {
                 return (int) labels[offset];
             }
 
             @Override
-            public boolean contains( int labelToken )
+            public boolean contains( int token )
             {
                 for ( long label : labels )
                 {
-                    if ( label == labelToken )
+                    if ( label == token )
                     {
                         return true;
                     }

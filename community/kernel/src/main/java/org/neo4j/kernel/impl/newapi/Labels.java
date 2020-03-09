@@ -49,19 +49,19 @@ public class Labels implements TokenSet
     }
 
     @Override
-    public int numberOfLabels()
+    public int numberOfTokens()
     {
         return labelIds.length;
     }
 
     @Override
-    public int label( int offset )
+    public int token( int offset )
     {
         return (int) labelIds[offset];
     }
 
     @Override
-    public boolean contains( int labelToken )
+    public boolean contains( int token )
     {
         //It may look tempting to use binary search
         //however doing a linear search is actually faster for reasonable
@@ -69,7 +69,7 @@ public class Labels implements TokenSet
         for ( long label : labelIds )
         {
             assert (int) label == label : "value too big to be represented as and int";
-            if ( label == labelToken )
+            if ( label == token )
             {
                 return true;
             }

@@ -179,10 +179,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         VirtualValues.EMPTY_LIST
     }
     val labelSet = nodeCursor.labels()
-    val labelArray = new Array[TextValue](labelSet.numberOfLabels())
+    val labelArray = new Array[TextValue](labelSet.numberOfTokens())
     var i = 0
-    while (i < labelSet.numberOfLabels()) {
-      labelArray(i) = Values.stringValue(tokenRead.nodeLabelName(labelSet.label(i)))
+    while (i < labelSet.numberOfTokens()) {
+      labelArray(i) = Values.stringValue(tokenRead.nodeLabelName(labelSet.token(i)))
       i += 1
     }
     VirtualValues.list(labelArray: _*)

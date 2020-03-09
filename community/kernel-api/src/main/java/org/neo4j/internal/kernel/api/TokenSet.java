@@ -22,18 +22,18 @@ package org.neo4j.internal.kernel.api;
 import java.util.NoSuchElementException;
 
 /**
- * Set of label ids.
+ * Set of token ids.
  *
- * Modifications are not reflected in the LabelSet and there is no guaranteed
+ * Modifications are not reflected in the TokenSet and there is no guaranteed
  * order.
  */
 public interface TokenSet
 {
-    int numberOfLabels();
+    int numberOfTokens();
 
-    int label( int offset );
+    int token( int offset );
 
-    boolean contains( int labelToken );
+    boolean contains( int token );
 
     long[] all();
 
@@ -42,19 +42,19 @@ public interface TokenSet
         private final long[] EMPTY = new long[0];
 
         @Override
-        public int numberOfLabels()
+        public int numberOfTokens()
         {
             return 0;
         }
 
         @Override
-        public int label( int offset )
+        public int token( int offset )
         {
             throw new NoSuchElementException();
         }
 
         @Override
-        public boolean contains( int labelToken )
+        public boolean contains( int token )
         {
             return false;
         }

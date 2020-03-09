@@ -90,8 +90,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertTrue( node.next(), "should access node" );
 
                 TokenSet labels = node.labels();
-                assertEquals( 1, labels.numberOfLabels() );
-                assertEquals( labelId, labels.label( 0 ) );
+                assertEquals( 1, labels.numberOfTokens() );
+                assertEquals( labelId, labels.token( 0 ) );
                 assertTrue( node.hasLabel( labelId ) );
                 assertFalse( node.hasLabel( labelId + 1 ) );
                 assertFalse( node.next(), "should only find one node" );
@@ -887,12 +887,12 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     private void assertLabels( TokenSet labels, int... expected )
     {
-        assertEquals( expected.length, labels.numberOfLabels() );
+        assertEquals( expected.length, labels.numberOfTokens() );
         Arrays.sort( expected );
-        int[] labelArray = new int[labels.numberOfLabels()];
-        for ( int i = 0; i < labels.numberOfLabels(); i++ )
+        int[] labelArray = new int[labels.numberOfTokens()];
+        for ( int i = 0; i < labels.numberOfTokens(); i++ )
         {
-            labelArray[i] = labels.label( i );
+            labelArray[i] = labels.token( i );
         }
         Arrays.sort( labelArray );
         assertTrue( Arrays.equals( expected, labelArray ), "labels match expected" );
