@@ -42,7 +42,11 @@ public final class ByteCodeUtils
     public static String className( TypeReference reference )
     {
         StringBuilder builder = new StringBuilder();
-        builder.append( "[L".repeat( Math.max( 0, reference.arrayDepth() ) ) );
+        builder.append( "[".repeat( Math.max( 0, reference.arrayDepth() ) ) );
+        if ( reference.arrayDepth() > 0 )
+        {
+            builder.append( "L" );
+        }
         if ( !reference.packageName().isEmpty() )
         {
             builder.append( reference.packageName() ).append( '.' );

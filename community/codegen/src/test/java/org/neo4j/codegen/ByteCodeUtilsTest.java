@@ -83,6 +83,14 @@ class ByteCodeUtilsTest
     }
 
     @Test
+    void shouldSupportArrayNestingInClassName()
+    {
+        assertThat( ByteCodeUtils.className( typeReference( String.class ) ) ).isEqualTo( "java.lang.String" );
+        assertThat( ByteCodeUtils.className( typeReference( String[].class ) ) ).isEqualTo( "[Ljava.lang.String;" );
+        assertThat( ByteCodeUtils.className( typeReference( String[][].class ) ) ).isEqualTo( "[[Ljava.lang.String;" );
+    }
+
+    @Test
     void shouldDescribeMethodWithNoParameters()
     {
         // GIVEN
