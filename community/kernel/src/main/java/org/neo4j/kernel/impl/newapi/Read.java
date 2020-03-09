@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.index.label.LabelScan;
+import org.neo4j.internal.index.label.TokenScan;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -321,7 +321,7 @@ abstract class Read implements TxStateHolder,
         if ( accessMode.allowsTraverseAllNodesWithLabel( label ) )
         {
             // all nodes will be allowed
-            LabelScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
+            TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
             indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer );
         }
         else if ( accessMode.disallowsTraverseLabel( label ) )
@@ -332,7 +332,7 @@ abstract class Read implements TxStateHolder,
         else
         {
             // some nodes of this label might be blocked. we need to filter
-            LabelScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
+            TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
             indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ), cursorTracer );
         }
         // TODO: When we have a blacklisted label, perhaps we should not consider labels added within the current transaction

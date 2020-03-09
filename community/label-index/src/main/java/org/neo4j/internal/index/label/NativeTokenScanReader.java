@@ -77,12 +77,12 @@ class NativeTokenScanReader implements TokenScanReader
     }
 
     @Override
-    public LabelScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
+    public TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
     {
         try
         {
             long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorTracer );
-            return new NativeLabelScan( tokenId, highestEntityIdForToken );
+            return new NativeTokenScan( tokenId, highestEntityIdForToken );
         }
         catch ( IOException e )
         {
@@ -132,13 +132,13 @@ class NativeTokenScanReader implements TokenScanReader
         return index.seek( from, to, cursorTracer );
     }
 
-    private class NativeLabelScan implements LabelScan
+    private class NativeTokenScan implements TokenScan
     {
         private final AtomicLong nextStart;
         private final int tokenId;
         private final long max;
 
-        NativeLabelScan( int tokenId, long max )
+        NativeTokenScan( int tokenId, long max )
         {
             this.tokenId = tokenId;
             this.max = max;

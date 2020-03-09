@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 /**
  * LabelScans are used for accessing nodes with a given label.
  */
-public interface LabelScan
+public interface TokenScan
 {
     /**
      * Initialize the client for scanning for a label.

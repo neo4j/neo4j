@@ -44,7 +44,7 @@ public interface TokenScanReader
      *
      * @param tokenId token id
      */
-    LabelScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer );
+    TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer );
 
     /**
      * @param tokenIds token ids.

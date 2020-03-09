@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import org.neo4j.internal.index.label.LabelScan;
+import org.neo4j.internal.index.label.TokenScan;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -32,14 +32,14 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,LabelScan>
+class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,TokenScan>
 {
     private final LongSet removed;
     private final int label;
 
-    NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan, PageCursorTracer cursorTracer )
+    NodeLabelIndexCursorScan( Read read, int label, TokenScan tokenScan, PageCursorTracer cursorTracer )
     {
-        super( labelScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray(), cursorTracer );
+        super( tokenScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray(), cursorTracer );
         if ( hasChanges )
         {
             TransactionState txState = read.txState();
