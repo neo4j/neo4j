@@ -31,13 +31,10 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 class BridgingIndexProgressorTest
 {
-    // We make sure to load this class here before we fork the tests for parallel execution.
-    // The reason for this is we often deadlock on class loading together with DefaultNonUniqueIndexSamplerTest.
-    private static final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
-
     @Test
     void closeMustCloseAll()
     {
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};
