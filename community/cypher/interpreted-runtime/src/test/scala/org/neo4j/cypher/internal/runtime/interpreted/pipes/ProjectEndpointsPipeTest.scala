@@ -223,6 +223,32 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     ))
   }
 
+  test("projected endpoints of simple null relationship") {
+    // given
+    val left = newMockedPipe("r", row("r" -> Seq(null)))
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, RelationshipTypes.empty, directed = false, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("projected endpoints of simple null relationship with type") {
+    // given
+    val left = newMockedPipe("r", row("r" -> Seq(null)))
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, RelationshipTypes(Array("B")), directed = false, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
   test("projects endpoints of a directed, var length relationship") {
     // given
 
@@ -421,6 +447,32 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // then
     result should be('isEmpty)
+  }
+
+  test("projected endpoints of var length null relationship") {
+    // given
+    val left = newMockedPipe("r", row("r" -> Seq(null)))
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, RelationshipTypes.empty, directed = false, simpleLength = false)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("projected endpoints of var length null relationship with type") {
+    // given
+    val left = newMockedPipe("r", row("r" -> Seq(null)))
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, RelationshipTypes(Array("B")), directed = false, simpleLength = false)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
   }
 
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
