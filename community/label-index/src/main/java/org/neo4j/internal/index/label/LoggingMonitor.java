@@ -23,6 +23,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.util.StringJoiner;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.internal.helpers.Format.duration;
@@ -34,52 +35,56 @@ import static org.neo4j.internal.index.label.LabelScanStore.Monitor;
 public class LoggingMonitor extends Monitor.Adaptor
 {
     private final Log log;
+    private final String lowerToken;
+    private final String upperToken;
 
-    public LoggingMonitor( Log log )
+    public LoggingMonitor( Log log, EntityType type )
     {
         this.log = log;
+        lowerToken = type == EntityType.NODE ? "label" : "relationship type";
+        upperToken = type == EntityType.NODE ? "Label" : "Relationship type";
     }
 
     @Override
     public void noIndex()
     {
-        log.info( "No label index found, this might just be first use. Preparing to rebuild." );
+        log.info( "No %s index found, this might just be first use. Preparing to rebuild.", lowerToken );
     }
 
     @Override
     public void notValidIndex()
     {
-        log.warn( "Label index could not be read. Preparing to rebuild." );
+        log.warn( "%s index could not be read. Preparing to rebuild.", upperToken );
     }
 
     @Override
     public void rebuilding()
     {
-        log.info( "Rebuilding label index, this may take a while" );
+        log.info( "Rebuilding %s index, this may take a while", lowerToken );
     }
 
     @Override
     public void rebuilt( long roughEntityCount )
     {
-        log.info( "Label index rebuilt (roughly " + roughEntityCount + " nodes)" );
+        log.info( "%s index rebuilt (roughly %d nodes)", upperToken, roughEntityCount );
     }
 
     @Override
     public void recoveryCleanupRegistered()
     {
-        log.info( "Label index cleanup job registered" );
+        log.info( "%s index cleanup job registered", upperToken );
     }
 
     @Override
     public void recoveryCleanupStarted()
     {
-        log.info( "Label index cleanup job started" );
+        log.info( "%s index cleanup job started", upperToken);
     }
 
     @Override
     public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
     {
-        StringJoiner joiner = new StringJoiner( ", ", "Label index cleanup job finished: ", "" );
+        StringJoiner joiner = new StringJoiner( ", ", upperToken + " index cleanup job finished: ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of tree nodes: " + numberOfTreeNodes );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
@@ -90,12 +95,12 @@ public class LoggingMonitor extends Monitor.Adaptor
     @Override
     public void recoveryCleanupClosed()
     {
-        log.info( "Label index cleanup job closed" );
+        log.info( "%s index cleanup job closed", upperToken );
     }
 
     @Override
     public void recoveryCleanupFailed( Throwable throwable )
     {
-        log.info( String.format( "Label index cleanup job failed.%nCaused by: %s", ExceptionUtils.getStackTrace( throwable ) ) );
+        log.info( "%s index cleanup job failed.%nCaused by: %s", upperToken, ExceptionUtils.getStackTrace( throwable ) );
     }
 }

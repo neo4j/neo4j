@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -576,7 +577,7 @@ public class Database extends LifecycleAdapter
             FileSystemAbstraction fs,
             boolean readOnly )
     {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ) ) );
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ) );
         FullLabelStream labelStream = new FullLabelStream( indexStoreView );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
