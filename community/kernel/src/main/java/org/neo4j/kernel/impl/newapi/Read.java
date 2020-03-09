@@ -339,18 +339,18 @@ abstract class Read implements TxStateHolder,
         indexCursor.scan( indexProgressor, label );
     }
 
-    IndexProgressor.NodeLabelClient filteringNodeLabelClient( IndexProgressor.NodeLabelClient inner, AccessMode accessMode )
+    IndexProgressor.EntityTokenClient filteringNodeLabelClient( IndexProgressor.EntityTokenClient inner, AccessMode accessMode )
     {
-        return new FilteringNodeLabelClient( inner, accessMode );
+        return new FilteringEntityTokenClient( inner, accessMode );
     }
 
-    private class FilteringNodeLabelClient extends DefaultCloseListenable implements IndexProgressor.NodeLabelClient, AutoCloseablePlus
+    private class FilteringEntityTokenClient extends DefaultCloseListenable implements IndexProgressor.EntityTokenClient, AutoCloseablePlus
     {
         private FullAccessNodeCursor node;
-        private final IndexProgressor.NodeLabelClient inner;
+        private final IndexProgressor.EntityTokenClient inner;
         private final AccessMode accessMode;
 
-        private FilteringNodeLabelClient( IndexProgressor.NodeLabelClient inner, AccessMode accessMode )
+        private FilteringEntityTokenClient( IndexProgressor.EntityTokenClient inner, AccessMode accessMode )
         {
             this.inner = inner;
             this.accessMode = accessMode;

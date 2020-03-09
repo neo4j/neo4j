@@ -34,7 +34,7 @@ public interface LabelScan
      * @param cursorTracer underlying page cursor tracer
      * @return a progressor used for reading data
      */
-    IndexProgressor initialize( IndexProgressor.NodeLabelClient client, PageCursorTracer cursorTracer );
+    IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer );
 
     /**
      * Initialize the client for reading a batch of labels.
@@ -44,5 +44,5 @@ public interface LabelScan
      * @param cursorTracer underlying page cursor tracer
      * @return an iterator used for reading data
      */
-    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, PageCursorTracer cursorTracer );
+    IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, PageCursorTracer cursorTracer );
 }

@@ -102,7 +102,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Client which accepts nodes and some of their labels.
      */
-    interface NodeLabelClient
+    interface EntityTokenClient
     {
         /**
          * Accept the node id and (some) labels of a candidate index entry. Return true if the entry

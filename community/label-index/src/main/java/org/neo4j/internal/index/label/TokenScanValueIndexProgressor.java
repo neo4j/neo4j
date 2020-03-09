@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  */
 public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource
 {
-    private final NodeLabelClient client;
+    private final EntityTokenClient client;
 
-    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, NodeLabelClient client )
+    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client )
     {
         super( cursor );
         this.client = client;

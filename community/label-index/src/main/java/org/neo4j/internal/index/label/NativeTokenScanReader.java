@@ -146,13 +146,13 @@ class NativeTokenScanReader implements TokenScanReader
         }
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.NodeLabelClient client, PageCursorTracer cursorTracer )
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer )
         {
             return init( client, 0L, Long.MAX_VALUE, cursorTracer );
         }
 
         @Override
-        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, PageCursorTracer cursorTracer )
+        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, PageCursorTracer cursorTracer )
         {
             if ( sizeHint == 0 )
             {
@@ -168,7 +168,7 @@ class NativeTokenScanReader implements TokenScanReader
             return init( client, start, stop, cursorTracer );
         }
 
-        private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop, PageCursorTracer cursorTracer )
+        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, PageCursorTracer cursorTracer )
         {
             Seeker<TokenScanKey,TokenScanValue> cursor;
             try

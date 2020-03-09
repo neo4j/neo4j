@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexProgressor.NodeLabelClient;
+import org.neo4j.kernel.api.index.IndexProgressor.EntityTokenClient;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
@@ -71,7 +71,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         this.removed = removed;
     }
 
-    NodeLabelClient nodeLabelClient()
+    EntityTokenClient nodeLabelClient()
     {
         return ( reference, labels ) ->
         {

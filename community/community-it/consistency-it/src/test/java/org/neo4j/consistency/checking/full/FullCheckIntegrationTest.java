@@ -454,7 +454,8 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( EntityTokenUpdate.tokenChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
+        EntityTokenUpdate update = tokenChanges( 42, new long[]{label1, label2}, new long[]{label1} );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( update ) );
 
         // when
         ConsistencySummaryStatistics stats = check();

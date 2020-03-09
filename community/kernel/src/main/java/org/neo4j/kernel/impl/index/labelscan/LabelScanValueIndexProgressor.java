@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 public class LabelScanValueIndexProgressor implements IndexProgressor, Resource
 {
     private final PrimitiveLongResourceIterator ids;
-    private final NodeLabelClient client;
+    private final EntityTokenClient client;
 
-    public LabelScanValueIndexProgressor( PrimitiveLongResourceIterator ids, NodeLabelClient client )
+    public LabelScanValueIndexProgressor( PrimitiveLongResourceIterator ids, EntityTokenClient client )
     {
         this.ids = ids;
         this.client = client;
