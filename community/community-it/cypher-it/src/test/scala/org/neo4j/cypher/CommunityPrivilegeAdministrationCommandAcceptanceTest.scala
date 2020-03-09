@@ -27,6 +27,26 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
 
+  private val enterpriseCommands = Seq(
+    ("TRAVERSE", "TRAVERSE ON GRAPH * NODES * (*)"),
+    ("READ", "READ {*} ON GRAPH * NODES * (*)"),
+    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
+    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
+    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
+    ("DROP ROLE", "DROP ROLE ON DBMS"),
+    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
+    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
+    ("SHOW ROLE", "SHOW ROLE ON DBMS"),
+    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
+    ("CREATE USER", "CREATE USER ON DBMS"),
+    ("DROP USER", "DROP USER ON DBMS"),
+    ("ALTER USER", "ALTER USER ON DBMS"),
+    ("SHOW USER", "SHOW USER ON DBMS"),
+    ("DATABASE MANAGEMENT", "DATABASE MANAGEMENT ON DBMS"),
+    ("CREATE DATABASE", "CREATE DATABASE ON DBMS"),
+    ("DROP DATABASE", "DROP DATABASE ON DBMS")
+  )
+
   // Tests for showing privileges
 
   test("should fail on showing privileges from community") {
@@ -54,22 +74,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for granting privileges
-  Seq(
-    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("read", "READ {*} ON GRAPH * NODES * (*)"),
-    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS")
-  ).foreach {
+  enterpriseCommands.foreach {
     case (privilege, command) =>
       test(s"should fail on granting $privilege privilege from community") {
         // GIVEN
@@ -81,22 +86,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for denying privileges
-  Seq(
-    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("read", "READ {*} ON GRAPH * NODES * (*)"),
-    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS")
-  ).foreach {
+  enterpriseCommands.foreach {
     case (privilege, command) =>
       test(s"should fail on denying $privilege privilege from community") {
         // GIVEN
@@ -108,22 +98,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for revoking grant privileges
-  Seq(
-    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("read", "READ {*} ON GRAPH * NODES * (*)"),
-    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS")
-  ).foreach {
+  enterpriseCommands.foreach {
     case (privilege, command) =>
       test(s"should fail on revoking grant $privilege privilege from community") {
         // GIVEN
@@ -135,22 +110,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for revoking deny privileges
-  Seq(
-    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("read", "READ {*} ON GRAPH * NODES * (*)"),
-    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS")
-  ).foreach {
+  enterpriseCommands.foreach {
     case (privilege, command) =>
       test(s"should fail on revoking deny $privilege privilege from community") {
         // GIVEN
@@ -162,22 +122,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   }
 
   // Tests for revoking privileges
-  Seq(
-    ("traverse", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("read", "READ {*} ON GRAPH * NODES * (*)"),
-    ("match", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS")
-  ).foreach {
+  enterpriseCommands.foreach {
     case (privilege, command) =>
       test(s"should fail on revoking $privilege privilege from community") {
         // GIVEN
