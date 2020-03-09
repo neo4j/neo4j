@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -358,18 +358,18 @@ abstract class Read implements TxStateHolder,
         }
 
         @Override
-        public boolean acceptNode( long reference, LabelSet labels )
+        public boolean acceptEntity( long reference, TokenSet tokens )
         {
-            if ( labels == null )
+            if ( tokens == null )
             {
                 node.single( reference, Read.this );
                 if ( !node.next() )
                 {
                     return false;
                 }
-                labels = node.labelsIgnoringTxStateSetRemove();
+                tokens = node.labelsIgnoringTxStateSetRemove();
             }
-            return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNode( labels.all() );
+            return inner.acceptEntity( reference, tokens ) && accessMode.allowsTraverseNode( tokens.all() );
         }
 
         @Override

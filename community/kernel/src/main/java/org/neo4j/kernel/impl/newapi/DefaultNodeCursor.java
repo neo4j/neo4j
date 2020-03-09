@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -105,7 +105,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public LabelSet labels()
+    public TokenSet labels()
     {
         if ( currentAddedInTx != NO_ID )
         {
@@ -139,7 +139,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
      * Some code paths need to consider created, but not changed labels.
      */
     @Override
-    public LabelSet labelsIgnoringTxStateSetRemove()
+    public TokenSet labelsIgnoringTxStateSetRemove()
     {
         if ( currentAddedInTx != NO_ID )
         {

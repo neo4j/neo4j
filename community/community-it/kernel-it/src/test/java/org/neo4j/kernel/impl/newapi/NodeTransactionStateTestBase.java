@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -89,7 +89,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( node.next(), "should access node" );
 
-                LabelSet labels = node.labels();
+                TokenSet labels = node.labels();
                 assertEquals( 1, labels.numberOfLabels() );
                 assertEquals( labelId, labels.label( 0 ) );
                 assertTrue( node.hasLabel( labelId ) );
@@ -885,7 +885,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    private void assertLabels( LabelSet labels, int... expected )
+    private void assertLabels( TokenSet labels, int... expected )
     {
         assertEquals( expected.length, labels.numberOfLabels() );
         Arrays.sort( expected );

@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -39,7 +39,7 @@ import org.neo4j.values.storable.ValueGroup;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
-public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<LabelSet>, IntSupplier
+public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<TokenSet>, IntSupplier
 {
     private static final int NODE = -2;
     private Read read;
@@ -52,7 +52,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
     private long entityReference = NO_ID;
-    private LabelSet labels;
+    private TokenSet labels;
     //stores relationship type or NODE if not a relationship
     private int type = NO_TOKEN;
 
@@ -256,7 +256,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
      * allocations.
      */
     @Override
-    public LabelSet get()
+    public TokenSet get()
     {
         assert isNode();
 

@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -150,7 +150,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
         {
-            LabelSet labels;
+            TokenSet labels;
 
             // when
             read.singleNode( foo, nodes );

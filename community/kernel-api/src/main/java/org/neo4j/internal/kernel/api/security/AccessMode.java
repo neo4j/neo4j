@@ -25,7 +25,7 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
@@ -156,7 +156,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
+        public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
         {
             return read;
         }
@@ -224,7 +224,7 @@ public interface AccessMode
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
     boolean disallowsReadPropertyForSomeLabel( int propertyKey );
-    boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey );
+    boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey );
 
     boolean allowsReadPropertyAllRelTypes( int propertyKey );
     boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey );

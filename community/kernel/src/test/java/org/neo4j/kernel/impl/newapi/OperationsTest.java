@@ -37,7 +37,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -279,7 +279,7 @@ class OperationsTest
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
 
         // when
         operations.nodeAddLabel( 123L, 456 );
@@ -294,7 +294,7 @@ class OperationsTest
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
         when( transaction.hasTxStateWithChanges() ).thenReturn( true );
 
         // when
@@ -310,7 +310,7 @@ class OperationsTest
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
 
         // when
         int labelId = 456;
@@ -326,7 +326,7 @@ class OperationsTest
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
         int propertyKeyId = 8;
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
@@ -349,9 +349,9 @@ class OperationsTest
         int unrelatedLabelId = 51;
         int propertyKeyId = 8;
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labelSet = mock( LabelSet.class );
-        when( labelSet.all() ).thenReturn( new long[]{relatedLabelId} );
-        when( nodeCursor.labels() ).thenReturn( labelSet );
+        TokenSet tokenSet = mock( TokenSet.class );
+        when( tokenSet.all() ).thenReturn( new long[]{relatedLabelId} );
+        when( nodeCursor.labels() ).thenReturn( tokenSet );
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
         when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
@@ -391,7 +391,7 @@ class OperationsTest
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
         when( transaction.hasTxStateWithChanges() ).thenReturn( true );
         txState.nodeDoCreate( 123 );
         int propertyKeyId = 8;
@@ -428,7 +428,7 @@ class OperationsTest
     {
         // GIVEN
         when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
+        when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
 
         // WHEN
         operations.nodeDelete(  123 );
@@ -851,7 +851,7 @@ class OperationsTest
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
+        TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
         when( nodeCursor.labels() ).thenReturn( labels );
 
@@ -869,7 +869,7 @@ class OperationsTest
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
-        LabelSet labels = mock( LabelSet.class );
+        TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
         when( nodeCursor.labels() ).thenReturn( labels );
         when( nodeCursor.next() ).thenReturn( true );
@@ -891,7 +891,7 @@ class OperationsTest
         long labelId1 = 1;
         long labelId2 = 2;
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
+        TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
         when( nodeCursor.labels() ).thenReturn( labels );
 
@@ -916,7 +916,7 @@ class OperationsTest
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
+        TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
         when( nodeCursor.labels() ).thenReturn( labels );
 
@@ -958,7 +958,7 @@ class OperationsTest
         long labelId2 = 1;
         int propertyKeyId = 5;
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
+        TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
         when( nodeCursor.labels() ).thenReturn( labels );
         when( propertyCursor.next() ).thenReturn( true );

@@ -23,7 +23,7 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 
 public class TestAccessMode implements AccessMode
 {
@@ -113,7 +113,7 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
+    public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
     {
         return allowRead;
     }

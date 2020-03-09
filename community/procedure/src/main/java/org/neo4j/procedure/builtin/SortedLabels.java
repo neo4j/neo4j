@@ -21,7 +21,7 @@ package org.neo4j.procedure.builtin;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 
 public class SortedLabels
 {
@@ -38,9 +38,9 @@ public class SortedLabels
         return new SortedLabels( labels );
     }
 
-    static SortedLabels from( LabelSet labelSet )
+    static SortedLabels from( TokenSet tokenSet )
     {
-        return from( labelSet.all() );
+        return from( tokenSet.all() );
     }
 
     private long[] all()

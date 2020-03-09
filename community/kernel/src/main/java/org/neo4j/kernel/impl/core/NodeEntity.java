@@ -39,7 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -614,12 +614,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         try
         {
             singleNode( transaction, nodes );
-            LabelSet labelSet = nodes.labels();
+            TokenSet tokenSet = nodes.labels();
             TokenRead tokenRead = transaction.tokenRead();
-            ArrayList<Label> list = new ArrayList<>( labelSet.numberOfLabels() );
-            for ( int i = 0; i < labelSet.numberOfLabels(); i++ )
+            ArrayList<Label> list = new ArrayList<>( tokenSet.numberOfLabels() );
+            for ( int i = 0; i < tokenSet.numberOfLabels(); i++ )
             {
-                list.add( label( tokenRead.nodeLabelName( labelSet.label( i ) ) ) );
+                list.add( label( tokenRead.nodeLabelName( tokenSet.label( i ) ) ) );
             }
             return list;
         }

@@ -58,7 +58,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             {
                 int delta = Long.numberOfTrailingZeros( bits );
                 bits &= bits - 1;
-                if ( client.acceptNode( baseEntityId + delta, null ) )
+                if ( client.acceptEntity( baseEntityId + delta, null ) )
                 {
                     return true;
                 }

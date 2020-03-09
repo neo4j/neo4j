@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.security;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 
@@ -110,7 +110,7 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
+    public boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey )
     {
         return original.allowsReadNodeProperty( labels, propertyKey ) && wrapping.allowsReadNodeProperty( labels, propertyKey );
     }

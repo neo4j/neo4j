@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 
@@ -69,7 +69,7 @@ public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements 
     }
 
     @Override
-    public LabelSet labels()
+    public TokenSet labels()
     {
         return null;
     }

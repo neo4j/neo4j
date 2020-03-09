@@ -23,9 +23,9 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 
-public class Labels implements LabelSet
+public class Labels implements TokenSet
 {
     /**
      * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some

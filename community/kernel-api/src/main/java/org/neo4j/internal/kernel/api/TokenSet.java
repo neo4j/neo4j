@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
  * Modifications are not reflected in the LabelSet and there is no guaranteed
  * order.
  */
-public interface LabelSet
+public interface TokenSet
 {
     int numberOfLabels();
 
@@ -37,7 +37,7 @@ public interface LabelSet
 
     long[] all();
 
-    LabelSet NONE = new LabelSet()
+    TokenSet NONE = new TokenSet()
     {
         private final long[] EMPTY = new long[0];
 

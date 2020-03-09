@@ -26,9 +26,9 @@ public interface NodeCursor extends Cursor
 {
     long nodeReference();
 
-    LabelSet labels();
+    TokenSet labels();
 
-    LabelSet labelsIgnoringTxStateSetRemove();
+    TokenSet labelsIgnoringTxStateSetRemove();
 
     boolean hasLabel( int label );
 

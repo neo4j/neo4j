@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -91,13 +91,13 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public LabelSet labels()
+    public TokenSet labels()
     {
-        return offset >= 0 && offset < nodes.size() ? nodes.get( offset ).labelSet() : LabelSet.NONE;
+        return offset >= 0 && offset < nodes.size() ? nodes.get( offset ).labelSet() : TokenSet.NONE;
     }
 
     @Override
-    public LabelSet labelsIgnoringTxStateSetRemove()
+    public TokenSet labelsIgnoringTxStateSetRemove()
     {
         return labels();
     }

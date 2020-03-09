@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -37,7 +37,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
 {
     private Read read;
     private long node;
-    private LabelSet labels;
+    private TokenSet labels;
     private LongIterator added;
     private LongSet removed;
 
@@ -136,7 +136,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public LabelSet labels()
+    public TokenSet labels()
     {
         return labels;
     }

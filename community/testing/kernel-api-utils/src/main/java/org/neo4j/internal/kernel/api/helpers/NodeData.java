@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.values.storable.Value;
 
 class NodeData
@@ -37,9 +37,9 @@ class NodeData
         this.properties = properties;
     }
 
-    LabelSet labelSet()
+    TokenSet labelSet()
     {
-        return new LabelSet()
+        return new TokenSet()
         {
             @Override
             public int numberOfLabels()

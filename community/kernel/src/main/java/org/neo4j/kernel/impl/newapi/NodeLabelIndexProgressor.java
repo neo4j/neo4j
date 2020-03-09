@@ -38,7 +38,7 @@ class NodeLabelIndexProgressor implements IndexProgressor
     {
         while ( iterator.hasNext() )
         {
-            if ( client.acceptNode( iterator.next(), null ) )
+            if ( client.acceptEntity( iterator.next(), null ) )
             {
                 return true;
             }

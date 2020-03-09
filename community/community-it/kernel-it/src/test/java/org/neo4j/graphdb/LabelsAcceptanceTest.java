@@ -42,7 +42,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -733,7 +733,7 @@ class LabelsAcceptanceTest
                         seenProperties.add( propertyCursor.propertyKey() );
                     }
 
-                    LabelSet labels = nodes.labels();
+                    TokenSet labels = nodes.labels();
                     for ( int i = 0; i < labels.numberOfLabels(); i++ )
                     {
                         seenLabels.add( labels.label( i ) );

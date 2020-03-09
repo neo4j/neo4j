@@ -30,5 +30,5 @@ public interface NodeLabelIndexCursor extends NodeIndexCursor
      *
      * @return a set of labels that are known to be present on the current node under the cursor.
      */
-    LabelSet labels();
+    TokenSet labels();
 }

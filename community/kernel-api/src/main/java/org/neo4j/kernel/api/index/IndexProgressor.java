@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -105,13 +105,13 @@ public interface IndexProgressor extends AutoCloseable
     interface EntityTokenClient
     {
         /**
-         * Accept the node id and (some) labels of a candidate index entry. Return true if the entry
+         * Accept the entity id and (some) tokens of a candidate index entry. Return true if the entry
          * is accepted, false otherwise.
-         * @param reference the node id of the candidate index entry
-         * @param labels some labels of the candidate index entry
+         * @param reference the entity id of the candidate index entry
+         * @param tokens some tokens of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptNode( long reference, LabelSet labels );
+        boolean acceptEntity( long reference, TokenSet tokens );
     }
 
     IndexProgressor EMPTY = new IndexProgressor()

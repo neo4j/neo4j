@@ -47,7 +47,7 @@ public class LabelScanValueIndexProgressor implements IndexProgressor, Resource
         while ( ids.hasNext() )
         {
             long id = ids.next();
-            if ( client.acceptNode( id, null ) )
+            if ( client.acceptEntity( id, null ) )
             {
                 return true;
             }
