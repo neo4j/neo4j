@@ -27,7 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.internal.index.label.LabelScanStoreTest;
+import org.neo4j.internal.index.label.TokenScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -108,7 +108,7 @@ public class LabelScanStoreChaosIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        LabelScanStoreTest.scrambleFile( randomRule.random(), file );
+        TokenScanStoreTest.scrambleFile( randomRule.random(), file );
     }
 
     private void deleteNode( Node node )

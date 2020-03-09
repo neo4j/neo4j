@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.TokenScanWriter;
-import org.neo4j.internal.index.label.LabelScanStoreTest;
+import org.neo4j.internal.index.label.TokenScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -119,7 +119,7 @@ class LabelScanStoreStartupIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        LabelScanStoreTest.scrambleFile( random.random(), file );
+        TokenScanStoreTest.scrambleFile( random.random(), file );
     }
 
     private static File storeFile( DatabaseLayout databaseLayout )

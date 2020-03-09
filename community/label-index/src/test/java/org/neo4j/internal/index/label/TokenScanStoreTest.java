@@ -88,7 +88,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
-public class LabelScanStoreTest
+public class TokenScanStoreTest
 {
     @Inject
     private FileSystemAbstraction fileSystem;
