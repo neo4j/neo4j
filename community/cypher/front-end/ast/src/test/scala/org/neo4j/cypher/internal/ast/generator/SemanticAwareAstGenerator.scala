@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.generator
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
@@ -60,5 +61,11 @@ class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: 
         _countStar
     )
 
-  def nonAggregatingExpression: Gen[Expression] = _expression.suchThat(!_.containsAggregate)
+  def nonAggregatingExpression: Gen[Expression] =
+    _expression.suchThat { expr =>
+      !expr.containsAggregate && !expr.treeExists {
+        case _: FunctionInvocation => true // not interested in randomly-generated functions, we'll just end up with `scala.MatchError: UnresolvedFunction`
+        case _: MapProjection => true // org.neo4j.exceptions.InternalException: `MapProjection` should have been rewritten away
+      }
+    }
 }
