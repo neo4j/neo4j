@@ -382,7 +382,7 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Rel
             isDirty = true;
         }
 
-        writeMonitor = TokenScanWriteMonitor.ENABLED ? new TokenScanWriteMonitor( fs, directoryStructure ) : NativeTokenScanWriter.EMPTY;
+        writeMonitor = TokenScanWriteMonitor.ENABLED ? new TokenScanWriteMonitor( fs, directoryStructure, entityType() ) : NativeTokenScanWriter.EMPTY;
         singleWriter = new NativeTokenScanWriter( 1_000, writeMonitor );
 
         if ( isDirty )

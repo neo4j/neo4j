@@ -26,6 +26,8 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.ByteUnit;
@@ -42,6 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 @Neo4jLayoutExtension
 class TokenScanWriteMonitorTest
@@ -56,18 +60,18 @@ class TokenScanWriteMonitorTest
     @BeforeEach
     void before()
     {
-        baseName = TokenScanWriteMonitor.writeLogBaseFile( databaseLayout ).getName();
+        baseName = TokenScanWriteMonitor.writeLogBaseFile( databaseLayout, NODE ).getName();
     }
 
     @Test
     void shouldRotateExistingFileOnOpen()
     {
         // given
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
         writeMonitor.close();
 
         // when
-        TokenScanWriteMonitor secondWriteMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor secondWriteMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
         secondWriteMonitor.close();
 
         // then
@@ -78,7 +82,7 @@ class TokenScanWriteMonitorTest
     void shouldLogAndDumpData() throws IOException
     {
         // given
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
         TokenScanValue value = new TokenScanValue();
         writeMonitor.range( 3, 0 );
         writeMonitor.prepareAdd( 123, 4 );
@@ -97,7 +101,7 @@ class TokenScanWriteMonitorTest
 
         // when
         TokenScanWriteMonitor.Dumper dumper = mock( TokenScanWriteMonitor.Dumper.class );
-        TokenScanWriteMonitor.dump( fs, databaseLayout, dumper, null );
+        TokenScanWriteMonitor.dump( fs, databaseLayout, dumper, null, NODE );
 
         // then
         InOrder inOrder = Mockito.inOrder( dumper );
@@ -181,7 +185,8 @@ class TokenScanWriteMonitorTest
         // given
         File storeDir = databaseLayout.databaseDirectory();
         int rotationThreshold = 1_000;
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS,
+                NODE );
 
         // when
         for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
@@ -208,7 +213,7 @@ class TokenScanWriteMonitorTest
         File storeDir = databaseLayout.databaseDirectory();
         long pruneThreshold = 200;
         TokenScanWriteMonitor writeMonitor =
-                new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
+                new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS, NODE );
 
         // when
         long startTime = currentTimeMillis();
@@ -230,5 +235,17 @@ class TokenScanWriteMonitorTest
             long diff = endTime - timestamp;
             assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
         }
+    }
+
+    @Test
+    void shouldUseTargetRelationshipTypeScanStoreIfEntityTypeRelationship()
+    {
+        // given
+        assertThat( fs.listFiles( databaseLayout.databaseDirectory() ).length ).isEqualTo( 0 );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, RELATIONSHIP );
+        writeMonitor.close();
+        List<File> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
+        assertThat( filesAfter.size() ).isEqualTo( 1 );
+        assertThat( filesAfter.get( 0 ).getName() ).contains( databaseLayout.relationshipTypeScanStore().getName() );
     }
 }

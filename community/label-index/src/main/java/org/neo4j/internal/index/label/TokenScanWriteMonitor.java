@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -80,20 +81,20 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     private long rotationThreshold;
     private long pruneThreshold;
 
-    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
+    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout, EntityType entityType )
     {
-        this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS );
+        this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS, entityType );
     }
 
     TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
             long rotationThreshold, ByteUnit rotationThresholdUnit,
-            long pruneThreshold, TimeUnit pruneThresholdUnit )
+            long pruneThreshold, TimeUnit pruneThresholdUnit, EntityType entityType )
     {
         this.fs = fs;
         this.rotationThreshold = rotationThresholdUnit.toBytes( rotationThreshold );
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
         this.storeDir = databaseLayout.databaseDirectory();
-        this.file = writeLogBaseFile( databaseLayout );
+        this.file = writeLogBaseFile( databaseLayout, entityType );
         try
         {
             if ( fs.fileExists( file ) )
@@ -108,9 +109,10 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
     }
 
-    static File writeLogBaseFile( DatabaseLayout databaseLayout )
+    static File writeLogBaseFile( DatabaseLayout databaseLayout, EntityType entityType )
     {
-        return new File( databaseLayout.labelScanStore() + ".writelog" );
+        File baseFile = entityType == EntityType.NODE ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
+        return new File( baseFile + ".writelog" );
     }
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
@@ -390,23 +392,28 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         TxFilter txFilter = parseTxFilter( arguments.get( ARG_TXFILTER, null ) );
         PrintStream out = System.out;
         boolean redirectsToFile = arguments.getBoolean( ARG_TOFILE );
-        if ( redirectsToFile )
+
+        for ( EntityType entityType : EntityType.values() )
         {
-            File outFile = new File( writeLogBaseFile( databaseLayout ).getAbsolutePath() + ".txt" );
-            System.out.println( "Redirecting output to " + outFile );
-            out = new PrintStream( new BufferedOutputStream( new FileOutputStream( outFile ) ) );
-        }
-        Dumper dumper = new PrintStreamDumper( out );
-        dump( fs, databaseLayout, dumper, txFilter );
-        if ( redirectsToFile )
-        {
-            out.close();
+            if ( redirectsToFile )
+            {
+                File outFile = new File( writeLogBaseFile( databaseLayout, entityType ).getAbsolutePath() + ".txt" );
+                System.out.println( "Redirecting output to " + outFile );
+                out = new PrintStream( new BufferedOutputStream( new FileOutputStream( outFile ) ) );
+            }
+            Dumper dumper = new PrintStreamDumper( out );
+            dump( fs, databaseLayout, dumper, txFilter, entityType );
+            if ( redirectsToFile )
+            {
+                out.close();
+            }
         }
     }
 
-    public static void dump( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Dumper dumper, TxFilter txFilter ) throws IOException
+    public static void dump( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Dumper dumper, TxFilter txFilter, EntityType entityType )
+            throws IOException
     {
-        File writeLogFile = writeLogBaseFile( databaseLayout );
+        File writeLogFile = writeLogBaseFile( databaseLayout, entityType );
         String writeLogFileBaseName = writeLogFile.getName();
         File[] files = fs.listFiles( databaseLayout.databaseDirectory(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
         Arrays.sort( files, comparing( file -> file.getName().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
