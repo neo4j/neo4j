@@ -165,7 +165,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
     private final PageCacheTracer cacheTracer;
-    private BatchImporterFactory batchImporterFactory;
+    private final BatchImporterFactory batchImporterFactory;
 
     public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
