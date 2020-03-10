@@ -80,7 +80,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  * <p>
  * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
  */
-public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, RelationshipTypeScanStore, EntityTokenUpdateListener
+public abstract class NativeTokenScanStore implements TokenScanStore, EntityTokenUpdateListener
 {
     /**
      * Written in header to indicate native token scan store is clean

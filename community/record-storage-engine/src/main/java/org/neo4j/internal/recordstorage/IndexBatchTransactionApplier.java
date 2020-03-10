@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -32,15 +33,17 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -50,7 +53,8 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final IndexUpdateListener indexUpdateListener;
-    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final IndexActivator indexActivator;
@@ -59,12 +63,14 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final SchemaCache schemaCache;
 
     private List<EntityTokenUpdate> labelUpdates;
+    private List<EntityTokenUpdate> relationshipTypeUpdates;
     private IndexUpdates indexUpdates;
     private long txId;
     private PageCursorTracer cursorTracer;
 
     public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
-            WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync,
+            WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync,
+            WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore,
             PropertyStore propertyStore, StorageEngine storageEngine,
@@ -72,6 +78,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     {
         this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;
+        this.relationshipTypeScanStoreSync = relationshipTypeScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.propertyStore = propertyStore;
         this.storageEngine = storageEngine;
@@ -91,12 +98,18 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private void applyPendingLabelAndIndexUpdates() throws IOException
     {
         AsyncApply labelUpdatesApply = null;
+        AsyncApply relationshipTypeUpdatesApply = null;
         if ( labelUpdates != null )
         {
             // Updates are sorted according to node id here, an artifact of node commands being sorted
             // by node id when extracting from TransactionRecordState.
-            labelUpdatesApply = labelScanStoreSync.applyAsync( new LabelUpdateWork( labelUpdates ) );
+            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates ) );
             labelUpdates = null;
+        }
+        if ( relationshipTypeUpdates != null )
+        {
+            relationshipTypeUpdatesApply = relationshipTypeScanStoreSync.applyAsync( new TokenUpdateWork( relationshipTypeUpdates ) );
+            relationshipTypeUpdates = null;
         }
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
@@ -120,6 +133,17 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             catch ( ExecutionException e )
             {
                 throw new IOException( "Failed to flush label updates", e );
+            }
+        }
+        if ( relationshipTypeUpdatesApply != null )
+        {
+            try
+            {
+                relationshipTypeUpdatesApply.await();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Failed to flush relationship type updates", e );
             }
         }
     }
@@ -210,6 +234,24 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public boolean visitRelationshipCommand( Command.RelationshipCommand command )
         {
+            // for relationship type scan store updates
+            RelationshipRecord before = command.getBefore();
+            RelationshipRecord after = command.getAfter();
+
+            int beforeType = before.getType();
+            int afterType = after.getType();
+            long[] beforeArray = beforeType == -1 || !before.inUse() ? EMPTY_LONG_ARRAY : new long[]{beforeType};
+            long[] afterArray = afterType == -1 || !after.inUse() ? EMPTY_LONG_ARRAY : new long[]{afterType};
+            if ( !Arrays.equals( beforeArray, afterArray ) )
+            {
+                if ( relationshipTypeUpdates == null )
+                {
+                    relationshipTypeUpdates = new ArrayList<>();
+                }
+                relationshipTypeUpdates.add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
+            }
+
+            // for indexes
             return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
 

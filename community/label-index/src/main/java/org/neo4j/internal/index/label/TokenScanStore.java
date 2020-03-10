@@ -53,7 +53,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE );
+        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE );
     }
 
     /**
@@ -62,7 +62,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 RELATIONSHIP );
     }
 

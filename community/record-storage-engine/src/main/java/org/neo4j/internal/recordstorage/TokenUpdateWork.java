@@ -27,26 +27,26 @@ import org.neo4j.util.concurrent.Work;
 
 import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_ENTITY_ID;
 
-public class LabelUpdateWork implements Work<EntityTokenUpdateListener,LabelUpdateWork>
+public class TokenUpdateWork implements Work<EntityTokenUpdateListener,TokenUpdateWork>
 {
-    private final List<EntityTokenUpdate> labelUpdates;
+    private final List<EntityTokenUpdate> tokenUpdates;
 
-    LabelUpdateWork( List<EntityTokenUpdate> labelUpdates )
+    TokenUpdateWork( List<EntityTokenUpdate> tokenUpdates )
     {
-        this.labelUpdates = labelUpdates;
+        this.tokenUpdates = tokenUpdates;
     }
 
     @Override
-    public LabelUpdateWork combine( LabelUpdateWork work )
+    public TokenUpdateWork combine( TokenUpdateWork work )
     {
-        labelUpdates.addAll( work.labelUpdates );
+        tokenUpdates.addAll( work.tokenUpdates );
         return this;
     }
 
     @Override
     public void apply( EntityTokenUpdateListener listener )
     {
-        labelUpdates.sort( SORT_BY_ENTITY_ID );
-        listener.applyUpdates( labelUpdates );
+        tokenUpdates.sort( SORT_BY_ENTITY_ID );
+        listener.applyUpdates( tokenUpdates );
     }
 }

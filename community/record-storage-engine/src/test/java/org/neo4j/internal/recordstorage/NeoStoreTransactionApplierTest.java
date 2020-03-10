@@ -93,6 +93,7 @@ class NeoStoreTransactionApplierTest
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
+    private final EntityTokenUpdateListener relationshipTypeUpdateListener = mock( EntityTokenUpdateListener.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 
@@ -112,7 +113,8 @@ class NeoStoreTransactionApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
-    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final IndexActivator indexActivator = new IndexActivator( indexingService );
@@ -874,7 +876,7 @@ class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, propertyStore,
+                relationshipTypeScanStoreSync, indexUpdatesSync, nodeStore, propertyStore,
                 mock( StorageEngine.class ), schemaCache, indexActivator );
     }
 

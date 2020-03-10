@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -78,12 +78,15 @@ class SchemaRuleCommandTest
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
+    private final EntityTokenUpdateListener relationshipTypeUpdateListener = mock( EntityTokenUpdateListener.class );
     private NeoStoreBatchTransactionApplier storeApplier;
-    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer,
-            indexUpdatesSync, mock( NodeStore.class ), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
+            relationshipTypeScanStoreSync, indexUpdatesSync, mock( NodeStore.class ), propertyStore, storageEngine, schemaCache,
+            new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 

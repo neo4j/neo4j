@@ -73,9 +73,9 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -114,7 +114,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
-    private WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSync;
+    private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
+    private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
@@ -125,6 +126,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     // installed later
     private IndexUpdateListener indexUpdateListener;
     private EntityTokenUpdateListener nodeLabelUpdateListener;
+    private EntityTokenUpdateListener relationshipTypeUpdateListener;
 
     public RecordStorageEngine( DatabaseLayout databaseLayout,
             Config config,
@@ -242,6 +244,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.labelScanStoreSync = new WorkSync<>( listener );
     }
 
+    @Override
+    public void addRelationshipTypeUpdateListener( EntityTokenUpdateListener listener )
+    {
+        Preconditions.checkState( this.relationshipTypeUpdateListener == null,
+                "Only supports a single listener. Tried to add " + listener + ", but " + this.relationshipTypeUpdateListener + " has already been added" );
+        this.relationshipTypeUpdateListener = listener;
+        this.relationshipTypeScanStoreSync = new WorkSync<>( listener );
+    }
+
     /**
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command didn't validate,
      * for example if trying to delete a node that still has relationships.
@@ -344,7 +355,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             appliers.add( new CountsStoreBatchTransactionApplier( countsStore ) );
 
             // Schema index application
-            appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
+            appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync,
                     neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
         }
 

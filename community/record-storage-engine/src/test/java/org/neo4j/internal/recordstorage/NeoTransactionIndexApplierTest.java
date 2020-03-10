@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -49,8 +49,10 @@ class NeoTransactionIndexApplierTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
+    private final EntityTokenUpdateListener relationshipTypeUpdateListener = mock( EntityTokenUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<EntityTokenUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
+    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
     private final LockGroup lockGroup = new LockGroup();
@@ -79,8 +81,8 @@ class NeoTransactionIndexApplierTest
     private IndexBatchTransactionApplier newIndexTransactionApplier()
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
-        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                propertyStore, mock( StorageEngine.class ), schemaCache, new IndexActivator( indexingService ) );
+        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, relationshipTypeScanStoreSync, indexUpdatesSync,
+                mock( NodeStore.class ), propertyStore, mock( StorageEngine.class ), schemaCache, new IndexActivator( indexingService ) );
     }
 
     @Test
