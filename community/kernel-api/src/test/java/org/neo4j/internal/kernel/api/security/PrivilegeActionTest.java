@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
@@ -44,20 +45,18 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ROLE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_MANAGEMENT;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DENY_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_USER;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRANT_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_ROLE;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REVOKE_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_PRIVILEGE;
@@ -86,7 +85,7 @@ class PrivilegeActionTest
         expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
         expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, DROP_USER, ALTER_USER ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE ) );
-        expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, GRANT_PRIVILEGE, DENY_PRIVILEGE, REVOKE_PRIVILEGE ) );
+        expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
 
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
         expected.put( MATCH, Set.of( TRAVERSE, READ ) );

@@ -346,10 +346,10 @@ case object CreateDatabaseAction extends DatabaseManagementAction("CREATE DATABA
 case object DropDatabaseAction extends DatabaseManagementAction("DROP DATABASE")
 
 abstract class PrivilegeManagementAction(override val name: String) extends DbmsAdminAction(name)
-case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEGES")
-case object GrantPrivilegeAction extends PrivilegeManagementAction("GRANT PRIVILEGE")
-case object RevokePrivilegeAction extends PrivilegeManagementAction("REVOKE PRIVILEGE")
-case object DenyPrivilegeAction extends PrivilegeManagementAction("DENY PRIVILEGE")
+case object AllPrivilegeActions extends PrivilegeManagementAction("PRIVILEGE MANAGEMENT")
+case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEGE")
+case object AssignPrivilegeAction extends PrivilegeManagementAction("ASSIGN PRIVILEGE")
+case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIVILEGE")
 
 object GrantPrivilege {
   def dbmsAction(action: AdminAction, roleNames: Seq[String]): InputPosition => GrantPrivilege =

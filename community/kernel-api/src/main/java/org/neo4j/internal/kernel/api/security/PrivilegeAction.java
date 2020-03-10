@@ -70,9 +70,8 @@ public enum PrivilegeAction
     REMOVE_ROLE,
 
     SHOW_PRIVILEGE,
-    GRANT_PRIVILEGE,
-    DENY_PRIVILEGE,
-    REVOKE_PRIVILEGE,
+    ASSIGN_PRIVILEGE,
+    REMOVE_PRIVILEGE,
 
     // Some grouping actions that represent super-sets of other actions
 
@@ -220,9 +219,8 @@ public enum PrivilegeAction
                     switch ( action )
                     {
                     case SHOW_PRIVILEGE:
-                    case GRANT_PRIVILEGE:
-                    case DENY_PRIVILEGE:
-                    case REVOKE_PRIVILEGE:
+                    case ASSIGN_PRIVILEGE:
+                    case REMOVE_PRIVILEGE:
                         return true;
                     default:
                         return this == action;

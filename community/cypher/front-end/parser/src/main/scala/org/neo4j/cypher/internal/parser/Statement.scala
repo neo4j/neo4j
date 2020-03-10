@@ -504,7 +504,11 @@ trait Statement extends Parser
     keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
     keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
     keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
-    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions)
+    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
+    keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
+    keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
+    keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
+    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions)
   }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")

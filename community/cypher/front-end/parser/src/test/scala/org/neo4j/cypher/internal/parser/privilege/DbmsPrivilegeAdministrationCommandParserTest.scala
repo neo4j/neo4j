@@ -36,7 +36,11 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       ("USER MANAGEMENT", ast.AllUserActions),
       ("CREATE DATABASE", ast.CreateDatabaseAction),
       ("DROP DATABASE", ast.DropDatabaseAction),
-      ("DATABASE MANAGEMENT", ast.AllDatabaseManagementActions)
+      ("DATABASE MANAGEMENT", ast.AllDatabaseManagementActions),
+      ("SHOW PRIVILEGE", ast.ShowPrivilegeAction),
+      ("ASSIGN PRIVILEGE", ast.AssignPrivilegeAction),
+      ("REMOVE PRIVILEGE", ast.RemovePrivilegeAction),
+      ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions)
     ).foreach {
       case (privilege: String, action: ast.AdminAction) =>
 

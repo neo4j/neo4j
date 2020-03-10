@@ -26,11 +26,13 @@ import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllIndexActions
+import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -40,15 +42,13 @@ import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
-import org.neo4j.cypher.internal.ast.DenyPrivilegeAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
-import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
+import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
-import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -100,10 +100,10 @@ object AdminActionMapper {
     case CreateDatabaseAction => security.PrivilegeAction.CREATE_DATABASE
     case DropDatabaseAction => security.PrivilegeAction.DROP_DATABASE
 
+    case AllPrivilegeActions => security.PrivilegeAction.PRIVILEGE_MANAGEMENT
     case ShowPrivilegeAction => security.PrivilegeAction.SHOW_PRIVILEGE
-    case GrantPrivilegeAction => security.PrivilegeAction.GRANT_PRIVILEGE
-    case RevokePrivilegeAction => security.PrivilegeAction.REVOKE_PRIVILEGE
-    case DenyPrivilegeAction => security.PrivilegeAction.DENY_PRIVILEGE
+    case AssignPrivilegeAction => security.PrivilegeAction.ASSIGN_PRIVILEGE
+    case RemovePrivilegeAction => security.PrivilegeAction.REMOVE_PRIVILEGE
 
     case AllAdminAction => security.PrivilegeAction.ADMIN
   }

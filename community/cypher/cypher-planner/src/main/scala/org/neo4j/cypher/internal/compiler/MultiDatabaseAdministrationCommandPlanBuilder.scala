@@ -23,6 +23,7 @@ import org.neo4j.configuration.helpers.DatabaseNameValidator
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
-import org.neo4j.cypher.internal.ast.DenyPrivilegeAction
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropRole
@@ -41,20 +41,19 @@ import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
-import org.neo4j.cypher.internal.ast.GrantPrivilegeAction
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.MatchPrivilege
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadPrivilege
+import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
-import org.neo4j.cypher.internal.ast.RevokePrivilegeAction
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SetOwnPassword
@@ -222,19 +221,19 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT _ ON DBMS TO role
       case c@GrantPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
-        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, roleName) => Some(plans.GrantDbmsAction(source, action, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DBMS TO role
       case c@DenyPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
-        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Option(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, roleName) => Some(plans.DenyDbmsAction(source, action, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DBMS FROM role
       case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (previous, roleName) => planRevokes(previous, revokeType, (s, r) => Some(plans.RevokeDbmsAction(s, action, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -242,7 +241,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (role, qualifier)) =>
             Some(plans.GrantDatabaseAction(source, action, database, qualifier, role))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -251,7 +250,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
-        }).foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (role, qualifier)) =>
             Some(plans.DenyDatabaseAction(source, action, database, qualifier, role))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -260,7 +259,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (plan, (role, qualifier)) =>
             planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, action, database, qualifier, role, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -269,7 +268,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => Some(plans.GrantTraverse(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -277,7 +276,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@DenyPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => Some(plans.DenyTraverse(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -285,7 +284,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeTraverse(s, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -293,7 +292,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => Some(plans.GrantWrite(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -301,7 +300,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => Some(plans.DenyWrite(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -309,7 +308,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => Some(plans.RevokeWrite(s, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -317,7 +316,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => Some(plans.GrantRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -325,7 +324,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@DenyPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => Some(plans.DenyRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -333,7 +332,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => Some(plans.RevokeRead(s, resource, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -341,7 +340,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@GrantPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => Some(plans.GrantMatch(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -349,7 +348,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@DenyPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => Some(plans.DenyMatch(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -357,7 +356,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case c@RevokePrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
-        }).foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => Some(plans.RevokeMatch(s, resource, database, segment, roleName, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
