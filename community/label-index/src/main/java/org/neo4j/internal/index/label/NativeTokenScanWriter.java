@@ -258,7 +258,7 @@ class NativeTokenScanWriter implements TokenScanWriter
                     if ( nextTokenCandidate < currentTokenId )
                     {
                         throw new IllegalArgumentException(
-                                "The node label update contained unsorted label ids " + Arrays.toString( tokens ) );
+                                "The entity token contained unsorted tokens ids " + Arrays.toString( tokens ) );
                     }
                     if ( nextTokenCandidate > currentTokenId )
                     {

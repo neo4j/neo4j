@@ -56,13 +56,13 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
     @Override
     public void write( EntityTokenUpdate update )
     {
-        checkArgument( update.getTokensBefore().length == 0, "Was expecting no labels before, was %s", Arrays.toString( update.getTokensBefore() ) );
+        checkArgument( update.getTokensBefore().length == 0, "Was expecting no tokens before, was %s", Arrays.toString( update.getTokensBefore() ) );
         long idRange = rangeOf( update.getEntityId() );
         int previousTokenId = -1;
         for ( long tokenId : update.getTokensAfter() )
         {
             int intTokenId = toIntExact( tokenId );
-            checkArgument( intTokenId > previousTokenId, "Detected unsorted labels in %s", update );
+            checkArgument( intTokenId > previousTokenId, "Detected unsorted tokens in %s", update );
             previousTokenId = intTokenId;
             Pair<TokenScanKey,TokenScanValue> range =
                     ranges.getIfAbsentPutWithKey( intTokenId, id -> Pair.of( new TokenScanKey( id, idRange ), new TokenScanValue() ) );
