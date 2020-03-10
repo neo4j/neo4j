@@ -70,7 +70,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
  * This runtime takes on queries that require no planning, such as multidatabase administration commands
@@ -373,20 +373,25 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
     val allDatabaseAccess = accessForDatabase(allDatabaseNode, roles)
+    val defaultDatabaseNode = transaction.findNode(Label.label("DatabaseDefault"), "name", "DEFAULT")
+    val defaultDatabaseAccess = if ( defaultDatabaseNode != null ) accessForDatabase(defaultDatabaseNode, roles) else None
 
     val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
       val dbName = dbNode.getProperty("name").toString
+      val isDefault = Boolean.unbox(dbNode.getProperty("default"))
       if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
         acc :+ dbName
       } else {
-        (accessForDatabase(dbNode, roles), allDatabaseAccess) match {
+        (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
           // denied
-          case (Some(false), _) => acc
-          case (_, Some(false)) => acc
+          case (Some(false), _, _, _) => acc
+          case (_, Some(false), _, _) => acc
+          case (_, _, Some(false), true) => acc
 
           // granted
-          case (_, Some(true)) => acc :+ dbName
-          case (Some(true), _) => acc :+ dbName
+          case (Some(true), _, _, _) => acc :+ dbName
+          case (_, Some(true), _, _) => acc :+ dbName
+          case (_, _, Some(true), true) => acc :+ dbName
 
           // no privilege
           case _ => acc
