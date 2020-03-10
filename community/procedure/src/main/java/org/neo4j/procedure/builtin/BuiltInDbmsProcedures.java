@@ -19,6 +19,8 @@
  */
 package org.neo4j.procedure.builtin;
 
+import java.security.NoSuchAlgorithmException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +29,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
@@ -43,9 +47,13 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
+import org.neo4j.storageengine.api.StoreIdProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.procedure.Mode.DBMS;
+import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
+import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
 
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures
@@ -63,6 +71,18 @@ public class BuiltInDbmsProcedures
 
     @Context
     public SecurityContext securityContext;
+
+    @SystemProcedure
+    @Description( "Provides information regarding the DBMS." )
+    @Procedure( name = "dbms.info", mode = DBMS )
+    public Stream<SystemInfo> databaseInfo() throws NoSuchAlgorithmException
+    {
+        var systemGraph = getSystemDatabase();
+        var storeIdProvider = getSystemDatabaseStoreIdProvider( systemGraph );
+        var externalStoreId = storeIdProvider.getExternalStoreId();
+        var creationTime = formatTime( externalStoreId.getCreationTime(), getConfiguredTimeZone() );
+        return Stream.of( new SystemInfo( decodeId( externalStoreId, storeIdProvider.getStoreId() ), systemGraph.databaseName(), creationTime ) );
+    }
 
     @Admin
     @SystemProcedure
@@ -165,6 +185,36 @@ public class BuiltInDbmsProcedures
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
         log.info( "Called db.clearQueryCaches(): " + result );
         return Stream.of( new StringResult( result ) );
+    }
+
+    private GraphDatabaseAPI getSystemDatabase()
+    {
+        return (GraphDatabaseAPI) graph.getDependencyResolver().resolveDependency( DatabaseManagementService.class ).database( SYSTEM_DATABASE_NAME );
+    }
+
+    private StoreIdProvider getSystemDatabaseStoreIdProvider( GraphDatabaseAPI databaseAPI )
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
+    }
+
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
+    public static class SystemInfo
+    {
+        public final String id;
+        public final String name;
+        public final String creationDate;
+
+        public SystemInfo( String id, String name, String creationDate )
+        {
+            this.id = id;
+            this.name = name;
+            this.creationDate = creationDate;
+        }
     }
 
     public static class FunctionResult

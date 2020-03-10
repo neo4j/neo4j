@@ -670,6 +670,18 @@ class MetaDataStoreTest
     }
 
     @Test
+    void generateExternalStoreUUIDOnCreation()
+    {
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            var externalStoreId = metaDataStore.getExternalStoreId();
+            var externalUUID = externalStoreId.getId().orElseThrow();
+            assertThat( externalUUID.getLeastSignificantBits() ).isNotZero();
+            assertThat( externalUUID.getMostSignificantBits() ).isNotZero();
+        }
+    }
+
+    @Test
     void readAllFieldsMustThrowOnPageOverflow()
     {
         try ( MetaDataStore store = newMetaDataStore() )
@@ -756,9 +768,9 @@ class MetaDataStoreTest
         newMetaDataStore( pageCacheTracer );
 
         assertThat( pageCacheTracer.faults() ).isOne();
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 21 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 21 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 20 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 23 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 23 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 22 );
     }
 
     @Test

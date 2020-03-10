@@ -40,6 +40,10 @@ public interface ProcedureITBase
     default List<Object[]> getExpectedCommunityProcs()  // they have a column for roles but that should be ignored on community and expected to be null
     {
         return List.of(
+                proc( "db.info", "() :: (id :: STRING?, name :: STRING?, creationDate :: STRING?)", "Provides information regarding the database.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ", true ),
+                proc( "dbms.info", "() :: (id :: STRING?, name :: STRING?, creationDate :: STRING?)", "Provides information regarding the DBMS.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", true ),
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.constraints", "() :: (name :: STRING?, description :: STRING?)", "List all constraints in the database.",

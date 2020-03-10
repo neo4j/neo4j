@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
@@ -60,6 +61,32 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         // This makes sure that "db" is always system in this file.
         // It is not initialized with the security model and you should never try to change to a user db
         return SYSTEM_DATABASE_NAME;
+    }
+
+    @Test
+    void databaseInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbInfoRow = procedureResult.get( 0 );
+        assertThat( dbInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
+        assertThat( dbInfoRow ).hasSize( 3 );
+    }
+
+    @Test
+    void dbmsInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbmsInfoRow = procedureResult.get( 0 );
+        assertThat( dbmsInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
+        assertThat( dbmsInfoRow ).hasSize( 3 );
     }
 
     @Test

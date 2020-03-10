@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
@@ -56,6 +58,8 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -67,6 +71,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
+    private static final UUID NOT_INITIALISED_EXTERNAL_STORE_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
     /*
      *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
      *  constraint tx | upgrade time | upgrade id
@@ -92,7 +97,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                                                      "has been written into" ),
         LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" ),
         UPGRADE_TRANSACTION_COMMIT_TIMESTAMP( 14, "Commit timestamp of transaction the most recent upgrade was performed at" ),
-        LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP( 15, "Timestamp of last attempt to perform a recovery on the store with missing files." );
+        LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP( 15, "Timestamp of last attempt to perform a recovery on the store with missing files." ),
+        EXTERNAL_STORE_UUID_MOST_SIGN_BITS( 16, "Database identifier exposed as external store identity. " +
+                "Generated on creation and never updated. Most significant bits." ),
+        EXTERNAL_STORE_UUID_LEAST_SIGN_BITS( 17, "Database identifier exposed as external store identity. " +
+                "Generated on creation and never updated. Least significant bits" );
 
         private final int id;
         private final String description;
@@ -127,6 +136,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile int upgradeTxChecksumField = (int) FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
+    private volatile UUID externalStoreUUID = NOT_INITIALISED_EXTERNAL_STORE_UUID;
     private final PageCacheTracer pageCacheTracer;
 
     private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
@@ -184,9 +194,17 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 cursorTracer );
         setStoreVersion( storeVersionAsLong, cursorTracer );
         setLatestConstraintIntroducingTx( 0, cursorTracer );
+        setExternalStoreUUID( UUID.randomUUID(), cursorTracer );
 
         initHighId();
         flush( cursorTracer );
+    }
+
+    private void setExternalStoreUUID( UUID uuid, PageCursorTracer cursorTracer )
+    {
+        assertNotClosed();
+        setRecord( EXTERNAL_STORE_UUID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursorTracer );
+        setRecord( EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorTracer );
     }
 
     // Only for initialization and recovery, so we don't need to lock the records
@@ -338,6 +356,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );
     }
 
+    @Override
+    public ExternalStoreId getExternalStoreId()
+    {
+        assertNotClosed();
+        var externalStoreUUID = getExternalStoreUUID();
+        return isNotInitialisedExternalUUID( externalStoreUUID ) ? new ExternalStoreId( getCreationTime() )
+                                                                 : new ExternalStoreId( externalStoreUUID, getCreationTime() );
+    }
+
     public static StoreId getStoreId( PageCache pageCache, File neoStore, PageCursorTracer cursorTracer ) throws IOException
     {
         return new StoreId(
@@ -390,6 +417,21 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 throw new UnderlyingStorageException( e );
             }
         }
+    }
+
+    private UUID getExternalStoreUUID()
+    {
+        assertNotClosed();
+        if ( isNotInitialisedExternalUUID( externalStoreUUID ) )
+        {
+            refreshFields();
+        }
+        return externalStoreUUID;
+    }
+
+    private boolean isNotInitialisedExternalUUID( UUID uuid )
+    {
+        return NOT_INITIALISED_EXTERNAL_STORE_UUID.equals( uuid );
     }
 
     public long getCreationTime()
@@ -540,6 +582,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
                     BASE_TX_COMMIT_TIMESTAMP );
 
+            externalStoreUUID = readExternalStoreUUID( cursor );
+
             upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
         }
         while ( cursor.shouldRetry() );
@@ -550,6 +594,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     cursor.getCurrentPageId() + " of file " + storageFile.getAbsolutePath() + ", which is " +
                     cursor.getCurrentPageSize() + " bytes in size" );
         }
+    }
+
+    private UUID readExternalStoreUUID( PageCursor cursor )
+    {
+        long mostSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+        long leastSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+        return new UUID( mostSignificantBits, leastSignificantBits );
     }
 
     long getRecordValue( PageCursor cursor, Position position )

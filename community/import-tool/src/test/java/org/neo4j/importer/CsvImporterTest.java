@@ -107,8 +107,8 @@ class CsvImporterTest
         csvImporter.doImport();
 
         assertThat( cacheTracer.faults() ).isEqualTo( 19 );
-        assertThat( cacheTracer.pins() ).isEqualTo( 394 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 394 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 375 );
+        assertThat( cacheTracer.pins() ).isEqualTo( 396 );
+        assertThat( cacheTracer.unpins() ).isEqualTo( 396 );
+        assertThat( cacheTracer.hits() ).isEqualTo( 377 );
     }
 }

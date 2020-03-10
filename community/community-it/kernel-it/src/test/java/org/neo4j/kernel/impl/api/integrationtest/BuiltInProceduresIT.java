@@ -64,10 +64,13 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -94,6 +97,32 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         // Then
         assertThat( asList( stream ) ).containsExactly( new AnyValue[]{stringValue( "MyLabel" )} );
+    }
+
+    @Test
+    void databaseInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbInfoRow = procedureResult.get( 0 );
+        assertThat( dbInfoRow ).contains( stringValue( db.databaseName() ) );
+        assertThat( dbInfoRow ).hasSize( 3 );
+    }
+
+    @Test
+    void dbmsInfo() throws ProcedureException
+    {
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "info" ) ).id(), new AnyValue[0], EMPTY );
+
+        var procedureResult = asList( stream );
+        assertFalse( procedureResult.isEmpty() );
+        var dbmsInfoRow = procedureResult.get( 0 );
+        assertThat( dbmsInfoRow ).contains( stringValue( SYSTEM_DATABASE_NAME ) );
+        assertThat( dbmsInfoRow ).hasSize( 3 );
     }
 
     @Test

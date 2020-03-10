@@ -19,6 +19,8 @@
  */
 package org.neo4j.procedure.builtin;
 
+import java.security.NoSuchAlgorithmException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,6 +34,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -63,6 +67,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -72,6 +77,8 @@ import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
 import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
+import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
@@ -93,6 +100,17 @@ public class BuiltInProcedures
 
     @Context
     public ProcedureCallContext callContext;
+
+    @SystemProcedure
+    @Description( "Provides information regarding the database." )
+    @Procedure( name = "db.info", mode = READ )
+    public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException
+    {
+        var storeIdProvider = graphDatabaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
+        var externalStoreId = storeIdProvider.getExternalStoreId();
+        var creationTime = formatTime( externalStoreId.getCreationTime(), getConfiguredTimeZone() );
+        return Stream.of( new DatabaseInfo( decodeId( externalStoreId, storeIdProvider.getStoreId() ), graphDatabaseAPI.databaseName(), creationTime ) );
+    }
 
     @SystemProcedure
     @Description( "List all available labels in the database." )
@@ -505,6 +523,12 @@ public class BuiltInProcedures
         return propertyNames;
     }
 
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( kernelTransaction, resolver.resolveDependency( IndexingService.class ) );
@@ -532,6 +556,20 @@ public class BuiltInProcedures
         private PropertyKeyResult( String propertyKey )
         {
             this.propertyKey = propertyKey;
+        }
+    }
+
+    public static class DatabaseInfo
+    {
+        public final String id;
+        public final String name;
+        public final String creationDate;
+
+        public DatabaseInfo( String id, String name, String creationDate )
+        {
+            this.id = id;
+            this.name = name;
+            this.creationDate = creationDate;
         }
     }
 
