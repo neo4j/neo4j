@@ -36,6 +36,8 @@ case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex
     if (shouldGetValue)
       Some(asCachedProperty(entity))
     else None
+
+  def propertyKeyId: Int = propertyKeyToken.nameId.id
 }
 
 // This can be extended later on with: GetValuesPartially
