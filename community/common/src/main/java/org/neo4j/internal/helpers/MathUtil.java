@@ -52,47 +52,6 @@ public final class MathUtil
         return first / total;
     }
 
-    public static boolean numbersEqual( double fpn, long in )
-    {
-        if ( in < 0 )
-        {
-            if ( fpn < 0.0 )
-            {
-                if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == in;
-                }
-                else if ( fpn < Long.MIN_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) ) // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        else
-        {
-            if ( !(fpn < 0.0) )
-            {
-                if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == in;
-                }
-                else if ( fpn > Long.MAX_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) )  // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        return false;
-    }
-
     // Tested by PropertyValueComparisonTest
     public static int compareDoubleAgainstLong( double lhs, long rhs )
     {
@@ -160,4 +119,3 @@ public final class MathUtil
         }
     }
 }
-
