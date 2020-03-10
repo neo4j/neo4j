@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -44,6 +45,8 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
  */
 public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 {
+    String RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING = "relationship_type_scan_store_enable";
+
     /**
      * Create a new {@link LabelScanStore}.
      */
@@ -61,6 +64,16 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     {
         return new NativeTokenScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 RELATIONSHIP );
+    }
+
+    static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        if ( FeatureToggles.flag( TokenScanStore.class, RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING, false ) )
+        {
+            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector );
+        }
+        return EmptyRelationshipTypeScanStore.instance;
     }
 
     /**

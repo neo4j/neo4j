@@ -63,6 +63,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,6 +86,7 @@ import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStore;
+import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @PageCacheExtension
@@ -594,11 +596,37 @@ public class TokenScanStoreTest
     void shouldReportRelationshipEntityIfRelationshipTypeScanStore()
     {
         // When
-        RelationshipTypeScanStore labelScanStore =
+        RelationshipTypeScanStore relationshipTypeScanStore =
                 relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
 
         // When
-        assertThat( labelScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
+        assertThat( relationshipTypeScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
+    }
+
+    @Test
+    void toggledRelationshipTypeScanStoreShouldBeOffByDefault()
+    {
+        RelationshipTypeScanStore relationshipTypeScanStore =
+                toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+
+        assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyRelationshipTypeScanStore.class );
+    }
+
+    @Test
+    void toggledRelationshipTypeScanStoreShouldBeOnByFeatureToggle()
+    {
+        FeatureToggles.set( TokenScanStore.class, TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING, true );
+        try
+        {
+            RelationshipTypeScanStore relationshipTypeScanStore =
+                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+
+            assertThat( relationshipTypeScanStore ).isInstanceOf( NativeTokenScanStore.class );
+        }
+        finally
+        {
+            FeatureToggles.clear( TokenScanStore.class, TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING );
+        }
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
