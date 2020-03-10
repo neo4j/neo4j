@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -46,6 +45,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -109,8 +109,7 @@ class LabelAndIndexUpdateBatchingIT
 
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        TransactionCommitProcess commitProcess =
-                db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+        TransactionCommitProcess commitProcess = db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         try
         {
             int cutoffIndex = findCutoffIndex( transactions );
@@ -122,8 +121,8 @@ class LabelAndIndexUpdateBatchingIT
             // THEN node N should've ended up in the index too
             try ( Transaction tx = db.beginTx() )
             {
-                Assertions.assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, otherNode ) ), "Verification node not found" ); // just to verify
-                Assertions.assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, nodeN ) ), "Node N not found" );
+                assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, otherNode ) ), "Verification node not found" ); // just to verify
+                assertNotNull( singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, nodeN ) ), "Node N not found" );
                 tx.commit();
             }
         }

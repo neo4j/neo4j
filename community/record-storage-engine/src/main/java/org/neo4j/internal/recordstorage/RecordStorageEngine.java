@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -55,6 +56,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -64,7 +66,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
@@ -122,6 +123,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final GBPTreeCountsStore countsStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+    private final Map<TransactionApplicationMode,TransactionApplierFactoryChain> applierChains = new EnumMap<>( TransactionApplicationMode.class );
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -180,6 +182,44 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             neoStores.close();
             throw failure;
         }
+    }
+
+    private void buildApplierChains()
+    {
+        for ( TransactionApplicationMode mode : TransactionApplicationMode.values() )
+        {
+            applierChains.put( mode, buildApplierFacadeChain( mode ) );
+        }
+    }
+
+    private TransactionApplierFactoryChain buildApplierFacadeChain( TransactionApplicationMode mode )
+    {
+        Supplier<IdUpdateListener> listenerSupplier = mode == REVERSE_RECOVERY ? () -> IdUpdateListener.IGNORE :
+                                                      () -> new EnqueuingIdUpdateListener( idGeneratorWorkSyncs, cacheTracer );
+        ArrayList<TransactionApplierFactory> appliers = new ArrayList<>();
+        // Graph store application. The order of the decorated store appliers is irrelevant
+        if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
+        {
+            appliers.add( new ConsistencyCheckingApplierFactory( neoStores ) );
+        }
+        appliers.add( new NeoStoreTransactionApplierFactory( mode, neoStores, cacheAccess, lockService( mode ) ) );
+        if ( mode.needsHighIdTracking() )
+        {
+            appliers.add( new HighIdTransactionApplierFactory( neoStores ) );
+        }
+        if ( mode.needsCacheInvalidationOnUpdates() )
+        {
+            appliers.add( new CacheInvalidationTransactionApplierFactory( neoStores, cacheAccess ) );
+        }
+        if ( mode.needsAuxiliaryStores() )
+        {
+            // Counts store application
+            appliers.add( new CountsStoreTransactionApplierFactory( countsStore ) );
+
+            // Schema index application
+            appliers.add( new IndexTransactionApplierFactory( indexUpdateListener ) );
+        }
+        return new TransactionApplierFactoryChain( listenerSupplier, appliers.toArray( new TransactionApplierFactory[0] ) );
     }
 
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config, LogProvider logProvider,
@@ -300,16 +340,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
     {
-        // Have these command appliers as separate try-with-resource to have better control over
-        // point between closing this and the locks above
+        TransactionApplierFactoryChain batchApplier = applierChain( mode );
         CommandsToApply initialBatch = batch;
-        try ( IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
-              LockGroup locks = new LockGroup();
-              BatchTransactionApplier batchApplier = applier( mode, indexActivator ) )
+        try ( BatchContext context = new BatchContext( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync,
+                neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorTracer(),
+                batchApplier.getIdUpdateListenerSupplier().get() ) )
         {
             while ( batch != null )
             {
-                try ( TransactionApplier txApplier = batchApplier.startTx( batch, locks ) )
+                try ( TransactionApplier txApplier = batchApplier.startTx( batch, context ) )
                 {
                     batch.accept( txApplier );
                 }
@@ -326,41 +365,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     /**
-     * Creates a {@link BatchTransactionApplierFacade} that is to be used for all transactions
+     * Provides a {@link TransactionApplierFactoryChain} that is to be used for all transactions
      * in a batch. Each transaction is handled by a {@link TransactionApplierFacade} which wraps the
-     * individual {@link TransactionApplier}s returned by the wrapped {@link BatchTransactionApplier}s.
-     *
-     * After all transactions have been applied the appliers are closed.
+     * individual {@link TransactionApplier}s returned by the wrapped {@link TransactionApplierFactory}s.
      */
-    protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
+    protected TransactionApplierFactoryChain applierChain( TransactionApplicationMode mode )
     {
-        ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
-        // Graph store application. The order of the decorated store appliers is irrelevant
-        if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
-        {
-            appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
-        }
-        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, cacheTracer ) );
-        if ( mode.needsHighIdTracking() )
-        {
-            appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
-        }
-        if ( mode.needsCacheInvalidationOnUpdates() )
-        {
-            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
-        }
-        if ( mode.needsAuxiliaryStores() )
-        {
-            // Counts store application
-            appliers.add( new CountsStoreBatchTransactionApplier( countsStore ) );
-
-            // Schema index application
-            appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync,
-                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
-        }
-
-        // Perform the application
-        return new BatchTransactionApplierFacade( appliers.toArray( new BatchTransactionApplier[0] ) );
+        return applierChains.get( mode );
     }
 
     private LockService lockService( TransactionApplicationMode mode )
@@ -371,6 +382,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void init()
     {
+        buildApplierChains();
     }
 
     @Override

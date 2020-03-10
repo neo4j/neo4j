@@ -25,12 +25,11 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.recordstorage.ConsistencyCheckingBatchApplier.ConsistencyCheckingApplier;
+import org.neo4j.internal.recordstorage.ConsistencyCheckingApplierFactory.ConsistencyCheckingApplier;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -47,6 +46,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
@@ -79,8 +79,10 @@ class ConsistencyCheckingApplierTest
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         checker = new ConsistencyCheckingApplier( relationshipStore, PageCursorTracer.NULL );
+        BatchContext batchContext = mock( BatchContext.class );
+        when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                new LockGroup(), IdUpdateListener.IGNORE, PageCursorTracer.NULL );
+                batchContext, PageCursorTracer.NULL );
         appliers = new TransactionApplier[]{checker, applier};
     }
 

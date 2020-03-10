@@ -28,9 +28,8 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.recordstorage.BatchTransactionApplierFacade;
-import org.neo4j.internal.recordstorage.IndexActivator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.TransactionApplierFactoryChain;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
@@ -86,20 +85,21 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
-            DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+            DatabaseLayout databaseLayout, Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, EntityTokenUpdateListener nodeLabelUpdateListener,
             EntityTokenUpdateListener relationshipTypeUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        RecordStorageEngine engine = life.add(
+        RecordStorageEngine engine =
                 new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),
                         constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
-                        new DefaultIdController(), transactionApplierTransformer ) );
+                        new DefaultIdController(), transactionApplierTransformer );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
         engine.addRelationshipTypeUpdateListener( relationshipTypeUpdateListener );
+        life.add( engine );
         return engine;
     }
 
@@ -118,7 +118,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 new DatabasePanicEventGenerator( new DatabaseEventListeners( NullLog.getInstance() ), DEFAULT_DATABASE_NAME ),
                 NullLog.getInstance() );
         private final DatabaseLayout databaseLayout;
-        private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
+        private Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private EntityTokenUpdateListener nodeLabelUpdateListener = new EntityTokenUpdateListener.Adapter();
@@ -162,7 +162,7 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         public Builder transactionApplierTransformer(
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
+                Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
         {
             this.transactionApplierTransformer = transactionApplierTransformer;
             return this;
@@ -231,7 +231,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private static class ExtendedRecordStorageEngine extends RecordStorageEngine
     {
-        private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
+        private final Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain>
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
@@ -240,7 +240,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 IndexConfigCompleter indexConfigCompleter,
                 LockService lockService, Health databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
+                Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter, lockService,
                     databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true );
@@ -248,9 +248,9 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         @Override
-        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
+        protected TransactionApplierFactoryChain applierChain( TransactionApplicationMode mode )
         {
-            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode, indexActivator );
+            TransactionApplierFactoryChain recordEngineApplier = super.applierChain( mode );
             return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }

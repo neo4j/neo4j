@@ -26,19 +26,16 @@ import java.util.Collections;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -49,19 +46,17 @@ class NeoTransactionIndexApplierTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
-    private final EntityTokenUpdateListener relationshipTypeUpdateListener = mock( EntityTokenUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
-    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
-    private final LockGroup lockGroup = new LockGroup();
+    private final BatchContext batchContext = mock( BatchContext.class, RETURNS_MOCKS );
 
     @Test
     void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        IndexTransactionApplierFactory applier = newIndexTransactionApplier();
         NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, emptyDynamicRecords );
         NodeRecord after = new NodeRecord( 12 );
@@ -70,7 +65,7 @@ class NeoTransactionIndexApplierTest
 
         // when
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
         {
             result = txApplier.visitNodeCommand( command );
         }
@@ -78,11 +73,9 @@ class NeoTransactionIndexApplierTest
         assertFalse( result );
     }
 
-    private IndexBatchTransactionApplier newIndexTransactionApplier()
+    private IndexTransactionApplierFactory newIndexTransactionApplier()
     {
-        PropertyStore propertyStore = mock( PropertyStore.class );
-        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, relationshipTypeScanStoreSync, indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore, mock( StorageEngine.class ), schemaCache, new IndexActivator( indexingService ) );
+        return new IndexTransactionApplierFactory( indexingService );
     }
 
     @Test
@@ -91,7 +84,7 @@ class NeoTransactionIndexApplierTest
         // Given
         IndexDescriptor indexRule = indexRule( 1, 42, 42 );
 
-        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        IndexTransactionApplierFactory applier = newIndexTransactionApplier();
 
         SchemaRecord before = new SchemaRecord( 1 );
         SchemaRecord after = before.copy().initialize( true, 39 );
@@ -100,7 +93,7 @@ class NeoTransactionIndexApplierTest
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
         {
             result = txApplier.visitSchemaRuleCommand( command );
         }
@@ -121,7 +114,7 @@ class NeoTransactionIndexApplierTest
         // Given
         IndexDescriptor indexRule = indexRule( 1, 42, 42 );
 
-        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        IndexTransactionApplierFactory applier = newIndexTransactionApplier();
 
         SchemaRecord before = new SchemaRecord( 1 ).initialize( true, 39 );
         SchemaRecord after = new SchemaRecord( 1 );
@@ -129,7 +122,7 @@ class NeoTransactionIndexApplierTest
 
         // When
         boolean result;
-        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, lockGroup ) )
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply, batchContext ) )
         {
             result = txApplier.visitSchemaRuleCommand( command );
         }

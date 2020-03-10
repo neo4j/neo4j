@@ -25,7 +25,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**
- * Responsible for a single transaction. See also {@link BatchTransactionApplier} which returns an implementation of
+ * Responsible for a single transaction. See also {@link TransactionApplierFactory} which returns an implementation of
  * this class. Should typically be used in a try-with-resources block, f.ex.:
  * <pre>
  * {@code

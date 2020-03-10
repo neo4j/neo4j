@@ -38,10 +38,8 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
@@ -79,14 +77,12 @@ class SchemaRuleCommandTest
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
     private final EntityTokenUpdateListener relationshipTypeUpdateListener = mock( EntityTokenUpdateListener.class );
-    private NeoStoreBatchTransactionApplier storeApplier;
+    private NeoStoreTransactionApplierFactory storeApplier;
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
-    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer,
-            relationshipTypeScanStoreSync, indexUpdatesSync, mock( NodeStore.class ), propertyStore, storageEngine, schemaCache,
-            new IndexActivator( indexes ) );
+    private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory( indexUpdateListener );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
@@ -98,8 +94,7 @@ class SchemaRuleCommandTest
         {
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
         }
-        storeApplier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE,
-                idGeneratorWorkSyncs, PageCacheTracer.NULL );
+        storeApplier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     }
 
     @Test
@@ -286,7 +281,7 @@ class SchemaRuleCommandTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( readSchemaCommand.getSchemaRule(), propertyKey ) );
     }
 
-    private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
+    private void visitSchemaRuleCommand( TransactionApplierFactory applier, SchemaRuleCommand command ) throws Exception
     {
         CommandHandlerContract.apply( applier, new GroupOfCommands( txId, command ) );
     }

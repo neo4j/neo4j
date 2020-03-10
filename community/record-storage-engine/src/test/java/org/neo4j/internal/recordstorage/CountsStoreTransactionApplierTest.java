@@ -24,14 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.lock.LockGroup;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 class CountsStoreTransactionApplierTest
@@ -43,11 +41,10 @@ class CountsStoreTransactionApplierTest
         final CountsStore counts = mock( CountsStore.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( counts.apply( anyLong(), any( PageCursorTracer.class ) ) ).thenReturn( updater );
-        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( counts );
+        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts );
 
         // WHEN
-        try ( var lockGroup = new LockGroup();
-              TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), lockGroup ) )
+        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), mock( BatchContext.class ) ) )
         {
             txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
         }

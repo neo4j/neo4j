@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.lock.LockGroup;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,12 +32,12 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class BatchTransactionApplierFacadeTest
+class TransactionApplierFactoryChainTest
 {
-    private BatchTransactionApplierFacade facade;
-    private BatchTransactionApplier applier1;
-    private BatchTransactionApplier applier2;
-    private BatchTransactionApplier applier3;
+    private TransactionApplierFactoryChain facade;
+    private TransactionApplierFactory applier1;
+    private TransactionApplierFactory applier2;
+    private TransactionApplierFactory applier3;
     private TransactionApplier txApplier1;
     private TransactionApplier txApplier2;
     private TransactionApplier txApplier3;
@@ -46,18 +46,18 @@ class BatchTransactionApplierFacadeTest
     void setUp() throws Exception
     {
         txApplier1 = mock( TransactionApplier.class );
-        applier1 = mock( BatchTransactionApplier.class );
-        when( applier1.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier1 );
+        applier1 = mock( TransactionApplierFactory.class );
+        when( applier1.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier1 );
 
         txApplier2 = mock( TransactionApplier.class );
-        applier2 = mock( BatchTransactionApplier.class );
-        when( applier2.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier2 );
+        applier2 = mock( TransactionApplierFactory.class );
+        when( applier2.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier2 );
 
         txApplier3 = mock( TransactionApplier.class );
-        applier3 = mock( BatchTransactionApplier.class );
-        when( applier3.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier3 );
+        applier3 = mock( TransactionApplierFactory.class );
+        when( applier3.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier3 );
 
-        facade = new BatchTransactionApplierFacade( applier1, applier2, applier3 );
+        facade = new TransactionApplierFactoryChain( () -> IdUpdateListener.IGNORE, applier1, applier2, applier3 );
     }
 
     @Test
@@ -65,17 +65,17 @@ class BatchTransactionApplierFacadeTest
     {
         // GIVEN
         var tx = mock( CommandsToApply.class );
-        var lockGroup = mock( LockGroup.class );
+        var batchContext = mock( BatchContext.class );
 
         // WHEN
-        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, lockGroup );
+        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, batchContext );
 
         // THEN
         InOrder inOrder = inOrder( applier1, applier2, applier3 );
 
-        inOrder.verify( applier1 ).startTx( tx, lockGroup );
-        inOrder.verify( applier2 ).startTx( tx, lockGroup );
-        inOrder.verify( applier3 ).startTx( tx, lockGroup );
+        inOrder.verify( applier1 ).startTx( tx, batchContext );
+        inOrder.verify( applier2 ).startTx( tx, batchContext );
+        inOrder.verify( applier3 ).startTx( tx, batchContext );
 
         assertEquals( txApplier1, result.appliers[0] );
         assertEquals( txApplier2, result.appliers[1] );
@@ -88,37 +88,21 @@ class BatchTransactionApplierFacadeTest
     {
         // GIVEN
         CommandsToApply tx = mock( CommandsToApply.class );
-        LockGroup lockGroup = mock( LockGroup.class );
+        var batchContext = mock( BatchContext.class );
 
         // WHEN
-        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, lockGroup );
+        TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx, batchContext );
 
         // THEN
         InOrder inOrder = inOrder( applier1, applier2, applier3 );
 
-        inOrder.verify( applier1 ).startTx( tx, lockGroup );
-        inOrder.verify( applier2 ).startTx( tx, lockGroup );
-        inOrder.verify( applier3 ).startTx( tx, lockGroup );
+        inOrder.verify( applier1 ).startTx( tx, batchContext );
+        inOrder.verify( applier2 ).startTx( tx, batchContext );
+        inOrder.verify( applier3 ).startTx( tx, batchContext );
 
         assertEquals( txApplier1, result.appliers[0] );
         assertEquals( txApplier2, result.appliers[1] );
         assertEquals( txApplier3, result.appliers[2] );
         assertEquals( 3, result.appliers.length );
-    }
-
-    @Test
-    void closeShouldBeDoneInReverseOrder() throws Exception
-    {
-        // No idea why it was done like this before refactoring
-
-        // WHEN
-        facade.close();
-
-        // THEN
-        InOrder inOrder = inOrder( applier1, applier2, applier3 );
-
-        inOrder.verify( applier3 ).close();
-        inOrder.verify( applier2 ).close();
-        inOrder.verify( applier1 ).close();
     }
 }

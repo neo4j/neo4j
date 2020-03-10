@@ -50,15 +50,15 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final PageCursorTracer cursorTracer;
 
     public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, LockGroup lockGroup, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+            long transactionId, BatchContext batchContext, PageCursorTracer cursorTracer )
     {
         this.version = version;
-        this.lockGroup = lockGroup;
+        this.lockGroup = batchContext.getLockGroup();
         this.transactionId = transactionId;
         this.lockService = lockService;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
-        this.idUpdateListener = idUpdateListener;
+        this.idUpdateListener = batchContext.getIdUpdateListener();
         this.cursorTracer = cursorTracer;
     }
 

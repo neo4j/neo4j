@@ -20,20 +20,19 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsStore;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
+class CountsStoreTransactionApplierFactory implements TransactionApplierFactory
 {
     private final CountsStore countsStore;
 
-    CountsStoreBatchTransactionApplier( CountsStore countsStore )
+    CountsStoreTransactionApplierFactory( CountsStore countsStore )
     {
         this.countsStore = countsStore;
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
+    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
         return new CountsStoreTransactionApplier( countsStore.apply( transaction.transactionId(), transaction.cursorTracer() ) );
     }

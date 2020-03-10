@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 
-import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
@@ -29,39 +28,38 @@ import org.neo4j.storageengine.api.CommandsToApply;
  *
  * Typical usage looks like:
  * <pre>
- * try ( BatchTransactionApplier batchApplier = getBatchApplier() )
+ * TransactionApplierFactory applierFactory = getApplierFactory();
+ *
+ * TransactionToApply tx = batch;
+ * while ( tx != null )
  * {
- *     TransactionToApply tx = batch;
- *     while ( tx != null )
+ *     try ( var batchContext = createBatchContext() )
  *     {
- *         try ( LockGroup locks = new LockGroup() )
+ *         try ( TransactionApplier txApplier = applierFactory.startTx( tx, batchContext ) )
  *         {
- *             ensureValidatedIndexUpdates( tx );
- *             try ( TransactionApplier txApplier = batchApplier.startTx( tx, locks ) )
- *             {
- *                 tx.transactionRepresentation().accept( txApplier );
- *             }
+ *             tx.transactionRepresentation().accept( txApplier );
  *         }
- *         catch ( Throwable cause )
- *         {
- *             databaseHealth.panic( cause );
- *             throw cause;
- *         }
- *         tx = tx.next();
  *     }
+ *     catch ( Throwable cause )
+ *     {
+ *         databaseHealth.panic( cause );
+ *         throw cause;
+ *     }
+ *     tx = tx.next();
  * }
+ *
  * </pre>
  */
-public interface BatchTransactionApplier extends AutoCloseable
+public interface TransactionApplierFactory
 {
     /**
      * Get the suitable {@link TransactionApplier} for a given transaction, and the store which this {@link
-     * BatchTransactionApplier} is associated with.
+     * TransactionApplierFactory} is associated with.
      *
      * Typically you'd want to use this in a try-with-resources block to automatically close the {@link
      * TransactionApplier} when finished with the transaction, f.ex. as:
      * <pre>
-     * try ( TransactionApplier txApplier = batchTxApplier.startTx( txToApply )
+     * try ( TransactionApplier txApplier = applierFactory.startTx( txToApply )
      * {
      *     // Apply the transaction
      *     txToApply.transactionRepresentation().accept( txApplier );
@@ -72,26 +70,9 @@ public interface BatchTransactionApplier extends AutoCloseable
      *
      * @param transaction The transaction which this applier is going to apply. Once we don't have to validate index
      * updates anymore, we can change this to simply be the transactionId
-     * @param lockGroup A lockGroup which can hold the locks that the transaction requires.
+     * @param batchContext TODO:
      * @return a {@link TransactionApplier} which can apply this transaction and other commands to the store.
      * @throws IOException on error.
      */
-    TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException;
-
-    /**
-     * This method is suitable for any work that needs to be done after a batch of transactions. Typically called
-     * implicitly at the end of a try-with-resources block.
-     *
-     * @throws Exception on error.
-     */
-    @Override
-    void close() throws Exception;
-
-    abstract class Adapter implements BatchTransactionApplier
-    {
-        @Override
-        public void close() throws Exception
-        {   // Nothing to close
-        }
-    }
+    TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext ) throws IOException;
 }

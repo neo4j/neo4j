@@ -128,8 +128,8 @@ class ApplyRecoveredTransactionsTest
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
         }
 
-        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
-                lockService, idGeneratorWorkSyncs, PageCacheTracer.NULL );
+        NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
+                lockService );
         CommandsToApply tx = new GroupOfCommands( transactionId, commands );
         CommandHandlerContract.apply( applier, txApplier ->
         {

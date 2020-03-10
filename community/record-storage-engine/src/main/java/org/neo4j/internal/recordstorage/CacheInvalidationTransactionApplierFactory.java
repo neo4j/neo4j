@@ -20,21 +20,22 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-public class HighIdBatchTransactionApplier extends BatchTransactionApplier.Adapter
+public class CacheInvalidationTransactionApplierFactory implements TransactionApplierFactory
 {
     private final NeoStores neoStores;
+    private final CacheAccessBackDoor cacheAccess;
 
-    public HighIdBatchTransactionApplier( NeoStores neoStores )
+    public CacheInvalidationTransactionApplierFactory( NeoStores neoStores, CacheAccessBackDoor cacheAccess )
     {
         this.neoStores = neoStores;
+        this.cacheAccess = cacheAccess;
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
+    public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
-        return new HighIdTransactionApplier( neoStores );
+        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, transaction.cursorTracer() );
     }
 }

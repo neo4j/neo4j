@@ -20,19 +20,26 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.EnumMap;
+import java.util.Map;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
+import org.neo4j.util.concurrent.WorkSync;
 
 class EnqueuingIdUpdateListener implements IdUpdateListener
 {
     private final EnumMap<IdType,ChangedIds> idUpdates;
+    private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs;
+    private final PageCacheTracer pageCacheTracer;
 
-    EnqueuingIdUpdateListener( EnumMap<IdType,ChangedIds> idUpdates )
+    EnqueuingIdUpdateListener( Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs, PageCacheTracer pageCacheTracer )
     {
-        this.idUpdates = idUpdates;
+        this.pageCacheTracer = pageCacheTracer;
+        this.idUpdates = new EnumMap<>( IdType.class );
+        this.idGeneratorWorkSyncs = idGeneratorWorkSyncs;
     }
 
     @Override
@@ -45,5 +52,25 @@ class EnqueuingIdUpdateListener implements IdUpdateListener
     public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
     {
         idUpdates.computeIfAbsent( idType, k -> new ChangedIds() ).addUnusedId( id );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        // Run through the id changes and apply them, or rather apply them asynchronously.
+        // This allows multiple concurrent threads applying batches of transactions to help each other out so that
+        // there's a higher chance that changes to different id types can be applied in parallel.
+        for ( Map.Entry<IdType,ChangedIds> idChanges : idUpdates.entrySet() )
+        {
+            ChangedIds unit = idChanges.getValue();
+            unit.applyAsync( idGeneratorWorkSyncs.get( idChanges.getKey() ), pageCacheTracer );
+        }
+
+        // Wait for all id updates to complete
+        for ( Map.Entry<IdType,ChangedIds> idChanges : idUpdates.entrySet() )
+        {
+            ChangedIds unit = idChanges.getValue();
+            unit.awaitApply();
+        }
     }
 }

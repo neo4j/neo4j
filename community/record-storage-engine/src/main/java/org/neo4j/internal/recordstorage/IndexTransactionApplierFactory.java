@@ -23,139 +23,37 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabels;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.util.concurrent.AsyncApply;
-import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
- * Gather node and property changes, converting them into logical updates to the indexes. {@link #close()} will actually
- * apply the indexes.
+ * Factory for applier that gather node and property changes,
+ * converting them into logical updates to the indexes.
  */
-public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
+public class IndexTransactionApplierFactory implements TransactionApplierFactory
 {
     private final IndexUpdateListener indexUpdateListener;
-    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
-    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
-    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
-    private final SingleTransactionApplier transactionApplier;
-    private final IndexActivator indexActivator;
-    private final PropertyStore propertyStore;
-    private final StorageEngine storageEngine;
-    private final SchemaCache schemaCache;
 
-    private List<EntityTokenUpdate> labelUpdates;
-    private List<EntityTokenUpdate> relationshipTypeUpdates;
-    private IndexUpdates indexUpdates;
-    private long txId;
-    private PageCursorTracer cursorTracer;
-
-    public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
-            WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync,
-            WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync,
-            WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore,
-            PropertyStore propertyStore, StorageEngine storageEngine,
-            SchemaCache schemaCache, IndexActivator indexActivator )
+    public IndexTransactionApplierFactory( IndexUpdateListener indexUpdateListener )
     {
         this.indexUpdateListener = indexUpdateListener;
-        this.labelScanStoreSync = labelScanStoreSync;
-        this.relationshipTypeScanStoreSync = relationshipTypeScanStoreSync;
-        this.indexUpdatesSync = indexUpdatesSync;
-        this.propertyStore = propertyStore;
-        this.storageEngine = storageEngine;
-        this.schemaCache = schemaCache;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore );
-        this.indexActivator = indexActivator;
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
+    public TransactionApplier startTx( CommandsToApply commands, BatchContext batchContext )
     {
-        txId = transaction.transactionId();
-        cursorTracer = transaction.cursorTracer();
-        return transactionApplier;
-    }
-
-    private void applyPendingLabelAndIndexUpdates() throws IOException
-    {
-        AsyncApply labelUpdatesApply = null;
-        AsyncApply relationshipTypeUpdatesApply = null;
-        if ( labelUpdates != null )
-        {
-            // Updates are sorted according to node id here, an artifact of node commands being sorted
-            // by node id when extracting from TransactionRecordState.
-            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates, cursorTracer ) );
-            labelUpdates = null;
-        }
-        if ( relationshipTypeUpdates != null )
-        {
-            relationshipTypeUpdatesApply = relationshipTypeScanStoreSync.applyAsync( new TokenUpdateWork( relationshipTypeUpdates, cursorTracer ) );
-            relationshipTypeUpdates = null;
-        }
-        if ( indexUpdates != null && indexUpdates.hasUpdates() )
-        {
-            try
-            {
-                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates, cursorTracer ) );
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush index updates", e );
-            }
-            indexUpdates = null;
-        }
-
-        if ( labelUpdatesApply != null )
-        {
-            try
-            {
-                labelUpdatesApply.await();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush label updates", e );
-            }
-        }
-        if ( relationshipTypeUpdatesApply != null )
-        {
-            try
-            {
-                relationshipTypeUpdatesApply.await();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush relationship type updates", e );
-            }
-        }
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        applyPendingLabelAndIndexUpdates();
-        if ( indexUpdates != null )
-        {
-            indexUpdates.close();
-        }
+        return new SingleTransactionApplier( commands, batchContext );
     }
 
     /**
@@ -165,23 +63,27 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
      */
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
-        private final NodeStore nodeStore;
+        private final long txId;
         private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
         private List<IndexDescriptor> createdIndexes;
+        private final IndexActivator indexActivator;
+        private final BatchContext batchContext;
 
-        SingleTransactionApplier( NodeStore nodeStore )
+        SingleTransactionApplier( CommandsToApply commands, BatchContext batchContext )
         {
-            this.nodeStore = nodeStore;
+            this.txId = commands.transactionId();
+            this.indexActivator = batchContext.getIndexActivator();
+            this.batchContext = batchContext;
         }
 
         @Override
-        public void close()
+        public void close() throws IOException
         {
             if ( indexUpdatesExtractor.containsAnyEntityOrPropertyUpdate() )
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
-                indexUpdates().feed( indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands() );
+                batchContext.indexUpdates().feed( indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands() );
                 indexUpdatesExtractor.close();
             }
 
@@ -191,16 +93,6 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 indexUpdateListener.createIndexes( createdIndexes.toArray( new IndexDescriptor[0] ) );
                 createdIndexes = null;
             }
-        }
-
-        private IndexUpdates indexUpdates()
-        {
-            if ( indexUpdates == null )
-            {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, cursorTracer ),
-                        storageEngine.newReader(), cursorTracer );
-            }
-            return indexUpdates;
         }
 
         @Override
@@ -219,11 +111,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 long[] labelsAfter = labelFieldAfter.getIfLoaded();
                 if ( labelsBefore != null && labelsAfter != null )
                 {
-                    if ( labelUpdates == null )
-                    {
-                        labelUpdates = new ArrayList<>();
-                    }
-                    labelUpdates.add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
+                    batchContext.labelUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
                 }
             }
 
@@ -244,14 +132,9 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             long[] afterArray = afterType == -1 || !after.inUse() ? EMPTY_LONG_ARRAY : new long[]{afterType};
             if ( !Arrays.equals( beforeArray, afterArray ) )
             {
-                if ( relationshipTypeUpdates == null )
-                {
-                    relationshipTypeUpdates = new ArrayList<>();
-                }
-                relationshipTypeUpdates.add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
+                batchContext.relationshipTypeUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
             }
 
-            // for indexes
             return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
 
@@ -281,7 +164,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // In that scenario the index would be created, populated and then fed the [this time duplicate]
                 // update for the node created before the index. The most straight forward solution is to
                 // apply pending index updates up to this point in this batch before index schema changes occur.
-                applyPendingLabelAndIndexUpdates();
+                batchContext.applyPendingLabelAndIndexUpdates();
 
                 switch ( commandMode )
                 {

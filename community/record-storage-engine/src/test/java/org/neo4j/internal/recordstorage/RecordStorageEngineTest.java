@@ -44,9 +44,9 @@ import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
-import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
@@ -125,10 +125,13 @@ class RecordStorageEngineTest
         verify( databaseHealth ).panic( any( Throwable.class ) );
     }
 
-    private static BatchTransactionApplierFacade transactionApplierFacadeTransformer(
-            BatchTransactionApplierFacade facade, Exception failure )
+    private static TransactionApplierFactoryChain transactionApplierFacadeTransformer(
+            TransactionApplierFactoryChain facade, Exception failure )
     {
-        return new FailingBatchTransactionApplierFacade( failure, facade );
+        return new CapturingTransactionApplierFactoryChain( value ->
+        {
+            throw new RuntimeException( failure );
+        } ).wrapAroundActualApplier( facade );
     }
 
     @Test
@@ -191,7 +194,7 @@ class RecordStorageEngineTest
         Lock nodeLock = mock( Lock.class );
         when( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) ).thenReturn( nodeLock );
         Consumer<Boolean> applierCloseCall = mock( Consumer.class ); // <-- simply so that we can use InOrder mockito construct
-        CapturingBatchTransactionApplierFacade applier = new CapturingBatchTransactionApplierFacade( applierCloseCall );
+        CapturingTransactionApplierFactoryChain applier = new CapturingTransactionApplierFactoryChain( applierCloseCall );
         RecordStorageEngine engine = recordStorageEngineBuilder()
                 .lockService( lockService )
                 .transactionApplierTransformer( applier::wrapAroundActualApplier )
@@ -256,50 +259,91 @@ class RecordStorageEngineTest
         return transaction;
     }
 
-    private static class FailingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
-    {
-        private final Exception failure;
-
-        FailingBatchTransactionApplierFacade( Exception failure, BatchTransactionApplier... appliers )
-        {
-            super( appliers );
-            this.failure = failure;
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-            throw failure;
-        }
-    }
-
-    private static class CapturingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
+    private static class CapturingTransactionApplierFactoryChain extends TransactionApplierFactoryChain
     {
         private final Consumer<Boolean> applierCloseCall;
-        private BatchTransactionApplierFacade actual;
+        private TransactionApplierFactoryChain actual;
 
-        CapturingBatchTransactionApplierFacade( Consumer<Boolean> applierCloseCall )
+        CapturingTransactionApplierFactoryChain( Consumer<Boolean> applierCloseCall )
         {
+            super( () -> IdUpdateListener.IGNORE );
             this.applierCloseCall = applierCloseCall;
         }
 
-        CapturingBatchTransactionApplierFacade wrapAroundActualApplier( BatchTransactionApplierFacade actual )
+        CapturingTransactionApplierFactoryChain wrapAroundActualApplier( TransactionApplierFactoryChain actual )
         {
             this.actual = actual;
             return this;
         }
 
         @Override
-        public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
+        public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext ) throws IOException
         {
-            return actual.startTx( transaction, lockGroup );
-        }
+            final TransactionApplier transactionApplier = actual.startTx( transaction, batchContext );
+            return new TransactionApplier()
+            {
 
-        @Override
-        public void close() throws Exception
-        {
-            applierCloseCall.accept( true );
-            actual.close();
+                public boolean visit( StorageCommand element ) throws IOException
+                {
+                    return transactionApplier.visit( element );
+                }
+
+                public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+                {
+                    return transactionApplier.visitNodeCommand( command );
+                }
+
+                public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+                {
+                    return transactionApplier.visitRelationshipCommand( command );
+                }
+
+                public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
+                {
+                    return transactionApplier.visitPropertyCommand( command );
+                }
+
+                public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+                {
+                    return transactionApplier.visitRelationshipGroupCommand( command );
+                }
+
+                public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
+                {
+                    return transactionApplier.visitRelationshipTypeTokenCommand( command );
+                }
+
+                public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
+                {
+                    return transactionApplier.visitLabelTokenCommand( command );
+                }
+
+                public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
+                {
+                    return transactionApplier.visitPropertyKeyTokenCommand( command );
+                }
+
+                public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
+                {
+                    return transactionApplier.visitSchemaRuleCommand( command );
+                }
+
+                public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
+                {
+                    return transactionApplier.visitNodeCountsCommand( command );
+                }
+
+                public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
+                {
+                    return transactionApplier.visitRelationshipCountsCommand( command );
+                }
+
+                public void close() throws Exception
+                {
+                    applierCloseCall.accept( true );
+                    transactionApplier.close();
+                }
+            };
         }
     }
 }

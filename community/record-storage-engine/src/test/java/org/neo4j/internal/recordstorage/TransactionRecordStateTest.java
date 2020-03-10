@@ -554,7 +554,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN a store that has got a node with a dynamic label record
-        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
+        TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
@@ -572,7 +572,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN a store that has got a node with a dynamic label record
-        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
+        TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
@@ -830,7 +830,7 @@ class TransactionRecordStateTest
             }
             tx.nodeAddProperty( nodes[3], 0, Values.of( "old" ) );
             tx.nodeAddProperty( nodes[4], 0, Values.of( "old" ) );
-            BatchTransactionApplier applier = buildApplier( locks );
+            TransactionApplierFactory applier = buildApplier( locks );
             apply( applier, transaction( tx ) );
         }
         reset( locks );
@@ -849,7 +849,7 @@ class TransactionRecordStateTest
         tx.nodeAddProperty( nodes[6], 0, Values.of( "value" ) );
 
         //commit( tx );
-        BatchTransactionApplier applier = buildApplier( locks );
+        TransactionApplierFactory applier = buildApplier( locks );
         apply( applier, transaction( tx ) );
 
         // then
@@ -882,7 +882,7 @@ class TransactionRecordStateTest
         tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
-        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
+        TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( tx ) );
 
         tx = newTransactionRecordState();
@@ -1547,32 +1547,31 @@ class TransactionRecordStateTest
         return recordState;
     }
 
-    private void apply( BatchTransactionApplier applier, CommandsToApply transaction ) throws Exception
+    private void apply( TransactionApplierFactory applier, CommandsToApply transaction ) throws Exception
     {
         CommandHandlerContract.apply( applier, transaction );
     }
 
     private void apply( CommandsToApply transaction ) throws Exception
     {
-        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
+        TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction );
     }
 
     private void apply( TransactionRecordState state ) throws Exception
     {
-        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
+        TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( state ) );
     }
 
-    private BatchTransactionApplier buildApplier( LockService noLockService )
+    private TransactionApplierFactory buildApplier( LockService noLockService )
     {
         Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
         for ( IdType idType : IdType.values() )
         {
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
         }
-        return new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService, idGeneratorWorkSyncs,
-                PageCacheTracer.NULL );
+        return new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService );
     }
 
     private TransactionRecordState newTransactionRecordState()

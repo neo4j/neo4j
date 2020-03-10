@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
@@ -42,6 +41,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -64,16 +64,15 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
-import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -153,7 +152,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
         NodeRecord after = new NodeRecord( 12 );
@@ -175,7 +174,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
         NodeRecord after = new NodeRecord( 12 );
@@ -197,7 +196,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStoreInRecoveryMode() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
         NodeRecord after = new NodeRecord( 12 );
@@ -221,7 +220,7 @@ class NeoStoreTransactionApplierTest
     void shouldInvalidateTheCacheWhenTheNodeBecomesDense() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, singletonList( one ) );
         before.setInUse( true );
@@ -248,7 +247,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         RelationshipRecord before = new RelationshipRecord( 12 );
         RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
@@ -267,7 +266,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         RelationshipRecord before = new RelationshipRecord( 12 );
         RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
@@ -287,7 +286,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         RelationshipRecord before = new RelationshipRecord( 12 );
         RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
@@ -309,7 +308,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodePropertyCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         PropertyRecord before = new PropertyRecord( 11 );
         PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
@@ -329,7 +328,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodePropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         PropertyRecord before = new PropertyRecord( 11 );
         PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
@@ -350,7 +349,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelPropertyCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         PropertyRecord before = new PropertyRecord( 11 );
         PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
@@ -369,7 +368,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelPropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         PropertyRecord before = new PropertyRecord( 11 );
         PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
@@ -391,7 +390,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipGroupCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         // when
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
@@ -408,7 +407,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipGroupCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         // when
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
@@ -429,7 +428,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipTypeTokenCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
         after.setInUse( true );
@@ -449,7 +448,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipTypeTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
 
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
@@ -477,7 +476,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyLabelTokenCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         LabelTokenRecord before = new LabelTokenRecord( 42 );
         LabelTokenRecord after = new LabelTokenRecord( 42 );
         after.setInUse( true );
@@ -497,7 +496,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyLabelTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         LabelTokenRecord before = new LabelTokenRecord( 42 );
         LabelTokenRecord after = new LabelTokenRecord( 42 );
         after.setInUse( true );
@@ -524,7 +523,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyPropertyKeyTokenCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
         after.setInUse( true );
@@ -544,7 +543,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyPropertyKeyTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
 
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
@@ -570,7 +569,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
+        TransactionApplierFactory applier = newApplierFacade( newApplier( false ), newIndexApplier() );
         IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
         SchemaRecord before = new SchemaRecord( rule.getId() );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -592,7 +591,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
@@ -615,7 +614,9 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
+        var batchContext = new BatchContext( indexingService, labelScanStoreSynchronizer, relationshipTypeScanStoreSync, indexUpdatesSync, nodeStore,
+                propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, IdUpdateListener.IGNORE );
+        TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
@@ -623,7 +624,7 @@ class NeoStoreTransactionApplierTest
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
-        boolean result = apply( applier, command::handle, transactionToApply );
+        boolean result = apply( applier, command::handle, batchContext, transactionToApply );
 
         // then
         assertFalse( result );
@@ -637,14 +638,16 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        var batchContext = new BatchContext( indexingService, labelScanStoreSynchronizer, relationshipTypeScanStoreSync, indexUpdatesSync, nodeStore,
+                propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, IdUpdateListener.IGNORE );
+        TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         IndexDescriptor rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
-        boolean result = apply( applier, command::handle, transactionToApply );
+        boolean result = apply( applier, command::handle, batchContext, transactionToApply );
 
         // then
         assertFalse( result );
@@ -659,25 +662,31 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newIndexApplier( );
-        doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( any() );
+        var batchContext = mock( BatchContext.class );
+        var indexActivator = mock( IndexActivator.class );
+        when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
+        TransactionApplierFactory applier = newIndexApplier( );
+        var runtimeException = new RuntimeException( "" );
+        doThrow( runtimeException ).when( indexActivator ).activateIndex( any() );
 
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         IndexDescriptor rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
-        var e = assertThrows( Exception.class, () -> apply( applier, command::handle, transactionToApply ) );
-        assertThat( e.getCause() ).isInstanceOf( IndexNotFoundKernelException.class );
+        var e = assertThrows( Exception.class, () -> apply( applier, command::handle, batchContext, transactionToApply ) );
+        assertSame( runtimeException, e );
     }
 
     @Test
     void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier base = newApplier( false );
-        BatchTransactionApplier indexApplier = newIndexApplier();
-        BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
+        TransactionApplierFactory base = newApplier( false );
+        TransactionApplierFactory indexApplier = newIndexApplier();
+        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+        TransactionApplierFactoryChain applier = new TransactionApplierFactoryChain(
+                () -> new EnqueuingIdUpdateListener( idGeneratorWorkSyncs, PageCacheTracer.NULL ), base, indexApplier );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.copy().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
@@ -698,7 +707,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.copy().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
@@ -720,7 +729,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
@@ -743,7 +752,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
@@ -767,7 +776,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
@@ -789,7 +798,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
@@ -812,7 +821,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( false );
+        TransactionApplierFactory applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.copy().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
@@ -833,7 +842,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        BatchTransactionApplier applier = newApplier( true );
+        TransactionApplierFactory applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.copy().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
@@ -851,40 +860,46 @@ class NeoStoreTransactionApplierTest
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
-    private BatchTransactionApplier newApplier( boolean recovery )
+    private TransactionApplierFactory newApplier( boolean recovery )
     {
-        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
-        for ( IdType idType : IdType.values() )
-        {
-            idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
-        }
-        BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, cacheAccess, lockService, idGeneratorWorkSyncs,
-                PageCacheTracer.NULL );
+        TransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, cacheAccess, lockService );
         if ( recovery )
         {
-            applier = newApplierFacade( new HighIdBatchTransactionApplier( neoStores ), applier,
-                    new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
+            applier = newApplierFacade( new HighIdTransactionApplierFactory( neoStores ), applier,
+                    new CacheInvalidationTransactionApplierFactory( neoStores, cacheAccess ) );
         }
         return applier;
     }
 
-    private BatchTransactionApplier newApplierFacade( BatchTransactionApplier... appliers )
+    private TransactionApplierFactory newApplierFacade( TransactionApplierFactory... appliers )
     {
-        return new BatchTransactionApplierFacade( appliers );
+        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+        return new TransactionApplierFactoryChain( () -> new EnqueuingIdUpdateListener( idGeneratorWorkSyncs, PageCacheTracer.NULL ), appliers );
     }
 
-    private BatchTransactionApplier newIndexApplier()
+    private TransactionApplierFactory newIndexApplier()
     {
-        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                relationshipTypeScanStoreSync, indexUpdatesSync, nodeStore, propertyStore,
-                mock( StorageEngine.class ), schemaCache, indexActivator );
+        return new IndexTransactionApplierFactory( indexingService );
     }
 
-    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, CommandsToApply transactionToApply ) throws Exception
+    private boolean apply( TransactionApplierFactory applier, ApplyFunction function, CommandsToApply transactionToApply ) throws Exception
     {
         try
         {
             return CommandHandlerContract.apply( applier, function, transactionToApply );
+        }
+        finally
+        {
+            indexActivator.close();
+        }
+    }
+
+    private boolean apply( TransactionApplierFactory applier, ApplyFunction function, BatchContext context,
+            CommandsToApply transactionToApply ) throws Exception
+    {
+        try ( context )
+        {
+            return CommandHandlerContract.apply( applier, function, context, transactionToApply );
         }
         finally
         {

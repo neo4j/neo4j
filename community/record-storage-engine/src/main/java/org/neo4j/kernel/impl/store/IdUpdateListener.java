@@ -24,7 +24,7 @@ import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-public interface IdUpdateListener
+public interface IdUpdateListener extends AutoCloseable
 {
     void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer );
 
@@ -32,6 +32,12 @@ public interface IdUpdateListener
 
     IdUpdateListener DIRECT = new IdUpdateListener()
     {
+        @Override
+        public void close()
+        {
+            // no-op
+        }
+
         @Override
         public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {
@@ -53,6 +59,12 @@ public interface IdUpdateListener
 
     IdUpdateListener IGNORE = new IdUpdateListener()
     {
+        @Override
+        public void close()
+        {
+            // no-op
+        }
+
         @Override
         public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
         {   // no-op

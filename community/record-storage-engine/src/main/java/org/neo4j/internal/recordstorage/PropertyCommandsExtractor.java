@@ -22,33 +22,29 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
-import org.neo4j.lock.LockGroup;
-import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 
 /**
- * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
  * Gathers node/property commands by node id, preparing for extraction of updates.
  */
 public class PropertyCommandsExtractor extends TransactionApplier.Adapter
-        implements BatchTransactionApplier
 {
-    private final EntityCommandGrouper<NodeCommand> nodeCommands = new EntityCommandGrouper<>( NodeCommand.class, 16 );
-    private final EntityCommandGrouper<RelationshipCommand> relationshipCommands = new EntityCommandGrouper<>( RelationshipCommand.class, 16 );
+    private EntityCommandGrouper<NodeCommand> nodeCommands;
+    private EntityCommandGrouper<RelationshipCommand> relationshipCommands;
     private boolean hasUpdates;
 
-    @Override
-    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
+    public PropertyCommandsExtractor()
     {
-        return this;
+        nodeCommands = new EntityCommandGrouper<>( NodeCommand.class, 16 );
+        relationshipCommands = new EntityCommandGrouper<>( RelationshipCommand.class, 16 );
     }
 
     @Override
     public void close()
     {
-        nodeCommands.clear();
-        relationshipCommands.clear();
+        nodeCommands = null;
+        relationshipCommands = null;
     }
 
     @Override

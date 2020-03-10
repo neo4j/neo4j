@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -37,7 +38,6 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,12 +46,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
-class IndexBatchTransactionApplierTest
+class IndexTransactionApplierFactoryTest
 {
     @Test
     void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
@@ -63,12 +64,12 @@ class IndexBatchTransactionApplierTest
         WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = mock( WorkSync.class );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
-        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync,
-                indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore, mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ) ) )
+        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
+        try ( var batchContext = new BatchContext( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync, indexUpdatesSync,
+                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL,
+                mock( IdUpdateListener.class ) ) )
         {
-            try ( var lockGroup = new LockGroup();
-                  TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )
+            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
             {
                 // WHEN
                 txApplier.visitNodeCommand( node( 15 ) );
@@ -88,7 +89,6 @@ class IndexBatchTransactionApplierTest
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
         OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
         WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
-        WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = mock( WorkSync.class );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
@@ -103,26 +103,24 @@ class IndexBatchTransactionApplierTest
         IndexDescriptor rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
         IndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
         IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
-        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
-                relationshipTypeScanStoreSync, indexUpdatesSync, mock( NodeStore.class ), propertyStore,
-                mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
+        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
+        var batchContext = mock( BatchContext.class );
+        when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
+        when( batchContext.indexUpdates() ).thenReturn( mock( IndexUpdates.class ) );
+        when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
+        try ( var txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
         {
-            try ( var lockGroup = new LockGroup();
-                  TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), lockGroup ) )
-            {
-                // WHEN
-                // activate index 1
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule1.getId() ), asSchemaRecord( rule1, true ), rule1 ) );
+            // activate index 1
+            txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule1.getId() ), asSchemaRecord( rule1, true ), rule1 ) );
 
-                // activate index 2
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule2.getId() ), asSchemaRecord( rule2, true ), rule2 ) );
+            // activate index 2
+            txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule2.getId() ), asSchemaRecord( rule2, true ), rule2 ) );
 
-                // activate index 3
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule3.getId() ), asSchemaRecord( rule3, true ), rule3 ) );
+            // activate index 3
+            txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule3.getId() ), asSchemaRecord( rule3, true ), rule3 ) );
 
-                // drop index 2
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( asSchemaRecord( rule2, true ), asSchemaRecord( rule2, false ), rule2 ) );
-            }
+            // drop index 2
+            txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( asSchemaRecord( rule2, true ), asSchemaRecord( rule2, false ), rule2 ) );
         }
 
         verify( indexUpdateListener ).dropIndex( rule2 );
