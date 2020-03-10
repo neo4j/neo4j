@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -43,10 +42,10 @@ import org.neo4j.values.virtual.MapValue
  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
  */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                      queryHandler: QueryHandler = QueryHandler.handleError(identity),
+                                      queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
                                       source: Option[ExecutionPlan] = None,
                                       checkCredentialsExpired: Boolean = true,
-                                      parameterGenerator: Transaction => MapValue = _ => MapValue.EMPTY)
+                                      parameterGenerator: KernelTransaction => MapValue = _ => MapValue.EMPTY)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -64,8 +63,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
-      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction()))
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
+      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.kernelTransaction()))
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
       val execution = normalExecutionEngine.executeSubQuery(query, updatedSystemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
@@ -90,7 +89,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
  * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
  * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
  */
-class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
+class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler, params: MapValue) extends QuerySubscriber {
   @volatile private var empty = true
   @volatile private var ignore = false
   @volatile private var failed: Option[Throwable] = None
@@ -101,7 +100,7 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
 
   override def onResultCompleted(statistics: QueryStatistics): Unit = {
     if (empty) {
-      queryHandler.onNoResults().foreach {
+      queryHandler.onNoResults(params).foreach {
         case Left(error) =>
           inner.onError(error)
           failed = Some(error)
@@ -129,7 +128,7 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onField(offset: Int, value: AnyValue): Unit = {
-    queryHandler.onResult(offset, value).foreach {
+    queryHandler.onResult(offset, value, params).foreach {
       case Left(error) =>
         inner.onError(error)
         failed = Some(error)
@@ -142,7 +141,7 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onError(throwable: Throwable): Unit = {
-    val handledError = queryHandler.onError(throwable)
+    val handledError = queryHandler.onError(throwable, params)
     inner.onError(handledError)
     failed = Some(handledError)
   }

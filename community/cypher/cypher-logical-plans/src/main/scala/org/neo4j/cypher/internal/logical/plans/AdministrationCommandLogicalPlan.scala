@@ -54,10 +54,10 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 
 // Security administration commands
 case class ShowUsers(source: PrivilegePlan)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: String, initialPassword: Either[Array[Byte], Parameter],
+case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], initialPassword: Either[Array[Byte], Parameter],
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DropUser(source: SecurityAdministrationLogicalPlan, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class AlterUser(source: PrivilegePlan, userName: String, initialPassword: Option[Either[Array[Byte], Parameter]],
+case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter], initialPassword: Option[Either[Array[Byte], Parameter]],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class SetOwnPassword(newPassword: Either[Array[Byte], Parameter], currentPassword: Either[Array[Byte], Parameter])
                          (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
@@ -71,9 +71,10 @@ case class CopyRolePrivileges(source: SecurityAdministrationLogicalPlan, to: Str
 
 abstract class PrivilegePlan(source: Option[PrivilegePlan] = None)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
-case class AssertDbmsAdmin(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDbmsAdmin(actions: AdminAction*)(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDbmsAdminOrSelf(user: String, actions: AdminAction*)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
-case class AssertNotCurrentUser(source: PrivilegePlan, userName: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class AssertNotCurrentUser(source: PrivilegePlan, userName: Either[String, Parameter], verb: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class GrantDbmsAction(source: PrivilegePlan, action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyDbmsAction(source: PrivilegePlan, action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
@@ -99,12 +100,12 @@ case class GrantWrite(source: PrivilegePlan, database: GraphScope, qualifier: Pr
 case class DenyWrite(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeWrite(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String, revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
-case class ShowPrivileges(source: PrivilegePlan, scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class ShowPrivileges(source: Option[PrivilegePlan], scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class EnsureNodeExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 // Database administration commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan

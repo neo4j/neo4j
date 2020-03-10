@@ -20,36 +20,11 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.SystemCommandRuntimeName
-import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
-import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
-import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.virtual.MapValue
 
-case class AuthorizationPredicateExecutionPlan(predicate: () => Boolean, source: Option[ExecutionPlan] = None,
-                                               violationMessage: String = PERMISSION_DENIED) extends ChainedExecutionPlan(source) {
-  override def runSpecific(originalCtx: SystemUpdateCountingQueryContext,
-                           executionMode: ExecutionMode,
-                           params: MapValue,
-                           prePopulateResults: Boolean,
-                           ignore: InputDataStream,
-                           subscriber: QuerySubscriber): RuntimeResult = {
-    if (predicate()) {
-      NoRuntimeResult(subscriber)
-    } else {
-      throw new AuthorizationViolationException(violationMessage)
-    }
-  }
-
-  override def runtimeName: RuntimeName = SystemCommandRuntimeName
-
-  override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
-}
+case class AuthorizationPredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
+                                               violationMessage: String = PERMISSION_DENIED)
+  extends PredicateExecutionPlan(predicate, source, (_, _) => new AuthorizationViolationException(violationMessage))

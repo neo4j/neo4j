@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.string.UTF8
+import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -63,7 +64,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   def getPasswordFieldsCurrent(password: Either[Array[Byte], AnyRef]): (String, Value, MapValueConverter) =
-    getPasswordFields(password, prefix = "__current_internal_", hashPw = false)
+    getPasswordFields(password, prefix = "__current_internal_", rename = s => s"__current_${s}_bytes", hashPw = false)
 
   def getPasswordFields(password: Either[Array[Byte], AnyRef],
                         prefix: String = "__internal_",
@@ -79,14 +80,16 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
-      validatePasswordParameterType(parameterPassword)
+      validateStringParameterType(parameterPassword)
       (rename(parameterPassword.name), Values.NO_VALUE, PasswordParameterConverter(parameterPassword.name, rename, hashPw = hashPw))
   }
 
-  private def getValidPasswordParameter(params: MapValue, passwordParameter: String): String = {
+  private def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
     params.get(passwordParameter) match {
+      case bytes: ByteArray =>
+        bytes.asObjectCopy()
       case s: StringValue =>
-        s.stringValue()
+        UTF8.encode(s.stringValue())
       case Values.NO_VALUE =>
         throw new ParameterNotFoundException(s"Expected parameter(s): $passwordParameter")
       case other =>
@@ -94,11 +97,38 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def validatePasswordParameterType(param: ParameterFromSlot): Unit = {
+  private def validateStringParameterType(param: ParameterFromSlot): Unit = {
     param.parameterType match {
       case _:StringType =>
-      case _ => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.parameterType)
+      case _ => throw new ParameterWrongTypeException(s"Only ${StringType.instance} values are accepted as password, got: " + param.parameterType)
     }
+  }
+
+  protected def runtimeValuePW(field: Either[Array[Byte], AnyRef], params: MapValue): AnyRef = field match {
+    case Left(u) => u
+    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
+      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
+      getValidPasswordParameter(params, p.asInstanceOf[ParameterFromSlot].name)
+    case Right(p) if p.isInstanceOf[Parameter] =>
+      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
+      getValidPasswordParameter(params, p.asInstanceOf[Parameter].name)
+  }
+
+  protected def runtimeValue(field: Either[String, Parameter], params: MapValue): String = field match {
+    case Left(u) => u
+    case Right(p) => params.get(p.name).asInstanceOf[Value].asObject().toString
+  }
+
+  def getUsernameFields(userName: Either[String, AnyRef],
+                        prefix: String = "__internal_",
+                        rename: String => String = s => s): (String, Value, MapValueConverter) = userName match {
+    case Left(u) =>
+      (rename(s"${prefix}username"), Values.utf8Value(u), IdentityConverter)
+    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
+      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
+      val parameter = p.asInstanceOf[ParameterFromSlot]
+      validateStringParameterType(parameter)
+      (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename))
   }
 
   trait MapValueConverter extends Function[MapValue, MapValue] {
@@ -109,6 +139,17 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   case object IdentityConverter extends MapValueConverter
 
+  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s) extends MapValueConverter {
+    override def overlaps(other: MapValueConverter): Boolean = other match {
+      case RenamingParameterConverter(name, _) => name == parameter
+      case _ => false
+    }
+
+    override def apply(params: MapValue): MapValue = {
+      params.updatedWith(rename(parameter), params.get(parameter))
+    }
+  }
+
   case class PasswordParameterConverter(passwordParameter: String, rename: String => String = s => s, hashPw: Boolean = true) extends MapValueConverter {
     override def overlaps(other: MapValueConverter): Boolean = other match {
       case PasswordParameterConverter(name, _, _) => name == passwordParameter
@@ -116,7 +157,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
 
     override def apply(params: MapValue): MapValue = {
-      val encodedPassword = UTF8.encode(getValidPasswordParameter(params, passwordParameter))
+      val encodedPassword = getValidPasswordParameter(params, passwordParameter)
       validatePassword(encodedPassword)
       if (hashPw) {
         val hashedPassword = hashPassword(encodedPassword)
@@ -127,33 +168,39 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  def makeCreateUserExecutionPlan(userName: String,
+  def makeParameterValue(userName: Either[String, Parameter]): Value = userName match {
+    case Left(s) => Values.utf8Value(s)
+    case Right(_) => Values.NO_VALUE
+  }
+
+  def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
                                   password: Either[Array[Byte], Parameter],
                                   requirePasswordChange: Boolean,
                                   suspended: Boolean)(
                                    sourcePlan: Option[ExecutionPlan],
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+    val (userNameKey, userNameValue, userNameConverter) = getUsernameFields(userName)
     val (credentialsKey, credentialsValue, credentialsConverter) = getPasswordFields(password)
-    val mapValueConverter: MapValue => MapValue = credentialsConverter
+    val mapValueConverter: MapValue => MapValue = p => credentialsConverter(userNameConverter(p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$name, credentials: $$$credentialsKey, passwordChangeRequired: $$passwordChangeRequired, suspended: $$suspended})
+      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$$credentialsKey, passwordChangeRequired: $$passwordChangeRequired, suspended: $$suspended})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array("name", credentialsKey, "passwordChangeRequired", "suspended"),
+        Array(userNameKey, credentialsKey, "passwordChangeRequired", "suspended"),
         Array(
-          Values.utf8Value(userName),
+          userNameValue,
           credentialsValue,
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended))),
       QueryHandler
-        .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
-        .handleError(error => (error, error.getCause) match {
+        .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
+        .handleError((error, params) => (error, error.getCause) match {
           case (_, _: UniquePropertyValueValidationException) =>
-            new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", error)
+            new InvalidArgumentsException(s"Failed to create the specified user '${runtimeValue(userName, params)}': User already exists.", error)
           case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to create the specified user '$userName': $followerError", error)
-          case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", error)
+            new DatabaseAdministrationOnFollowerException(s"Failed to create the specified user '${runtimeValue(userName, params)}': $followerError", error)
+          case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.", error)
         }),
       sourcePlan,
       parameterConverter = mapValueConverter

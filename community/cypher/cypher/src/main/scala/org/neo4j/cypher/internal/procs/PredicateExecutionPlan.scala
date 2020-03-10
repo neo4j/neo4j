@@ -25,29 +25,25 @@ import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
-case class LoggingSystemCommandExecutionPlan(source: ExecutionPlan, commandString: String, logger: (String, SecurityContext) => Unit) extends ExecutionPlan {
-  override def run(ctx: QueryContext,
-                   executionMode: ExecutionMode,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   ignore: InputDataStream,
-                   subscriber: QuerySubscriber): RuntimeResult = {
-
-    val securityContext = ctx.transactionalContext.transaction.securityContext()
-    val sourceResult = source.run(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
-    sourceResult match {
-      case IgnoredRuntimeResult =>
-        IgnoredRuntimeResult
-      case result =>
-        logger.apply(commandString, securityContext)
-        result
+class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
+                                  onViolation: (MapValue, SecurityContext) => Exception) extends ChainedExecutionPlan(source) {
+  override def runSpecific(originalCtx: SystemUpdateCountingQueryContext,
+                           executionMode: ExecutionMode,
+                           params: MapValue,
+                           prePopulateResults: Boolean,
+                           ignore: InputDataStream,
+                           subscriber: QuerySubscriber): RuntimeResult = {
+    val securityContext = originalCtx.kernelTransactionalContext.securityContext()
+    if (predicate(params, securityContext)) {
+      NoRuntimeResult(subscriber)
+    } else {
+      throw onViolation(params, securityContext)
     }
   }
 

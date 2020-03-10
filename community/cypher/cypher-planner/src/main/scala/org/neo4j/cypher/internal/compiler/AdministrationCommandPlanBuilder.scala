@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabase
@@ -142,7 +143,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       val admin = plans.AssertDbmsAdmin(CreateRoleAction)
       ifExistsDo match {
         case _: IfExistsReplace => plans.DropRole(admin, roleName)
-        case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Role", roleName)
+        case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Role", Left(roleName))
         case _ => admin
       }
     }
@@ -156,7 +157,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         NameValidator.assertValidUsername(userName)
         val admin = plans.AssertDbmsAdmin(CreateUserAction)
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropUser(admin, userName)
+          case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction, CreateUserAction), userName, "replace", "Deleting yourself is not allowed"), userName)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "User", userName)
           case _ => admin
         }
@@ -166,7 +167,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // DROP USER foo [IF EXISTS]
       case c@DropUser(userName, ifExists) =>
-        val admin = plans.AssertDbmsAdmin(DropUserAction)
+        val admin = plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction), userName, "delete", "Deleting yourself is not allowed")
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "User", userName) else plans.EnsureNodeExists(admin, "User", userName)
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
@@ -174,7 +175,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
         val admin = plans.AssertDbmsAdmin(AlterUserAction)
         val assertionSubPlan =
-          if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, s"Failed to alter the specified user '$userName': Changing your own activation status is not allowed.")
+          if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin
         Some(plans.LogSystemCommand(
           plans.AlterUser(assertionSubPlan, userName, initialPassword.map(passwordEncoder), requirePasswordChange, suspended),
@@ -210,7 +211,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val admin = plans.AssertDbmsAdmin(DropRoleAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", roleName) else plans.EnsureNodeExists(admin, "Role", roleName)
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", Left(roleName)) else plans.EnsureNodeExists(admin, "Role", Left(roleName))
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
@@ -405,9 +406,15 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // SHOW [ALL | USER user | ROLE role] PRIVILEGES
+      // SHOW USER user PRIVILEGES
+      case ShowPrivileges(scope: ShowUserPrivileges) =>
+        val user = scope.user
+        val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, ShowPrivilegeAction)) else None
+        Some(plans.ShowPrivileges(source, scope))
+
+      // SHOW [ALL | ROLE role] PRIVILEGES
       case ShowPrivileges(scope) =>
-        Some(plans.ShowPrivileges(plans.AssertDbmsAdmin(ShowPrivilegeAction), scope))
+        Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope))
 
       // SHOW DATABASES
       case _: ShowDatabases =>
@@ -432,7 +439,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val admin = plans.AssertDbmsAdmin(CreateDatabaseAction)
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropDatabase(admin, normalizedName)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Database", normalizedName.name())
+          case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Database", Left(normalizedName.name()))
           case _ => admin
         }
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, normalizedName)))
@@ -441,7 +448,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case DropDatabase(dbName, ifExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", normalizedName.name()) else admin
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", Left(normalizedName.name())) else admin
         Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, normalizedName, "delete"), normalizedName))
 
       // START DATABASE foo

@@ -302,6 +302,9 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password $password" ->
         "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
 
+      "create user $abc set password $password" ->
+        "CREATE USER $abc SET PASSWORD $password CHANGE REQUIRED",
+
       "create user `ab%$c` if not exists set password 'foo'" ->
         "CREATE USER `ab%$c` IF NOT EXISTS SET PASSWORD '******' CHANGE REQUIRED",
 

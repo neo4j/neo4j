@@ -47,6 +47,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               queryHandler: QueryHandler,
                                               source: Option[ExecutionPlan] = None,
                                               checkCredentialsExpired: Boolean = true,
+                                              parameterGenerator: KernelTransaction => MapValue = _ => MapValue.EMPTY,
                                               parameterConverter: MapValue => MapValue = p => p)
   extends ChainedExecutionPlan(source) {
 
@@ -65,7 +66,9 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler)
+      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.kernelTransaction()))
+      val updatedParams = parameterConverter(updatedSystemParams.updatedWith(params))
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       try {
         tc.kernelTransaction().dataWrite() // assert that we are allowed to write
       } catch {
@@ -74,7 +77,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
 
-      val execution = normalExecutionEngine.executeSubQuery(query, parameterConverter(systemParams.updatedWith(params)), tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       try {
         execution.consumeAll()
       } catch {
@@ -108,52 +111,52 @@ class UpdatingSystemCommandExecutionResult(inner: InternalExecutionResult) exten
 case class IgnoreResults()
 
 class QueryHandler {
-  def onError(t: Throwable): Throwable = t
+  def onError(t: Throwable, p: MapValue): Throwable = t
 
-  def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = None
+  def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = None
 
-  def onNoResults(): Option[Either[Throwable, IgnoreResults]] = None
+  def onNoResults(p: MapValue): Option[Either[Throwable, IgnoreResults]] = None
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
-  override def onError(t: Throwable): Throwable = parent.onError(t)
+  override def onError(t: Throwable, p: MapValue): Throwable = parent.onError(t, p)
 
-  override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = parent.onResult(offset, value)
+  override def onResult(offset: Int, value: AnyValue, params: MapValue): Option[Either[Throwable, IgnoreResults]] = parent.onResult(offset, value, params)
 
-  override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults()
+  override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults(params)
 
-  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onError(t: Throwable): Throwable = t match {
+  def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onError(t: Throwable, p: MapValue): Throwable = t match {
       case t: TransientFailureException => t
-      case _ => f(t)
+      case _ => f(t, p)
     }
   }
 
-  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = f().map(t => Left(t))
+  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = f(params).map(t => Left(t))
   }
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
+    override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
   }
 
-  def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = handler(offset, value).map(t => Left(t))
+  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = handler(offset, value, p).map(t => Left(t))
   }
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
+    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
   }
 }
 
 object QueryHandler {
-  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
+  def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
 
-  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()
 
-  def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
+  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreOnResult()
 }

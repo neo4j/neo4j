@@ -148,6 +148,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -718,6 +719,11 @@ object Prettifier {
       else
         s"`$name`"
     }
+  }
+
+  def escapeName(name: Either[String, Parameter]): String = name match {
+    case Left(s) => escapeName(s)
+    case Right(p) => s"$$${p.name}"
   }
 
   def escapeNames(names: Seq[String]): String = names.map(escapeName).mkString(", ")

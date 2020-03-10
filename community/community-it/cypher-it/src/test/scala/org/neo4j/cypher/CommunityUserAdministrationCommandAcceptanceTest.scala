@@ -333,11 +333,11 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     executeOnSystem("neo4j", "neo4j", "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'bar'")
     execute("SHOW USERS").toSet should be(Set(user("neo4j", passwordChangeRequired = false)))
 
-    the[InvalidArgumentsException] thrownBy {
+    the[QueryExecutionException] thrownBy {
       // WHEN
       executeOnSystem("neo4j", "bar", "CREATE OR REPLACE USER neo4j SET PASSWORD 'baz'")
       // THEN
-    } should have message "Failed to delete the specified user 'neo4j': Deleting yourself is not allowed."
+    } should have message "Failed to replace the specified user 'neo4j': Deleting yourself is not allowed."
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j", passwordChangeRequired = false))
@@ -432,7 +432,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
 
-    the[InvalidArgumentsException] thrownBy {
+    the[QueryExecutionException] thrownBy {
       // WHEN
       executeOnSystem("foo", "bar", "DROP USER foo")
       // THEN
@@ -441,7 +441,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
 
-    the[InvalidArgumentsException] thrownBy {
+    the[QueryExecutionException] thrownBy {
       // WHEN
       executeOnSystem("foo", "bar", "DROP USER foo IF EXISTS")
       // THEN
@@ -736,7 +736,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword")
     }
     // THEN
-    e.getMessage should (be("Expected parameter(s): newPassword") or be("Expected parameter(s): currentPassword"))
+    e.getMessage should (be("Expected parameter(s): newPassword, currentPassword"))
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)

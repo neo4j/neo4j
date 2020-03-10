@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.frontend.PlannerName
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.Bound
@@ -410,6 +412,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case SetOwnPassword(_, _) =>
         PlanDescriptionImpl(id, "AlterCurrentUserSetPassword", NoChildren, Seq.empty, variables)
 
+      case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
+
       case ShowDatabase(normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
@@ -423,8 +428,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
-      case AssertDbmsAdmin(action) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(DbmsAction(action.name)), variables)
+      case AssertDbmsAdmin(actions@_*) =>
+        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, actions.map(a => DbmsAction(a.name)), variables)
+
+      case AssertDbmsAdminOrSelf(user, actions@_*) =>
+        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, actions.map(a => DbmsAction(a.name)) :+ User(Prettifier.escapeName(user)), variables)
 
       case AssertDatabaseAdmin(action, normalizedName) =>
         val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(normalizedName.name)))
@@ -726,7 +734,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (dbName, qualifierText) = extractGraphScope(database, qualifier)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
-      case ShowPrivileges(_, scope) =>
+      case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
       case CreateDatabase(_, normalizedName) =>
@@ -767,7 +775,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"EnsureNodeExists($label)", children, Seq(nameArgument), variables)
 
-      case AssertNotCurrentUser(_, userName, _) =>
+      case AssertNotCurrentUser(_, userName, _, _) =>
         PlanDescriptionImpl(id, "AssertNotCurrentUser", children, Seq(User(Prettifier.escapeName(userName))), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
@@ -1007,7 +1015,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   private def extractDatabaseArguments(action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String): Seq[Argument] =
     Seq(DatabaseAction(action.name), Database(extractDbScope(database))) ++ extractUserQualifier(qualifier).map(Qualifier).toSeq :+ getAnnotatedRoleArgument(roleName)
 
-  private def getNameArgumentForLabelInAdministrationCommand(label: String, name: String) = {
+  private def getNameArgumentForLabelInAdministrationCommand(label: String, name: Either[String, Parameter]) = {
     label match {
       case "User" => User(Prettifier.escapeName(name))
       case "Role" => Role(Prettifier.escapeName(name))

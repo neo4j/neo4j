@@ -67,25 +67,34 @@ final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseA
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateUser(userName: String,
+trait EitherAsString {
+  def eitherAsString(either: Either[String, Parameter]): String = either match {
+    case Left(u) => u
+    case Right(p) => s"$$${p.name}"
+  }
+}
+
+final case class CreateUser(userName: Either[String, Parameter],
                             initialPassword: Either[PasswordString, Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
-                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
   }
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userName': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userAsString': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
     case _ =>
       super.semanticCheck chain
         SemanticState.recordCurrentScope(this)
   }
+
+  private val userAsString: String = eitherAsString(userName)
 }
 
-final case class DropUser(userName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP USER"
 
@@ -94,7 +103,7 @@ final case class DropUser(userName: String, ifExists: Boolean)(val position: Inp
       SemanticState.recordCurrentScope(this)
 }
 
-final case class AlterUser(userName: String,
+final case class AlterUser(userName: Either[String, Parameter],
                            initialPassword: Option[Either[PasswordString, Parameter]],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {

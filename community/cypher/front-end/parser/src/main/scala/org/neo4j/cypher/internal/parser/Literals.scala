@@ -113,6 +113,9 @@ trait Literals extends Parser
   def Parameter: Rule1[expressions.Parameter] =
     parameterName ~~>> (expressions.Parameter(_, CTAny))
 
+  def StringParameter: Rule1[expressions.Parameter] =
+    parameterName ~~>> (expressions.Parameter(_, CTString))
+
   def SensitiveStringParameter: Rule1[expressions.Parameter] =
     parameterName ~~>> (name => pos => new expressions.Parameter(name, CTString)(pos) with expressions.SensitiveParameter)
 
