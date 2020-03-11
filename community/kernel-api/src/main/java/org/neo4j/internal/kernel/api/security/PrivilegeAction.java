@@ -80,11 +80,8 @@ public enum PrivilegeAction
                 @Override
                 public boolean satisfies( PrivilegeAction action )
                 {
-                    return USER_MANAGEMENT.satisfies( action ) ||
-                           ROLE_MANAGEMENT.satisfies( action ) ||
-                           PRIVILEGE_MANAGEMENT.satisfies( action ) ||
+                    return DBMS_ACTIONS.satisfies( action ) ||
                            TRANSACTION_MANAGEMENT.satisfies( action ) ||
-                           DATABASE_MANAGEMENT.satisfies( action ) ||
                            START_DATABASE.satisfies( action ) ||
                            STOP_DATABASE.satisfies( action ) ||
                            this == action;
@@ -272,6 +269,19 @@ public enum PrivilegeAction
                            INDEX.satisfies( action ) ||
                            CONSTRAINT.satisfies( action ) ||
                            TOKEN.satisfies( action ) ||
+                           this == action;
+                }
+            },
+
+    DBMS_ACTIONS
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    return ROLE_MANAGEMENT.satisfies( action ) ||
+                           USER_MANAGEMENT.satisfies( action ) ||
+                           DATABASE_MANAGEMENT.satisfies( action ) ||
+                           PRIVILEGE_MANAGEMENT.satisfies( action ) ||
                            this == action;
                 }
             };

@@ -45,6 +45,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ROLE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_MANAGEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DBMS_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
@@ -79,8 +80,7 @@ class PrivilegeActionTest
 
     static
     {
-        expected.put( ADMIN,
-                Set.of( DATABASE_MANAGEMENT, TRANSACTION_MANAGEMENT, ROLE_MANAGEMENT, USER_MANAGEMENT, PRIVILEGE_MANAGEMENT, START_DATABASE, STOP_DATABASE ) );
+        expected.put( ADMIN, Set.of( DBMS_ACTIONS, TRANSACTION_MANAGEMENT, START_DATABASE, STOP_DATABASE ) );
         expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION ) );
         expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
         expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, DROP_USER, ALTER_USER ) );
@@ -93,6 +93,7 @@ class PrivilegeActionTest
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
         expected.put( DATABASE_ACTIONS, Set.of( INDEX, CONSTRAINT, TOKEN, ACCESS ) );
+        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT ) );
     }
 
     @Test

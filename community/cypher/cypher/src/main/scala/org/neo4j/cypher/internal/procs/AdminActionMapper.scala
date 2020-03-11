@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AllAdminAction
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
@@ -105,6 +106,7 @@ object AdminActionMapper {
     case AssignPrivilegeAction => security.PrivilegeAction.ASSIGN_PRIVILEGE
     case RemovePrivilegeAction => security.PrivilegeAction.REMOVE_PRIVILEGE
 
+    case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
     case AllAdminAction => security.PrivilegeAction.ADMIN
   }
 }

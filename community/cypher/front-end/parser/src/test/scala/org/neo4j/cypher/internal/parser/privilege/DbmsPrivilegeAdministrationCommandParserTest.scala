@@ -40,7 +40,8 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       ("SHOW PRIVILEGE", ast.ShowPrivilegeAction),
       ("ASSIGN PRIVILEGE", ast.AssignPrivilegeAction),
       ("REMOVE PRIVILEGE", ast.RemovePrivilegeAction),
-      ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions)
+      ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions),
+      ("ALL DBMS PRIVILEGES", ast.AllDbmsAction)
     ).foreach {
       case (privilege: String, action: ast.AdminAction) =>
 
@@ -56,7 +57,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
           yields(privilegeFunc(action, Seq("r:ole")))
         }
 
-        test( s"dbmsPrivilegeParsingErrors$command $privilege $preposition") {
+        test(s"dbmsPrivilegeParsingErrors$command $privilege $preposition") {
           assertFails(s"$command $privilege ON DATABASE $preposition role")
           assertFails(s"$command $privilege ON DEFAULT DATABASE $preposition role")
           assertFails(s"$command $privilege DBMS $preposition role")
@@ -65,6 +66,24 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
           assertFails(s"$command $privilege ON DBMS $preposition")
           assertFails(s"$command $privilege ON DBMS")
         }
+    }
+
+    // The tests below needs to be outside the loop since ALL [PRIVILEGES] ON DATABASE is a valid (but different) command
+
+    test(s"$command ALL ON DBMS $preposition role") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq("role")))
+    }
+
+    test(s"$command ALL ON DBMS $preposition role1, role2") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq("role1", "role2")))
+    }
+
+    test(s"$command ALL PRIVILEGES ON DBMS $preposition role") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq("role")))
+    }
+
+    test(s"$command ALL PRIVILEGES ON DBMS $preposition role1, role2") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq("role1", "role2")))
     }
   }
 }

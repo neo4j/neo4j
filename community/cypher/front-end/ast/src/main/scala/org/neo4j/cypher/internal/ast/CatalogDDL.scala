@@ -324,6 +324,7 @@ case object TerminateTransactionAction extends TransactionManagementAction("TERM
 abstract class DbmsAdminAction(override val name: String) extends AdminAction
 
 case object AllAdminAction extends DbmsAdminAction("ALL ADMIN PRIVILEGES")
+case object AllDbmsAction extends DbmsAdminAction("ALL DBMS PRIVILEGES")
 
 abstract class UserManagementAction(override val name: String) extends DbmsAdminAction(name)
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")

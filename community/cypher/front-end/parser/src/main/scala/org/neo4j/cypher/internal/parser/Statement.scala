@@ -508,7 +508,8 @@ trait Statement extends Parser
     keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
     keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
     keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
-    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions)
+    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
+    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
   }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
