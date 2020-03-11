@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
   * It is used for sub queries that return collections, such as pattern expressions (returns
   * a collection of paths) and pattern comprehension.
   *
-  * Note about nullableIdentifiers: when any of these identifiers is null, the collection
+  * Note about nullableIdentifiers: when any of these identifiers are null, the collection
   * should be null.
   */
 case class RollUpApply(left: LogicalPlan,

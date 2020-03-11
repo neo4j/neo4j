@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
@@ -619,6 +620,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def semiApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SemiApply(lhs, rhs)(_)))
+
+  def rollupApply(collectionName: String,
+                  variableToCollect: String,
+                  nullableIdentifiers: Set[String] = Set.empty): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect, nullableIdentifiers)(_)))
 
   def cartesianProduct(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)(_)))

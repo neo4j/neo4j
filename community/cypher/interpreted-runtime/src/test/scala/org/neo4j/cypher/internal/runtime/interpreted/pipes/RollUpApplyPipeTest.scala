@@ -25,54 +25,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.VirtualValues
 
 class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
-  test("when rhs returns nothing, an empty collection should be produced") {
-    // given
-    val lhs = createLhs(1)
-    val rhs = pipeWithResults { state => Iterator() }
-    val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y", nullableIdentifiers = Set("a"))()
-
-    // when
-    val result = pipe.createResults(QueryStateHelper.empty).toList
-
-    // then
-    result should beEquivalentTo(List(Map("a" -> 1, "x" -> Seq.empty)))
-  }
-
-  test("when rhs has null values on nullableIdentifiers, a null value should be produced") {
-    // given
-    val lhs = createLhs(null, 1)
-    val rhs = pipeWithResults { state => Iterator() }
-    val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y", nullableIdentifiers = Set("a"))()
-
-    // when
-    val result = pipe.createResults(QueryStateHelper.empty).toList
-
-    // then
-    result should beEquivalentTo(List(
-      Map("a" -> NO_VALUE, "x" -> NO_VALUE),
-      Map("a" -> Values.intValue(1), "x" -> VirtualValues.EMPTY_LIST)))
-  }
-
-  test("when rhs produces multiple rows with values, they are turned into a collection") {
-    // given
-    val lhs = createLhs(1)
-    val rhs = createRhs(1, 2, 3, 4)
-    val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y", nullableIdentifiers = Set("a"))()
-
-    // when
-    val result = pipe.createResults(QueryStateHelper.empty).toList
-
-    // then
-    result should beEquivalentTo(List(
-      Map("a" -> 1, "x" -> Seq(1, 2, 3, 4))))
-  }
 
   test("should set the QueryState when calling down to the RHS") {
     // given
@@ -91,11 +46,6 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     pipe.createResults(QueryStateHelper.empty).toList
 
     // then should not throw exception
-  }
-
-  private def createRhs(data: Any*) = {
-    val rhsData = data.map(v => Map("y" -> v))
-    new FakePipe(rhsData.iterator)
   }
 
   private def createLhs(data: Any*) = {

@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelLimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NestedPlanExpressionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
@@ -183,3 +184,4 @@ class InterpretedSemiApplyTest extends SemiApplyTestBase(COMMUNITY.EDITION, Inte
 class InterpretedAntiSemiApplyTest extends AntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedNestedPlanExpressionTest extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
