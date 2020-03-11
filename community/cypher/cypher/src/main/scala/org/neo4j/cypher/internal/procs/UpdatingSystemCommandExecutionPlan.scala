@@ -47,7 +47,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               queryHandler: QueryHandler,
                                               source: Option[ExecutionPlan] = None,
                                               checkCredentialsExpired: Boolean = true,
-                                              initFunction: (MapValue, KernelTransaction) => Unit = (_, _) => {},
+                                              initFunction: (MapValue, KernelTransaction) => Boolean = (_, _) => true,
                                               parameterGenerator: KernelTransaction => MapValue = _ => MapValue.EMPTY,
                                               parameterConverter: MapValue => MapValue = p => p)
   extends ChainedExecutionPlan(source) {
@@ -78,18 +78,21 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
 
-      initFunction(updatedParams, tc.kernelTransaction())
-      val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
-      try {
-        execution.consumeAll()
-      } catch {
-        case _: Throwable =>
-        // do nothing, exceptions are handled by SystemCommandQuerySubscriber
-      }
-      systemSubscriber.assertNotFailed()
+      if (initFunction(updatedParams, tc.kernelTransaction())) {
+        val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+        try {
+          execution.consumeAll()
+        } catch {
+          case _: Throwable =>
+          // do nothing, exceptions are handled by SystemCommandQuerySubscriber
+        }
+        systemSubscriber.assertNotFailed()
 
-      if (systemSubscriber.shouldIgnoreResult()) {
-        IgnoredRuntimeResult
+        if (systemSubscriber.shouldIgnoreResult()) {
+          IgnoredRuntimeResult
+        } else {
+          UpdatingSystemCommandRuntimeResult(ctx)
+        }
       } else {
         UpdatingSystemCommandRuntimeResult(ctx)
       }

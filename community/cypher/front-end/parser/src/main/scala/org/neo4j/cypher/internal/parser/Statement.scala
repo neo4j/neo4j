@@ -240,13 +240,13 @@ trait Statement extends Parser
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
-    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNamesList ~~
-      keyword("TO") ~~ SymbolicNamesList) ~~>> (ast.GrantRolesToUsers(_, _))
+    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNameOrStringParameterList ~~
+      keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.GrantRolesToUsers(_, _))
   }
 
   def RevokeRole: Rule1[RevokeRolesFromUsers] = rule("CATALOG REVOKE ROLE") {
-    group(keyword("REVOKE") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNamesList ~~
-      keyword("FROM") ~~ SymbolicNamesList) ~~>> (ast.RevokeRolesFromUsers(_, _))
+    group(keyword("REVOKE") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNameOrStringParameterList ~~
+      keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.RevokeRolesFromUsers(_, _))
   }
 
   //` ... ON DBMS TO role`
@@ -600,4 +600,9 @@ trait Statement extends Parser
   def SymbolicNameOrStringParameter: Rule1[Either[String, expressions.Parameter]] =
     group(SymbolicNameString) ~~>> (s => _ => Left(s)) |
       group(StringParameter) ~~>> (p => _ => Right(p))
+
+  def SymbolicNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
+    rule("a list of symbolic names or string parameters") {
+      (oneOrMore(WS ~~ SymbolicNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+    }
 }

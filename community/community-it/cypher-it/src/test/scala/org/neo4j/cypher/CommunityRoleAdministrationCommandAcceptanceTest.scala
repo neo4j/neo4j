@@ -92,6 +92,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("GRANT ROLE reader TO neo4j", "Unsupported administration command: GRANT ROLE reader TO neo4j")
+    assertFailure("GRANT ROLE $r TO $u", "Unsupported administration command: GRANT ROLE $r TO $u")
   }
 
   test("should fail on revoking non-existing role from user") {
@@ -100,5 +101,6 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported administration command: REVOKE ROLE custom FROM neo4j")
+    assertFailure("REVOKE ROLE $r FROM $u", "Unsupported administration command: REVOKE ROLE $r FROM $u")
   }
 }

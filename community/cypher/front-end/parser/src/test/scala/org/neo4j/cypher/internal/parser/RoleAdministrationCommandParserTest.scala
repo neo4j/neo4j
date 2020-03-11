@@ -223,9 +223,9 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.Statement
 
-  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.GrantRolesToUsers(r, u)
+  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
 
-  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.RevokeRolesFromUsers(r, u)
+  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
 
   Seq("ROLE", "ROLES").foreach {
     roleKeyword =>
@@ -288,10 +288,6 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
 
           // Should fail to parse when invalid user or role name
 
-          test(s"$command $roleKeyword $$f00 $preposition abc") {
-            failsToParse
-          }
-
           test(s"$command $roleKeyword fo:o $preposition bar") {
             failsToParse
           }
@@ -310,5 +306,21 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       test(s"REVOKE $roleKeyword foo TO abc") {
         failsToParse
       }
+  }
+
+  test("GRANT ROLE $a TO $x") {
+    yields(ast.GrantRolesToUsers(Seq(param("a")), Seq(param("x"))))
+  }
+
+  test("REVOKE ROLE $a FROM $x") {
+    yields(ast.RevokeRolesFromUsers(Seq(param("a")), Seq(param("x"))))
+  }
+
+  test("GRANT ROLES a, $b, $c TO $x, y, z") {
+    yields(ast.GrantRolesToUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
+  }
+
+  test("REVOKE ROLES a, $b, $c FROM $x, y, z") {
+    yields(ast.RevokeRolesFromUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
   }
 }

@@ -1056,4 +1056,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   private def getAnnotatedUserArgument(user: String): User = User(s"USER ${Prettifier.escapeName(user)}")
 
   private def getAnnotatedRoleArgument(role: String): Role = Role(s"ROLE ${Prettifier.escapeName(role)}")
+
+  private def getAnnotatedUserArgument(user: Either[String, Parameter]): User = User(s"USER ${Prettifier.escapeName(user)}")
+
+  private def getAnnotatedRoleArgument(role: Either[String, Parameter]): Role = Role(s"ROLE ${Prettifier.escapeName(role)}")
 }

@@ -213,7 +213,6 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(plans.AssertDbmsAdmin(AssignRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan]) {
-          case (source, ("PUBLIC", _)) => source
           case (source, (roleName, userName)) => plans.GrantRoleToUser(source, roleName, userName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
