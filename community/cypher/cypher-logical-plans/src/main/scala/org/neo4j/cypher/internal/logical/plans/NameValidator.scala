@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import java.util.regex.Pattern
 
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.exceptions.InvalidArgumentException
 
 object NameValidator {
@@ -31,17 +30,16 @@ object NameValidator {
   // Allow only letters, numbers and underscore
   private val roleNamePattern = Pattern.compile("^[a-zA-Z0-9_]+$")
 
-  def assertValidUsername(name: Either[String, Parameter]): Unit = name match {
-    case null =>
+  // Do not allow create/drop/revoke on PUBLIC role
+  private val reservedRoleName = "PUBLIC"
+
+  def assertValidUsername(name: String): Unit = {
+    if (name == null || name.isEmpty)
       throw new InvalidArgumentException("The provided username is empty.")
-    case Left(name) =>
-      if (name == null || name.isEmpty)
-        throw new InvalidArgumentException("The provided username is empty.")
-      if (!usernamePattern.matcher(name).matches)
-        throw new InvalidArgumentException(
-          s"""Username '$name' contains illegal characters.
-             |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin)
-    case _ =>
+    if (!usernamePattern.matcher(name).matches)
+      throw new InvalidArgumentException(
+        s"""Username '$name' contains illegal characters.
+           |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin)
   }
 
   def assertValidRoleName(name: String): Unit = {
@@ -52,4 +50,9 @@ object NameValidator {
         s"""Role name '$name' contains illegal characters.
            |Use simple ascii characters, numbers and underscores.""".stripMargin)
   }
+
+  def assertUnreservedRoleName(verb: String, name: String): Unit =
+    if (reservedRoleName.equals(name)) {
+      throw new InvalidArgumentException(s"Failed to $verb the specified role '$name': '$name' is a reserved role.")
+    }
 }

@@ -111,7 +111,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
       }, violationMessage = PERMISSION_DENIED)
 
-    // Check that the specified user is not the logged in user (eg. for some ALTER USER commands)
+    // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => (context, parameterMapping) =>
       new PredicateExecutionPlan((params, sc) => !sc.subject().hasUsername(runtimeValue(userName, params)),
         onViolation = (_, sc) => new InvalidArgumentsException(s"Failed to $verb the specified user '${sc.subject().username()}': $violationMessage."),
@@ -150,18 +150,19 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => (context, parameterMapping) =>
-      val userNameValue = makeParameterValue(userName)
+      val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
-        """MATCH (user:User {name: $name}) DETACH DELETE user
+        s"""MATCH (user:User {name: $$$userNameKey}) DETACH DELETE user
           |RETURN 1 AS ignore""".stripMargin,
-        VirtualValues.map(Array("name"), Array(userNameValue)),
+        VirtualValues.map(Array(userNameKey), Array(userNameValue)),
         QueryHandler
           .handleError {
-            case (error: HasStatus, _) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '$userName': $followerError", error)
-            case (error, _) => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
+            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '${runtimeValue(userName, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeValue(userName, p)}'.", error)
           },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
+        parameterConverter = userNameConverter
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -263,11 +264,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name) => (context, parameterMapping) =>
-      val parameterValue = makeParameterValue(name)
+      val (nameKey, nameValue, nameConverter) = getNameFields("name", name)
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
-        s"""MATCH (node:$label {name: $$name})
+        s"""MATCH (node:$label {name: $$$nameKey})
            |RETURN node""".stripMargin,
-        VirtualValues.map(Array("name"), Array(parameterValue)),
+        VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
           .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $label does not exist.")))
           .handleError {
@@ -275,7 +276,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
             case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
+        parameterConverter = nameConverter
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)

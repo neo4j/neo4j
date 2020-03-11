@@ -101,6 +101,20 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("bar", "password", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should create user with parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // WHEN
+    execute("CREATE USER $user SET PASSWORD 'password'", Map("user" -> "bar"))
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("bar"))
+    testUserLogin("bar", "wrong", AuthenticationResult.FAILURE)
+    testUserLogin("bar", "password", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
   test("should create user using if not exists") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
@@ -378,6 +392,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
   }
 
+  test("should drop user with parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("DROP USER $user", Map("user" -> "foo"))
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+  }
+
   test("should drop existing user using if exists") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
@@ -520,6 +546,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER foo SET PASSWORD 'xxx'")
+    assertFailure("ALTER USER $foo SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER $foo SET PASSWORD 'xxx'")
   }
 
   // Tests for changing own password

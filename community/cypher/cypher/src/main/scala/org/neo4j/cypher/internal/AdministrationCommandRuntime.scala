@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
@@ -114,16 +115,19 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       getValidPasswordParameter(params, p.asInstanceOf[Parameter].name)
   }
 
-  protected def runtimeValue(field: Either[String, Parameter], params: MapValue): String = field match {
+  protected def runtimeValue(field: Either[String, AnyRef], params: MapValue): String = field match {
     case Left(u) => u
-    case Right(p) => params.get(p.name).asInstanceOf[Value].asObject().toString
+    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
+      params.get(p.asInstanceOf[ParameterFromSlot].name).asInstanceOf[Value].asObject().toString
+    case Right(p) if p.isInstanceOf[Parameter] =>
+      params.get(p.asInstanceOf[Parameter].name).asInstanceOf[Value].asObject().toString
   }
 
-  def getUsernameFields(userName: Either[String, AnyRef],
-                        prefix: String = "__internal_",
-                        rename: String => String = s => s): (String, Value, MapValueConverter) = userName match {
+  def getNameFields(key: String, name: Either[String, AnyRef],
+                    prefix: String = "__internal_",
+                    rename: String => String = s => s): (String, Value, MapValueConverter) = name match {
     case Left(u) =>
-      (rename(s"${prefix}username"), Values.utf8Value(u), IdentityConverter)
+      (rename(s"$prefix$key"), Values.utf8Value(u), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameter = p.asInstanceOf[ParameterFromSlot]
@@ -179,7 +183,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                   suspended: Boolean)(
                                    sourcePlan: Option[ExecutionPlan],
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
-    val (userNameKey, userNameValue, userNameConverter) = getUsernameFields(userName)
+    val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
     val (credentialsKey, credentialsValue, credentialsConverter) = getPasswordFields(password)
     val mapValueConverter: MapValue => MapValue = p => credentialsConverter(userNameConverter(p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
@@ -203,6 +207,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.", error)
         }),
       sourcePlan,
+      initFunction = (params, _) => NameValidator.assertValidUsername(runtimeValue(userName, params)),
       parameterConverter = mapValueConverter
     )
   }

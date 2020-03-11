@@ -62,12 +62,12 @@ case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter],
 case class SetOwnPassword(newPassword: Either[Array[Byte], Parameter], currentPassword: Either[Array[Byte], Parameter])
                          (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class ShowRoles(source: PrivilegePlan, withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class GrantRoleToUser(source: SecurityAdministrationLogicalPlan, roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class RevokeRoleFromUser(source: SecurityAdministrationLogicalPlan, roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class RequireRole(source: SecurityAdministrationLogicalPlan, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class CopyRolePrivileges(source: SecurityAdministrationLogicalPlan, to: String, from: String, grantDeny: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class RequireRole(source: SecurityAdministrationLogicalPlan, name: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class CopyRolePrivileges(source: SecurityAdministrationLogicalPlan, to: Either[String, Parameter], from: Either[String, Parameter], grantDeny: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 abstract class PrivilegePlan(source: Option[PrivilegePlan] = None)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 

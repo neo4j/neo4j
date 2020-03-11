@@ -28,21 +28,12 @@ class NameValidatorTest extends FunSuite with Matchers {
   // username tests
 
   test("Should not get an error for a valid username") {
-    NameValidator.assertValidUsername(Left("myValidUser"))
+    NameValidator.assertValidUsername("myValidUser")
   }
 
   test("Should get an error for an empty username") {
     try {
-      NameValidator.assertValidUsername(Left(""))
-
-      fail("Expected exception \"The provided username is empty.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("The provided username is empty.")
-    }
-
-    try {
-      NameValidator.assertValidUsername(Left(null))
+      NameValidator.assertValidUsername("")
 
       fail("Expected exception \"The provided username is empty.\" but succeeded.")
     } catch {
@@ -60,7 +51,7 @@ class NameValidatorTest extends FunSuite with Matchers {
 
   test("Should get an error for a username with invalid characters") {
     try {
-      NameValidator.assertValidUsername(Left("user:"))
+      NameValidator.assertValidUsername("user:")
 
       fail("Expected exception \"Username 'user:' contains illegal characters.\" but succeeded.")
     } catch {

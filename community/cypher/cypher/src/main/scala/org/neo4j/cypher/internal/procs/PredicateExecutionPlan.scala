@@ -25,10 +25,15 @@ import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.result.EmptyQuerySubscription
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.virtual.MapValue
 
 class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
@@ -52,4 +57,19 @@ class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, 
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+}
+
+case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
+
+  override def fieldNames(): Array[String] = Array.empty
+
+  override def queryStatistics(): QueryStatistics = QueryStatistics()
+
+  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+
+  override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
+
+  override def close(): Unit = {}
+
+  override def queryProfile(): QueryProfile = QueryProfile.NONE
 }

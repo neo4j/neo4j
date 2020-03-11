@@ -224,19 +224,19 @@ trait Statement extends Parser
   }
 
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
-    group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsInvalidSyntax())) |
-    group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameString ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsReplace())) |
-    group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing())) |
-    group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
+    group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsInvalidSyntax())) |
+    group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameOrStringParameter ~~
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsReplace())) |
+    group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing())) |
+    group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~~
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
-    group(keyword("DROP ROLE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
-    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = false))
+    group(keyword("DROP ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
+    group(keyword("DROP ROLE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.DropRole(_, ifExists = false))
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {

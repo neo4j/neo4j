@@ -92,7 +92,6 @@ import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.logical.plans.PrivilegePlan
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -138,14 +137,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case Left(PasswordString(pw)) => Left(UTF8.encode(pw))
       case Right(param) => Right(param)
     }
-    def validateNameAndGetSourceForCreateRole(roleName: String, ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = {
-      NameValidator.assertValidRoleName(roleName)
-      val admin = plans.AssertDbmsAdmin(CreateRoleAction)
-      ifExistsDo match {
-        case _: IfExistsReplace => plans.DropRole(admin, roleName)
-        case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Role", Left(roleName))
-        case _ => admin
-      }
+    def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {
+      case _: IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(DropRoleAction, CreateRoleAction), roleName)
+      case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
+      case _ => plans.AssertDbmsAdmin(CreateRoleAction)
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
@@ -154,7 +149,6 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
-        NameValidator.assertValidUsername(userName)
         val admin = plans.AssertDbmsAdmin(CreateUserAction)
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction, CreateUserAction), userName, "replace", "Deleting yourself is not allowed"), userName)
@@ -193,12 +187,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
       case c@CreateRole(roleName, None, ifExistsDo) =>
-        val source = validateNameAndGetSourceForCreateRole(roleName, ifExistsDo)
+        val source = getSourceForCreateRole(roleName, ifExistsDo)
         Some(plans.LogSystemCommand(plans.CreateRole(source, roleName), prettifier.asString(c)))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS] AS COPY OF bar
       case c@CreateRole(roleName, Some(fromName), ifExistsDo) =>
-        val source = validateNameAndGetSourceForCreateRole(roleName, ifExistsDo)
+        val source = getSourceForCreateRole(roleName, ifExistsDo)
         Some(plans.LogSystemCommand(
           plans.CopyRolePrivileges(
             plans.CopyRolePrivileges(
@@ -211,7 +205,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val admin = plans.AssertDbmsAdmin(DropRoleAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", Left(roleName)) else plans.EnsureNodeExists(admin, "Role", Left(roleName))
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", roleName) else plans.EnsureNodeExists(admin, "Role", roleName)
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users

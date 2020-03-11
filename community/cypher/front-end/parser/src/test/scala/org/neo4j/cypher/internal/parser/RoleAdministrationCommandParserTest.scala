@@ -106,51 +106,59 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating role
 
   test("CREATE ROLE foo") {
-    yields(ast.CreateRole("foo", None, ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsThrowError()))
+  }
+
+  test("CREATE ROLE $foo") {
+    yields(ast.CreateRole(param("foo"), None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE ROLE `foo`") {
-    yields(ast.CreateRole("foo", None, ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE ``") {
-    yields(ast.CreateRole("", None, ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal(""), None, ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsThrowError()))
+  }
+
+  test("CREATE ROLE foo AS COPY OF $bar") {
+    yields(ast.CreateRole(literal("foo"), Some(param("bar")), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    yields(ast.CreateRole("foo", Some(""), ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal("foo"), Some(literal("")), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    yields(ast.CreateRole("", Some("bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateRole(literal(""), Some(literal("bar")), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS") {
-    yields(ast.CreateRole("foo", None, ast.IfExistsDoNothing()))
+    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsDoNothing()))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsDoNothing()))
+    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsDoNothing()))
   }
 
   test("CREATE OR REPLACE ROLE foo") {
-    yields(ast.CreateRole("foo", None, ast.IfExistsReplace()))
+    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsReplace()))
+    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS") {
-    yields(ast.CreateRole("foo", None, ast.IfExistsInvalidSyntax()))
+    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsInvalidSyntax()))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsInvalidSyntax()))
+    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsInvalidSyntax()))
   }
 
   test("CATALOG CREATE ROLE \"foo\"") {
@@ -184,19 +192,23 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Dropping role
 
   test("DROP ROLE foo") {
-    yields(ast.DropRole("foo", ifExists = false))
+    yields(ast.DropRole(literal("foo"), ifExists = false))
+  }
+
+  test("DROP ROLE $foo") {
+    yields(ast.DropRole(param("foo"), ifExists = false))
   }
 
   test("DROP ROLE ``") {
-    yields(ast.DropRole("", ifExists = false))
+    yields(ast.DropRole(literal(""), ifExists = false))
   }
 
   test("DROP ROLE foo IF EXISTS") {
-    yields(ast.DropRole("foo", ifExists = true))
+    yields(ast.DropRole(literal("foo"), ifExists = true))
   }
 
   test("DROP ROLE `` IF EXISTS") {
-    yields(ast.DropRole("", ifExists = true))
+    yields(ast.DropRole(literal(""), ifExists = true))
   }
 
   test("DROP ROLE ") {

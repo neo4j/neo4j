@@ -57,6 +57,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("CREATE ROLE foo", "Unsupported administration command: CREATE ROLE foo")
+    assertFailure("CREATE ROLE $foo", "Unsupported administration command: CREATE ROLE $foo")
   }
 
   test("should fail on creating role as copy of non-existing role with correct error message") {
@@ -65,6 +66,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("CREATE ROLE foo AS COPY OF bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF bar")
+    assertFailure("CREATE ROLE foo AS COPY OF $bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF $bar")
   }
 
   test("should fail on dropping non-existing role from community") {
@@ -81,6 +83,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("DROP ROLE foo", "Unsupported administration command: DROP ROLE foo")
+    assertFailure("DROP ROLE $foo", "Unsupported administration command: DROP ROLE $foo")
   }
 
   test("should fail on granting role to user from community") {

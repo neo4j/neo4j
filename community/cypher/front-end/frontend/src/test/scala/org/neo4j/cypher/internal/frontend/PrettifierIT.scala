@@ -371,6 +371,9 @@ class PrettifierIT extends CypherFunSuite {
       "drop user abc" ->
         "DROP USER abc",
 
+      "drop user $abc" ->
+        "DROP USER $abc",
+
       "drop user abc if exists" ->
         "DROP USER abc IF EXISTS",
 
@@ -392,6 +395,9 @@ class PrettifierIT extends CypherFunSuite {
       "create role abc" ->
         "CREATE ROLE abc",
 
+      "create role $abc" ->
+        "CREATE ROLE $abc",
+
       "create role abc if not exists" ->
         "CREATE ROLE abc IF NOT EXISTS",
 
@@ -404,11 +410,20 @@ class PrettifierIT extends CypherFunSuite {
       "create role abc as copy of def" ->
         "CREATE ROLE abc AS COPY OF def",
 
+      "create role abc as copy of $def" ->
+        "CREATE ROLE abc AS COPY OF $def",
+
       "create role `ab%$c` if not exists as copy of `$d3f`" ->
         "CREATE ROLE `ab%$c` IF NOT EXISTS AS COPY OF `$d3f`",
 
       "create or replace role `ab%$c` as copy of `$d3f`" ->
         "CREATE OR REPLACE ROLE `ab%$c` AS COPY OF `$d3f`",
+
+      "drop role abc" ->
+        "DROP ROLE abc",
+
+      "drop role $abc" ->
+        "DROP ROLE $abc",
 
       "drop role abc if exists" ->
         "DROP ROLE abc IF EXISTS",
