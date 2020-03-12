@@ -294,6 +294,46 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     runtimeResult should beColumns("x").withRows(inputRows)
   }
 
+  test("non-empty distinct on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.distinct("y AS y")
+      .|.unwind("[1,2,3] AS y")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("empty distinct on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.distinct("y AS y")
+      .|.unwind("[] AS y")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
   test("anti-semi-apply under apply") {
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)

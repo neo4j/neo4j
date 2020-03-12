@@ -231,4 +231,109 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("yprop").withRows(rowCount(1))
   }
+
+  test("should work with aggregation") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, properties = {
+        case i: Int => Map("foo" -> s"bar${i % 10}")
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("group", "c")
+      .aggregation(Seq("bar AS group"),Seq("count(n) AS c"))
+      .distinct("n.foo AS bar")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = (0 until 10).map(i => Array(s"bar$i", 1))
+
+    // then
+    runtimeResult should beColumns("group", "c").withRows(expected)
+  }
+
+  test("should work after multiple streaming operators") {
+    // given
+    val nodeCount = 100
+    val nodes = given {
+      bipartiteGraph(nodeCount, "A", "B", "R",
+        aProperties = {
+          case i: Int => Map("foo" -> s"bar${i % 10}")
+        },
+        bProperties = {
+          case i: Int => Map("foo" -> s"bar${i % 10}")
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("bar")
+      .distinct("b.foo AS bar")
+      .expandAll("(a)--(b)")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("bar").withRows(singleColumn((0 until 10).map(i => s"bar$i")))
+  }
+
+  test("should work between streaming operators with aggregation") {
+    // given
+    val nodeCount = 100
+    val nodes = given {
+      bipartiteGraph(nodeCount, "A", "B", "R",
+        aProperties = {
+          case i: Int => Map("foo" -> s"bar${i % 10}")
+        },
+        bProperties = {
+          case i: Int => Map("foo" -> s"bar${i % 10}")
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("group", "c")
+      .aggregation(Seq("b.foo AS group"),Seq("count(b) AS c"))
+      .expandAll("(a)--(b)")
+      .distinct("a AS a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expectedGroupSize = nodeCount * nodeCount / 10
+    val expected = (0 until 10).map(i => Array(s"bar$i", expectedGroupSize))
+
+    // then
+    runtimeResult should beColumns("group", "c").withRows(expected)
+  }
+
+  test("should work with chained distincts") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint,
+        properties = {
+          case i: Int => Map("foo" -> s"bar${i % 10}")
+        }, "A")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("bar")
+      .distinct("bar AS bar")
+      .distinct("a.foo AS bar")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("bar").withRows(singleColumn((0 until 10).map(i => s"bar$i")))
+  }
 }

@@ -304,6 +304,30 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y", "z").withRows(inOrder(expectedInOrder))
   }
+
+  test("should work on top of distinct") {
+    // given
+    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optional()
+      .distinct("x AS x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val subscriber = TestSubscriber.concurrent
+    val runtimeResult = execute(logicalQuery, runtime, stream, subscriber)
+
+    runtimeResult.request(1)
+    runtimeResult.await()
+
+    // then
+    subscriber.allSeen should have size 1
+    stream.hasMore should be(true)
+  }
+
 }
 
 // Supported by interpreted, slotted, pipelined
