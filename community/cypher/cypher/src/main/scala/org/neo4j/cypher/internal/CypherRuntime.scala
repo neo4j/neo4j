@@ -39,7 +39,6 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.SchemaRead
-import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
 
@@ -56,10 +55,9 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
    *
    * @param logicalQuery the logical query to compile
    * @param context the compilation context
-   * @param securityContext the security context for the current user
    * @return the executable plan
    */
-  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext = null): ExecutionPlan
+  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
 
   def name: String
 }
@@ -141,7 +139,7 @@ class RuntimeResourceLeakException(msg: String) extends IllegalStateException(ms
 case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan =
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: $requestedRuntime")
 }
 
@@ -160,7 +158,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     throw new RuntimeUnsupportedException(originalException.getMessage, originalException)
   }
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext): ExecutionPlan = {
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan = {
     val logger = new RecordingNotificationLogger()
 
     var i = 0

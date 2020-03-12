@@ -86,7 +86,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
   }
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 
     val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 

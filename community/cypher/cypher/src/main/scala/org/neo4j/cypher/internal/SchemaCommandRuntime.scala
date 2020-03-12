@@ -37,15 +37,14 @@ import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
-import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
+import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
-import org.neo4j.internal.kernel.api.security.SecurityContext
 
 /**
  * This runtime takes on queries that require no planning such as schema commands
@@ -53,7 +52,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "schema"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
