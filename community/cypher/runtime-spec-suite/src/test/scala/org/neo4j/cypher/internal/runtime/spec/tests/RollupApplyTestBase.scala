@@ -23,6 +23,7 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -112,6 +113,31 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val expectedRows: Iterable[Array[_]] =
       aNodes.flatMap(a => bNodes.map(b => Array[Any](a, Collections.singletonList(b)))) ++
       bNodes.map(b => Array[Any](b, null))
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "list").withRows(expectedRows)
+  }
+
+  test("non-empty lhs, non-empty rhs should produce lists preserving nulls") {
+    val size = Math.sqrt(sizeHint).toInt
+    val (aNodes, bNodes) =
+      given {
+        bipartiteGraph(size, "A", "B", "R")
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "list")
+      .rollupApply("list", "y")
+      .|.sort(Seq(Ascending("y"))) // to get consistent order in the produced lists
+      .|.optionalExpandAll("(x)-->(y)")
+      .|.argument("y")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val expectedRows: Iterable[Array[_]] =
+      aNodes.map(a => Array[Any](a, bNodes.asJava)) ++
+      bNodes.map(b => Array[Any](b, Collections.singletonList(null)))
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x", "list").withRows(expectedRows)
   }
