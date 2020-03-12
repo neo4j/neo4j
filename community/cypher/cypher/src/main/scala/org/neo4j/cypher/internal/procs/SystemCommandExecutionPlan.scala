@@ -31,7 +31,9 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -45,7 +47,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                                       queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
                                       source: Option[ExecutionPlan] = None,
                                       checkCredentialsExpired: Boolean = true,
-                                      parameterGenerator: KernelTransaction => MapValue = _ => MapValue.EMPTY)
+                                      parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -59,11 +61,12 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
-      if (checkCredentialsExpired) tc.securityContext().assertCredentialsNotExpired()
-      val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
+      val securityContext = tc.securityContext()
+      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
+      val fullReadAccess = securityContext.withMode(AccessMode.Static.READ)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
-      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.kernelTransaction()))
+      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction(), securityContext))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
       val execution = normalExecutionEngine.executeSubQuery(query, updatedSystemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()

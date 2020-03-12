@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -48,7 +50,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               source: Option[ExecutionPlan] = None,
                                               checkCredentialsExpired: Boolean = true,
                                               initFunction: (MapValue, KernelTransaction) => Boolean = (_, _) => true,
-                                              parameterGenerator: KernelTransaction => MapValue = _ => MapValue.EMPTY,
+                                              parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
                                               parameterConverter: MapValue => MapValue = p => p)
   extends ChainedExecutionPlan(source) {
 
@@ -63,11 +65,12 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
-      if (checkCredentialsExpired) tc.securityContext().assertCredentialsNotExpired()
-      val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
+      val securityContext = tc.securityContext()
+      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
+      val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
-      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.kernelTransaction()))
+      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction(), securityContext))
       val updatedParams = parameterConverter(updatedSystemParams.updatedWith(params))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       try {

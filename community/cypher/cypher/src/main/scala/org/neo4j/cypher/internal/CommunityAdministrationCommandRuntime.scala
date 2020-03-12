@@ -55,13 +55,13 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
+import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
@@ -208,7 +208,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Some(new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password: User does not exist."))
           }),
         checkCredentialsExpired = false,
-        parameterGenerator = ktx => VirtualValues.map(Array("name"), Array(Values.utf8Value(ktx.securityContext().subject().username()))),
+        parameterGenerator = (_, securityContext) => VirtualValues.map(Array("name"), Array(Values.utf8Value(securityContext.subject().username()))),
         parameterConverter = m => newConverter(newConverterBytes(currentConverterBytes(m)))
       )
 
@@ -289,9 +289,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)
   }
 
-  private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[String] = None): (String, KernelTransaction => MapValue) = {
+  private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[String] = None): (String, (Transaction, SecurityContext) => MapValue) = {
     val defaultColumn = if (isDefault) "" else ", d.default as default"
-    val paramGenerator: KernelTransaction => MapValue = ktx => generateShowAccessibleDatabasesParameter(ktx, isDefault, dbName)
+    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault, dbName)
     val extraFilter = (isDefault, dbName) match {
       // show default database
       case (true, _) => "AND d.default = true"
@@ -311,7 +311,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     (query, paramGenerator)
   }
 
-  private def generateShowAccessibleDatabasesParameter(ktx: KernelTransaction, isDefault: Boolean = false, dbName: Option[String] = None ): MapValue = {
+  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false, dbName: Option[String] = None ): MapValue = {
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty
@@ -335,17 +335,15 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       result.reduceOption(_ && _)
     }
 
-    val securityContext = ktx.securityContext()
     val allowsDatabaseManagement: Boolean =
       securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.CREATE_DATABASE, DatabaseScope.ALL, Segment.ALL)) ||
       securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, DatabaseScope.ALL, Segment.ALL))
-    val transaction = ktx.internalTransaction()
     val roles = securityContext.mode().roles()
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
-    val allDatabaseAccess = accessForDatabase(allDatabaseNode, roles)
+    val allDatabaseAccess = if (allDatabaseNode != null) accessForDatabase(allDatabaseNode, roles) else None
     val defaultDatabaseNode = transaction.findNode(Label.label("DatabaseDefault"), "name", "DEFAULT")
-    val defaultDatabaseAccess = if ( defaultDatabaseNode != null ) accessForDatabase(defaultDatabaseNode, roles) else None
+    val defaultDatabaseAccess = if (defaultDatabaseNode != null) accessForDatabase(defaultDatabaseNode, roles) else None
 
     val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
       val dbName = dbNode.getProperty("name").toString
