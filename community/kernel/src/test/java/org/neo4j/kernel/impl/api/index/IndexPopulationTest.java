@@ -125,8 +125,8 @@ class IndexPopulationTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate, FAILURE>labelUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer )
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+                    PageCursorTracer cursorTracer )
             {
                 //noinspection unchecked
                 return new StoreScan()

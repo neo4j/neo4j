@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -69,7 +69,7 @@ public class LabelScanNodeViewTracingIT
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
         {
             var scan = new LabelScanViewNodeStoreScan<>( storageEngine.newReader(), lockService, labelScanStore,
-                    (Visitor<NodeLabelUpdate,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer );
+                    (Visitor<EntityTokenUpdate,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer );
             scan.run();
         }
 

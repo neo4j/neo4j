@@ -27,7 +27,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -66,7 +66,7 @@ class NeoStoreIndexStoreViewTracingIT
         {
             var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
             var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                    (Visitor<NodeLabelUpdate,Exception>) element -> false, true, cursorTracer );
+                    (Visitor<EntityTokenUpdate,Exception>) element -> false, true, cursorTracer );
             storeScan.run();
         }
 
