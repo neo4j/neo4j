@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.ConstraintName
@@ -40,7 +39,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
 import org.neo4j.cypher.internal.plandescription.Arguments.IndexName
-import org.neo4j.cypher.internal.plandescription.Arguments.InequalityIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyExpressions
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
@@ -54,8 +52,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
-import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
-import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
 import org.neo4j.cypher.internal.plandescription.Arguments.Resource
 import org.neo4j.cypher.internal.plandescription.Arguments.Role
@@ -70,13 +66,14 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.UpdateActionName
 import org.neo4j.cypher.internal.plandescription.Arguments.User
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
   private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
   private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
-  private def asPrettyString(e: expressions.Expression): String =
+  def asPrettyString(e: expressions.Expression): String =
     if (e == null)
       "null"
     else
@@ -91,11 +88,7 @@ object PlanDescriptionArgumentSerializer {
       }.mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
-      case Index(label, properties, caches) => s":$label(${properties.mkString(",")})${cachesSuffix(caches)}"
-      case PrefixIndex(label, property, p, caches) => s":$label($property STARTS WITH ${asPrettyString(p)})${cachesSuffix(caches)}"
-      case InequalityIndex(label, property, bounds, caches) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ") + cachesSuffix(caches)
-      case PointDistanceIndex(label, property, point, distance, inclusive, caches) =>
-        s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance" + cachesSuffix(caches)
+      case Index(info: String) => info
       case IndexName(index) => index
       case ConstraintName(constraint) => constraint
       case LabelName(label) => s":$label"
@@ -160,10 +153,6 @@ object PlanDescriptionArgumentSerializer {
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
     }
-  }
-
-  private def cachesSuffix(caches: Seq[expressions.Expression]): String = {
-    if (caches.isEmpty) "" else caches.map(asPrettyString).mkString(", ", ", ", "")
   }
 
   def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {

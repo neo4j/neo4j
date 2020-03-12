@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
-import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -99,11 +98,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(KeyNames(Seq("1 >=   version\\@40, 2 <=   version\\@352"))) should equal (
       "1 >= version\\, 2 <= version\\"
     )
-  }
-
-  test("should serialize point distance index seeks") {
-    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = false, Seq.empty)) should equal(":L(location) WHERE distance(_,p) < 300")
-    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = true, Seq(CachedProperty("p", Variable("p")(pos), PropertyKeyName("location")(pos), NODE_TYPE)(pos)))) should equal(":L(location) WHERE distance(_,p) <= 300, cache[p.location]")
   }
 
   test("should serialize provided order") {

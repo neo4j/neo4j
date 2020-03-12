@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.plandescription
 import java.util.Locale
 
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -58,6 +61,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expression
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
 import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
+import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
@@ -66,22 +70,16 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.scalatest.BeforeAndAfterAll
 
-class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
+class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
-  implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   private val defaultLocale = Locale.getDefault
   override def beforeAll() {
@@ -94,8 +92,6 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     Locale.setDefault(defaultLocale)
   }
 
-  private val pos: InputPosition = DummyPosition(0)
-  private def varFor(name: String): Variable = Variable(name)(pos)
   private val id: Id = Id.INVALID_ID
 
   test("node feeding from other node") {
@@ -338,38 +334,19 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("plan information is rendered on the corresponding row to the tree") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
-    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("prop"), Seq.empty), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Index stuff"), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderAsTreeTable(plan2) should equal(
-      """+----------+----------------+------+---------+----------------+-----------+--------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Variables | Other        |
-        |+----------+----------------+------+---------+----------------+-----------+--------------+
-        || +NAME    |              1 |    2 |     633 |                | b         | :Label(prop) |
-        || |        +----------------+------+---------+----------------+-----------+--------------+
-        || +NAME    |              1 |   42 |      33 |              5 | a         |              |
-        |+----------+----------------+------+---------+----------------+-----------+--------------+
-        |""".stripMargin)
-  }
-
-  test("composite index rendered correctly") {
-    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
-    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("propA", "propB"), Seq(CachedProperty("b", Variable("b")(pos), PropertyKeyName("propA")(pos), NODE_TYPE)(pos),
-      CachedProperty("b", Variable("b")(pos), PropertyKeyName("propB")(pos), NODE_TYPE)(pos))), EstimatedRows(1))
-
-    val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
-    val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))
-
-    renderAsTreeTable(plan2) should equal(
-      """+----------+----------------+------+---------+-----------+-----------------------------------------------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other                                               |
-        |+----------+----------------+------+---------+-----------+-----------------------------------------------------+
-        || +NAME    |              1 |    2 |     633 | b         | :Label(propA,propB), cache[b.propA], cache[b.propB] |
-        || |        +----------------+------+---------+-----------+-----------------------------------------------------+
-        || +NAME    |              1 |   42 |      33 | a         |                                                     |
-        |+----------+----------------+------+---------+-----------+-----------------------------------------------------+
+      """+----------+----------------+------+---------+----------------+-----------+-------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Variables | Other       |
+        |+----------+----------------+------+---------+----------------+-----------+-------------+
+        || +NAME    |              1 |    2 |     633 |                | b         | Index stuff |
+        || |        +----------------+------+---------+----------------+-----------+-------------+
+        || +NAME    |              1 |   42 |      33 |              5 | a         |             |
+        |+----------+----------------+------+---------+----------------+-----------+-------------+
         |""".stripMargin)
   }
 
@@ -521,73 +498,6 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |+----------+----------------+------+---------+-----------+-----------+
         || +NAME    |              1 |   42 |      33 | n         | length(n) |
         |+----------+----------------+------+---------+-----------+-----------+
-        |""".stripMargin)
-  }
-
-  test("format index range seek properly") {
-    val seekPlan = IndexSeek("a:Person(age < 12)")
-    val cardinalities = new Cardinalities
-    cardinalities.set(seekPlan.id, 1.0)
-    cardinalities.set(argument.id, 1.0)
-    val providedOrders = new ProvidedOrders
-    providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
-
-    renderAsTreeTable(description.create(seekPlan)) should equal(
-      """+-----------------------+----------------+---------+-----------+-------------------+
-        || Operator              | Estimated Rows | Order   | Variables | Other             |
-        |+-----------------------+----------------+---------+-----------+-------------------+
-        || +NodeIndexSeekByRange |              1 | foo ASC | a         | :Person(age) < 12 |
-        |+-----------------------+----------------+---------+-----------+-------------------+
-        |""".stripMargin)
-  }
-
-  test("format caching index range seek properly") {
-    val seekPlan = IndexSeek("a:Person(age < 12)", getValue = GetValue)
-    val cardinalities = new Cardinalities
-    cardinalities.set(seekPlan.id, 1.0)
-    cardinalities.set(argument.id, 1.0)
-    val providedOrders = new ProvidedOrders
-    providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
-
-    renderAsTreeTable(description.create(seekPlan)) should equal(
-      """+-----------------------+----------------+---------+-----------+---------------------------------+
-        || Operator              | Estimated Rows | Order   | Variables | Other                           |
-        |+-----------------------+----------------+---------+-----------+---------------------------------+
-        || +NodeIndexSeekByRange |              1 | foo ASC | a         | :Person(age) < 12, cache[a.age] |
-        |+-----------------------+----------------+---------+-----------+---------------------------------+
-        |""".stripMargin)
-  }
-
-  test("format index range seek by bounds") {
-    val greaterThan = RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
-    val lessThan = RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("21")(pos))))
-    val between = RangeBetween(greaterThan, lessThan)
-    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(between)(pos))
-    val seekPlan = NodeIndexSeek(
-      "a",
-      LabelToken("Person", LabelId(0)),
-      Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0)), DoNotGetValue)),
-      rangeQuery,
-      Set.empty,
-      IndexOrderNone)(idGen)
-    val cardinalities = new Cardinalities
-    cardinalities.set(seekPlan.id, 1.0)
-    cardinalities.set(argument.id, 1.0)
-    val providedOrders = new ProvidedOrders
-    providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder.empty)
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
-
-    renderAsTreeTable(description.create(seekPlan)) should equal(
-      """+-----------------------+----------------+-----------+-----------------------------------------+
-        || Operator              | Estimated Rows | Variables | Other                                   |
-        |+-----------------------+----------------+-----------+-----------------------------------------+
-        || +NodeIndexSeekByRange |              1 | a         | :Person(age) > 12 AND :Person(age) < 21 |
-        |+-----------------------+----------------+-----------+-----------------------------------------+
         |""".stripMargin)
   }
 

@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -55,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.Bound
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
@@ -131,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
@@ -192,6 +195,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowDefaultDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
@@ -219,15 +223,12 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Expression
 import org.neo4j.cypher.internal.plandescription.Arguments.Expressions
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
 import org.neo4j.cypher.internal.plandescription.Arguments.IndexName
-import org.neo4j.cypher.internal.plandescription.Arguments.InequalityIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.plandescription.Arguments.LabelName
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
-import org.neo4j.cypher.internal.plandescription.Arguments.PointDistanceIndex
-import org.neo4j.cypher.internal.plandescription.Arguments.PrefixIndex
 import org.neo4j.cypher.internal.plandescription.Arguments.Qualifier
 import org.neo4j.cypher.internal.plandescription.Arguments.Resource
 import org.neo4j.cypher.internal.plandescription.Arguments.Role
@@ -236,6 +237,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Scope
 import org.neo4j.cypher.internal.plandescription.Arguments.Signature
 import org.neo4j.cypher.internal.plandescription.Arguments.User
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.asPrettyString
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.exceptions.InternalException
@@ -280,17 +282,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case NodeByIdSeek(_, _, _) =>
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
-      case p@NodeIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties)
+      case p@NodeIndexSeek(idName, label, properties, valueExpr, _, _) =>
+        val (indexMode, indexDesc) = getDescriptions(idName, label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
-      case p@NodeUniqueIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties)
+      case p@NodeUniqueIndexSeek(idName, label, properties, valueExpr, _, _) =>
+        val (indexMode, indexDesc) = getDescriptions(idName, label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case p@MultiNodeIndexSeek(indexLeafPlans) =>
         val (indexModes, indexDescs) = indexLeafPlans.map { l =>
-          getDescriptions(l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = true, readOnly, p.cachedProperties)
+          getDescriptions(l.idName, l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = true, readOnly, p.cachedProperties)
         }.unzip
         PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren,
                             indexDescs, variables)
@@ -318,16 +320,22 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
-      case p@NodeIndexContainsScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties), Expression(valueExpr))
-        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
+      case p@NodeIndexContainsScan(idName, label, property, valueExpr, _, _) =>
+        val predicate = s"${property.propertyKeyToken.name} CONTAINS ${PlanDescriptionArgumentSerializer.asPrettyString(valueExpr)}"
+        val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, Seq(Index(info)), variables)
 
-      case p@NodeIndexEndsWithScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties), Expression(valueExpr))
-        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
+      case p@NodeIndexEndsWithScan(idName, label, property, valueExpr, _, _) =>
+        val predicate = s"${property.propertyKeyToken.name} ENDS WITH ${PlanDescriptionArgumentSerializer.asPrettyString(valueExpr)}"
+        val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, Seq(Index(info)), variables)
 
-      case p@NodeIndexScan(_, label, properties, _, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
+      case p@NodeIndexScan(idName, label, properties, _, _) =>
+        val tokens = properties.map(_.propertyKeyToken)
+        val props = tokens.map(_.name)
+        val predicates = props.map(p => s"exists($p)").mkString(" AND ")
+        val info = indexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(info)), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
@@ -1049,49 +1057,34 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       Some(Expressions(predicatesMap))
   }
 
-  private def getDescriptions(label: LabelToken,
+  private def getDescriptions(idName: String,
+                              label: LabelToken,
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[expressions.Expression],
                               unique: Boolean,
                               readOnly: Boolean,
-                              caches: Seq[expressions.Expression]): (String, Argument) = {
+                              caches: Seq[expressions.Expression]): (String, Index) = {
 
+    val name = indexOperatorName(valueExpr, unique, readOnly)
+    val predicate = indexPredicateString(propertyKeys, valueExpr)
+    val info = indexInfoString(idName, unique, label, propertyKeys, predicate, caches)
+
+    (name, Index(info))
+  }
+
+  private def indexOperatorName(valueExpr: QueryExpression[expressions.Expression],
+                                unique: Boolean,
+                                readOnly: Boolean): String = {
     def findName(exactOnly: Boolean =  true) =
       if (unique && !readOnly && exactOnly) "NodeUniqueIndexSeek(Locking)"
       else if (unique) "NodeUniqueIndexSeek"
       else "NodeIndexSeek"
 
-    val (name, indexDesc) = valueExpr match {
-      case e: RangeQueryExpression[_] =>
-        checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
-        val propertyKey = propertyKeys.head.name
-        val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
-        e.expression match {
-          case PrefixSeekRangeWrapper(range) =>
-            (name, PrefixIndex(label.name, propertyKey, range.prefix, caches))
-          case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
-            (name, InequalityIndex(label.name, propertyKey,
-              bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq, caches))
-          case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
-            (name, InequalityIndex(label.name, propertyKey,
-              bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq, caches))
-          case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
-            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound =>
-              s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
-            val lessThanBoundsText = lessThanBounds.bounds.map(bound =>
-              s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
-            (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText, caches))
-          case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
-            val funcName = Point.name
-            val poi = point match {
-              case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
-                s"point(${args.map(_._1.name).mkString(",")})"
-              case _ => point.toString
-            }
-            (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive, caches))
-          case _ => throw new InternalException("This should never happen. Missing a case?")
-        }
-      case e: CompositeQueryExpression[_] =>
+    valueExpr match {
+      case _: ExistenceQueryExpression[expressions.Expression] => "NodeIndexScan"
+      case _: RangeQueryExpression[expressions.Expression] =>
+        if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
+      case e: CompositeQueryExpression[expressions.Expression] =>
         val predicates = e.inner.map {
           case _: ExistenceQueryExpression[Expression] => "exists"
           case _: RangeQueryExpression[Expression] => "range"
@@ -1099,11 +1092,82 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
           case _ => "equality"
         }
-        (s"${findName(e.exactOnly)}(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name), caches))
-      case _ => (findName(), Index(label.name, propertyKeys.map(_.name), caches))
+        s"${findName(e.exactOnly)}(${predicates.mkString(",")})"
+      case _: SingleQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
+        findName()
+      case _: ManyQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
+        findName()
     }
+  }
 
-    (name, indexDesc)
+  private def indexPredicateString(propertyKeys: Seq[PropertyKeyToken],
+                                   valueExpr: QueryExpression[expressions.Expression]): String = valueExpr match {
+    case _: ExistenceQueryExpression[expressions.Expression] =>
+      s"exists(${propertyKeys.head.name})"
+
+    case e: RangeQueryExpression[expressions.Expression] =>
+      checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
+      e.expression match {
+        case PrefixSeekRangeWrapper(range) =>
+          val propertyKeyName = propertyKeys.head.name
+          s"$propertyKeyName STARTS WITH ${PlanDescriptionArgumentSerializer.asPrettyString(range.prefix)}"
+
+        case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
+          bounds.map(rangeBoundString(propertyKeys.head, _, '<')).toIndexedSeq.mkString(" AND ")
+
+        case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
+          bounds.map(rangeBoundString(propertyKeys.head, _, '>')).toIndexedSeq.mkString(" AND ")
+
+        case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
+          val gtBoundString = greaterThanBounds.bounds.map(rangeBoundString(propertyKeys.head, _, '>'))
+          val ltBoundStrings = lessThanBounds.bounds.map(rangeBoundString(propertyKeys.head, _, '<'))
+          (gtBoundString ++ ltBoundStrings).toIndexedSeq.mkString(" AND ")
+
+        case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
+          val funcName = Point.name
+          val poi = point match {
+            case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
+              s"point(${args.map(_._2).map(PlanDescriptionArgumentSerializer.asPrettyString).mkString(", ")})"
+            case _ => PlanDescriptionArgumentSerializer.asPrettyString(point)
+          }
+          val propertyKeyName = propertyKeys.head.name
+          val distanceStr = PlanDescriptionArgumentSerializer.asPrettyString(distance)
+          s"distance($propertyKeyName, $poi) <${if(inclusive) "=" else ""} $distanceStr"
+      }
+
+    case e: SingleQueryExpression[expressions.Expression] =>
+      val propertyKeyName = propertyKeys.head.name
+      s"$propertyKeyName = ${PlanDescriptionArgumentSerializer.asPrettyString(e.expression)}"
+
+    case e: ManyQueryExpression[expressions.Expression] =>
+      val (eqOp, innerExp) = e.expression match {
+        case ll@ListLiteral(es) =>
+          if (es.size == 1) ("=", es.head) else ("IN", ll)
+        // This case is used for example when the expression in a parameter
+        case x => ("IN", x)
+      }
+      val propertyKeyName = propertyKeys.head.name
+      s"$propertyKeyName $eqOp ${PlanDescriptionArgumentSerializer.asPrettyString(innerExp)}"
+
+    case e: CompositeQueryExpression[expressions.Expression] =>
+      val predicates = e.inner.zipWithIndex.map {
+        case (exp, i) => indexPredicateString(Seq(propertyKeys(i)), exp)
+      }
+      predicates.mkString(" AND ")
+  }
+
+  private def rangeBoundString(propertyKey: PropertyKeyToken, bound: Bound[expressions.Expression], sign: Char): String = {
+    s"${propertyKey.name} $sign${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}"
+  }
+
+  private def indexInfoString(idName: String, unique: Boolean, label: LabelToken, propertyKeys: Seq[PropertyKeyToken], predicate: String, caches: Seq[expressions.Expression]): String = {
+    val uniqueStr = if (unique) " UNIQUE" else ""
+    val propertyKeyString = propertyKeys.map(_.name).mkString(", ")
+    s"$idName:${label.name}$uniqueStr($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
+  }
+
+  private def cachesSuffix(caches: Seq[expressions.Expression]): String = {
+    if (caches.isEmpty) "" else caches.map(asPrettyString).mkString(", ", ", ", "")
   }
 
   private def extractDatabaseArguments(action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String): Seq[Argument] =

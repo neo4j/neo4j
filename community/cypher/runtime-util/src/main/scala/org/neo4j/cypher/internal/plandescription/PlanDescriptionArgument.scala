@@ -58,13 +58,7 @@ object Arguments {
 
   case class MergePattern(startPoint: String) extends Argument
 
-  case class Index(label: String, propertyKeys: Seq[String], caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
-
-  case class PrefixIndex(label: String, propertyKey: String, prefix: org.neo4j.cypher.internal.expressions.Expression, caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
-
-  case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String], caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
-
-  case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[org.neo4j.cypher.internal.expressions.Expression]) extends Argument
+  case class Index(info: String) extends Argument
 
   case class IndexName(index: String) extends Argument
 

@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
-import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -50,7 +52,11 @@ import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.Index
@@ -111,9 +117,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Seq(EstimatedRows(1), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
             PLANNER_VERSION), Set("a"))
 
-      , attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))) ->
+      , attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b", "foo"))))) ->
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren,
-          Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+          Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b", "foo"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
             PLANNER_VERSION), Set("b"))
 
       , attach(NodeByLabelScan("node", expressions.LabelName("X")(pos), Set.empty), 33.0) ->
@@ -128,22 +134,118 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Seq(EstimatedRows(333), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
             PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
 
+      , attach(IndexSeek("x:Label(Prop)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE exists(Prop)"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop)", getValue = GetValue), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE exists(Prop), cache[x.Prop]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop,Foo)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren,
+          Seq(Index("x:Label(Prop, Foo) WHERE exists(Prop) AND exists(Foo)"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop,Foo)", getValue = GetValue), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren,
+          Seq(Index("x:Label(Prop, Foo) WHERE exists(Prop) AND exists(Foo), cache[x.Prop], cache[x.Foo]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
       , attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
-          Seq(Index("Label", Seq("Prop"), Seq.empty), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("x:Label(Prop) WHERE Prop = \"Andres\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
-          Seq(Index("Label", Seq("Prop"), Seq(CachedProperty("x", Variable("x")(pos), PropertyKeyName("Prop")(pos), NODE_TYPE)(pos))), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
+      , attach(IndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0) ->
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
+          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop = \"Andres\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0) ->
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
+          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop > 9)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeekByRange", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop > 9"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop < 9)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeekByRange", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop < 9"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(9 <= Prop <= 11)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeekByRange", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
       , attach(
-        NodeUniqueIndexSeek("x", LabelToken("Lebal", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
+        NodeUniqueIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
           ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index("Lebal", Seq("Prop"), Seq.empty), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop = \"Andres\""), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(
+        NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
+          RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(
+            FunctionInvocation(MapExpression(Seq(
+              (PropertyKeyName("x")(pos), SignedDecimalIntegerLiteral("1")(pos)),
+              (PropertyKeyName("y")(pos), SignedDecimalIntegerLiteral("2")(pos)),
+              (PropertyKeyName("crs")(pos), StringLiteral("cartesian")(pos))
+            ))(pos), FunctionName(Point.name)(pos)), SignedDecimalIntegerLiteral("10")(pos), inclusive = true
+          ))(pos)),
+          Set.empty, IndexOrderNone),
+        95.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeekByRange", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE distance(Prop, point(1, 2, \"cartesian\")) <= 10"), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop STARTS WITH 'Foo')"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeekByRange", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop STARTS WITH \"Foo\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop ENDS WITH 'Foo')"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop ENDS WITH \"Foo\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop CONTAINS 'Foo')"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren,
+          Seq(Index("x:Label(Prop) WHERE Prop CONTAINS \"Foo\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop = 10,Foo = 12)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeek(equality,equality)", NoChildren,
+          Seq(Index("x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0) ->
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek(equality,equality)", NoChildren,
+          Seq(Index("x:Label UNIQUE(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+            Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop > 10,Foo)"), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeek(range,exists)", NoChildren,
+          Seq(Index("x:Label(Prop, Foo) WHERE Prop > 10 AND exists(Foo)"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(Expand(lhsLP, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll), 95.0) ->
