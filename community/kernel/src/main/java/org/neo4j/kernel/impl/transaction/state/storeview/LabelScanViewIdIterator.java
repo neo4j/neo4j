@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.index.label.TokenScanReader;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Node id iterator used during index population when we go over node ids indexed in label scan store.
@@ -33,22 +32,24 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     private final int[] labelIds;
     private final TokenScanReader labelScanReader;
     private final CURSOR entityCursor;
+    private final PageCursorTracer cursorTracer;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    LabelScanViewIdIterator( TokenScanReader labelScanReader, int[] labelIds, CURSOR entityCursor )
+    LabelScanViewIdIterator( TokenScanReader labelScanReader, int[] labelIds, CURSOR entityCursor, PageCursorTracer cursorTracer )
     {
         this.labelScanReader = labelScanReader;
         this.entityCursor = entityCursor;
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds, TRACER_SUPPLIER.get() );
+        this.cursorTracer = cursorTracer;
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds, cursorTracer );
         this.labelIds = labelIds;
     }
 
     @Override
     public void close()
     {
-       idIterator.close();
+        idIterator.close();
     }
 
     @Override
@@ -71,6 +72,6 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = labelScanReader.nodesWithAnyOfLabels( lastReturnedId, labelIds, TRACER_SUPPLIER.get() );
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( lastReturnedId, labelIds, cursorTracer );
     }
 }

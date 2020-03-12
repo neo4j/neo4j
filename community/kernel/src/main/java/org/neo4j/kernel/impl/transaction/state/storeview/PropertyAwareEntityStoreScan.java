@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor, FAILURE extends Exception> implements StoreScan<FAILURE>
 {
@@ -46,24 +46,24 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private final StorageReader storageReader;
     private volatile boolean continueScanning;
     private long count;
-    private long totalCount;
+    private final long totalCount;
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
     private PhaseTracker phaseTracker;
 
     protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
-            LongFunction<Lock> lockFunction )
+            LongFunction<Lock> lockFunction, PageCursorTracer cursorTracer )
     {
         this.storageReader = storageReader;
-        this.entityCursor = allocateCursor( storageReader );
-        this.propertyCursor = storageReader.allocatePropertyCursor( TRACER_SUPPLIER.get() );
+        this.entityCursor = allocateCursor( storageReader, cursorTracer );
+        this.propertyCursor = storageReader.allocatePropertyCursor( cursorTracer );
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
         this.phaseTracker = PhaseTracker.nullInstance;
     }
 
-    protected abstract CURSOR allocateCursor( StorageReader storageReader );
+    protected abstract CURSOR allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer );
 
     static boolean containsAnyEntityToken( int[] entityTokenFilter, long... entityTokens )
     {
@@ -125,7 +125,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         }
         finally
         {
-            IOUtils.closeAllUnchecked( propertyCursor, entityCursor, storageReader );
+            closeAllUnchecked( propertyCursor, entityCursor, storageReader );
         }
     }
 

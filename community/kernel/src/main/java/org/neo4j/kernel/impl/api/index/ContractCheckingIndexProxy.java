@@ -160,11 +160,11 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void close() throws IOException
+    public void close( PageCursorTracer cursorTracer ) throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            super.close();
+            super.close( cursorTracer );
             return;
         }
 
@@ -176,7 +176,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            super.close();
+            super.close( cursorTracer );
             return;
         }
 

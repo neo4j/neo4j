@@ -55,7 +55,7 @@ class LabelScanStoreRebuildTest
     @Inject
     private PageCache pageCache;
 
-    private static final FullStoreChangeStream THROWING_STREAM = writer ->
+    private static final FullStoreChangeStream THROWING_STREAM = ( writer, cursorTracer ) ->
     {
         throw new IllegalArgumentException();
     };

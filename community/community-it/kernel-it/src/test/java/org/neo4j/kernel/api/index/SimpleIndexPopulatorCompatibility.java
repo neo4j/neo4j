@@ -100,7 +100,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
             // WHEN
             p.markAsFailed( failure );
-            p.close( false );
+            p.close( false, NULL );
 
             // THEN
             assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL ) );
@@ -113,7 +113,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) );
-        p.close( false );
+        p.close( false, NULL );
 
         // WHEN
         p.drop();
@@ -133,9 +133,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
             // update using populator...
             IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
-            p.add( singletonList( update ) );
+            p.add( singletonList( update ), NULL );
             // ...is the same as update using updater
-            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorTracer ) -> propertyValue ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorTracer ) -> propertyValue, NULL ) )
             {
                 updater.process( update );
             }
@@ -158,7 +158,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ), NULL ) );
 
         // THEN
         assertHasAllValues( valueSet1 );
@@ -170,7 +170,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
         {
-            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup, NULL ) )
             {
                 for ( NodeAndValue entry : valueSet1 )
                 {
@@ -187,7 +187,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ), NULL ) );
 
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
@@ -261,8 +261,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
         {
-            p.add( updates( firstBatch ) );
-            p.add( updates( secondBatch ) );
+            p.add( updates( firstBatch ), NULL );
+            p.add( updates( secondBatch ), NULL );
 
             // Index should be consistent
         } );
@@ -353,8 +353,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             long offset = valueSet1.size();
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
             {
-                p.add( updates( valueSet1, 0 ) );
-                p.add( updates( valueSet1, offset ) );
+                p.add( updates( valueSet1, 0 ), NULL );
+                p.add( updates( valueSet1, offset ), NULL );
             } );
 
             // then
@@ -401,11 +401,11 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 {
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor.schema(), value ),
-                            add( nodeId2, descriptor.schema(), value ) ) );
+                            add( nodeId2, descriptor.schema(), value ) ), NULL );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
-                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler );
+                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler, NULL );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );

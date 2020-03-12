@@ -209,7 +209,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                     return new IndexPopulator.Adapter()
                     {
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
                         {
                             for ( IndexEntryUpdate<?> update : updates )
                             {
@@ -224,7 +224,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                         }
 
                         @Override
-                        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
+                        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
                         {
                             return new IndexUpdater()
                             {
@@ -243,7 +243,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                         }
 
                         @Override
-                        public void close( boolean populationCompletedSuccessfully )
+                        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
                         {
                             assertTrue( populationCompletedSuccessfully );
                         }

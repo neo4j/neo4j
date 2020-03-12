@@ -58,8 +58,8 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -872,7 +873,7 @@ class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sample() ).thenReturn( new IndexSample() );
+        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
@@ -891,9 +892,9 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ), any( PageCursorTracer.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true );
+        verify( populator ).close( true, NULL );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -909,7 +910,7 @@ class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sample() ).thenReturn( new IndexSample() );
+        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
@@ -928,9 +929,10 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ),
+                any( PageCursorTracer.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true );
+        verify( populator ).close( true, NULL );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -949,7 +951,7 @@ class BatchInsertTest
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
-        when( populator.sample() ).thenReturn( new IndexSample() );
+        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -966,9 +968,9 @@ class BatchInsertTest
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( c -> c.contains( add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) ) &&
-                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
+                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ), any( PageCursorTracer.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true );
+        verify( populator ).close( true, NULL );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -1506,14 +1508,6 @@ class BatchInsertTest
             array[i] = startValue + i;
         }
         return array;
-    }
-
-    private static Node getNodeInTx( long nodeId, GraphDatabaseService db )
-    {
-        try ( var tx = db.beginTx() )
-        {
-            return tx.getNodeById( nodeId );
-        }
     }
 
     private static void forceFlush( BatchInserter inserter )

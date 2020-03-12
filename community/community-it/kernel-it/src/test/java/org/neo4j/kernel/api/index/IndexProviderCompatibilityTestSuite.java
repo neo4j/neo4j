@@ -63,6 +63,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
         SimpleIndexPopulatorCompatibility.General.class,
@@ -308,13 +310,13 @@ public abstract class IndexProviderCompatibilityTestSuite
                 runWithPopulator.accept( populator );
                 if ( closeSuccessfully )
                 {
-                    populator.scanCompleted( PhaseTracker.nullInstance, jobScheduler );
+                    populator.scanCompleted( PhaseTracker.nullInstance, jobScheduler, NULL );
                     testSuite.consistencyCheck( populator );
                 }
             }
             finally
             {
-                populator.close( closeSuccessfully );
+                populator.close( closeSuccessfully, NULL );
             }
         }
 

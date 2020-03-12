@@ -22,31 +22,30 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.function.IntPredicate;
 
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
     private final int[] relationshipTypeIds;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
 
-    public RelationshipStoreScan( StorageReader storageReader, LockService locks,
-            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter )
+    public RelationshipStoreScan( StorageReader storageReader, LockService locks, Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
         super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
-                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
+                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ), cursorTracer );
         this.relationshipTypeIds = relationshipTypeIds;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
     }
 
     @Override
-    protected StorageRelationshipScanCursor allocateCursor( StorageReader storageReader )
+    protected StorageRelationshipScanCursor allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer )
     {
-        return storageReader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() );
+        return storageReader.allocateRelationshipScanCursor( cursorTracer );
     }
 
     @Override

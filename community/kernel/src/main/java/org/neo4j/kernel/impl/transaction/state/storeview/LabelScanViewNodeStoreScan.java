@@ -23,6 +23,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -36,20 +37,22 @@ import org.neo4j.storageengine.api.StorageReader;
 public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
+    private final PageCursorTracer cursorTracer;
 
     public LabelScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
-            IntPredicate propertyKeyIdFilter )
+            IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
         super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
-                propertyKeyIdFilter );
+                propertyKeyIdFilter, cursorTracer );
         this.labelScanStore = labelScanStore;
+        this.cursorTracer = cursorTracer;
     }
 
     @Override
     public EntityIdIterator getEntityIdIterator()
     {
-        return new LabelScanViewIdIterator<>( labelScanStore.newReader(), labelIds, entityCursor );
+        return new LabelScanViewIdIterator<>( labelScanStore.newReader(), labelIds, entityCursor, cursorTracer );
     }
 }

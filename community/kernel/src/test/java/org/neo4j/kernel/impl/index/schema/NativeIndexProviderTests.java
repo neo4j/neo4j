@@ -136,7 +136,7 @@ abstract class NativeIndexProviderTests
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ) );
         populator.create();
-        populator.close( true );
+        populator.close( true, NULL );
 
         // when
         // ... no failure on populator
@@ -153,7 +153,7 @@ abstract class NativeIndexProviderTests
         int nonFailedIndexId = NativeIndexProviderTests.indexId;
         IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig(), heapBufferFactory( 1024 ) );
         nonFailedPopulator.create();
-        nonFailedPopulator.close( true );
+        nonFailedPopulator.close( true, NULL );
 
         int failedIndexId = 2;
         IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig(), heapBufferFactory( 1024 ) );
@@ -161,7 +161,7 @@ abstract class NativeIndexProviderTests
 
         // when
         failedPopulator.markAsFailed( "failure" );
-        failedPopulator.close( false );
+        failedPopulator.close( false, NULL );
 
         var populationFailure = provider.getPopulationFailure( descriptor( nonFailedIndexId ), NULL );
         assertEquals( StringUtils.EMPTY, populationFailure );
@@ -178,7 +178,7 @@ abstract class NativeIndexProviderTests
         // when
         String failureMessage = "fail";
         populator.markAsFailed( failureMessage );
-        populator.close( false );
+        populator.close( false, NULL );
 
         // then
         String populationFailure = provider.getPopulationFailure( descriptor(), NULL );
@@ -203,11 +203,11 @@ abstract class NativeIndexProviderTests
         // when
         String firstFailure = "first failure";
         firstPopulator.markAsFailed( firstFailure );
-        firstPopulator.close( false );
-        secondPopulator.close( true );
+        firstPopulator.close( false, NULL );
+        secondPopulator.close( true, NULL );
         String thirdFailure = "third failure";
         thirdPopulator.markAsFailed( thirdFailure );
-        thirdPopulator.close( false );
+        thirdPopulator.close( false, NULL );
 
         // then
         assertThat( provider.getPopulationFailure( descriptor( first ), NULL ) ).isEqualTo( firstFailure );
@@ -226,7 +226,7 @@ abstract class NativeIndexProviderTests
         // when
         String failureMessage = "fail";
         populator.markAsFailed( failureMessage );
-        populator.close( false );
+        populator.close( false, NULL );
 
         // then
         provider = newProvider();
@@ -272,7 +272,7 @@ abstract class NativeIndexProviderTests
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
-        populator.close( true );
+        populator.close( true, NULL );
     }
 
     @Test
@@ -283,7 +283,7 @@ abstract class NativeIndexProviderTests
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ) );
         populator.create();
         populator.markAsFailed( "Just some failure" );
-        populator.close( false );
+        populator.close( false, NULL );
 
         // when
         InternalIndexState state = provider.getInitialState( descriptor(), NULL );
@@ -299,7 +299,7 @@ abstract class NativeIndexProviderTests
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ) );
         populator.create();
-        populator.close( true );
+        populator.close( true, NULL );
 
         // when
         InternalIndexState state = provider.getInitialState( descriptor(), NULL );

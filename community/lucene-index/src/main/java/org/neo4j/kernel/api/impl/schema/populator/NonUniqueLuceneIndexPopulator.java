@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.DefaultNonUniqueIndexSampler;
@@ -28,8 +29,6 @@ import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
@@ -54,7 +53,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }
@@ -66,9 +65,9 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     }
 
     @Override
-    public IndexSample sample()
+    public IndexSample sample( PageCursorTracer cursorTracer )
     {
-        return sampler.sample( TRACER_SUPPLIER.get() );
+        return sampler.sample( cursorTracer );
     }
 
     private DefaultNonUniqueIndexSampler createDefaultSampler()

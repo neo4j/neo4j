@@ -87,9 +87,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close() throws IOException
+    public void close( PageCursorTracer cursorTracer ) throws IOException
     {
-        getDelegate().close();
+        getDelegate().close( cursorTracer );
     }
 
     @Override

@@ -33,6 +33,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ThreadTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -62,8 +63,8 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.close();
-        assertThrows( IllegalStateException.class, outer::close );
+        outer.close( NULL );
+        assertThrows( IllegalStateException.class, () -> outer.close( NULL ) );
     }
 
     @Test
@@ -86,7 +87,7 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.close();
+        outer.close( NULL );
         assertThrows( IllegalStateException.class, outer::drop );
     }
 
@@ -115,7 +116,7 @@ class ContractCheckingIndexProxyTest
         outer.start();
 
         // PASS
-        outer.close();
+        outer.close( NULL );
     }
 
     @Test
@@ -144,7 +145,7 @@ class ContractCheckingIndexProxyTest
 
         // WHEN
         outer.start();
-        outer.close();
+        outer.close( NULL );
 
         assertThrows( IllegalStateException.class, () ->
         {
@@ -176,11 +177,11 @@ class ContractCheckingIndexProxyTest
 
         // WHEN
         outer.start();
-        outer.close();
+        outer.close( NULL );
 
         outer.force( IOLimiter.UNLIMITED, NULL );
         verify( inner ).start();
-        verify( inner ).close();
+        verify( inner ).close( any() );
         verifyNoMoreInteractions( inner );
     }
 
@@ -205,7 +206,7 @@ class ContractCheckingIndexProxyTest
         try
         {
             latch.waitForAllToStart();
-            assertThrows( IllegalStateException.class, outer::close );
+            assertThrows( IllegalStateException.class, () -> outer.close( NULL ) );
         }
         finally
         {
@@ -256,7 +257,7 @@ class ContractCheckingIndexProxyTest
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
-        Thread actionThread = createActionThread( outer::close );
+        Thread actionThread = createActionThread( () -> outer.close( NULL ) );
         outer.start();
 
         // WHEN
@@ -310,7 +311,7 @@ class ContractCheckingIndexProxyTest
             }
         };
         IndexProxy outer = newContractCheckingIndexProxy( inner );
-        Thread actionThread = createActionThread( outer::close );
+        Thread actionThread = createActionThread( () -> outer.close( NULL ) );
         actionThreadReference.set( actionThread );
 
         outer.start();

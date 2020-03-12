@@ -72,7 +72,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
             }
 
             @Override
-            public IndexSample sample()
+            public IndexSample sample( PageCursorTracer cursorTracer )
             {
                 return new IndexSample();
             }

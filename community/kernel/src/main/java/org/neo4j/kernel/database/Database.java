@@ -389,8 +389,8 @@ public class Database extends LifecycleAdapter
                     buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors );
 
             // Schema indexes
-            DynamicIndexStoreView indexStoreView =
-                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, internalLogProvider );
+            DynamicIndexStoreView indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader,
+                    internalLogProvider );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
                     readOnly, pageCacheTracer );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, pageCacheTracer );

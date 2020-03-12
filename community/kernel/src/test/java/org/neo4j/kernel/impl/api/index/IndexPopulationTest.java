@@ -31,6 +31,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDropper;
@@ -68,18 +70,18 @@ class IndexPopulationTest
 
         MultipleIndexPopulator multipleIndexPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                        JobSchedulerFactory.createInitialisedScheduler(), tokens );
+                        JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
         multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
-        multipleIndexPopulator.createStoreScan().run();
+        multipleIndexPopulator.createStoreScan( PageCursorTracer.NULL ).run();
 
         // when
-        indexPopulation.flip( false );
+        indexPopulation.flip( false, PageCursorTracer.NULL );
 
         // then
-        assertSame( flipper.getState(), InternalIndexState.FAILED, "flipper should have flipped to failing proxy" );
+        assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
     }
 
     private OnlineIndexProxy onlineIndexProxy( IndexStatisticsStore indexStatisticsStore )
@@ -98,7 +100,7 @@ class IndexPopulationTest
         return new IndexPopulator.Adapter()
         {
             @Override
-            public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
+            public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
             {
                 return new IndexUpdater()
                 {
@@ -123,7 +125,8 @@ class IndexPopulationTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+                    PageCursorTracer cursorTracer )
             {
                 //noinspection unchecked
                 return new StoreScan()

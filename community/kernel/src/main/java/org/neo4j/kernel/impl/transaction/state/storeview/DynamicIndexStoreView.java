@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
@@ -66,22 +67,22 @@ public class DynamicIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
             IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            boolean forceStoreScan )
+            boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
         if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
         {
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
-                    forceStoreScan );
+                    forceStoreScan, cursorTracer );
         }
         return new LabelScanViewNodeStoreScan<>( storageEngine.get(), locks, labelScanStore, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
+                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, PageCursorTracer cursorTracer )
     {
-        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
+        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
     }
 
     private boolean useAllNodeStoreScan( int[] labelIds )
@@ -103,8 +104,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public NodePropertyAccessor newPropertyAccessor()
+    public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer )
     {
-        return neoStoreIndexStoreView.newPropertyAccessor();
+        return neoStoreIndexStoreView.newPropertyAccessor( cursorTracer );
     }
 }

@@ -29,8 +29,9 @@ import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
-import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.TokenScanReader;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -82,7 +83,8 @@ class DynamicIndexStoreViewTest
         }
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
-        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
+        StoreScan<Exception> storeScan =
+                storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false, PageCursorTracer.NULL );
         storeScan.run();
 
         verify( labelUpdateVisitor, times( nodeIds.length ) ).visit( any() );
@@ -92,7 +94,7 @@ class DynamicIndexStoreViewTest
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore,
-                locks, storageReaderSupplier, NullLogProvider.getInstance() );
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore, locks, storageReaderSupplier,
+                NullLogProvider.getInstance() );
     }
 }

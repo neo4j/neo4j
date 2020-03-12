@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -296,7 +297,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
         IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
         IndexProxy indexProxy = indexService.getIndexProxy( index );
-        assertSame( indexProxy.getState(), InternalIndexState.ONLINE );
+        assertSame( InternalIndexState.ONLINE, indexProxy.getState() );
     }
 
     private long[] id( String label )
@@ -501,10 +502,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                boolean forceStoreScan )
+                boolean forceStoreScan, PageCursorTracer cursorTracer )
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
-                    labelUpdateVisitor, forceStoreScan );
+                    labelUpdateVisitor, forceStoreScan, cursorTracer );
             return new LabelScanViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan<FAILURE>) storeScan, customAction );
@@ -522,8 +523,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 LabelScanViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
-            super( storageReader, locks, labelScanStore, labelUpdateVisitor,
-                    propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
+            super( storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, NULL );
             this.delegate = delegate;
             this.customAction = customAction;
         }
@@ -581,7 +581,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class UpdateGenerator implements Runnable
     {
-        private Iterable<EntityUpdates> updates;
+        private final Iterable<EntityUpdates> updates;
 
         UpdateGenerator( Iterable<EntityUpdates> updates )
         {
@@ -644,7 +644,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class IndexDropAction implements Runnable
     {
-        private int labelIdToDropIndexFor;
+        private final int labelIdToDropIndexFor;
 
         private IndexDropAction( int labelIdToDropIndexFor )
         {

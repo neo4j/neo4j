@@ -71,7 +71,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void close()
+    public void close( PageCursorTracer cursorTracer )
     {
     }
 

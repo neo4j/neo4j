@@ -150,7 +150,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close() throws IOException
+    public void close( PageCursorTracer cursorTracer ) throws IOException
     {
         accessor.close();
     }

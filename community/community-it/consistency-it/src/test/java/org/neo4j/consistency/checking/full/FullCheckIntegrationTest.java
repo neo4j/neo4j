@@ -371,7 +371,7 @@ public class FullCheckIntegrationTest
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() ).getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ) );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
-            populator.close( false );
+            populator.close( false, NULL );
         }
 
         for ( Long indexedNodeId : indexedNodes )

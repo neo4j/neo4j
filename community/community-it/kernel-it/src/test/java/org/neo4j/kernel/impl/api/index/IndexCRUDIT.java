@@ -211,7 +211,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
         {
             updatesCommitted.addAll( updates );
         }
@@ -222,7 +222,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
         {
             return newUpdater( IndexUpdateMode.ONLINE, NULL );
         }
@@ -234,7 +234,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
         {
         }
 
@@ -250,7 +250,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexSample sample()
+        public IndexSample sample( PageCursorTracer cursorTracer )
         {
             long indexSize = 0;
             for ( Set<Long> nodeIds : indexSamples.values() )

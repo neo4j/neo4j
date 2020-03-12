@@ -56,6 +56,9 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -101,6 +104,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -180,6 +184,34 @@ class IndexPopulationJobTest
     }
 
     @Test
+    void tracePageCacheAccessIndexWithOneNodePopulation() throws KernelException
+    {
+        var value = "value";
+        long nodeId = createNode( map( name, value ), FIRST );
+        IndexPopulator actualPopulator = indexPopulator( false );
+        TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
+        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexPrototype.forSchema( descriptor ),
+                pageCacheTracer );
+
+        job.run();
+
+        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
+
+        assertTrue( populator.created );
+        assertEquals( Collections.singletonList( update ), populator.includedSamples );
+        assertEquals( 2, populator.adds.size() );
+        assertTrue( populator.resultSampled );
+        assertTrue( populator.closeCall );
+
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
+    }
+
+    @Test
     void shouldPopulateIndexWithOneRelationship()
     {
         // GIVEN
@@ -202,6 +234,34 @@ class IndexPopulationJobTest
         assertEquals( 2, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
+    }
+
+    @Test
+    void tracePageCacheAccessIndexWithOneRelationship()
+    {
+        String value = "value";
+        long nodeId = createNode( map( name, value ), FIRST );
+        long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
+        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptor.forRelType( 0, 0 ) );
+        IndexPopulator actualPopulator = indexPopulator( descriptor );
+        TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor, pageCacheTracer );
+
+        job.run();
+
+        IndexEntryUpdate<?> update = IndexEntryUpdate.add( relationship, descriptor, Values.of( age ) );
+
+        assertTrue( populator.created );
+        assertEquals( Collections.singletonList( update ), populator.includedSamples );
+        assertEquals( 2, populator.adds.size() );
+        assertTrue( populator.resultSampled );
+        assertTrue( populator.closeCall );
+
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 16 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
     }
 
     @Test
@@ -251,7 +311,7 @@ class IndexPopulationJobTest
     }
 
     @Test
-    void shouldPopulateRelatonshipIndexWithASmallDataset() throws Exception
+    void shouldPopulateRelatonshipIndexWithASmallDataset()
     {
         // GIVEN
         String value = "Philip J.Fry";
@@ -344,7 +404,7 @@ class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any( Collection.class ) );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any( Collection.class ), any( PageCursorTracer.class ) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -369,9 +429,9 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
+                ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean(), any() ) )
                 .thenReturn(storeScan );
-        when( storeView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
@@ -399,7 +459,7 @@ class IndexPopulationJobTest
         }
 
         // THEN
-        verify( populator ).close( false );
+        verify( populator ).close( false, PageCursorTracer.NULL );
         verify( index, never() ).flip( any(), any() );
         verify( jobHandle ).cancel();
     }
@@ -428,7 +488,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, PageCursorTracer.NULL );
         }
     }
 
@@ -456,7 +516,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, PageCursorTracer.NULL );
         }
     }
 
@@ -489,10 +549,10 @@ class IndexPopulationJobTest
         IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( failureDelegateFactory, populator, new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(),
-                        EntityType.NODE, indexPrototype( FIRST, name, false ) );
+                        EntityType.NODE, indexPrototype( FIRST, name, false ), NULL );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
-        doThrow( failure ).when( populator ).close( true );
+        doThrow( failure ).when( populator ).close( true, PageCursorTracer.NULL );
 
         // When
         job.run();
@@ -528,7 +588,7 @@ class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL );
 
         // when
         populationJob.run();
@@ -546,7 +606,8 @@ class IndexPopulationJobTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+                    PageCursorTracer cursorTracer )
             {
                 return new StoreScan<>()
                 {
@@ -576,7 +637,7 @@ class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL );
 
         // when
         populationJob.run();
@@ -613,7 +674,7 @@ class IndexPopulationJobTest
         }
     }
 
-    private class NodeChangingWriter extends IndexPopulator.Adapter
+    private static class NodeChangingWriter extends IndexPopulator.Adapter
     {
         private final Set<Pair<Long, Object>> added = new HashSet<>();
         private IndexPopulationJob job;
@@ -631,7 +692,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -649,7 +710,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
         {
             return new IndexUpdater()
             {
@@ -680,7 +741,7 @@ class IndexPopulationJobTest
         }
     }
 
-    private class NodeDeletingWriter extends IndexPopulator.Adapter
+    private static class NodeDeletingWriter extends IndexPopulator.Adapter
     {
         private final Map<Long, Object> added = new HashMap<>();
         private final Map<Long, Object> removed = new HashMap<>();
@@ -702,7 +763,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -720,7 +781,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
         {
             return new IndexUpdater()
             {
@@ -766,24 +827,36 @@ class IndexPopulationJobTest
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
     {
-        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype );
+        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, NULL );
+    }
+
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype,
+            PageCacheTracer cacheTracer )
+    {
+        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, cacheTracer );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, IndexStoreView storeView, LogProvider logProvider,
-            EntityType type, IndexPrototype prototype )
+            EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
     {
-        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, pageCacheTracer );
+    }
+
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper,
+            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype )
+    {
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, NULL );
     }
 
     private IndexPopulationJob newIndexPopulationJob( FailedIndexProxyFactory failureDelegateFactory, IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype )
+            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
     {
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator(
-                storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
+        MultipleIndexPopulator multiPopulator =
+                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
@@ -856,7 +929,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
                 IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL );
         }
 
         @Override
@@ -888,17 +961,17 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
         {
             adds.add( updates );
-            super.add( updates );
+            super.add( updates, cursorTracer );
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
         {
             closeCall = populationCompletedSuccessfully;
-            super.close( populationCompletedSuccessfully );
+            super.close( populationCompletedSuccessfully, cursorTracer );
         }
 
         @Override
@@ -909,10 +982,10 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexSample sample()
+        public IndexSample sample( PageCursorTracer cursorTracer )
         {
             resultSampled = true;
-            return super.sample();
+            return super.sample( cursorTracer );
         }
     }
 }

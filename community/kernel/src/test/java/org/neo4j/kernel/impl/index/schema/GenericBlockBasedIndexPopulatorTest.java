@@ -114,7 +114,7 @@ class GenericBlockBasedIndexPopulatorTest
             int hakunaId = 1;
             int matataId = 2;
             externalUpdate( populator, hakuna, hakunaId );
-            populator.scanCompleted( nullInstance, jobScheduler );
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
             externalUpdate( populator, matata, matataId );
 
             // then
@@ -123,7 +123,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -140,14 +140,14 @@ class GenericBlockBasedIndexPopulatorTest
             IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
-                populator.add( singleton( firstScanUpdate ) );
-                populator.add( singleton( secondScanUpdate ) );
-                populator.scanCompleted( nullInstance, jobScheduler );
+                populator.add( singleton( firstScanUpdate ), NULL );
+                populator.add( singleton( secondScanUpdate ), NULL );
+                populator.scanCompleted( nullInstance, jobScheduler, NULL );
             } );
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -164,17 +164,17 @@ class GenericBlockBasedIndexPopulatorTest
             IndexEntryUpdate<?> secondExternalUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
                 {
                     updater.process( firstExternalUpdate );
                     updater.process( secondExternalUpdate );
                 }
-                populator.scanCompleted( nullInstance, jobScheduler );
+                populator.scanCompleted( nullInstance, jobScheduler, NULL );
             } );
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -191,17 +191,17 @@ class GenericBlockBasedIndexPopulatorTest
             IndexEntryUpdate<?> scanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
                 {
                     updater.process( externalUpdate );
                 }
-                populator.add( singleton( scanUpdate ) );
-                populator.scanCompleted( nullInstance, jobScheduler );
+                populator.add( singleton( scanUpdate ), NULL );
+                populator.scanCompleted( nullInstance, jobScheduler, NULL );
             } );
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -218,13 +218,13 @@ class GenericBlockBasedIndexPopulatorTest
             IndexEntryUpdate<?> firstScanUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
             IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             IndexEntryUpdate<?> externalUpdate = IndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
-            populator.add( singleton( firstScanUpdate ) );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+            populator.add( singleton( firstScanUpdate ), NULL );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
             {
                 updater.process( externalUpdate );
             }
-            populator.add( singleton( secondScanUpdate ) );
-            populator.scanCompleted( nullInstance, jobScheduler );
+            populator.add( singleton( secondScanUpdate ), NULL );
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
 
             // then
             assertHasEntry( populator, unique, 1 );
@@ -232,7 +232,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -249,15 +249,15 @@ class GenericBlockBasedIndexPopulatorTest
 
             // when
             Collection<IndexEntryUpdate<?>> updates = singleton( update );
-            populator.add( updates );
-            populator.scanCompleted( nullInstance, jobScheduler );
+            populator.add( updates, NULL );
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
 
             // then
             assertHasEntry( populator, update.values()[0], 1 );
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -274,8 +274,8 @@ class GenericBlockBasedIndexPopulatorTest
             assertThrows( IllegalArgumentException.class, () ->
             {
                 Collection<IndexEntryUpdate<?>> updates = singleton( update );
-                populator.add( updates );
-                populator.scanCompleted( nullInstance, jobScheduler );
+                populator.add( updates, NULL );
+                populator.scanCompleted( nullInstance, jobScheduler, NULL );
 
                 // if not
                 fail( "Expected to throw for value larger than max size." );
@@ -283,7 +283,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -303,7 +303,7 @@ class GenericBlockBasedIndexPopulatorTest
     private static void externalUpdate( BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator, TextValue matata, int matataId )
         throws IndexEntryConflictException
     {
-        try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater() )
+        try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( NULL ) )
         {
             // After scanCompleted
             indexUpdater.process( add( matataId, INDEX_DESCRIPTOR, matata ) );

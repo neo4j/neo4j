@@ -26,6 +26,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
@@ -44,8 +46,10 @@ import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseB
  */
 public class IndexPopulationJob implements Runnable
 {
+    private static final String INDEX_POPULATION_TAG = "indexPopulationJob";
     private final IndexingService.Monitor monitor;
     private final boolean verifyBeforeFlipping;
+    private final PageCacheTracer pageCacheTracer;
     private final ByteBufferFactory bufferFactory;
     private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
@@ -59,11 +63,13 @@ public class IndexPopulationJob implements Runnable
      */
     private volatile JobHandle jobHandle;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
+            PageCacheTracer pageCacheTracer )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
+        this.pageCacheTracer = pageCacheTracer;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
         this.bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryAllocationTracker ), parseBlockSize() );
     }
@@ -93,7 +99,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        try
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_POPULATION_TAG ) )
         {
             if ( !multiPopulator.hasPopulators() )
             {
@@ -106,23 +112,23 @@ public class IndexPopulationJob implements Runnable
 
             try
             {
-                multiPopulator.create();
-                multiPopulator.resetIndexCounts();
+                multiPopulator.create( cursorTracer );
+                multiPopulator.resetIndexCounts( cursorTracer );
 
                 monitor.indexPopulationScanStarting();
-                indexAllEntities();
+                indexAllEntities( cursorTracer );
                 monitor.indexPopulationScanComplete();
                 if ( stopped )
                 {
-                    multiPopulator.stop();
+                    multiPopulator.stop( cursorTracer );
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping );
+                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping, cursorTracer );
             }
             catch ( Throwable t )
             {
-                multiPopulator.cancel( t );
+                multiPopulator.cancel( t, cursorTracer );
             }
         }
         finally
@@ -136,9 +142,9 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllEntities() throws IndexPopulationFailedKernelException
+    private void indexAllEntities( PageCursorTracer cursorTracer ) throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.createStoreScan();
+        storeScan = multiPopulator.createStoreScan( cursorTracer );
         storeScan.run();
     }
 
@@ -174,9 +180,9 @@ public class IndexPopulationJob implements Runnable
      * Stop population of specific index. Index will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
      * @param population {@link MultipleIndexPopulator.IndexPopulation} to be stopped.
      */
-    void stop( MultipleIndexPopulator.IndexPopulation population )
+    void stop( MultipleIndexPopulator.IndexPopulation population, PageCursorTracer cursorTracer )
     {
-        multiPopulator.stop( population );
+        multiPopulator.stop( population, cursorTracer );
     }
 
     /**

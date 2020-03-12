@@ -23,6 +23,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
@@ -30,8 +31,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 /**
  * Node store view that will always visit all nodes during store scan.
@@ -52,22 +51,22 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
             final Visitor<EntityUpdates, FAILURE> propertyUpdatesVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
-            boolean forceStoreScan )
+            boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
         return new StoreViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
+                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor )
+            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, PageCursorTracer cursorTracer )
     {
-        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter );
+        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
     }
 
     @Override
-    public NodePropertyAccessor newPropertyAccessor()
+    public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer )
     {
-        return new DefaultNodePropertyAccessor( storageEngine.get(), TRACER_SUPPLIER.get() );
+        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorTracer );
     }
 }

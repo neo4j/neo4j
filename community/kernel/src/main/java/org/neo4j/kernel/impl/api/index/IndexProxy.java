@@ -75,7 +75,7 @@ public interface IndexProxy extends IndexConfigProvider
     /**
      * Close this index context.
      */
-    void close() throws IOException;
+    void close( PageCursorTracer cursorTracer ) throws IOException;
 
     IndexDescriptor getDescriptor();
 

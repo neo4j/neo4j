@@ -296,7 +296,7 @@ class LuceneSchemaIndexPopulatorTest
 
     private void switchToVerification() throws IOException
     {
-        indexPopulator.close( true );
+        indexPopulator.close( true, NULL );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
@@ -304,7 +304,7 @@ class LuceneSchemaIndexPopulatorTest
 
     private void addUpdate( IndexPopulator populator, long nodeId, Object value ) throws IndexEntryConflictException
     {
-        populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
+        populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ), NULL );
     }
 
     private static void updatePopulator(
@@ -312,7 +312,7 @@ class LuceneSchemaIndexPopulatorTest
             Iterable<IndexEntryUpdate<?>> updates,
             NodePropertyAccessor accessor ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor, NULL ) )
         {
             for ( IndexEntryUpdate<?> update :  updates )
             {

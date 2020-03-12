@@ -79,7 +79,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close()
+    public void close( PageCursorTracer cursorTracer )
     {
     }
 

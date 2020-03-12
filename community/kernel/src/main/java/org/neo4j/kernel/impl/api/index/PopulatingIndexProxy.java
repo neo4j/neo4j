@@ -113,9 +113,9 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close()
+    public void close( PageCursorTracer cursorTracer )
     {
-        job.stop( indexPopulation );
+        job.stop( indexPopulation, cursorTracer );
     }
 
     @Override

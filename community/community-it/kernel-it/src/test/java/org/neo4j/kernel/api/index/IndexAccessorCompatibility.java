@@ -73,7 +73,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) );
         populator.create();
-        populator.close( true );
+        populator.close( true, NULL );
         accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig );
     }
 

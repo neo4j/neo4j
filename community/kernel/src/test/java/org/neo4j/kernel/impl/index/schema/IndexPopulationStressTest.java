@@ -151,7 +151,7 @@ abstract class IndexPopulationStressTest
         UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
         if ( populator != null )
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 
@@ -173,7 +173,7 @@ abstract class IndexPopulationStressTest
         race.addContestant( updater( lastBatches, insertersDone, updateLock, updates ) );
 
         race.go();
-        populator.close( true );
+        populator.close( true, NULL );
         populator = null; // to let the after-method know that we've closed it ourselves
 
         // then assert that a tree built by a single thread ends up exactly the same
@@ -213,7 +213,7 @@ abstract class IndexPopulationStressTest
                 // Do updates now and then
                 Thread.sleep( 10 );
                 updateLock.writeLock().lock();
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL ) )
                 {
                     for ( int i = 0; i < THREADS; i++ )
                     {
@@ -273,7 +273,7 @@ abstract class IndexPopulationStressTest
                     updateLock.readLock().lock();
                     try
                     {
-                        populator.add( batch );
+                        populator.add( batch, NULL );
                     }
                     finally
                     {
@@ -303,10 +303,10 @@ abstract class IndexPopulationStressTest
                 generator.reset();
                 for ( int i = 0; i < BATCHES_PER_THREAD; i++ )
                 {
-                    referencePopulator.add( generator.batch() );
+                    referencePopulator.add( generator.batch(), NULL );
                 }
             }
-            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor ) )
+            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor, NULL ) )
             {
                 for ( IndexEntryUpdate<?> update : updates )
                 {
@@ -317,7 +317,7 @@ abstract class IndexPopulationStressTest
         }
         finally
         {
-            referencePopulator.close( referenceSuccess );
+            referencePopulator.close( referenceSuccess, NULL );
         }
     }
 

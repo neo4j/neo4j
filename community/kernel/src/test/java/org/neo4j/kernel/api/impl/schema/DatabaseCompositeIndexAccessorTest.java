@@ -53,7 +53,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -100,6 +99,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -172,7 +172,7 @@ public class DatabaseCompositeIndexAccessorTest
         {
             IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ) );
             populator.create();
-            populator.close( true );
+            populator.close( true, NULL );
 
             return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG );
         };
@@ -307,7 +307,7 @@ public class DatabaseCompositeIndexAccessorTest
             {
                 Thread.onSpinWait();
             }
-            sampler.sampleIndex( PageCursorTracer.NULL );
+            sampler.sampleIndex( NULL );
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )
@@ -324,7 +324,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, results, unconstrained(), PageCursorTracer.NULL, queries );
+            reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
             return toSet( results );
         }
     }
@@ -347,7 +347,7 @@ public class DatabaseCompositeIndexAccessorTest
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {

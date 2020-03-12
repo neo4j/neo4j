@@ -22,6 +22,7 @@ package org.neo4j.internal.index.label;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 /**
@@ -29,13 +30,13 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
  */
 public interface FullStoreChangeStream
 {
-    FullStoreChangeStream EMPTY = writer -> 0;
+    FullStoreChangeStream EMPTY = ( writer, cursorTracer ) -> 0;
 
-    long applyTo( TokenScanWriter writer ) throws IOException;
+    long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer ) throws IOException;
 
     static FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
     {
-        return writer ->
+        return ( writer, cursorTracer ) ->
         {
             long count = 0;
             for ( NodeLabelUpdate update : existingData )

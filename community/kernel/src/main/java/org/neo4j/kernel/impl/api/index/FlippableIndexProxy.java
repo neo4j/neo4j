@@ -248,13 +248,13 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void close() throws IOException
+    public void close( PageCursorTracer cursorTracer ) throws IOException
     {
         lock.readLock().lock();
         try
         {
             closed = true;
-            delegate.close();
+            delegate.close( cursorTracer );
         }
         finally
         {

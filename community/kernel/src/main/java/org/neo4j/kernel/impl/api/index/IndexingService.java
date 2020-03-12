@@ -105,6 +105,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class IndexingService extends LifecycleAdapter implements IndexUpdateListener, IndexingProvidersService
 {
+    private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexStoreView storeView;
@@ -438,9 +439,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             {
                 // This is OK to get during recovery because the underlying index can be in any unknown state
                 // while we're recovering. Let's just move on to closing it instead.
-                try
+                try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
                 {
-                    index.close();
+                    index.close( cursorTracer );
                 }
                 catch ( IOException closeException )
                 {
@@ -761,23 +762,26 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void closeAllIndexes()
     {
-        indexMapRef.modify( indexMap ->
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
         {
-            Iterable<IndexProxy> indexesToStop = indexMap.getAllIndexProxies();
-            for ( IndexProxy index : indexesToStop )
+            indexMapRef.modify( indexMap ->
             {
-                try
+                Iterable<IndexProxy> indexesToStop = indexMap.getAllIndexProxies();
+                for ( IndexProxy index : indexesToStop )
                 {
-                    index.close();
+                    try
+                    {
+                        index.close( cursorTracer );
+                    }
+                    catch ( Exception e )
+                    {
+                        internalLog.error( "Unable to close index", e );
+                    }
                 }
-                catch ( Exception e )
-                {
-                    internalLog.error( "Unable to close index", e );
-                }
-            }
-            // Effectively clearing it
-            return new IndexMap();
-        } );
+                // Effectively clearing it
+                return new IndexMap();
+            } );
+        }
     }
 
     public LongSet getIndexIds()
@@ -804,9 +808,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
-        MultipleIndexPopulator multiPopulator =
-                new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
+                jobScheduler, tokenNameLookup, pageCacheTracer );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

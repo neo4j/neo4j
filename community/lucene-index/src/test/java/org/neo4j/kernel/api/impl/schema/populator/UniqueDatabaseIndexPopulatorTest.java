@@ -109,7 +109,7 @@ class UniqueDatabaseIndexPopulatorTest
     {
         if ( populator != null )
         {
-            populator.close( false );
+            populator.close( false, NULL );
         }
         IOUtils.closeAll( index, directoryFactory );
     }
@@ -126,7 +126,7 @@ class UniqueDatabaseIndexPopulatorTest
 
         // when
         populator.verifyDeferredConstraints( nodePropertyAccessor );
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
@@ -149,11 +149,11 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         updater.process( change( 1, schemaDescriptor, "value1", "value2" ) );
 
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
@@ -169,12 +169,12 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         updater.process( remove( 1, schemaDescriptor, "value1" ) );
         updater.process( add( 1, schemaDescriptor, "value1" ) );
 
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
@@ -189,11 +189,11 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         updater.process( remove( 1, schemaDescriptor, "value1" ) );
 
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
@@ -209,12 +209,12 @@ class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         updater.process( change( 1, schemaDescriptor, "value1", "value2" ) );
         updater.process( change( 2, schemaDescriptor, "value2", "value1" ) );
 
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( singletonList( 2L ), getAllNodes( getDirectory(), "value1" ) );
@@ -257,7 +257,7 @@ class UniqueDatabaseIndexPopulatorTest
         // when
         var conflict = assertThrows( IndexEntryConflictException.class, () ->
         {
-            IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+            IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
             updater.process( add( 3, schemaDescriptor, "value1" ) );
             updater.close();
         } );
@@ -273,7 +273,7 @@ class UniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         String valueString = "value1";
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
         updater.process( add( 1, schemaDescriptor, valueString ) );
         addUpdate( populator, 2, valueString );
 
@@ -297,7 +297,7 @@ class UniqueDatabaseIndexPopulatorTest
         when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID, NULL ) ).thenReturn(
                 Values.of( "value1" ) );
 
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
         updater.process( add( 1, schemaDescriptor, "value1" ) );
         updater.process( change( 1, schemaDescriptor, "value1", "value1" ) );
         updater.close();
@@ -306,7 +306,7 @@ class UniqueDatabaseIndexPopulatorTest
 
         // when
         populator.verifyDeferredConstraints( nodePropertyAccessor );
-        populator.close( true );
+        populator.close( true, NULL );
 
         // then
         assertEquals( singletonList( 1L ), getAllNodes( getDirectory(), "value1" ) );
@@ -321,7 +321,7 @@ class UniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         int iterations = 228; // This value has to be high enough to stress the EntrySet implementation
-        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
@@ -387,7 +387,7 @@ class UniqueDatabaseIndexPopulatorTest
 
             try
             {   // Just open it and let it be closed
-                populator.newPopulatingUpdater( nodePropertyAccessor ).close();
+                populator.newPopulatingUpdater( nodePropertyAccessor, NULL ).close();
             }
             catch ( IndexEntryConflictException e )
             {
@@ -412,7 +412,7 @@ class UniqueDatabaseIndexPopulatorTest
         executor.submit( () ->
         {
             // Just open it and let it be closed
-            populator.newPopulatingUpdater( nodePropertyAccessor ).close();
+            populator.newPopulatingUpdater( nodePropertyAccessor, NULL ).close();
             return null;
         } ).get( 5, SECONDS );
     }
@@ -422,7 +422,7 @@ class UniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        IndexSample sample = populator.sample();
+        IndexSample sample = populator.sample( NULL );
 
         assertEquals( new IndexSample(), sample );
     }
@@ -440,7 +440,7 @@ class UniqueDatabaseIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        IndexSample sample = populator.sample();
+        IndexSample sample = populator.sample( NULL );
 
         assertEquals( new IndexSample( 4, 4, 4 ), sample );
     }
@@ -455,7 +455,7 @@ class UniqueDatabaseIndexPopulatorTest
                 add( 2, schemaDescriptor, "bbb" ),
                 add( 3, schemaDescriptor, "ccc" ) );
 
-        populator.add( updates );
+        populator.add( updates, NULL );
 
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader();
@@ -476,7 +476,7 @@ class UniqueDatabaseIndexPopulatorTest
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
     {
         IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
-        populator.add( singletonList( update ) );
+        populator.add( singletonList( update ), NULL );
     }
 
     private List<Long> getAllNodes( Directory directory, Object value ) throws IOException

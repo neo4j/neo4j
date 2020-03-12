@@ -183,9 +183,9 @@ class IndexingServiceTest
     @BeforeEach
     void setUp() throws IndexNotFoundKernelException
     {
-        when( populator.sample() ).thenReturn( new IndexSample() );
+        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
-        when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
+        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( propertyAccessor );
         IndexReader indexReader = mock( IndexReader.class );
         IndexSampler indexSampler = mock( IndexSampler.class );
         when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
@@ -224,7 +224,7 @@ class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         waitForIndexesToComeOnline( indexingService, index );
-        verify( populator, timeout( 10000 ) ).close( true );
+        verify( populator, timeout( 10000 ) ).close( true, NULL );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
@@ -235,7 +235,7 @@ class IndexingServiceTest
         assertEquals( ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
-        order.verify( populator ).close( true );
+        order.verify( populator ).close( true, NULL );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
@@ -264,7 +264,7 @@ class IndexingServiceTest
     void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
         // given
-        when( populator.newPopulatingUpdater( propertyAccessor ) ).thenReturn( updater );
+        when( populator.newPopulatingUpdater( propertyAccessor, NULL ) ).thenReturn( updater );
 
         CountDownLatch populationLatch = new CountDownLatch( 1 );
 
@@ -313,20 +313,20 @@ class IndexingServiceTest
         populationLatch.countDown();
 
         waitForIndexesToComeOnline( indexingService, index );
-        verify( populator ).close( true );
+        verify( populator ).close( true, NULL );
 
         // then
         assertEquals( ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
-        order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( JobScheduler.class ) );
-        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
-        order.verify( populator ).newPopulatingUpdater( propertyAccessor );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
+        order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( JobScheduler.class ), any( PageCursorTracer.class ) );
+        order.verify( populator, times( 2 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
+        order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
         order.verify( updater ).close();
-        order.verify( populator ).sample();
-        order.verify( populator ).close( true );
+        order.verify( populator ).sample( NULL );
+        order.verify( populator ).close( true, NULL );
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
 
@@ -352,7 +352,7 @@ class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         // don't wait for index to come ONLINE here since we're testing that it doesn't
-        verify( populator, timeout( 20000 ) ).close( true );
+        verify( populator, timeout( 20000 ) ).close( true, NULL );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
@@ -363,7 +363,7 @@ class IndexingServiceTest
         assertEquals( POPULATING, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater );
         order.verify( populator ).create();
-        order.verify( populator ).close( true );
+        order.verify( populator ).close( true, NULL );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE, NULL );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
@@ -388,7 +388,7 @@ class IndexingServiceTest
         assertEquals( ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor );
         order.verify( populator ).create();
-        order.verify( populator ).close( true );
+        order.verify( populator ).close( true, NULL );
     }
 
     @Test
@@ -732,7 +732,7 @@ class IndexingServiceTest
 
         indexing.createIndexes( index );
         waitForIndexesToComeOnline( indexing, index );
-        verify( populator, timeout( 10000 ) ).close( true );
+        verify( populator, timeout( 10000 ) ).close( true, NULL );
 
         // When
         indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL );
@@ -778,7 +778,7 @@ class IndexingServiceTest
 
         waitForIndexesToComeOnline( indexing, index1, index2 );
 
-        verify( populator, timeout( 10000 ).times( 2 ) ).close( true );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( true, NULL );
 
         // When
         indexing.applyUpdates( asList(
@@ -997,7 +997,7 @@ class IndexingServiceTest
         // when
         indexing.createIndexes( index );
         waitForIndexesToGetIntoState( indexing, FAILED, index );
-        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture() );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture(), any() );
 
         // then
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
@@ -1031,7 +1031,7 @@ class IndexingServiceTest
 
         // when
         waitForIndexesToGetIntoState( indexing, FAILED, index );
-        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture() );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture(), any() );
 
         // then
         assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
@@ -1413,13 +1413,13 @@ class IndexingServiceTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
         {
             latch.waitForAllToStart();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
         {
             latch.finish();
         }
@@ -1521,7 +1521,7 @@ class IndexingServiceTest
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
-                    any( Visitor.class ), isNull(), anyBoolean() ) ).thenAnswer( this );
+                    any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ) ) ).thenAnswer( this );
         }
 
         @Override

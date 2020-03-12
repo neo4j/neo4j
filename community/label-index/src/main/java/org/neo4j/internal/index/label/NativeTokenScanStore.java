@@ -455,12 +455,13 @@ public class NativeTokenScanStore implements TokenScanStore, LabelScanStore, Nod
             long numberOfEntities;
 
             // Intentionally ignore read-only flag here when rebuilding.
+            final PageCursorTracer cursorTracer = NULL;
             try ( TokenScanWriter writer = newBulkAppendWriter() )
             {
-                numberOfEntities = fullStoreChangeStream.applyTo( writer );
+                numberOfEntities = fullStoreChangeStream.applyTo( writer, cursorTracer );
             }
 
-            index.checkpoint( IOLimiter.UNLIMITED, writeClean, NULL );
+            index.checkpoint( IOLimiter.UNLIMITED, writeClean, cursorTracer );
 
             monitor.rebuilt( numberOfEntities );
             needsRebuild = false;

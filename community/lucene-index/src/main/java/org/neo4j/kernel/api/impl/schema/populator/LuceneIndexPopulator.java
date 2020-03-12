@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -67,7 +68,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
     {
         assert updatesForCorrectIndex( updates );
 
@@ -86,7 +87,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully )
+    public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
     {
         try
         {

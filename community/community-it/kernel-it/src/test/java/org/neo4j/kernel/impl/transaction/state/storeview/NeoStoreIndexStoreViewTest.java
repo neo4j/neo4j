@@ -24,12 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -46,9 +48,12 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
@@ -84,6 +89,8 @@ class NeoStoreIndexStoreViewTest
     private GraphDatabaseAPI graphDb;
     @Inject
     private RecordStorageEngine storageEngine;
+    @Inject
+    private CheckPointer checkPointer;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
@@ -126,7 +133,7 @@ class NeoStoreIndexStoreViewTest
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
         storeView = new NeoStoreIndexStoreView( locks, storageEngine::newReader );
-        propertyAccessor = storeView.newPropertyAccessor();
+        propertyAccessor = storeView.newPropertyAccessor( NULL );
         reader = storageEngine.newReader();
     }
 
@@ -145,7 +152,7 @@ class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL );
 
         // when
         storeScan.run();
@@ -164,7 +171,7 @@ class NeoStoreIndexStoreViewTest
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
 
         // when
         storeScan.run();
@@ -183,7 +190,7 @@ class NeoStoreIndexStoreViewTest
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
+        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL );
 
         // when
         storeScan.run();
@@ -200,7 +207,7 @@ class NeoStoreIndexStoreViewTest
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
 
         // when
         storeScan.run();
@@ -216,7 +223,7 @@ class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, null, false );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, null, false, NULL );
 
         // when
         storeScan.run();
@@ -240,7 +247,7 @@ class NeoStoreIndexStoreViewTest
         // given
         @SuppressWarnings( "unchecked" )
         Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
+        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
 
         // when
         storeScan.run();
@@ -271,8 +278,7 @@ class NeoStoreIndexStoreViewTest
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
         StoreViewNodeStoreScan<RuntimeException> storeViewNodeStoreScan =
                 new StoreViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks,
-                        null, propertyUpdateVisitor, new int[]{labelId},
-                        id -> true );
+                        null, propertyUpdateVisitor, new int[]{labelId}, id -> true, NULL );
 
         try ( StorageNodeCursor nodeCursor = reader.allocateNodeCursor( NULL ) )
         {
@@ -295,13 +301,32 @@ class NeoStoreIndexStoreViewTest
     }
 
     @Test
+    void tracePageCacheAccessOnStoreViewNodeScan() throws IOException
+    {
+        //enforce checkpoint to flush tree caches
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        CountingVisitor countingVisitor = new CountingVisitor();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreViewNodeScan" ) )
+        {
+            var scan = new StoreViewNodeStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{labelId}, id -> true, cursorTracer );
+            scan.run();
+        }
+
+        assertThat( countingVisitor.countedUpdates() ).isEqualTo( 2 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 3 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 3 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 3 );
+    }
+
+    @Test
     void processAllRelationshipProperties()
     {
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
         RelationshipStoreScan<RuntimeException> relationshipStoreScan =
-                new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
-                        id -> true );
+                new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId}, id -> true, NULL );
 
         try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor( NULL ) )
         {
@@ -321,6 +346,26 @@ class NeoStoreIndexStoreViewTest
         List<RelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
         assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ) ).contains( index1, index2, index3 );
+    }
+
+    @Test
+    void tracePageCacheAccessOnRelationshipStoreScan() throws Exception
+    {
+        //enforce checkpoint to flush tree caches
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        CountingVisitor countingVisitor = new CountingVisitor();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipStoreScan" ) )
+        {
+            var scan = new RelationshipStoreScan<>( storageEngine.newReader(), locks, countingVisitor, new int[]{relTypeId}, id -> true, cursorTracer );
+            scan.run();
+        }
+
+        assertThat( countingVisitor.countedUpdates() ).isEqualTo( 2 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 2 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 2 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 2 );
     }
 
     private EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
@@ -370,6 +415,23 @@ class NeoStoreIndexStoreViewTest
             propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
             relPropertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "duration" );
             tx.commit();
+        }
+    }
+
+    private static class CountingVisitor implements Visitor<EntityUpdates,RuntimeException>
+    {
+        private final AtomicInteger counter = new AtomicInteger();
+
+        @Override
+        public boolean visit( EntityUpdates element ) throws RuntimeException
+        {
+            counter.incrementAndGet();
+            return true;
+        }
+
+        int countedUpdates()
+        {
+            return counter.get();
         }
     }
 

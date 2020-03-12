@@ -37,6 +37,7 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
@@ -84,11 +85,11 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
 
         assertThrows( IndexEntryConflictException.class, () ->
         {
-            populator.add( asList( updates ) );
-            populator.scanCompleted( nullInstance, jobScheduler );
+            populator.add( asList( updates ), NULL );
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
         } );
 
-        populator.close( true );
+        populator.close( true, NULL );
     }
 
     @Test
@@ -97,7 +98,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         // given
         populator.create();
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -107,11 +108,11 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         var e = assertThrows( Exception.class, () ->
         {
             updater.close();
-            populator.scanCompleted( nullInstance, jobScheduler );
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
         } );
         assertTrue( hasCause( e, IndexEntryConflictException.class ), e.getMessage() );
 
-        populator.close( true );
+        populator.close( true, NULL );
     }
 
     @Test
@@ -122,18 +123,18 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // WHEN
-        populator.add( asList( updates ) );
+        populator.add( asList( updates ), NULL );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             populator.includeSample( update );
         }
-        populator.scanCompleted( nullInstance, jobScheduler );
-        IndexSample sample = populator.sample();
+        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        IndexSample sample = populator.sample( NULL );
 
         // THEN
         assertEquals( updates.length, sample.sampleSize() );
         assertEquals( updates.length, sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
-        populator.close( true );
+        populator.close( true, NULL );
     }
 }

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -59,7 +60,7 @@ class FailedFulltextIndexPopulator extends IndexPopulator.Adapter
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
     {
         throw failedException();
     }
@@ -70,7 +71,7 @@ class FailedFulltextIndexPopulator extends IndexPopulator.Adapter
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
     {
         return new IndexUpdater()
         {

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.function.IntPredicate;
 
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -29,7 +30,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
+import static org.neo4j.lock.LockService.LockType.READ_LOCK;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
@@ -38,22 +39,20 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
     protected final int[] labelIds;
 
-    public StoreViewNodeStoreScan( StorageReader storageReader, LockService locks,
-            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            int[] labelIds, IntPredicate propertyKeyIdFilter )
+    public StoreViewNodeStoreScan( StorageReader storageReader, LockService locks, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
-        super( storageReader, storageReader.nodesGetCount( TRACER_SUPPLIER.get() ), propertyKeyIdFilter,
-                id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
+        super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,
+                id -> locks.acquireNodeLock( id, READ_LOCK ), cursorTracer );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;
     }
 
     @Override
-    protected StorageNodeCursor allocateCursor( StorageReader storageReader )
+    protected StorageNodeCursor allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer )
     {
-        return storageReader.allocateNodeCursor( TRACER_SUPPLIER.get() );
+        return storageReader.allocateNodeCursor( cursorTracer );
     }
 
     @Override
@@ -83,5 +82,10 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             }
         }
         return false;
+    }
+
+    private static long nodeCount( StorageReader reader, PageCursorTracer cursorTracer )
+    {
+        return reader.nodesGetCount( cursorTracer );
     }
 }

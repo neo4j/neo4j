@@ -103,7 +103,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
                     return new IndexPopulator.Delegating( actualPopulator )
                     {
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
                         {
                             throw new RuntimeException( POPULATION_FAILURE_MESSAGE );
                         }

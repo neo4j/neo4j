@@ -73,7 +73,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( Arrays.asList(
                     add( 1, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ),
-                    add( 2, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ) ) ) );
+                    add( 2, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ) ), NULL ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
@@ -114,11 +114,11 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                 {
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor.schema(), value1, value2 ),
-                            add( nodeId2, descriptor.schema(), value1, value2 ) ) );
+                            add( nodeId2, descriptor.schema(), value1, value2 ) ), NULL );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
-                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler );
+                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler, NULL );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );
@@ -143,7 +143,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                 // when
                 p.add( Arrays.asList(
                         add( nodeId1, descriptor.schema(), value1, value2 ),
-                        add( nodeId2, descriptor.schema(), value1, value3 ) ) );
+                        add( nodeId2, descriptor.schema(), value1, value3 ) ), NULL );
 
                 TestNodePropertyAccessor propertyAccessor =
                         new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );

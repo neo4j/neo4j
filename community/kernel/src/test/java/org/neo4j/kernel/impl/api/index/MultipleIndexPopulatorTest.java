@@ -35,6 +35,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -65,6 +67,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 class MultipleIndexPopulatorTest
@@ -81,13 +84,13 @@ class MultipleIndexPopulatorTest
     {
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
-        when( indexStoreView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
-        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( mock( StoreScan.class ) );
+        when( indexStoreView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), any() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
-        multipleIndexPopulator = new MultipleIndexPopulator(
-                indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore, jobScheduler, tokens );
+        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
+                jobScheduler, tokens, PageCacheTracer.NULL );
     }
 
     @Test
@@ -96,9 +99,9 @@ class MultipleIndexPopulatorTest
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
 
-        indexPopulation.disconnectAndStop();
+        indexPopulation.disconnectAndStop( NULL );
 
-        multipleIndexPopulator.create();
+        multipleIndexPopulator.create( NULL );
 
         verify( populator, never() ).create();
     }
@@ -109,11 +112,11 @@ class MultipleIndexPopulatorTest
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
 
-        indexPopulation.disconnectAndStop();
+        indexPopulation.disconnectAndStop( NULL );
 
-        indexPopulation.flip( false );
+        indexPopulation.flip( false, NULL );
 
-        verify( indexPopulation.populator, never() ).sample();
+        verify( indexPopulation.populator, never() ).sample( NULL );
     }
 
     @Test
@@ -122,11 +125,11 @@ class MultipleIndexPopulatorTest
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
 
-        indexPopulation.flip( false );
+        indexPopulation.flip( false, NULL );
 
-        indexPopulation.disconnectAndStop();
+        indexPopulation.disconnectAndStop( NULL );
 
-        verify( indexPopulation.populator, never() ).close( false );
+        verify( indexPopulation.populator, never() ).close( false, NULL );
     }
 
     @Test
@@ -137,7 +140,7 @@ class MultipleIndexPopulatorTest
 
         indexPopulation.disconnectAndDrop();
 
-        verify( populator, never() ).close( false );
+        verify( populator, never() ).close( false, NULL );
         verify( populator ).drop();
     }
 
@@ -149,7 +152,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.create();
+        multipleIndexPopulator.create( NULL );
 
         verify( indexPopulator1 ).create();
         verify( indexPopulator2 ).create();
@@ -169,7 +172,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
         addPopulator( indexPopulator3, 3 );
 
-        multipleIndexPopulator.create();
+        multipleIndexPopulator.create( NULL );
 
         checkPopulatorFailure( indexPopulator1 );
         checkPopulatorFailure( indexPopulator3 );
@@ -196,15 +199,15 @@ class MultipleIndexPopulatorTest
         IndexPopulation populationToCancel = addPopulator( indexPopulator1, 1 );
         IndexPopulation populationToKeepActive = addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.create();
+        multipleIndexPopulator.create( NULL );
 
-        multipleIndexPopulator.stop( populationToCancel );
+        multipleIndexPopulator.stop( populationToCancel, NULL );
 
-        multipleIndexPopulator.createStoreScan();
+        multipleIndexPopulator.createStoreScan( NULL );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         verify( populationToKeepActive.flipper ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -218,15 +221,15 @@ class MultipleIndexPopulatorTest
         IndexPopulation populationToCancel = addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.create();
+        multipleIndexPopulator.create( NULL );
 
-        multipleIndexPopulator.stop( populationToCancel );
+        multipleIndexPopulator.stop( populationToCancel, NULL );
 
-        multipleIndexPopulator.createStoreScan();
+        multipleIndexPopulator.createStoreScan( NULL );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         verify( populationToCancel.flipper, never() ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -240,12 +243,11 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.create();
-        multipleIndexPopulator.createStoreScan();
+        multipleIndexPopulator.create( NULL );
+        multipleIndexPopulator.createStoreScan( NULL );
 
         verify( indexStoreView )
-            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
-                anyBoolean() );
+            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ) );
     }
 
     @Test
@@ -257,7 +259,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.cancel( getPopulatorException() );
+        multipleIndexPopulator.cancel( getPopulatorException(), NULL );
 
         checkPopulatorFailure( indexPopulator1 );
         checkPopulatorFailure( indexPopulator2 );
@@ -272,7 +274,7 @@ class MultipleIndexPopulatorTest
         addPopulator( populator1, 1 );
         IndexPopulation population2 = addPopulator( populator2, 2 );
 
-        multipleIndexPopulator.cancel( population2, getPopulatorException() );
+        multipleIndexPopulator.cancel( population2, getPopulatorException(), NULL );
 
         verify( populator1, never() ).markAsFailed( anyString() );
         checkPopulatorFailure( populator2 );
@@ -287,8 +289,8 @@ class MultipleIndexPopulatorTest
         IndexPopulation population1 = addPopulator( populator1, 1 );
         IndexPopulation population2 = addPopulator( populator2, 2 );
 
-        multipleIndexPopulator.cancel( population1, getPopulatorException() );
-        multipleIndexPopulator.cancel( population2, getPopulatorException() );
+        multipleIndexPopulator.cancel( population1, getPopulatorException(), NULL );
+        multipleIndexPopulator.cancel( population2, getPopulatorException(), NULL );
 
         checkPopulatorFailure( populator1 );
         checkPopulatorFailure( populator2 );
@@ -303,7 +305,7 @@ class MultipleIndexPopulatorTest
 
         addPopulator( populator, 1 );
 
-        multipleIndexPopulator.cancel( nonExistingPopulation, getPopulatorException() );
+        multipleIndexPopulator.cancel( nonExistingPopulation, getPopulatorException(), NULL );
 
         verify( populator, never() ).markAsFailed( anyString() );
     }
@@ -317,7 +319,7 @@ class MultipleIndexPopulatorTest
         FlippableIndexProxy flipper1 = addPopulator( indexPopulator1, 1 ).flipper;
         FlippableIndexProxy flipper2 = addPopulator( indexPopulator2, 2 ).flipper;
 
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         verify( flipper1 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
         verify( flipper2 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
@@ -334,7 +336,7 @@ class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         assertFalse( multipleIndexPopulator.hasPopulators() );
     }
@@ -348,11 +350,11 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        multipleIndexPopulator.stop();
+        multipleIndexPopulator.stop( NULL );
 
         verify( indexStatisticsStore, times( 2 ) ).replaceStats( anyLong(), eq( new IndexSample( 0, 0, 0 ) ) );
-        verify( indexPopulator1 ).close( false );
-        verify( indexPopulator2 ).close( false );
+        verify( indexPopulator1 ).close( false, NULL );
+        verify( indexPopulator2 ).close( false, NULL );
     }
 
     @Test
@@ -368,16 +370,16 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1, flipper, failedIndexProxyFactory );
         addPopulator( indexPopulator2, 2, flipper, failedIndexProxyFactory );
 
-        when( indexPopulator1.sample() ).thenThrow( getSampleError() );
+        when( indexPopulator1.sample( any( PageCursorTracer.class ) ) ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.createStoreScan();
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
-        verify( indexPopulator1 ).close( false );
+        verify( indexPopulator1 ).close( false, NULL );
         verify( failedIndexProxyFactory ).create( any( RuntimeException.class ) );
 
-        verify( indexPopulator2 ).close( true );
-        verify( indexPopulator2 ).sample();
+        verify( indexPopulator2 ).close( true, NULL );
+        verify( indexPopulator2 ).sample( NULL );
         verify( indexStatisticsStore ).replaceStats( anyLong(), any() );
         verify( schemaState ).clear();
     }
@@ -393,10 +395,10 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         doThrow( getPopulatorException() ).when( indexPopulator2 )
-            .newPopulatingUpdater( any( NodePropertyAccessor.class ) );
+            .newPopulatingUpdater( any( NodePropertyAccessor.class ), any() );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL );
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -413,7 +415,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 2 );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL );
 
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
@@ -433,7 +435,7 @@ class MultipleIndexPopulatorTest
         doThrow( getPopulatorException() ).when( indexUpdater1 ).process( propertyUpdate );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL );
 
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -454,7 +456,7 @@ class MultipleIndexPopulatorTest
 
         doThrow( getPopulatorException() ).when( updater ).process( any( IndexEntryUpdate.class ) );
 
-        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( nodePropertyAccessor );
+        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( nodePropertyAccessor, NULL );
 
         multipleIndexUpdater.process( update1 );
         multipleIndexUpdater.process( update2 );
@@ -475,15 +477,15 @@ class MultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
         IndexPopulator indexPopulator = createIndexPopulator();
         addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
-        when( indexPopulator.sample() ).thenReturn( new IndexSample() );
+        when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
 
         // when
-        multipleIndexPopulator.createStoreScan();
-        multipleIndexPopulator.flipAfterStoreScan( true );
+        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.flipAfterStoreScan( true, NULL );
 
         // then
         verify( indexPopulator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( indexPopulator ).close( true );
+        verify( indexPopulator ).close( true, NULL );
     }
 
     @Test
@@ -502,12 +504,12 @@ class MultipleIndexPopulatorTest
         int sampleSize = 120;
         int updates = 130;
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
-        when( indexPopulator.sample() ).thenReturn( sample );
+        when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( sample );
 
-        multipleIndexPopulator.createStoreScan();
-        multipleIndexPopulator.flipAfterStoreScan( false );
+        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
-        verify( indexPopulator ).close( true );
+        verify( indexPopulator ).close( true, NULL );
 
         verify( indexStatisticsStore ).replaceStats( 1, sample );
         verify( schemaState ).clear();
@@ -526,14 +528,14 @@ class MultipleIndexPopulatorTest
     private static IndexPopulator createIndexPopulator( IndexUpdater indexUpdater )
     {
         IndexPopulator indexPopulator = createIndexPopulator();
-        when( indexPopulator.newPopulatingUpdater( any( NodePropertyAccessor.class ) ) ).thenReturn( indexUpdater );
+        when( indexPopulator.newPopulatingUpdater( any( NodePropertyAccessor.class ), any() ) ).thenReturn( indexUpdater );
         return indexPopulator;
     }
 
     private static IndexPopulator createIndexPopulator()
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        when( populator.sample() ).thenReturn( new IndexSample() );
+        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         return populator;
     }
 
@@ -545,7 +547,7 @@ class MultipleIndexPopulatorTest
     private static void checkPopulatorFailure( IndexPopulator populator )
     {
         verify( populator ).markAsFailed( contains( "something went wrong" ) );
-        verify( populator ).close( false );
+        verify( populator ).close( false, NULL );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id,

@@ -35,6 +35,7 @@ import org.neo4j.values.storable.ValueType;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
@@ -92,11 +93,11 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
 
         // when
-        populator.add( asList( updates ) );
+        populator.add( asList( updates ), NULL );
 
         // then
-        populator.scanCompleted( nullInstance, jobScheduler );
-        populator.close( true );
+        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.close( true, NULL );
         verifyUpdates( updates );
     }
 
@@ -106,7 +107,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         // given
         populator.create();
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
         {
             // when
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -116,8 +117,8 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         }
 
         // then
-        populator.scanCompleted( nullInstance, jobScheduler );
-        populator.close( true );
+        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.close( true, NULL );
         verifyUpdates( updates );
     }
 
@@ -129,7 +130,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         {
             populator.create();
             IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
-            populator.add( asList( scanUpdates ) );
+            populator.add( asList( scanUpdates ), NULL );
             Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
             Value[] updates = new Value[5];
             updates[0] = generator.next().values()[0];
@@ -137,7 +138,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             updates[2] = updates[1];
             updates[3] = generator.next().values()[0];
             updates[4] = updates[3];
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
             {
                 long nodeId = 1000;
                 for ( Value value : updates )
@@ -148,8 +149,8 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             }
 
             // WHEN
-            populator.scanCompleted( nullInstance, jobScheduler );
-            IndexSample sample = populator.sample();
+            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            IndexSample sample = populator.sample( NULL );
 
             // THEN
             Value[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
@@ -160,7 +161,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         }
         finally
         {
-            populator.close( true );
+            populator.close( true, NULL );
         }
     }
 }
