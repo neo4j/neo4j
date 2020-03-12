@@ -37,13 +37,13 @@ import static org.neo4j.lock.LockService.LockType.READ_LOCK;
  * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for label index}
  * depending on which {@link Visitor visitors} that are used.
  */
-public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
+public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
     private final Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
     protected final int[] labelIds;
 
-    public StoreViewNodeStoreScan( StorageReader storageReader, LockService locks,
+    public NodeStoreScan( StorageReader storageReader, LockService locks,
             @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )

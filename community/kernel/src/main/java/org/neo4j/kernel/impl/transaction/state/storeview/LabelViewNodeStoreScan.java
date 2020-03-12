@@ -36,12 +36,12 @@ import org.neo4j.storageengine.api.StorageReader;
  * as a source of known labeled node ids.
  * @param <FAILURE> type of exception thrown on failure
  */
-public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
+public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
     private final PageCursorTracer cursorTracer;
 
-    public LabelScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
+    public LabelViewNodeStoreScan( StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore,
             @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,

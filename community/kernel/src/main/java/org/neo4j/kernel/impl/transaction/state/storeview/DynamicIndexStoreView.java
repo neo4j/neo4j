@@ -74,7 +74,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
                     forceStoreScan, cursorTracer );
         }
-        return new LabelScanViewNodeStoreScan<>( storageEngine.get(), locks, labelScanStore, labelUpdateVisitor,
+        return new LabelViewNodeStoreScan<>( storageEngine.get(), locks, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer );
     }
 

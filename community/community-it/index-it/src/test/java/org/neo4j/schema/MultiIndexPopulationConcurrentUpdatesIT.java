@@ -75,7 +75,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
-import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.LabelViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -506,21 +506,21 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
                     labelUpdateVisitor, forceStoreScan, cursorTracer );
-            return new LabelScanViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
+            return new LabelViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelScanViewNodeStoreScan<FAILURE>) storeScan, customAction );
+                    (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction );
         }
     }
 
-    private static class LabelScanViewNodeStoreWrapper<FAILURE extends Exception> extends LabelScanViewNodeStoreScan<FAILURE>
+    private static class LabelViewNodeStoreWrapper<FAILURE extends Exception> extends LabelViewNodeStoreScan<FAILURE>
     {
-        private final LabelScanViewNodeStoreScan<FAILURE> delegate;
+        private final LabelViewNodeStoreScan<FAILURE> delegate;
         private final Runnable customAction;
 
-        LabelScanViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
+        LabelViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
                 LabelScanStore labelScanStore, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
-                LabelScanViewNodeStoreScan<FAILURE> delegate,
+                LabelViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
             super( storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, NULL );

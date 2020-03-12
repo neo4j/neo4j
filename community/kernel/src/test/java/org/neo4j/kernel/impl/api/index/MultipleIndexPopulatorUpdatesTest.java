@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
@@ -158,7 +158,7 @@ class MultipleIndexPopulatorUpdatesTest
         }
     }
 
-    private static class ListenableNodeScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
+    private static class ListenableNodeScanViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
     {
         private final Listener<StorageNodeCursor> processListener;
 

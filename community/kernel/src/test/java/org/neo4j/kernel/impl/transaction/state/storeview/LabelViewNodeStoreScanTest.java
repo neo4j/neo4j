@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class LabelScanViewNodeStoreScanTest
+class LabelViewNodeStoreScanTest
 {
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -69,7 +69,7 @@ class LabelScanViewNodeStoreScanTest
         int[] labelIds = new int[]{1, 2};
         when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
-        LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
+        LabelViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -79,9 +79,9 @@ class LabelScanViewNodeStoreScanTest
         assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
-    private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
+    private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelScanViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
+        return new LabelViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
                 labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, PageCursorTracer.NULL );
     }
 }

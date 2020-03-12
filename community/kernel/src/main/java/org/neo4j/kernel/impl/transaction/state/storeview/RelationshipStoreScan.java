@@ -36,13 +36,13 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
  * Scan the relationship store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for relationship type index}
  * depending on which {@link Visitor visitors} that are used.
  */
-public class StoreViewRelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
+public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
     private final Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor;
     private final int[] relationshipTypeIds;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
 
-    public StoreViewRelationshipStoreScan( StorageReader storageReader, LockService locks,
+    public RelationshipStoreScan( StorageReader storageReader, LockService locks,
             @Nullable Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )

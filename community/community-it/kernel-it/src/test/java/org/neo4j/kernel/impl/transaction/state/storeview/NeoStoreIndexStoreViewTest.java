@@ -278,16 +278,17 @@ class NeoStoreIndexStoreViewTest
     void processAllNodeProperties()
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        StoreViewNodeStoreScan<RuntimeException> storeViewNodeStoreScan =
-                new StoreViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks,
-                        null, propertyUpdateVisitor, new int[]{labelId}, id -> true, NULL );
+        NodeStoreScan<RuntimeException> nodeStoreScan =
+                new NodeStoreScan<>( new RecordStorageReader( neoStores ), locks,
+                        null, propertyUpdateVisitor, new int[]{labelId},
+                        id -> true, NULL );
 
         try ( StorageNodeCursor nodeCursor = reader.allocateNodeCursor( NULL ) )
         {
             nodeCursor.single( 1 );
             nodeCursor.next();
 
-            storeViewNodeStoreScan.process( nodeCursor );
+            nodeStoreScan.process( nodeCursor );
         }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
@@ -312,7 +313,7 @@ class NeoStoreIndexStoreViewTest
         CountingVisitor countingVisitor = new CountingVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreViewNodeScan" ) )
         {
-            var scan = new StoreViewNodeStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{labelId}, id -> true, cursorTracer );
+            var scan = new NodeStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{labelId}, id -> true, cursorTracer );
             scan.run();
         }
 
@@ -327,8 +328,8 @@ class NeoStoreIndexStoreViewTest
     {
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        StoreViewRelationshipStoreScan<RuntimeException> storeViewRelationshipStoreScan =
-                new StoreViewRelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, null, propertyUpdateVisitor,
+        RelationshipStoreScan<RuntimeException> relationshipStoreScan =
+                new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, null, propertyUpdateVisitor,
                         new int[]{relTypeId}, id -> true, NULL );
 
         try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor( NULL ) )
@@ -336,7 +337,7 @@ class NeoStoreIndexStoreViewTest
             relationshipScanCursor.single( 1 );
             relationshipScanCursor.next();
 
-            storeViewRelationshipStoreScan.process( relationshipScanCursor );
+            relationshipStoreScan.process( relationshipScanCursor );
         }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
@@ -361,7 +362,7 @@ class NeoStoreIndexStoreViewTest
         CountingVisitor countingVisitor = new CountingVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipStoreScan" ) )
         {
-            var scan = new StoreViewRelationshipStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{relTypeId}, id -> true,
+            var scan = new RelationshipStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{relTypeId}, id -> true,
                     cursorTracer );
             scan.run();
         }

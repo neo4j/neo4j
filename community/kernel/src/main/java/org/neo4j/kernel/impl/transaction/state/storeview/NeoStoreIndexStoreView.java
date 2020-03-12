@@ -53,7 +53,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             final Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
-        return new StoreViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
+        return new NodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer );
     }
 
@@ -63,7 +63,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
             PageCursorTracer cursorTracer )
     {
-        return new StoreViewRelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
+        return new RelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
                 propertyKeyIdFilter, cursorTracer );
     }
 
