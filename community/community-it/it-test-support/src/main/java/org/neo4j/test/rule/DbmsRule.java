@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -41,13 +40,11 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -56,7 +53,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     private DatabaseManagementServiceBuilder databaseBuilder;
     private GraphDatabaseAPI database;
     private DatabaseLayout databaseLayout;
-    private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
     private final Map<Setting<?>, Object> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
@@ -372,7 +368,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
 
     private void shutdown( boolean deleteResources )
     {
-        statementSupplier = null;
         try
         {
             if ( managementService != null )
@@ -417,12 +412,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public DependencyResolver getDependencyResolver()
     {
         return database.getDependencyResolver();
-    }
-
-    @Override
-    public StoreId storeId()
-    {
-        return database.storeId();
     }
 
     @Override

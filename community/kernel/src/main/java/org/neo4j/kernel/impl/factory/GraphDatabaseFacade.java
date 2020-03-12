@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StoreId;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -201,12 +200,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public DependencyResolver getDependencyResolver()
     {
         return database.getDependencyResolver();
-    }
-
-    @Override
-    public StoreId storeId()
-    {
-        return database.getStoreId();
     }
 
     @Override

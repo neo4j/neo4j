@@ -79,6 +79,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -138,7 +139,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
         for ( int i = 0; i < 10; i++ )
@@ -161,7 +162,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         for ( int i = 0; i < 10; i++ )
         {
             generateTransaction( database );
@@ -189,7 +190,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         for ( int i = 0; i < 10; i++ )
         {
             generateTransaction( database );
@@ -235,7 +236,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         managementService.shutdown();
 
@@ -253,7 +254,7 @@ class RecoveryCorruptedTransactionLogIT
         long initialTransactionOffset = HEADER_OFFSET + 1018;
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         assertEquals( initialTransactionOffset, getLastClosedTransactionOffset( database ) );
         managementService.shutdown();
@@ -282,7 +283,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         managementService.shutdown();
 
@@ -312,7 +313,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         managementService.shutdown();
 
@@ -352,7 +353,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         managementService.shutdown();
 
@@ -381,7 +382,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransaction( database );
         managementService.shutdown();
 
@@ -430,7 +431,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
         for ( int i = 0; i < 10; i++ )
@@ -470,7 +471,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
         generateTransactionsAndRotate( database, 3 );
@@ -511,7 +512,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         long transactionsToRecover = 7;
         generateTransactionsAndRotateWithCheckpoint( database, 3 );
         for ( int i = 0; i < transactionsToRecover; i++ )
@@ -548,7 +549,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransactionsAndRotate( database, 5 );
         managementService.shutdown();
 
@@ -581,7 +582,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransactionsAndRotate( database, 4, false );
         managementService1.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
@@ -603,7 +604,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
 
@@ -626,7 +627,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService1 = databaseFactory.setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( database.storeId() );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
 
@@ -644,6 +645,11 @@ class RecoveryCorruptedTransactionLogIT
 
         File corruptedLogArchives = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertThat( corruptedLogArchives.listFiles() ).isNotEmpty();
+    }
+
+    private StoreId getStoreId( GraphDatabaseAPI database )
+    {
+        return database.getDependencyResolver().resolveDependency( StoreIdProvider.class ).getStoreId();
     }
 
     private static TransactionIdStore getTransactionIdStore( GraphDatabaseAPI database )
