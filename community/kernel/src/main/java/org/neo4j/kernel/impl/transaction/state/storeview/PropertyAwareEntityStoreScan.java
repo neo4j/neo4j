@@ -24,6 +24,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
+import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
@@ -39,6 +41,16 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
+/**
+ * Scan store with the view given by iterator created by {@link #getEntityIdIterator()}. This might be a full scan of the store
+ * or a partial scan backed by {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
+ *
+ * The {@link #entityCursor cursor} is placed on each record and then {@link #process(StorageEntityScanCursor) processed},
+ * this is where we extract updates for indexes that we are populating.
+ *
+ * @param <CURSOR> the type of cursor used to read the records.
+ * @param <FAILURE> on failure during processing.
+ */
 public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor, FAILURE extends Exception> implements StoreScan<FAILURE>
 {
     final CURSOR entityCursor;

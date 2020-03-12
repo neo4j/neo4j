@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -35,8 +38,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
@@ -90,11 +93,38 @@ class DynamicIndexStoreViewTest
         verify( labelUpdateVisitor, times( nodeIds.length ) ).visit( any() );
     }
 
+    @Test
+    void shouldDelegateToNeoStoreIndexStoreViewForRelationships()
+    {
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
+
+        // When
+        int[] typeIds = ArrayUtils.EMPTY_INT_ARRAY;
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = PageCursorTracer.NULL;
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, cursorTracer );
+
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, cursorTracer );
+    }
+
     private DynamicIndexStoreView dynamicIndexStoreView()
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
         return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore, locks, storageReaderSupplier,
                 NullLogProvider.getInstance() );
+    }
+
+    private DynamicIndexStoreView dynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView )
+    {
+        LockService locks = LockService.NO_LOCK_SERVICE;
+        Supplier<StorageReader> storageReaderSupplier = () -> cursors;
+        return new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, locks, storageReaderSupplier, NullLogProvider.getInstance() );
     }
 }

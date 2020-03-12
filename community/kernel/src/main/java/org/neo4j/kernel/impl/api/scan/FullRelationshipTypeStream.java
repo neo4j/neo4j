@@ -33,11 +33,11 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
 /**
- * {@link FullStoreChangeStream} that scan the node store using a {@link IndexStoreView} to get its data.
+ * {@link FullStoreChangeStream} that scan the relationship store using a {@link IndexStoreView} to get its data.
  */
-public class FullLabelStream extends FullTokenStream
+public class FullRelationshipTypeStream extends FullTokenStream
 {
-    public FullLabelStream( IndexStoreView indexStoreView )
+    public FullRelationshipTypeStream( IndexStoreView indexStoreView )
     {
         super( indexStoreView );
     }
@@ -46,6 +46,6 @@ public class FullLabelStream extends FullTokenStream
     StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<EntityTokenUpdate,IOException> tokenUpdateVisitor,
             PageCursorTracer cursorTracer )
     {
-        return indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true, cursorTracer );
+        return indexStoreView.visitRelationships( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, cursorTracer );
     }
 }

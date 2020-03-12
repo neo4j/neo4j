@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.IntPredicate;
+import javax.annotation.Nullable;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -32,6 +33,10 @@ import org.neo4j.storageengine.api.StorageReader;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.lock.LockService.LockType.READ_LOCK;
 
+/**
+ * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for label index}
+ * depending on which {@link Visitor visitors} that are used.
+ */
 public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
     private final Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor;
@@ -39,8 +44,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
     protected final int[] labelIds;
 
     public StoreViewNodeStoreScan( StorageReader storageReader, LockService locks,
-            Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
         super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,

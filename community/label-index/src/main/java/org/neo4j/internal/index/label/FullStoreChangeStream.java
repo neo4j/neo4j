@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 /**
- * Stream of changes used to rebuild a {@link LabelScanStore}.
+ * Stream of changes used to rebuild a {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
  */
 public interface FullStoreChangeStream
 {

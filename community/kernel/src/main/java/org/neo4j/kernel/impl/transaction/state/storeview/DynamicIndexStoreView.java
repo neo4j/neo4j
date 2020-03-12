@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
@@ -80,9 +80,12 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, PageCursorTracer cursorTracer )
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
+            Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            PageCursorTracer cursorTracer )
     {
-        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
+        return neoStoreIndexStoreView
+                .visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, cursorTracer );
     }
 
     private boolean useAllNodeStoreScan( int[] labelIds )

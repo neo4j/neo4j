@@ -27,8 +27,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -59,9 +59,12 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, PageCursorTracer cursorTracer )
+            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            PageCursorTracer cursorTracer )
     {
-        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
+        return new StoreViewRelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
+                propertyKeyIdFilter, cursorTracer );
     }
 
     @Override

@@ -46,8 +46,8 @@ import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValu
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
 
 /**
- * Subclasses of this represent events related to property changes due to entity addition, deletion or update.
- * This is of use in populating indexes that might be relevant to label/reltype and property combinations.
+ * Represent events related to property changes due to entity addition, deletion or update.
+ * This is of use in populating indexes that might be relevant to label/relType and property combinations.
  */
 public class EntityUpdates
 {

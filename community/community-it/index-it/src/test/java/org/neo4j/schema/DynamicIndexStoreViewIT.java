@@ -52,7 +52,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
-public class DynamicIndexStoreViewIT
+class DynamicIndexStoreViewIT
 {
     @Inject
     private SuppressOutput suppressOutput;

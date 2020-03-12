@@ -24,9 +24,9 @@ import java.util.function.IntPredicate;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /** The indexing services view of the universe. */
@@ -59,11 +59,13 @@ public interface IndexStoreView
      * @param relationshipTypeIds array of relationsip type ids to generate updates for. Empty array means all.
      * @param propertyKeyIdFilter property key ids to generate updates for.
      * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
+     * @param relationshipTypeUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
      * @param cursorTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, PageCursorTracer cursorTracer );
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            PageCursorTracer cursorTracer );
 
     NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer );
 
@@ -109,7 +111,8 @@ public interface IndexStoreView
         @SuppressWarnings( "unchecked" )
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, PageCursorTracer cursorTracer )
+                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+                PageCursorTracer cursorTracer )
         {
             return EMPTY_SCAN;
         }

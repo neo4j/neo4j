@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,16 +32,16 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.TokenScanStore;
-import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.FeatureToggles;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension
@@ -51,6 +52,10 @@ class RelationshipTypeScanStoreIT
     DatabaseManagementService dbms;
     @Inject
     GraphDatabaseService db;
+    @Inject
+    DbmsController dbmsController;
+    @Inject
+    FileSystemAbstraction fs;
 
     @BeforeAll
     static void toggleOn()
@@ -67,10 +72,8 @@ class RelationshipTypeScanStoreIT
     @Test
     void shouldBePossibleToResolveDependency()
     {
-        GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
-        // When
-        getRelationshipTypeScanStore( db );
-        // Then should not throw
+        getRelationshipTypeScanStore();
+        // Should not throw
     }
 
     @Test
@@ -117,6 +120,33 @@ class RelationshipTypeScanStoreIT
         assertContainIds( expectedIds );
     }
 
+    @Test
+    void shouldRebuildIfMissingDuringStartup()
+    {
+        List<Long> expectedIds = new ArrayList<>();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = createRelationship( tx );
+            expectedIds.add( relationship.getId() );
+            tx.commit();
+        }
+
+        ResourceIterator<File> files = getRelationshipTypeScanStoreFiles();
+        dbmsController.restartDbms( builder ->
+        {
+            files.forEachRemaining( file -> fs.deleteFile( file ) );
+            return builder;
+        });
+
+        assertContainIds( expectedIds );
+    }
+
+    private ResourceIterator<File> getRelationshipTypeScanStoreFiles()
+    {
+        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
+        return relationshipTypeScanStore.snapshotStoreFiles();
+    }
+
     private Relationship createRelationship( Transaction tx )
     {
         return tx.createNode().createRelationshipTo( tx.createNode(), REL_TYPE );
@@ -124,14 +154,8 @@ class RelationshipTypeScanStoreIT
 
     private void assertContainIds( List<Long> expectedIds )
     {
-        int relationshipTypeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            TokenRead tokenRead = ((InternalTransaction) tx).kernelTransaction().tokenRead();
-            relationshipTypeId = tokenRead.relationshipType( REL_TYPE.name() );
-            tx.commit();
-        }
-        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore( db );
+        int relationshipTypeId = getRelationshipTypeId();
+        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
         TokenScanReader tokenScanReader = relationshipTypeScanStore.newReader();
         PrimitiveLongResourceIterator relationships = tokenScanReader.entityWithToken( relationshipTypeId, NULL );
         List<Long> additionalRelationships = new ArrayList<>();
@@ -147,7 +171,18 @@ class RelationshipTypeScanStoreIT
         assertThat( additionalRelationships ).as( "additional ids" ).isEmpty();
     }
 
-    private RelationshipTypeScanStore getRelationshipTypeScanStore( GraphDatabaseService db )
+    private int getRelationshipTypeId()
+    {
+        int relationshipTypeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationshipTypeId = ((InternalTransaction) tx).kernelTransaction().tokenRead().relationshipType( REL_TYPE.name() );
+            tx.commit();
+        }
+        return relationshipTypeId;
+    }
+
+    private RelationshipTypeScanStore getRelationshipTypeScanStore()
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class );
     }

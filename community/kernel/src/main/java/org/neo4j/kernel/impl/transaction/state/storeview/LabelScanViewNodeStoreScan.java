@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.IntPredicate;
 
+import javax.annotation.Nullable;
+
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -30,7 +32,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
- * Store scan view that will try to minimize amount of scanned nodes by using label scan store {@link LabelScanStore}
+ * Store scan view that will try to minimize the amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
  * @param <FAILURE> type of exception thrown on failure
  */
@@ -40,8 +42,10 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     private final PageCursorTracer cursorTracer;
 
     public LabelScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
-            LabelScanStore labelScanStore, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+            LabelScanStore labelScanStore,
+            @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            int[] labelIds,
             IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
         super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,

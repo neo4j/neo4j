@@ -57,9 +57,9 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -70,6 +70,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -79,6 +80,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -171,7 +173,7 @@ class NeoStoreIndexStoreViewTest
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
 
         // when
         storeScan.run();
@@ -207,7 +209,7 @@ class NeoStoreIndexStoreViewTest
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
 
         // when
         storeScan.run();
@@ -247,7 +249,7 @@ class NeoStoreIndexStoreViewTest
         // given
         @SuppressWarnings( "unchecked" )
         Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, NULL );
+        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
 
         // when
         storeScan.run();
@@ -325,15 +327,16 @@ class NeoStoreIndexStoreViewTest
     {
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        RelationshipStoreScan<RuntimeException> relationshipStoreScan =
-                new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId}, id -> true, NULL );
+        StoreViewRelationshipStoreScan<RuntimeException> storeViewRelationshipStoreScan =
+                new StoreViewRelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, null, propertyUpdateVisitor,
+                        new int[]{relTypeId}, id -> true, NULL );
 
         try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor( NULL ) )
         {
             relationshipScanCursor.single( 1 );
             relationshipScanCursor.next();
 
-            relationshipStoreScan.process( relationshipScanCursor );
+            storeViewRelationshipStoreScan.process( relationshipScanCursor );
         }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
@@ -358,7 +361,8 @@ class NeoStoreIndexStoreViewTest
         CountingVisitor countingVisitor = new CountingVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipStoreScan" ) )
         {
-            var scan = new RelationshipStoreScan<>( storageEngine.newReader(), locks, countingVisitor, new int[]{relTypeId}, id -> true, cursorTracer );
+            var scan = new StoreViewRelationshipStoreScan<>( storageEngine.newReader(), locks, null, countingVisitor, new int[]{relTypeId}, id -> true,
+                    cursorTracer );
             scan.run();
         }
 
@@ -366,6 +370,31 @@ class NeoStoreIndexStoreViewTest
         assertThat( pageCacheTracer.pins() ).isEqualTo( 2 );
         assertThat( pageCacheTracer.unpins() ).isEqualTo( 2 );
         assertThat( pageCacheTracer.hits() ).isEqualTo( 2 );
+    }
+
+    @Test
+    void processAllRelationshipTypes() throws Exception
+    {
+        // Given
+        CopyTokenUpdateVisitor<Exception> relationshipTypeUpdateVisitor = new CopyTokenUpdateVisitor<>();
+        StoreScan<Exception> storeViewRelationshipStoreScan =
+                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, relationshipTypeUpdateVisitor, NULL );
+
+        // When
+        storeViewRelationshipStoreScan.run();
+
+        // Then
+        Set<EntityTokenUpdate> updates = relationshipTypeUpdateVisitor.getUpdates();
+        assertThat( updates.size() ).isEqualTo( 2 );
+        for ( EntityTokenUpdate update : updates )
+        {
+            long[] tokensAfter = update.getTokensAfter();
+            assertThat( tokensAfter.length ).isEqualTo( 1 );
+            assertThat( tokensAfter[0] ).isEqualTo( 0 );
+            assertThat( update.getEntityId() ).satisfiesAnyOf(
+                    id -> assertThat( id ).isEqualTo( 0 ),
+                    id -> assertThat( id ).isEqualTo( 1 ) );
+        }
     }
 
     private EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
@@ -464,6 +493,23 @@ class NeoStoreIndexStoreViewTest
         }
 
         Set<EntityUpdates> getUpdates()
+        {
+            return updates;
+        }
+    }
+
+    private class CopyTokenUpdateVisitor<EXCEPTION extends Exception> implements Visitor<EntityTokenUpdate,EXCEPTION>
+    {
+        private final Set<EntityTokenUpdate> updates = new HashSet<>();
+
+        @Override
+        public boolean visit( EntityTokenUpdate element )
+        {
+            updates.add( element );
+            return false;
+        }
+
+        Set<EntityTokenUpdate> getUpdates()
         {
             return updates;
         }
