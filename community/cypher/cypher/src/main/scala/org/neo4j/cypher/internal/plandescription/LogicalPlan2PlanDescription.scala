@@ -432,7 +432,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, actions.map(a => DbmsAction(a.name)), variables)
 
       case AssertDbmsAdminOrSelf(user, actions@_*) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, actions.map(a => DbmsAction(a.name)) :+ User(Prettifier.escapeName(user)), variables)
+        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, actions.map(a => DbmsAction(a.name)) :+ getAnnotatedUserArgument(user), variables)
 
       case AssertDatabaseAdmin(action, normalizedName) =>
         val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(normalizedName.name)))
