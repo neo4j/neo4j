@@ -1085,14 +1085,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: RangeQueryExpression[expressions.Expression] =>
         if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
       case e: CompositeQueryExpression[expressions.Expression] =>
-        val predicates = e.inner.map {
-          case _: ExistenceQueryExpression[Expression] => "exists"
-          case _: RangeQueryExpression[Expression] => "range"
-          case _: CompositeQueryExpression[Expression] =>
-            throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
-          case _ => "equality"
-        }
-        s"${findName(e.exactOnly)}(${predicates.mkString(",")})"
+        findName(e.exactOnly)
       case _: SingleQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
         findName()
       case _: ManyQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>

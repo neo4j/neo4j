@@ -234,17 +234,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop = 10,Foo = 12)"), 23.0) ->
-        PlanDescriptionImpl(id, "NodeIndexSeek(equality,equality)", NoChildren,
+        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
           Seq(Index("x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0) ->
-        PlanDescriptionImpl(id, "NodeUniqueIndexSeek(equality,equality)", NoChildren,
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
           Seq(Index("x:Label UNIQUE(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop > 10,Foo)"), 23.0) ->
-        PlanDescriptionImpl(id, "NodeIndexSeek(range,exists)", NoChildren,
+        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
           Seq(Index("x:Label(Prop, Foo) WHERE Prop > 10 AND exists(Foo)"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
