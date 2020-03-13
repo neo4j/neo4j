@@ -23,8 +23,22 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.RandomValues
+import org.neo4j.values.storable.Value
 
 import scala.collection.mutable.ArrayBuffer
+
+object InputDataStreamTestSupport {
+  val RANDOM_VALUE_CONFIG: RandomValues.Configuration =
+    new RandomValues.Configuration {
+      override def stringMinLength = 0
+      override def stringMaxLength = 50
+      override def arrayMinLength = 0
+      override def arrayMaxLength = 10
+      override def maxCodePoint: Int = RandomValues.MAX_BMP_CODE_POINT
+      override def minCodePoint: Int = Character.MIN_CODE_POINT
+    }
+}
 
 /**
  * Test support for creating input data streams.
@@ -32,6 +46,11 @@ import scala.collection.mutable.ArrayBuffer
 trait InputDataStreamTestSupport {
 
   val NO_INPUT = new InputValues
+
+  def randomValues(count: Int): Seq[Value] = {
+    val random = RandomValues.create(InputDataStreamTestSupport.RANDOM_VALUE_CONFIG)
+    (0 until count).map(_ => random.nextValue())
+  }
 
   def inputValues(rows: Array[Any]*): InputValues =
     new InputValues().and(rows: _*)

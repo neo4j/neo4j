@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.values.storable.RandomValues
 
 abstract class UnionTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],
@@ -152,8 +151,8 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val input = inputValues((0 until size).map(_ => Array[Any](random.nextValue())):_*)
+    val inputVals = randomValues(size)
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
@@ -266,8 +265,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val inputVals = (0 until size).map(_ => random.nextValue())
+    val inputVals = randomValues(size)
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -321,8 +319,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val inputVals = (0 until size).map(_ => random.nextValue())
+    val inputVals = randomValues(size)
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -343,8 +340,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val inputVals = (0 until size).map(_ => random.nextValue())
+    val inputVals = randomValues(size)
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -368,8 +364,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val inputVals = (0 until size).map(_ => random.nextValue())
+    val inputVals = randomValues(size)
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -397,8 +392,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val random = RandomValues.create()
-    val inputVals = (0 until size).map(_ => random.nextValue())
+    val inputVals = randomValues(size)
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, input)
 
