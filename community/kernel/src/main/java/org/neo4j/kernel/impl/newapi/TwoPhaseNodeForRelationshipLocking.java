@@ -33,15 +33,9 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
-
 class TwoPhaseNodeForRelationshipLocking
 {
     private final ThrowingConsumer<Long,KernelException> relIdAction;
-
-    private long firstRelId;
-    private long[] sortedNodeIds;
-    private static final long[] EMPTY = new long[0];
     private final Locks.Client locks;
     private final LockTracer lockTracer;
     private final PageCursorTracer cursorTracer;
@@ -57,94 +51,52 @@ class TwoPhaseNodeForRelationshipLocking
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelTransaction transaction, NodeCursor nodes ) throws KernelException
     {
-        boolean retry;
-        do
+        // Read-lock the node, and acquire a consistent view of its relationships.
+        locks.acquireShared( lockTracer, ResourceTypes.NODE, nodeId );
+        long[] sortedNodeIds = collectAndSortNodeIds( nodeId, transaction, nodes );
+
+        // Lock all the nodes involved by following the node id ordering
+        lockAllNodes( sortedNodeIds );
+
+        // Perform the action on each relationship.
+        transaction.dataRead().singleNode( nodeId, nodes );
+
+        // If the node is not there, someone else probably deleted it, just ignore.
+        if ( nodes.next() )
         {
-            retry = false;
-            firstRelId = NO_SUCH_RELATIONSHIP;
-
-            // Read-lock the node, and acquire a consistent view of its relationships.
-            locks.acquireShared( lockTracer, ResourceTypes.NODE, nodeId );
-            collectAndSortNodeIds( nodeId, transaction, nodes );
-            // lock all the nodes involved by following the node id ordering
-            lockAllNodes( sortedNodeIds );
-
-            // perform the action on each relationship, we will retry if the the relationship iterator contains
-            // new relationships
-            org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
-            read.singleNode( nodeId, nodes );
-            //if the node is not there, someone else probably deleted it, just ignore
-            if ( nodes.next() )
+            try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
             {
-                try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
+                while ( rels.next() )
                 {
-                    boolean first = true;
-                    while ( rels.next() && !retry )
-                    {
-                        retry = performAction( rels.relationshipReference(), first );
-                        first = false;
-                    }
+                    relIdAction.accept( rels.relationshipReference() );
                 }
             }
         }
-        while ( retry );
     }
 
-    private void collectAndSortNodeIds( long nodeId, KernelTransaction transaction, NodeCursor nodes )
+    private long[] collectAndSortNodeIds( long nodeId, KernelTransaction transaction, NodeCursor nodes )
     {
-        final MutableLongSet nodeIdSet = new LongHashSet();
+        MutableLongSet nodeIdSet = new LongHashSet();
         nodeIdSet.add( nodeId );
 
-        org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
-        read.singleNode( nodeId, nodes );
-        if ( !nodes.next() )
+        transaction.dataRead().singleNode( nodeId, nodes );
+        if ( nodes.next() )
         {
-            this.sortedNodeIds = EMPTY;
-            return;
-        }
-        try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
-        {
-            while ( rels.next() )
+            try ( RelationshipSelectionCursor rels = RelationshipSelections.allCursor( transaction.cursors(), nodes, null, cursorTracer ) )
             {
-                if ( firstRelId == NO_SUCH_RELATIONSHIP )
+                while ( rels.next() )
                 {
-                    firstRelId = rels.relationshipReference();
+                    nodeIdSet.add( rels.sourceNodeReference() );
+                    nodeIdSet.add( rels.targetNodeReference() );
                 }
-
-                nodeIdSet.add( rels.sourceNodeReference() );
-                nodeIdSet.add( rels.targetNodeReference() );
             }
         }
 
-        this.sortedNodeIds = nodeIdSet.toSortedArray();
+        return nodeIdSet.toSortedArray();
     }
 
     private void lockAllNodes( long[] nodeIds )
     {
         locks.acquireExclusive( lockTracer, ResourceTypes.NODE, nodeIds );
-    }
-
-    private void unlockAllNodes( long[] nodeIds )
-    {
-        locks.releaseExclusive( ResourceTypes.NODE, nodeIds );
-    }
-
-    private boolean performAction( long rel, boolean first )
-            throws KernelException
-    {
-        if ( first )
-        {
-            if ( rel != firstRelId )
-            {
-                // if the first relationship is not the same someone added some new rels, so we need to
-                // lock them all again
-                unlockAllNodes( sortedNodeIds );
-                sortedNodeIds = null;
-                return true;
-            }
-        }
-
-        relIdAction.accept( rel );
-        return false;
     }
 }

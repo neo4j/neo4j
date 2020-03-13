@@ -75,36 +75,9 @@ class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
 
         // then
+        inOrder.verify( locks ).acquireShared( NONE, NODE, nodeId );
         inOrder.verify( locks ).acquireExclusive( NONE, NODE, 3L, 40L, 41L, nodeId, 43L, 49L );
         assertEquals( set( 21L, 22L, 23L, 2L, 3L, 50L ), collector.set );
-    }
-
-    @Test
-    void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
-            throws Throwable
-    {
-        // given
-        Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
-
-        TestRelationshipChain chain = new TestRelationshipChain( nodeId )
-                .outgoing( 21L, 43L, TYPE )
-                .incoming( 22L, 40, TYPE )
-                .outgoing( 23L, 41L, TYPE );
-        returnRelationships( transaction, true, chain );
-
-        InOrder inOrder = inOrder( locks );
-
-        // when
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
-
-        // then
-        inOrder.verify( locks ).acquireExclusive( NONE, NODE,  40L, 41L, nodeId );
-
-        inOrder.verify( locks ).releaseExclusive( NODE, 40L, 41L, nodeId );
-
-        inOrder.verify( locks ).acquireExclusive( NONE, NODE, 40L, 41L, nodeId, 43L );
-        assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
     @Test
@@ -144,7 +117,7 @@ class TwoPhaseNodeForRelationshipLockingTest
         public final Set<Long> set = new HashSet<>();
 
         @Override
-        public void accept( Long input ) throws KernelException
+        public void accept( Long input )
         {
             assertNotNull( input );
             set.add( input );
