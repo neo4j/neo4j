@@ -73,7 +73,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     inner.close(reason)
     reason match {
       case Success => monitor.endSuccess(query)
-      case Failure => monitor.endFailure(query, null)
+      case Failure => monitor.endFailure(query)
       case Error(t) => monitor.endFailure(query, t)
     }
   } catch {

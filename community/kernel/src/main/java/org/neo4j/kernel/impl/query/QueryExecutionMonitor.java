@@ -27,6 +27,8 @@ public interface QueryExecutionMonitor
 
     void endFailure( ExecutingQuery query , Throwable failure );
 
+    void endFailure( ExecutingQuery query , String reason );
+
     void endSuccess( ExecutingQuery query  );
 
     QueryExecutionMonitor NO_OP = new QueryExecutionMonitor()
@@ -38,6 +40,11 @@ public interface QueryExecutionMonitor
 
         @Override
         public void endFailure( ExecutingQuery query, Throwable failure )
+        {
+        }
+
+        @Override
+        public void endFailure( ExecutingQuery query, String reason )
         {
         }
 

@@ -221,7 +221,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } catch {
       case up: Throwable =>
         if (isOutermostQuery)
-          queryExecutionMonitor.endFailure(context.executingQuery(), up)
+          queryExecutionMonitor.endFailure(context.executingQuery(), up.getMessage)
         throw up
     }
     if (query.options.executionMode.name != "explain") {
