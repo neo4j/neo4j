@@ -24,55 +24,52 @@ import org.mockito.InOrder;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.LongPredicate;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.set;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-class TwoPhaseNodeForRelationshipLockingTest
+class DetachingRelationshipDeleterTest
 {
     private static final long nodeId = 42L;
     private static final int TYPE = 77;
-    private final KernelTransaction transaction = mock( KernelTransaction.class );
+    private final KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
     private final Locks.Client locks = mock( Locks.Client.class );
 
     @Test
-    void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
+    void shouldLockNodesInOrderAndConsumeTheRelationships()
     {
         // given
         Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
+        DetachingRelationshipDeleter locking = new DetachingRelationshipDeleter( collector );
 
-        returnRelationships(
-                transaction, false,
-                new TestRelationshipChain( nodeId ).outgoing( 21L, 43L, 0 )
+        returnRelationships( ktx, new TestRelationshipChain( nodeId ).outgoing( 21L, 43L, 0 )
                         .incoming( 22L, 40L, TYPE )
                         .outgoing( 23L, 41L, TYPE )
                         .outgoing( 2L, 3L, TYPE )
                         .incoming( 3L, 49L, TYPE )
                         .outgoing( 50L, 41L, TYPE ) );
+        when( ktx.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
         InOrder inOrder = inOrder( locks );
 
         // when
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
+        locking.lockNodesAndDeleteRelationships( nodeId, ktx );
 
         // then
         inOrder.verify( locks ).acquireShared( NONE, NODE, nodeId );
@@ -81,46 +78,41 @@ class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    void lockNodeWithoutRelationships() throws Exception
+    void lockNodeWithoutRelationships()
     {
         Collector collector = new Collector();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE, NULL );
-        returnRelationships( transaction, false, new TestRelationshipChain( 42 ) );
+        DetachingRelationshipDeleter locking = new DetachingRelationshipDeleter( collector );
+        returnRelationships( ktx, new TestRelationshipChain( 42 ) );
+        when( ktx.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
 
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
+        locking.lockNodesAndDeleteRelationships( nodeId, ktx );
 
         verify( locks ).acquireShared( NONE, NODE, nodeId );
         verify( locks ).acquireExclusive( NONE, NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }
 
-    static void returnRelationships( KernelTransaction transaction, final boolean skipFirst, final TestRelationshipChain relIds )
+    public static void returnRelationships( KernelTransactionImplementation ktx, final TestRelationshipChain relIds )
     {
         StubRead read = new StubRead();
-        when( transaction.dataRead() ).thenReturn( read );
+        when( ktx.dataRead() ).thenReturn( read );
         StubCursorFactory cursorFactory = new StubCursorFactory( true );
-        if ( skipFirst )
-        {
-            cursorFactory.withRelationshipTraversalCursors( new StubRelationshipCursor( relIds.tail() ),
-                    new StubRelationshipCursor( relIds ) );
-        }
-        else
-        {
-            cursorFactory.withRelationshipTraversalCursors( new StubRelationshipCursor( relIds ) );
-        }
+        cursorFactory.withRelationshipTraversalCursors( new StubRelationshipCursor( relIds ) );
 
-        when( transaction.cursors() ).thenReturn( cursorFactory );
+        when( ktx.lockTracer() ).thenReturn( NONE );
+        when( ktx.cursors() ).thenReturn( cursorFactory );
+        when( ktx.ambientNodeCursor() ).thenAnswer( args -> new StubNodeCursor( false ).withNode( nodeId ) );
     }
 
-    private static class Collector implements ThrowingConsumer<Long,KernelException>
+    private static class Collector implements LongPredicate
     {
         public final Set<Long> set = new HashSet<>();
 
         @Override
-        public void accept( Long input )
+        public boolean test( long input )
         {
-            assertNotNull( input );
             set.add( input );
+            return true;
         }
     }
 }

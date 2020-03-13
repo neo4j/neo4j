@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -230,30 +229,20 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public int nodeDetachDelete( final long nodeId ) throws KernelException
+    public int nodeDetachDelete( final long nodeId )
     {
-        final MutableInt count = new MutableInt();
-        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking(
-                relId ->
-                {
-                    ktx.assertOpen();
-                    if ( relationshipDelete( relId, false ) )
-                    {
-                        count.increment();
-                    }
-                }, ktx.statementLocks().optimistic(), ktx.lockTracer(), ktx.pageCursorTracer() );
-
-        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx, ktx.ambientNodeCursor() );
         ktx.assertOpen();
+        var deleter = new DetachingRelationshipDeleter( relId -> relationshipDelete( relId, false ) );
+
+        int deletedRelationships = deleter.lockNodesAndDeleteRelationships( nodeId, ktx );
 
         //we are already holding the lock
         nodeDelete( nodeId, false );
-        return count.intValue();
+        return deletedRelationships;
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipType, long targetNode )
-            throws EntityNotFoundException
+    public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
 

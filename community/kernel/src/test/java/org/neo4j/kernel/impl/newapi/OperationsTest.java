@@ -115,7 +115,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
+import static org.neo4j.kernel.impl.newapi.DetachingRelationshipDeleterTest.returnRelationships;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -845,10 +845,10 @@ class OperationsTest
     }
 
     @Test
-    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode()
     {
         long nodeId = 1L;
-        returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
+        returnRelationships( transaction, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
         TokenSet labels = mock( TokenSet.class );
@@ -863,11 +863,10 @@ class OperationsTest
     }
 
     @Test
-    void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    void detachDeleteNodeExclusivelyLockNodes()
     {
         long nodeId = 1L;
-        returnRelationships( transaction, false,
-                new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
+        returnRelationships( transaction, new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         TokenSet labels = mock( TokenSet.class );
         when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
@@ -906,14 +905,14 @@ class OperationsTest
     }
 
     @Test
-    void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() throws KernelException
+    void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode()
     {
         // given
         long nodeId = 1L;
         long labelId1 = 1;
         long labelId2 = 2;
 
-        returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
+        returnRelationships( transaction, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
         TokenSet labels = mock( TokenSet.class );
