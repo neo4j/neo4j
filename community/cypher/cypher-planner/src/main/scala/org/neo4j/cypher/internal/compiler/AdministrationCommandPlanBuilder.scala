@@ -149,11 +149,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
-        val admin = plans.AssertDbmsAdmin(CreateUserAction)
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction, CreateUserAction), userName, "replace", "Deleting yourself is not allowed"), userName)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "User", userName)
-          case _ => admin
+          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
+          case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
           plans.CreateUser(source, userName, passwordEncoder(initialPassword), requirePasswordChange, suspended),
@@ -429,11 +428,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         } catch {
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }
-        val admin = plans.AssertDbmsAdmin(CreateDatabaseAction)
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropDatabase(admin, normalizedName)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(admin, "Database", Left(normalizedName.name()))
-          case _ => admin
+          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(DropDatabaseAction, CreateDatabaseAction), normalizedName)
+          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", Left(normalizedName.name()))
+          case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, normalizedName)))
 
