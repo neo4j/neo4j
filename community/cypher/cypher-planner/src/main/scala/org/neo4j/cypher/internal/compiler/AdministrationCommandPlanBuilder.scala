@@ -138,7 +138,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case Right(param) => Right(param)
     }
     def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {
-      case _: IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(DropRoleAction, CreateRoleAction), roleName)
+      case _: IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(Seq(DropRoleAction, CreateRoleAction)), roleName)
       case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
       case _ => plans.AssertDbmsAdmin(CreateRoleAction)
     }
@@ -150,7 +150,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction, CreateUserAction), userName, "replace", "Deleting yourself is not allowed"), userName)
+          case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
@@ -429,7 +429,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(DropDatabaseAction, CreateDatabaseAction), normalizedName)
+          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), normalizedName)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", Left(normalizedName.name()))
           case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }

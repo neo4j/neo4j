@@ -47,7 +47,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                                       queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
                                       source: Option[ExecutionPlan] = None,
                                       checkCredentialsExpired: Boolean = true,
-                                      parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY)
+                                      parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
+                                      parameterConverter: MapValue => MapValue = p => p)
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -67,8 +68,9 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
       val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction(), securityContext))
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
-      val execution = normalExecutionEngine.executeSubQuery(query, updatedSystemParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val updatedParams = parameterConverter(updatedSystemParams.updatedWith(params))
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
+      val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
       if (systemSubscriber.shouldIgnoreResult()) {

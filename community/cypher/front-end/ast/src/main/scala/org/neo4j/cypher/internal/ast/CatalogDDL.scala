@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.symbols.CTGraphRef
 
 sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
@@ -265,13 +266,21 @@ final case class AllGraphsScope()(val position: InputPosition) extends GraphScop
 
 final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope
 
-sealed trait ShowPrivilegeScope
+sealed trait ShowPrivilegeScope extends Rewritable
 
-final case class ShowRolePrivileges(role: String)(val position: InputPosition) extends ShowPrivilegeScope
+final case class ShowRolePrivileges(role: Either[String, Parameter])(val position: InputPosition) extends ShowPrivilegeScope {
+  override def dup(children: Seq[AnyRef]): ShowRolePrivileges.this.type =
+    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+}
 
-final case class ShowUserPrivileges(user: Option[String])(val position: InputPosition) extends ShowPrivilegeScope
+final case class ShowUserPrivileges(user: Option[Either[String, Parameter]])(val position: InputPosition) extends ShowPrivilegeScope {
+  override def dup(children: Seq[AnyRef]): ShowUserPrivileges.this.type =
+    this.copy(children.head.asInstanceOf[Option[Either[String, Parameter]]])(position).asInstanceOf[this.type]
+}
 
-final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
+final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope {
+  override def dup(children: Seq[AnyRef]): ShowAllPrivileges.this.type = this
+}
 
 sealed trait AdminAction {
   def name: String = "<unknown>"

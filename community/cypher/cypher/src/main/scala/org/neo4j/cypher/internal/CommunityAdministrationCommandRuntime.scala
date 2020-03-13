@@ -100,14 +100,14 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   def logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
 
     // Check Admin Rights for DBMS commands
-    case AssertDbmsAdmin(actions@_*) => (_, _) =>
+    case AssertDbmsAdmin(actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
       }, violationMessage = PERMISSION_DENIED)
 
     // Check Admin Rights for DBMS commands or self
-    case AssertDbmsAdminOrSelf(user, actions@_*) => (_, _) =>
-      AuthorizationPredicateExecutionPlan((_, securityContext) => securityContext.subject().hasUsername(user) || actions.forall { action =>
+    case AssertDbmsAdminOrSelf(user, actions) => (_, _) =>
+      AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
       }, violationMessage = PERMISSION_DENIED)
 

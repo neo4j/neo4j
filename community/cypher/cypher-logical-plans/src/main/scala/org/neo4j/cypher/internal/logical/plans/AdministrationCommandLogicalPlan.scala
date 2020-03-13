@@ -71,8 +71,14 @@ case class CopyRolePrivileges(source: SecurityAdministrationLogicalPlan, to: Eit
 
 abstract class PrivilegePlan(source: Option[PrivilegePlan] = None)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
-case class AssertDbmsAdmin(actions: AdminAction*)(implicit idGen: IdGen) extends PrivilegePlan
-case class AssertDbmsAdminOrSelf(user: String, actions: AdminAction*)(implicit idGen: IdGen) extends PrivilegePlan
+object AssertDbmsAdmin {
+  def apply(action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdmin = AssertDbmsAdmin(Seq(action))(idGen)
+}
+object AssertDbmsAdminOrSelf {
+  def apply(user: Either[String, Parameter], action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdminOrSelf = AssertDbmsAdminOrSelf(user, Seq(action))(idGen)
+}
+case class AssertDbmsAdmin(actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDbmsAdminOrSelf(user: Either[String, Parameter], actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertNotCurrentUser(source: PrivilegePlan, userName: Either[String, Parameter], verb: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 

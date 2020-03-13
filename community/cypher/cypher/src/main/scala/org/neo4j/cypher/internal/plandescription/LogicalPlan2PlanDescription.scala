@@ -428,10 +428,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
-      case AssertDbmsAdmin(actions@_*) =>
+      case AssertDbmsAdmin(actions) =>
         PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, actions.map(a => DbmsAction(a.name)), variables)
 
-      case AssertDbmsAdminOrSelf(user, actions@_*) =>
+      case AssertDbmsAdminOrSelf(user, actions) =>
         PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, actions.map(a => DbmsAction(a.name)) :+ getAnnotatedUserArgument(user), variables)
 
       case AssertDatabaseAdmin(action, normalizedName) =>
@@ -1052,8 +1052,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     case AllGraphsScope() => "ALL DATABASES"
     case DefaultDatabaseScope() => "DEFAULT DATABASE"
   }
-
-  private def getAnnotatedUserArgument(user: String): User = User(s"USER ${Prettifier.escapeName(user)}")
 
   private def getAnnotatedRoleArgument(role: String): Role = Role(s"ROLE ${Prettifier.escapeName(role)}")
 

@@ -70,6 +70,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
 
     // THEN
     assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported administration command: SHOW ROLE reader PRIVILEGES")
+    assertFailure("SHOW ROLE $role PRIVILEGES", "Unsupported administration command: SHOW ROLE $role PRIVILEGES")
   }
 
   test("should fail on showing user privileges for non-existing user with correct error message") {
@@ -78,6 +79,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
 
     // THEN
     assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
+    assertFailure("SHOW USER $foo PRIVILEGES", "Unsupported administration command: SHOW USER $foo PRIVILEGES")
   }
 
   // Tests for granting privileges

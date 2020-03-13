@@ -36,11 +36,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   }
 
   test("SHOW USER user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(Some("user")) _))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(Some(literal("user"))) _))
+  }
+
+  test("SHOW USER $user PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(Some(param("user"))) _))
   }
 
   test("SHOW USER `us%er` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(Some("us%er")) _))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(Some(literal("us%er"))) _))
   }
 
   test("SHOW USER PRIVILEGES") {
@@ -48,11 +52,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   }
 
   test("SHOW ROLE role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolePrivileges("role") _))
+    yields(ast.ShowPrivileges(ast.ShowRolePrivileges(literal("role")) _))
+  }
+
+  test("SHOW ROLE $role PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolePrivileges(param("role")) _))
   }
 
   test("SHOW ROLE `ro%le` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolePrivileges("ro%le") _))
+    yields(ast.ShowPrivileges(ast.ShowRolePrivileges(literal("ro%le")) _))
   }
 
   test("SHOW PRIVILEGE") {

@@ -344,6 +344,9 @@ class PrettifierIT extends CypherFunSuite {
       "alter user abc set password 'foo'" ->
         "ALTER USER abc SET PASSWORD '******'",
 
+      "alter user $abc set password 'foo'" ->
+        "ALTER USER $abc SET PASSWORD '******'",
+
       "alter user abc set password $password" ->
         "ALTER USER abc SET PASSWORD $password",
 
@@ -488,6 +491,9 @@ class PrettifierIT extends CypherFunSuite {
       "show user `$user` privileges" ->
         "SHOW USER `$user` PRIVILEGES",
 
+      "show user $user privileges" ->
+        "SHOW USER $user PRIVILEGES",
+
       "show user privileges" ->
         "SHOW USER PRIVILEGES",
 
@@ -499,6 +505,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "show role `$role` privileges" ->
         "SHOW ROLE `$role` PRIVILEGES",
+
+      "show role $role privileges" ->
+        "SHOW ROLE $role PRIVILEGES",
 
       "catalog show databases" ->
         "SHOW DATABASES",
