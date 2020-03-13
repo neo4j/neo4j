@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.LockWaitEvent;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
@@ -65,7 +66,8 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  * starvation and increase performance since only waiting txs that can acquire
  * the lock are notified.
  */
-class RWLock
+@VisibleForTesting
+public class RWLock
 {
     private final LockResource resource; // the resource this RWLock locks
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
