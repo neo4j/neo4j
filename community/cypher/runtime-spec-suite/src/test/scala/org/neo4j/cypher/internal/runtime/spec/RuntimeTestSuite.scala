@@ -253,17 +253,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         MatchResult(matches = false, s"Expected statistics ${left.runtimeResult.queryStatistics()}, got ${maybeStatisticts.get}", "")
       } else {
         val rows = consume(left)
-        MatchResult(
-          rowsMatcher.matches(columns, rows),
-          s"""Expected:
-             |
-             |$rowsMatcher
-             |
-             |but got
-             |
-             |${rowsMatcher.formatRows(rows)}""".stripMargin,
-          ""
-        )
+        rowsMatcher.matches(columns, rows) match {
+          case RowsMatch => MatchResult(true, "", "")
+          case RowsDontMatch(msg) => MatchResult(false, msg, "")
+        }
       }
     }
   }

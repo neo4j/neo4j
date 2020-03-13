@@ -24,6 +24,7 @@ import java.util.Objects
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.Matcher
 
@@ -44,59 +45,126 @@ object Rows {
     // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maven though)
     // This .take(1000) is too avoid that situation
     for (row <- a.take(1000))
-      sb ++= row.map(value => Objects.toString(value)).mkString("", ", ", "\n")
+      sb ++= prettyRow(row)
     if (a.length > 1000) {
       sb ++= "...\n"
     }
     sb.result()
   }
+
+  def prettyRow(row: Array[AnyValue]): String = {
+    row.map(value => Objects.toString(value)).mkString("", ", ", "\n")
+  }
 }
 
+sealed trait RowMatchResult
+case object RowsMatch extends RowMatchResult
+case class RowsDontMatch(errorMessage: String) extends RowMatchResult
+
 trait RowsMatcher {
-  def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean
-  def formatRows(rows: IndexedSeq[Array[AnyValue]]): String
+  def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult =
+    if (matchesRaw(columns, rows)) {
+      RowsMatch
+    } else {
+      RowsDontMatch(errorMessage(rows))
+    }
+  def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
+    matches(columns, rows) == RowsMatch
+  protected def formatRows(rows: IndexedSeq[Array[AnyValue]]): String
+  protected def errorMessage(rows: IndexedSeq[Array[AnyValue]]): String =
+    s"""Expected:
+       |
+       |$this
+       |
+       |but got
+       |
+       |${formatRows(rows)}""".stripMargin
 }
 
 object AnyRowsMatcher extends RowsMatcher {
   override def toString: String = "<ANY ROWS>"
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = true
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = true
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 object NoRowsMatcher extends RowsMatcher {
   override def toString: String = "<NO ROWS>"
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = rows.isEmpty
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = rows.isEmpty
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
-case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatcher {
+abstract class EqualRowsMatcher extends RowsMatcher {
+  protected def matchSorted(expRows: IndexedSeq[ListValue],
+                            gotRows: IndexedSeq[ListValue]): RowMatchResult = {
+    var expI = 0
+    var gotI = 0
+    val diffString = new RowDiffStringBuilder()
+    var matchStreak = 0
+
+    while (expI < expRows.size && gotI < gotRows.size) {
+      val exp = expRows(expI)
+      val got = gotRows(gotI)
+      val comp = AnyValues.COMPARATOR.compare(got, exp)
+      if (comp == 0) {
+        matchStreak += 1
+        expI += 1
+        gotI += 1
+      } else {
+        if (matchStreak > 0) {
+          diffString.onMatchStreak(matchStreak)
+          matchStreak = 0
+        }
+        if (comp < 0) {
+          diffString.onExtraRow(got)
+          gotI += 1
+        } else { // comp > 0
+          diffString.onMissingRow(exp)
+          expI += 1
+        }
+      }
+    }
+
+    if (matchStreak > 0) {
+      diffString.onMatchStreak(matchStreak)
+    }
+
+    while (expI < expRows.size) {
+      val exp = expRows(expI)
+      diffString.onMissingRow(exp)
+      expI += 1
+    }
+
+    while (gotI < gotRows.size) {
+      val got = gotRows(gotI)
+      diffString.onExtraRow(got)
+      gotI += 1
+    }
+
+    if (matchStreak == expRows.size && matchStreak == gotRows.size)
+      RowsMatch
+    else
+      RowsDontMatch(diffString.result)
+  }
+}
+
+case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends EqualRowsMatcher {
   override def toString: String = formatRows(expected) + " in any order"
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
-
-    if (expected.size != rows.size)
-      return false
-
+  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
     val sortedExpected = expected.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING)
     val sortedRows = rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING)
-
-    sortedExpected == sortedRows
+    matchSorted(sortedExpected, sortedRows)
   }
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
     Rows.pretty(rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
 }
 
-case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatcher {
+case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends EqualRowsMatcher {
   override def toString: String = formatRows(expected) + " in order"
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
-
-    if (expected.size != rows.size)
-      return false
-
+  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
     val sortedExpected = expected.map(row => VirtualValues.list(row:_*))
     val sortedRows = rows.map(row => VirtualValues.list(row:_*))
-
-    sortedExpected == sortedRows
+    matchSorted(sortedExpected, sortedRows)
   }
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
@@ -104,7 +172,7 @@ case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatch
 case class RowCount(expected: Int) extends RowsMatcher {
   override def toString: String = s"Expected $expected"
 
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     rows.size == expected
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
@@ -112,7 +180,7 @@ case class RowCount(expected: Int) extends RowsMatcher {
 
 case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsMatcher {
   override def toString: String = s"Rows matching $inner"
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     inner(rows).matches
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
@@ -150,7 +218,7 @@ trait RowOrderMatcher extends RowsMatcher {
     descriptions.mkString("Rows ", ", ", "")
   }
 
-  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
     foreach(_.reset())
     if (rows.isEmpty) {
       return false
@@ -281,4 +349,22 @@ abstract class Sort extends RowOrderMatcher {
   def column: String
   def initialValue: AnyValue
   protected def wantedOrder(cmp: Int): Boolean
+}
+
+class RowDiffStringBuilder {
+  private val sb = new mutable.StringBuilder()
+
+  def onMatchStreak(size: Int): Unit = {
+    sb ++= s"    ... $size matching rows ...\n"
+  }
+
+  def onMissingRow(row: ListValue): Unit = {
+    sb ++= " - " + Rows.prettyRow(row.asArray())
+  }
+
+  def onExtraRow(row: ListValue): Unit = {
+    sb ++= " + " + Rows.prettyRow(row.asArray())
+  }
+
+  def result: String = sb.result()
 }

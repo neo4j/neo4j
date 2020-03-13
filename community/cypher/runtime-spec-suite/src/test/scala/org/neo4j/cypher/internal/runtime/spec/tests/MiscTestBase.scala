@@ -154,7 +154,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
   case object populated extends RowsMatcher {
     override def toString: String = "All entities should have been populated"
-    override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
+    override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
       rows.forall(row => row.forall {
         case _: NodeReference => false
         case n: NodeEntityWrappingNodeValue => n.isPopulated
