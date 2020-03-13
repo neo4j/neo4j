@@ -157,7 +157,6 @@ public class DetachDeleteIT
         {
             sequencer.await( Phases.OTHER_REL_CREATED );
             Predicate<Thread> predicate = ThreadingRule.waitingWhileIn( RWLock.class, "waitUninterruptedly" );
-            System.out.println("sleeping");
             do
             {
                 Thread.sleep( 100 );
