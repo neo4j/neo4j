@@ -117,7 +117,6 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
 
-        verify( locks ).acquireShared( NONE, NODE, nodeId );
         verify( locks ).acquireExclusive( NONE, NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }
