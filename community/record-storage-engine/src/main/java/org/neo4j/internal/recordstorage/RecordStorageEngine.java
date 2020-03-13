@@ -329,7 +329,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             appliers.add( new ConsistencyCheckingBatchApplier( neoStores ) );
         }
-        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs, cacheTracer ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );

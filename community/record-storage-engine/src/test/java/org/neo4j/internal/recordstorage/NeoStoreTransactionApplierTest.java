@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -855,7 +856,8 @@ class NeoStoreTransactionApplierTest
         {
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
         }
-        BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, cacheAccess, lockService, idGeneratorWorkSyncs );
+        BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, cacheAccess, lockService, idGeneratorWorkSyncs,
+                PageCacheTracer.NULL );
         if ( recovery )
         {
             applier = newApplierFacade( new HighIdBatchTransactionApplier( neoStores ), applier,

@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -64,9 +64,9 @@ class ChangedIds
         } );
     }
 
-    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync )
+    void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, PageCacheTracer pageCacheTracer )
     {
-        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this ) );
+        asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this, pageCacheTracer ) );
     }
 
     void awaitApply() throws ExecutionException

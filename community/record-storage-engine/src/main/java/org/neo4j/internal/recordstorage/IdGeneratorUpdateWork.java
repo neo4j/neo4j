@@ -24,19 +24,18 @@ import java.util.List;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.util.concurrent.Work;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
 {
+    public static final String ID_GENERATOR_BATCH_APPLIER_TAG = "idGeneratorBatchApplier";
     private final List<ChangedIds> changeList = new ArrayList<>();
+    private final PageCacheTracer cacheTracer;
 
-    IdGeneratorUpdateWork( ChangedIds changes )
+    IdGeneratorUpdateWork( ChangedIds changes, PageCacheTracer cacheTracer )
     {
+        this.cacheTracer = cacheTracer;
         this.changeList.add( changes );
     }
 
@@ -50,8 +49,8 @@ public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdate
     @Override
     public void apply( IdGenerator idGenerator )
     {
-        //TODO: how we can find out who is who here. Do this per transaction instead?
-        try ( Marker marker = idGenerator.marker( TRACER_SUPPLIER.get() ) )
+        try ( var cursorTracer = cacheTracer.createPageCursorTracer( ID_GENERATOR_BATCH_APPLIER_TAG );
+             Marker marker = idGenerator.marker( cursorTracer ) )
         {
             for ( ChangedIds changes : this.changeList )
             {

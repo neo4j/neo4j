@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -95,7 +96,7 @@ class SchemaRuleCommandTest
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
         }
         storeApplier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE,
-                idGeneratorWorkSyncs );
+                idGeneratorWorkSyncs, PageCacheTracer.NULL );
     }
 
     @Test

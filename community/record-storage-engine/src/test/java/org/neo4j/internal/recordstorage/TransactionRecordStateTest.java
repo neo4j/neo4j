@@ -1571,7 +1571,8 @@ class TransactionRecordStateTest
         {
             idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
         }
-        return new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService, idGeneratorWorkSyncs );
+        return new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService, idGeneratorWorkSyncs,
+                PageCacheTracer.NULL );
     }
 
     private TransactionRecordState newTransactionRecordState()
