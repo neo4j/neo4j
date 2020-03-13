@@ -63,8 +63,10 @@ class TwoPhaseNodeForRelationshipLocking
             retry = false;
             firstRelId = NO_SUCH_RELATIONSHIP;
 
-            // lock all the nodes involved by following the node id ordering
+            // Read-lock the node, and acquire a consistent view of its relationships.
+            locks.acquireShared( lockTracer, ResourceTypes.NODE, nodeId );
             collectAndSortNodeIds( nodeId, transaction, nodes );
+            // lock all the nodes involved by following the node id ordering
             lockAllNodes( sortedNodeIds );
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains
