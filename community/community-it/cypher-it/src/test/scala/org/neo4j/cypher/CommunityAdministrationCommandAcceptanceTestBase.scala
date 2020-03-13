@@ -19,9 +19,15 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.kernel.api.security.AuthManager
 
 abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+
+  override protected def initTest() {
+    super.initTest()
+    selectDatabase(SYSTEM_DATABASE_NAME)
+  }
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
 

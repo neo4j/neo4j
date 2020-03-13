@@ -20,136 +20,94 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.graphdb.config.Setting
 
 class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
 
-  private val enterpriseCommands = Seq(
-    ("TRAVERSE", "TRAVERSE ON GRAPH * NODES * (*)"),
-    ("READ", "READ {*} ON GRAPH * NODES * (*)"),
-    ("MATCH", "MATCH {*} ON GRAPH * NODES * (*)"),
-    ("ROLE MANAGEMENT", "ROLE MANAGEMENT ON DBMS"),
-    ("CREATE ROLE", "CREATE ROLE ON DBMS"),
-    ("DROP ROLE", "DROP ROLE ON DBMS"),
-    ("ASSIGN ROLE", "ASSIGN ROLE ON DBMS"),
-    ("REMOVE ROLE", "REMOVE ROLE ON DBMS"),
-    ("SHOW ROLE", "SHOW ROLE ON DBMS"),
-    ("USER MANAGEMENT", "USER MANAGEMENT ON DBMS"),
-    ("CREATE USER", "CREATE USER ON DBMS"),
-    ("DROP USER", "DROP USER ON DBMS"),
-    ("ALTER USER", "ALTER USER ON DBMS"),
-    ("SHOW USER", "SHOW USER ON DBMS"),
-    ("DATABASE MANAGEMENT", "DATABASE MANAGEMENT ON DBMS"),
-    ("CREATE DATABASE", "CREATE DATABASE ON DBMS"),
-    ("DROP DATABASE", "DROP DATABASE ON DBMS"),
-    ("PRIVILEGE MANAGEMENT", "PRIVILEGE MANAGEMENT ON DBMS"),
-    ("SHOW PRIVILEGE", "SHOW PRIVILEGE ON DBMS"),
-    ("ASSIGN PRIVILEGE", "ASSIGN PRIVILEGE ON DBMS"),
-    ("REMOVE PRIVILEGE", "REMOVE PRIVILEGE ON DBMS"),
-    ("ALL", "ALL ON DBMS"),
-    ("ALL PRIVILEGES", "ALL PRIVILEGES ON DBMS"),
-    ("ALL DBMS PRIVILEGES", "ALL DBMS PRIVILEGES ON DBMS")
-  )
-
   // Tests for showing privileges
 
   test("should fail on showing privileges from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
     assertFailure("SHOW ALL PRIVILEGES", "Unsupported administration command: SHOW ALL PRIVILEGES")
   }
 
   test("should fail on showing role privileges from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
     assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported administration command: SHOW ROLE reader PRIVILEGES")
     assertFailure("SHOW ROLE $role PRIVILEGES", "Unsupported administration command: SHOW ROLE $role PRIVILEGES")
   }
 
   test("should fail on showing user privileges for non-existing user with correct error message") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
     assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
     assertFailure("SHOW USER $foo PRIVILEGES", "Unsupported administration command: SHOW USER $foo PRIVILEGES")
   }
 
-  // Tests for granting privileges
-  enterpriseCommands.foreach {
-    case (privilege, command) =>
-      test(s"should fail on granting $privilege privilege from community") {
-        // GIVEN
-        selectDatabase(SYSTEM_DATABASE_NAME)
+  private val enterprisePrivileges = Seq(
+    // Graph privileges
+    "TRAVERSE ON GRAPH * NODES * (*)",
+    "READ {*} ON GRAPH * NODES * (*)",
+    "MATCH {*} ON GRAPH * NODES * (*)",
+    "WRITE ON GRAPH * ELEMENTS *(*)",
 
-        // THEN
-        assertFailure(s"GRANT $command TO custom", s"Unsupported administration command: GRANT $command TO custom")
+    // Database privileges
+    "ACCESS ON DATABASE *",
+    "START ON DATABASE $foo",
+    "STOP ON DATABASE *",
+    "CREATE INDEX ON DATABASE *",
+    "DROP INDEX ON DATABASE $foo",
+    "INDEX MANAGEMENT ON DATABASE *",
+    "CREATE CONSTRAINT ON DATABASE *",
+    "DROP CONSTRAINT ON DATABASE *",
+    "CONSTRAINT MANAGEMENT ON DATABASE $foo",
+    "CREATE NEW NODE LABEL ON DATABASE *",
+    "CREATE NEW RELATIONSHIP TYPE ON DATABASE $foo",
+    "CREATE NEW PROPERTY NAME ON DATABASE *",
+    "NAME MANAGEMENT ON DATABASE *",
+    "ALL DATABASE PRIVILEGES ON DATABASE *",
+    "SHOW TRANSACTION (*) ON DATABASE *",
+    "TERMINATE TRANSACTION ($user) ON DATABASE $foo",
+    "TRANSACTION MANAGEMENT ON DATABASE *",
+
+    // Dbms privileges
+    "ROLE MANAGEMENT ON DBMS",
+    "CREATE ROLE ON DBMS",
+    "DROP ROLE ON DBMS",
+    "ASSIGN ROLE ON DBMS",
+    "REMOVE ROLE ON DBMS",
+    "SHOW ROLE ON DBMS",
+    "USER MANAGEMENT ON DBMS",
+    "CREATE USER ON DBMS",
+    "DROP USER ON DBMS",
+    "ALTER USER ON DBMS",
+    "SHOW USER ON DBMS",
+    "DATABASE MANAGEMENT ON DBMS",
+    "CREATE DATABASE ON DBMS",
+    "DROP DATABASE ON DBMS",
+    "PRIVILEGE MANAGEMENT ON DBMS",
+    "SHOW PRIVILEGE ON DBMS",
+    "ASSIGN PRIVILEGE ON DBMS",
+    "REMOVE PRIVILEGE ON DBMS",
+    "ALL ON DBMS",
+    "ALL PRIVILEGES ON DBMS",
+    "ALL DBMS PRIVILEGES ON DBMS"
+  )
+
+  private val privilegeTypes = Seq(
+    ("GRANT", "TO"),
+    ("DENY", "TO"),
+    ("REVOKE", "FROM"),
+    ("REVOKE GRANT", "FROM"),
+    ("REVOKE DENY", "FROM")
+  )
+
+  enterprisePrivileges.foreach {
+    privilege =>
+      privilegeTypes.foreach {
+        case (privilegeType, preposition) =>
+          test(s"should fail on $privilegeType $privilege from community") {
+            val command = s"$privilegeType $privilege $preposition custom"
+            assertFailure(command, s"Unsupported administration command: $command")
+          }
       }
   }
-
-  // Tests for denying privileges
-  enterpriseCommands.foreach {
-    case (privilege, command) =>
-      test(s"should fail on denying $privilege privilege from community") {
-        // GIVEN
-        selectDatabase(SYSTEM_DATABASE_NAME)
-
-        // THEN
-        assertFailure(s"DENY $command TO custom", s"Unsupported administration command: DENY $command TO custom")
-      }
-  }
-
-  // Tests for revoking grant privileges
-  enterpriseCommands.foreach {
-    case (privilege, command) =>
-      test(s"should fail on revoking grant $privilege privilege from community") {
-        // GIVEN
-        selectDatabase(SYSTEM_DATABASE_NAME)
-
-        // THEN
-        assertFailure(s"REVOKE GRANT $command FROM $$custom", s"Unsupported administration command: REVOKE GRANT $command FROM $$custom")
-      }
-  }
-
-  // Tests for revoking deny privileges
-  enterpriseCommands.foreach {
-    case (privilege, command) =>
-      test(s"should fail on revoking deny $privilege privilege from community") {
-        // GIVEN
-        selectDatabase(SYSTEM_DATABASE_NAME)
-
-        // THEN
-        assertFailure(s"REVOKE DENY $command FROM custom", s"Unsupported administration command: REVOKE DENY $command FROM custom")
-      }
-  }
-
-  // Tests for revoking privileges
-  enterpriseCommands.foreach {
-    case (privilege, command) =>
-      test(s"should fail on revoking $privilege privilege from community") {
-        // GIVEN
-        selectDatabase(SYSTEM_DATABASE_NAME)
-
-        // THEN
-        assertFailure(s"REVOKE $command FROM custom", s"Unsupported administration command: REVOKE $command FROM custom")
-      }
-  }
-
-  def assertFailureWithPartialMessage(command: String, errorMsg: String): Unit = {
-    // WHEN
-    val exception = the[Exception] thrownBy {
-      execute(command)
-    }
-
-    // THEN
-    exception.getMessage should include(errorMsg)
-  }
-
 }

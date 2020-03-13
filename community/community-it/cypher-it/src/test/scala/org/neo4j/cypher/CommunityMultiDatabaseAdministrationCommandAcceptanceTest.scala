@@ -118,7 +118,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   test("should give nothing when showing a non-existing database") {
     // GIVEN
     setup(defaultConfig)
-    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // WHEN
     val result = execute("SHOW DATABASE foo")
