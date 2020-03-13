@@ -227,7 +227,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case AssertValidRevoke(_, action, scope, roleName) =>
+      case AssertValidRevoke(_, action, scope, roleName, _) =>
         val args = action match {
           case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
           case _ => Seq(DbmsAction(action.name))
@@ -586,7 +586,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case AssertValidRevoke(_, action, scope, roleName) =>
+      case AssertValidRevoke(_, action, scope, roleName, _) =>
         val args = action match {
           case _: DatabaseAction => Seq(DatabaseAction(action.name), Database(Prettifier.extractDbScope(scope)))
           case _ => Seq(DbmsAction(action.name))
