@@ -171,10 +171,10 @@ class RecoveryIT
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
         recoverDatabase( tracers );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 224 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 224 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 144 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 80 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 234 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 234 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 153 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
 
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction tx = recoveredDatabase.beginTx() )
