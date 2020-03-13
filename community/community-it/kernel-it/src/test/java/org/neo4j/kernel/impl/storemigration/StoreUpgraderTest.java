@@ -489,7 +489,7 @@ public class StoreUpgraderTest
                 .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(),
-                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ) );
+                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), NULL );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );

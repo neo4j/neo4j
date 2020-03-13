@@ -232,7 +232,7 @@ public class StoreUpgraderInterruptionTestIT
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner,
-                legacyTransactionLogsLocator );
+                legacyTransactionLogsLocator, NULL );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

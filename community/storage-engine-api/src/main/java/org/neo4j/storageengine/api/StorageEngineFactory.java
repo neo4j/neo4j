@@ -126,7 +126,7 @@ public interface StorageEngineFactory
     StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException;
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, PageCacheTracer cacheTracer );
+            LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer );
 
     /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.

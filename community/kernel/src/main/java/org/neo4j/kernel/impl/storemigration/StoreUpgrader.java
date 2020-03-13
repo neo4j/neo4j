@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
@@ -48,7 +49,6 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -76,6 +76,7 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class StoreUpgrader
 {
+    private static final String STORE_UPGRADE_TAG = "storeUpgrade";
     private final Pattern MIGRATION_LEFTOVERS_PATTERN = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
@@ -91,10 +92,10 @@ public class StoreUpgrader
     private final LegacyTransactionLogsLocator legacyLogsLocator;
 
     private final String configuredFormat;
+    private final PageCacheTracer pageCacheTracer;
 
-    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
-            LegacyTransactionLogsLocator legacyLogsLocator )
+    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config config, FileSystemAbstraction fileSystem,
+            LogProvider logProvider, LogTailScanner logTailScanner, LegacyTransactionLogsLocator legacyLogsLocator, PageCacheTracer pageCacheTracer )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
@@ -104,6 +105,7 @@ public class StoreUpgrader
         this.log = logProvider.getLog( getClass() );
         this.logTailScanner = logTailScanner;
         this.configuredFormat = storeVersionCheck.configuredVersion();
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     /**
@@ -125,45 +127,47 @@ public class StoreUpgrader
 
     public void migrateIfNeeded( DatabaseLayout layout )
     {
-        var cursorTracer = TRACER_SUPPLIER.get();
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             // TODO: System database does not (yet) support migration, remove this when it does!
             return;
         }
 
-        DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
-
-        cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
-
-        File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
-        // if migration directory exists than we might have failed to move files into the store dir so do it again
-        if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_UPGRADE_TAG ) )
         {
-            // No migration needed
-            return;
-        }
+            DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
-        if ( isUpgradeAllowed() )
-        {
-            migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
-        }
-        else
-        {
-            Optional<String> storeVersion = storeVersionCheck.storeVersion( cursorTracer );
-            if ( storeVersion.isPresent() )
+            cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
+
+            File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
+            // if migration directory exists than we might have failed to move files into the store dir so do it again
+            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
             {
-                StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
-                if ( version.hasCapability( IndexCapabilities.LuceneCapability.LUCENE_5 ) )
+                // No migration needed
+                return;
+            }
+
+            if ( isUpgradeAllowed() )
+            {
+                migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
+            }
+            else
+            {
+                Optional<String> storeVersion = storeVersionCheck.storeVersion( cursorTracer );
+                if ( storeVersion.isPresent() )
                 {
-                    throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
-                }
-                else
-                {
-                    String configuredVersion = storeVersionCheck.configuredVersion();
-                    if ( configuredVersion != null && !version.isCompatibleWith( storeVersionCheck.versionInformation( configuredVersion ) ) )
+                    StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
+                    if ( version.hasCapability( IndexCapabilities.LuceneCapability.LUCENE_5 ) )
                     {
-                        throw new UpgradeNotAllowedException();
+                        throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
+                    }
+                    else
+                    {
+                        String configuredVersion = storeVersionCheck.configuredVersion();
+                        if ( configuredVersion != null && !version.isCompatibleWith( storeVersionCheck.versionInformation( configuredVersion ) ) )
+                        {
+                            throw new UpgradeNotAllowedException();
+                        }
                     }
                 }
             }

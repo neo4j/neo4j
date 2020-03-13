@@ -498,9 +498,9 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
+    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache )
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId )
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer() )
                 .createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 

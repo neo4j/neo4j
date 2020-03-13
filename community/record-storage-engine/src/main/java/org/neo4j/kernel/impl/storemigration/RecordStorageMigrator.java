@@ -87,6 +87,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -123,7 +124,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
@@ -158,6 +158,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_COMMIT_T
 public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
+    public static final String RECORD_STORAGE_MIGRATION_TAG = "recordStorageMigration";
+    public static final String NODE_CHUNK_MIGRATION_TAG = "nodeChunkMigration";
+    public static final String RELTIONHIP_CHUNK_MIGRATION_TAG = "relationshipChunkMigration";
 
     private final Config config;
     private final LogService logService;
@@ -187,73 +190,72 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         // Extract information about the last transaction from legacy neostore
         File neoStore = directoryLayout.metadataStore();
-        var cursorTracer = TRACER_SUPPLIER.get();
-        long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
-        TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
-        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId );
-        // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
-        writeLastTxInformation( migrationLayout, lastTxInfo );
-        writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
-
-        if ( versionToMigrateFrom.equals( "vE.H.0" ) )
+        try ( var cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) )
         {
-            // NOTE for 3.0 here is a special case for vE.H.0 "from" record format.
-            // Legend has it that 3.0.5 enterprise changed store format without changing store version.
-            // This was done to cheat the migrator to avoid doing store migration since the
-            // format itself was backwards compatible. Immediately a problem was detected:
-            // if a user uses 3.0.5 for a while and then goes back to a previous 3.0.x patch release
-            // the db wouldn't recognize it was an incompatible downgrade and start up normally,
-            // but read records with scrambled values and pointers, sort of.
-            //
-            // This condition has two functions:
-            //  1. preventing actual store migration between vE.H.0 --> vE.H.0b
-            //  2. making vE.H.0b used in any migration where either vE.H.0 or vE.H.0b is the existing format,
-            //     this because vE.H.0b is a superset of vE.H.0 and sometimes (for 3.0.5) vE.H.0
-            //     actually means vE.H.0b (in later version).
-            //
-            // In later versions of neo4j there are better mechanics in place so that a non-migration like this
-            // can be performed w/o special casing. To not require backporting that functionality
-            // this condition is here and should be removed in 3.1.
-            versionToMigrateFrom = "vE.H.0b";
-        }
-        RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
-        RecordFormats newFormat = selectForVersion( versionToMigrateTo );
-        if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
-             (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
-        {
-            // Some form of migration is required (a fallback/catch-all option)
-            migrateWithBatchImporter( directoryLayout, migrationLayout,
-                    lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
-                    lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
-        }
+            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
+            TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, cursorTracer );
+            LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorTracer );
+            // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
+            writeLastTxInformation( migrationLayout, lastTxInfo );
+            writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
 
-        // update necessary neostore records
-        LogPosition logPosition = readLastTxLogPosition( migrationLayout );
-        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition );
+            if ( versionToMigrateFrom.equals( "vE.H.0" ) )
+            {
+                // NOTE for 3.0 here is a special case for vE.H.0 "from" record format.
+                // Legend has it that 3.0.5 enterprise changed store format without changing store version.
+                // This was done to cheat the migrator to avoid doing store migration since the
+                // format itself was backwards compatible. Immediately a problem was detected:
+                // if a user uses 3.0.5 for a while and then goes back to a previous 3.0.x patch release
+                // the db wouldn't recognize it was an incompatible downgrade and start up normally,
+                // but read records with scrambled values and pointers, sort of.
+                //
+                // This condition has two functions:
+                //  1. preventing actual store migration between vE.H.0 --> vE.H.0b
+                //  2. making vE.H.0b used in any migration where either vE.H.0 or vE.H.0b is the existing format,
+                //     this because vE.H.0b is a superset of vE.H.0 and sometimes (for 3.0.5) vE.H.0
+                //     actually means vE.H.0b (in later version).
+                //
+                // In later versions of neo4j there are better mechanics in place so that a non-migration like this
+                // can be performed w/o special casing. To not require backporting that functionality
+                // this condition is here and should be removed in 3.1.
+                versionToMigrateFrom = "vE.H.0b";
+            }
+            RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
+            RecordFormats newFormat = selectForVersion( versionToMigrateTo );
+            if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
+                    (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
+            {
+                // Some form of migration is required (a fallback/catch-all option)
+                migrateWithBatchImporter( directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
+                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
+            }
 
-        if ( requiresSchemaStoreMigration( oldFormat, newFormat ) )
-        {
-            // Migration with the batch importer would have copied the property, property key token, and property key name stores
-            // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
-            // store files that it did not change, or didn't migrate. It could also be that we didn't do a normal store
-            // format migration. Then those files will be missing and the schema store migration would create empty ones that
-            // ended up overwriting the real ones. Those are then deleted by the migration afterwards, to avoid overwriting the
-            // actual files in the final copy from the migration directory, to the real store directory. When do a schema store
-            // migration, we will be reading and writing properties, and property key tokens, so we need those files.
-            // To get them, we just copy them again with the SKIP strategy, so we avoid overwriting any files that might have
-            // been migrated earlier.
-            List<DatabaseFile> databaseFiles = asList(
-                    DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
-                    DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                    DatabaseFile.LABEL_TOKEN_STORE, DatabaseFile.LABEL_TOKEN_NAMES_STORE,
-                    DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-            fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
-            migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat );
-        }
+            // update necessary neostore records
+            LogPosition logPosition = readLastTxLogPosition( migrationLayout );
+            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, cursorTracer );
 
-        if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
-        {
-            migrateCountsStore( directoryLayout, migrationLayout, oldFormat );
+            if ( requiresSchemaStoreMigration( oldFormat, newFormat ) )
+            {
+                // Migration with the batch importer would have copied the property, property key token, and property key name stores
+                // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
+                // store files that it did not change, or didn't migrate. It could also be that we didn't do a normal store
+                // format migration. Then those files will be missing and the schema store migration would create empty ones that
+                // ended up overwriting the real ones. Those are then deleted by the migration afterwards, to avoid overwriting the
+                // actual files in the final copy from the migration directory, to the real store directory. When do a schema store
+                // migration, we will be reading and writing properties, and property key tokens, so we need those files.
+                // To get them, we just copy them again with the SKIP strategy, so we avoid overwriting any files that might have
+                // been migrated earlier.
+                List<DatabaseFile> databaseFiles = asList( DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
+                        DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, DatabaseFile.LABEL_TOKEN_STORE,
+                        DatabaseFile.LABEL_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
+                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer );
+            }
+
+            if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
+            {
+                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorTracer );
+            }
         }
     }
 
@@ -262,7 +264,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Instead of a rebuild this could have been done by reading the old counts store, but since we don't want any of that complex
      * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
      */
-    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat )
+    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, PageCursorTracer cursorTracer )
             throws IOException
     {
         // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
@@ -272,8 +274,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
-            countsStore.start( TRACER_SUPPLIER.get() );
-            countsStore.checkpoint( IOLimiter.UNLIMITED, TRACER_SUPPLIER.get() );
+            countsStore.start( cursorTracer );
+            countsStore.checkpoint( IOLimiter.UNLIMITED, cursorTracer );
         }
     }
 
@@ -351,10 +353,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return migrationStructure.file( "lastxlogposition" );
     }
 
-    TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId )
+    TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
             throws IOException
     {
-        var cursorTracer = TRACER_SUPPLIER.get();
         int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
         long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, cursorTracer );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
@@ -388,9 +389,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                           : new TransactionId( lastTransactionId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
     }
 
-    LogPosition extractTransactionLogPosition( File neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId ) throws IOException
+    LogPosition extractTransactionLogPosition( File neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId,
+            PageCursorTracer cursorTracer ) throws IOException
     {
-        var cursorTracer = TRACER_SUPPLIER.get();
         long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
         long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, cursorTracer );
         if ( lastClosedTxLogVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT &&
@@ -451,8 +452,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector,
                     EmptyLogFilesInitializer.INSTANCE );
-            InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration );
-            InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
+            InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
+            InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
@@ -605,26 +606,28 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
+    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getRelationshipStore() )
         {
             @Override
             public InputChunk newChunk()
             {
-                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration );
+                var cursorTracer = cacheTracer.createPageCursorTracer( RELTIONHIP_CHUNK_MIGRATION_TAG );
+                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer );
             }
         };
     }
 
-    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
+    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getNodeStore() )
         {
             @Override
             public InputChunk newChunk()
             {
-                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration );
+                var cursorTracer = cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG );
+                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer );
             }
         };
     }
@@ -648,9 +651,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
-            String versionToMigrateTo, LogPosition lastClosedTxLogPosition ) throws IOException
+            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, PageCursorTracer cursorTracer ) throws IOException
     {
-        var cursorTracer = TRACER_SUPPLIER.get();
         final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final File migrationDirNeoStore = migrationStructure.metadataStore();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure,
@@ -700,8 +702,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     /**
      * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
      */
-    private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
-            throws IOException, KernelException
+    private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
+            PageCursorTracer cursorTracer ) throws IOException, KernelException
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
@@ -725,7 +727,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat, immutable.empty() );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
-                var cursorTracer = TRACER_SUPPLIER.get();
                 dstStore.start( cursorTracer );
                 TokenHolders srcTokenHolders = new TokenHolders(
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
@@ -737,26 +738,25 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
                 SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer );
 
-                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess );
+                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorTracer );
 
                 dstStore.flush( IOLimiter.UNLIMITED, cursorTracer );
             }
         }
     }
 
-    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage35 srcAccess, SchemaRuleMigrationAccess dstAccess ) throws KernelException
+    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage35 srcAccess, SchemaRuleMigrationAccess dstAccess,
+            PageCursorTracer cursorTracer ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        {
-            List<SchemaRule> namedRules = new ArrayList<>();
-            List<SchemaRule> unnamedRules = new ArrayList<>();
-            srcAccess.getAll( TRACER_SUPPLIER.get() ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
-            // Make sure that we process explicitly named schemas first.
-            namedRules.forEach( r -> rules.put( r.getId(), r ) );
-            unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
-        }
+        List<SchemaRule> namedRules = new ArrayList<>();
+        List<SchemaRule> unnamedRules = new ArrayList<>();
+        srcAccess.getAll( cursorTracer ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        // Make sure that we process explicitly named schemas first.
+        namedRules.forEach( r -> rules.put( r.getId(), r ) );
+        unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
 
         for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() )
         {
@@ -905,9 +905,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>
     {
-        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
+        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
         {
-            super( storageReader.allocateNodeCursor( TRACER_SUPPLIER.get() ), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateNodeCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer );
         }
 
         @Override
@@ -927,9 +927,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor>
     {
-        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
+        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
         {
-            super( storageReader.allocateRelationshipScanCursor( TRACER_SUPPLIER.get() ), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateRelationshipScanCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer );
         }
 
         @Override

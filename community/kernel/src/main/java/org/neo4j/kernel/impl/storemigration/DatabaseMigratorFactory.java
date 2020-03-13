@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
@@ -52,9 +53,10 @@ public class DatabaseMigratorFactory
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
     private final NamedDatabaseId namedDatabaseId;
+    private final PageCacheTracer pageCacheTracer;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            NamedDatabaseId namedDatabaseId )
+            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer )
     {
         this.fs = fs;
         this.config = config;
@@ -62,6 +64,7 @@ public class DatabaseMigratorFactory
         this.pageCache = pageCache;
         this.jobScheduler = jobScheduler;
         this.namedDatabaseId = namedDatabaseId;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
@@ -91,7 +94,7 @@ public class DatabaseMigratorFactory
         final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
         LogVersionUpgradeChecker.check( tailScanner, dbConfig );
         return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator,
-                storageEngineFactory );
+                storageEngineFactory, pageCacheTracer );
     }
 
     private static class LegacyDatabaseLayout extends DatabaseLayout

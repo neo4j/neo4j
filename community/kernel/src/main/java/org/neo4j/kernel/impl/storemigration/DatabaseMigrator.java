@@ -19,20 +19,17 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -53,10 +50,11 @@ public class DatabaseMigrator
     private final DatabaseLayout databaseLayout;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final StorageEngineFactory storageEngineFactory;
+    private final PageCacheTracer pageCacheTracer;
 
     public DatabaseMigrator( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
             LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator,
-            StorageEngineFactory storageEngineFactory )
+            StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
     {
         this.fs = fs;
         this.config = config;
@@ -68,29 +66,29 @@ public class DatabaseMigrator
         this.databaseLayout = databaseLayout;
         this.legacyLogsLocator = legacyLogsLocator;
         this.storageEngineFactory = storageEngineFactory;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
      */
-    public void migrate() throws IOException
+    public void migrate()
     {
-        var pageCacheTracer = NULL;
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
                 new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
-                tailScanner, legacyLogsLocator );
+                tailScanner, legacyLogsLocator, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
-                logService.getUserLog( IndexConfigMigrator.class ) );
+                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer );
         storeUpgrader.addParticipant( indexConfigMigrator );
 
-        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory );
+        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer );
         storeUpgrader.addParticipant( indexProviderMigrator );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.

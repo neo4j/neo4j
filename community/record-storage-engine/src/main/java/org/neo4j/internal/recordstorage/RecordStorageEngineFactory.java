@@ -83,7 +83,6 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -178,7 +177,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, PageCacheTracer cacheTracer )
+            LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer )
     {
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
@@ -186,13 +185,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {
-            stores.start( TRACER_SUPPLIER.get() );
+            stores.start( cursorTracer );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
-        return createMigrationTargetSchemaRuleAccess( stores, TRACER_SUPPLIER.get() );
+        return createMigrationTargetSchemaRuleAccess( stores, cursorTracer );
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer )

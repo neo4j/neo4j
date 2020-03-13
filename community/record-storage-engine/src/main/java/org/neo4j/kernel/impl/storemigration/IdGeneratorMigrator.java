@@ -57,7 +57,6 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.GBPTREE_ID_FILES;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -65,6 +64,7 @@ import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fi
 
 public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 {
+    public static final String ID_GENERATOR_MIGRATION_TAG = "idGeneratorMigration";
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final Config config;
@@ -87,7 +87,10 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( requiresIdFilesMigration( oldFormat, newFormat ) )
         {
-            migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, TRACER_SUPPLIER.get() );
+            try ( var cursorTracer = cacheTracer.createPageCursorTracer( ID_GENERATOR_MIGRATION_TAG ) )
+            {
+                migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer );
+            }
         }
     }
 
@@ -120,7 +123,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores stores = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() ).openNeoStores(
                 storesInDbDirectory.toArray( StoreType[]::new ) ) )
         {
-            stores.start( TRACER_SUPPLIER.get() );
+            stores.start( cursorTracer );
             buildIdFiles( migrationLayout, storesInDbDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
         }
         // Build the ones from the migration directory, those stores that have been migrated
@@ -132,7 +135,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores stores = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() )
                 .openNeoStores( storesInMigrationDirectory.toArray( StoreType[]::new ) ) )
         {
-            stores.start( TRACER_SUPPLIER.get() );
+            stores.start( cursorTracer );
             buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
         }
         for ( File emptyPlaceHolderStoreFile : placeHolderStoreFiles )

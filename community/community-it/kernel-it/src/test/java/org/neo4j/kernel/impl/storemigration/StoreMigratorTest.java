@@ -134,7 +134,7 @@ class StoreMigratorTest
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, NULL );
 
         // then
         assertEquals( expected, actual );
@@ -159,7 +159,7 @@ class StoreMigratorTest
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, NULL );
 
         // then
         assertEquals( txId, actual.transactionId() );
@@ -193,7 +193,7 @@ class StoreMigratorTest
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, NULL );
 
         // then
         assertEquals( txId, actual.transactionId() );
@@ -273,7 +273,7 @@ class StoreMigratorTest
                 MetaDataRecordFormat.FIELD_NOT_PRESENT, NULL );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory );
-        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
+        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL );
 
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withConfig( config ).build();
         assertEquals( 0, logPosition.getLogVersion() );

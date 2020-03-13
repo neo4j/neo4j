@@ -24,24 +24,25 @@ import java.io.IOException;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
     final StoragePropertyCursor storePropertyCursor;
     protected final T cursor;
     private final boolean requiresPropertyMigration;
+    private final PageCursorTracer cursorTracer;
     private long id;
     private long endId;
 
-    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = storageReader.allocatePropertyCursor( TRACER_SUPPLIER.get() );
+        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorTracer );
+        this.cursorTracer = cursorTracer;
     }
 
     void visitProperties( T record, InputEntityVisitor visitor )
@@ -66,6 +67,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     public void close()
     {
         storePropertyCursor.close();
+        cursorTracer.close();
     }
 
     @Override

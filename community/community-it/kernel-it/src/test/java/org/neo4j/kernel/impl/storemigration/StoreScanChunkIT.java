@@ -65,11 +65,11 @@ class StoreScanChunkIT
         }
     }
 
-    private class TestStoreScanChunk extends StoreScanChunk<StorageNodeCursor>
+    private static class TestStoreScanChunk extends StoreScanChunk<StorageNodeCursor>
     {
         TestStoreScanChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateNodeCursor( NULL ), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateNodeCursor( NULL ), storageReader, requiresPropertyMigration, NULL );
         }
 
         @Override

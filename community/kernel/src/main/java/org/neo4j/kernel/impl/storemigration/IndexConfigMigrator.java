@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -34,6 +32,8 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
@@ -42,10 +42,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
-import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
-
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier.TRACER_SUPPLIER;
 
 public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 {
@@ -56,10 +52,10 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private final StorageEngineFactory storageEngineFactory;
     private final IndexProviderMap indexProviderMap;
     private final Log log;
-    private final List<File> indexDirectoriesToDelete = new ArrayList<>();
+    private final PageCacheTracer pageCacheTracer;
 
     IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory,
-            IndexProviderMap indexProviderMap, Log log )
+            IndexProviderMap indexProviderMap, Log log, PageCacheTracer pageCacheTracer )
     {
         super( "Index config" );
         this.fs = fs;
@@ -69,6 +65,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         this.storageEngineFactory = storageEngineFactory;
         this.indexProviderMap = indexProviderMap;
         this.log = log;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -84,12 +81,13 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private void migrateIndexConfigs( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, String versionToMigrateTo )
             throws IOException, KernelException
     {
-        try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
-                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo, NULL ) )
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "indexConfigMigration" );
+                var ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
+                versionToMigrateTo, pageCacheTracer, cursorTracer ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
-                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout );
+                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout, cursorTracer );
 
                 if ( upgraded != rule )
                 {
@@ -99,7 +97,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException
+    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( rule instanceof IndexDescriptor )
         {
@@ -109,7 +107,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( provider.getKey(), provider.getVersion() );
 
-            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, TRACER_SUPPLIER.get(), log );
+            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, cursorTracer, log );
 
             IndexDescriptor newIndexReference = old.withIndexConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
