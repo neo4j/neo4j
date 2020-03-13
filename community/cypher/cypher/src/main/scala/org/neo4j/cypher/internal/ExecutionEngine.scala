@@ -222,7 +222,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       } catch {
         case up: Throwable =>
           // log failures in query compilation, the execute method that comes next handles itself
-          queryExecutionMonitor.endFailure(context.executingQuery(), up)
+          queryExecutionMonitor.endFailure(context.executingQuery(), up.getMessage)
           throw up
       }
     }
