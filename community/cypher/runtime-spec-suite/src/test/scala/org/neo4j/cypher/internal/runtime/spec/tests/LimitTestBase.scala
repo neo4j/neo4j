@@ -26,350 +26,922 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.graphdb.Node
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.graphdb.Label.label
+import org.neo4j.graphdb.RelationshipType.withName
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                         runtime: CypherRuntime[CONTEXT],
                                                         sizeHint: Int
                                                        ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("limit 0") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(0)
-      .input(variables = Seq("x"))
-      .build()
+    test("limit 0") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(0)
+        .input(variables = Seq("x"))
+        .build()
 
-    val input = inputColumns(100000, 3, identity).stream()
+      val input = inputColumns(100000, 3, identity).stream()
 
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withNoRows()
+      // then
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      runtimeResult should beColumns("x").withNoRows()
 
-    input.hasMore should be(true)
-  }
-
-  test("limit -1") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(-1)
-      .input(variables = Seq("x"))
-      .build()
-
-    val input = inputColumns(100000, 3, identity).stream()
-
-    // then
-    val exception = intercept[InvalidArgumentException] {
-      consume(execute(logicalQuery, runtime, input))
+      input.hasMore should be(true)
     }
-    exception.getMessage should include("Must be a non-negative integer")
-  }
 
-  test("limit -1 on an empty input") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(-1)
-      .input(variables = Seq("x"))
-      .build()
+    test("limit -1") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(-1)
+        .input(variables = Seq("x"))
+        .build()
 
-    val input = inputValues()
+      val input = inputColumns(100000, 3, identity).stream()
 
-    // then
-    val exception = intercept[InvalidArgumentException] {
-      consume(execute(logicalQuery, runtime, input))
+      // then
+      val exception = intercept[InvalidArgumentException] {
+        consume(execute(logicalQuery, runtime, input))
+      }
+      exception.getMessage should include("Must be a non-negative integer")
     }
-    exception.getMessage should include("Must be a non-negative integer")
-  }
 
-  test("limit higher than amount of rows") {
+    test("limit -1 on an empty input") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(-1)
+        .input(variables = Seq("x"))
+        .build()
+
+      val input = inputValues()
+
+      // then
+      val exception = intercept[InvalidArgumentException] {
+        consume(execute(logicalQuery, runtime, input))
+      }
+      exception.getMessage should include("Must be a non-negative integer")
+    }
+
+    test("limit higher than amount of rows") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(Int.MaxValue)
+        .input(variables = Seq("x"))
+        .build()
+
+      val input = inputColumns(sizeHint, 3, identity)
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      runtimeResult should beColumns("x").withRows(input.flatten)
+    }
+
+    test("should support limit") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(10)
+        .input(variables = Seq("x"))
+        .build()
+
+      val input = inputColumns(100000, 3, identity).stream()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      runtimeResult should beColumns("x").withRows(rowCount(10))
+
+      input.hasMore should be(true)
+    }
+
+    test("should support limit with null values") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(10)
+        .input(variables = Seq("x"))
+        .build()
+
+      val input = inputColumns(100000, 3, x => if (x % 2 == 0) x else null).stream()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      runtimeResult should beColumns("x").withRows(rowCount(10))
+
+      input.hasMore should be(true)
+    }
+
+    test("should support limit in the first of two pipelines") {
+      // given
+      val nodesPerLabel = 100
+      given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "y")
+        .expandAll("(x)-->(y)")
+        .limit(9)
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+      runtimeResult should beColumns("x", "y").withRows(rowCount(900))
+    }
+
+    test("should support apply-limit") {
+      // given
+      val nodesPerLabel = 100
+      val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .apply()
+        .|.limit(10)
+        .|.expandAll("(x)-->(y)")
+        .|.argument()
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      runtimeResult should beColumns("x").withRows(singleColumn(aNodes.flatMap(n => List().padTo(10, n))))
+    }
+
+    test("should support limit on top of apply") {
+      // given
+      val nodesPerLabel = 50
+      given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+      val limit = nodesPerLabel * nodesPerLabel - 1
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(limit)
+        .apply()
+        .|.expandAll("(x)-->(y)")
+        .|.argument()
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      runtimeResult should beColumns("x").withRows(rowCount(limit))
+    }
+
+    test("should support reduce -> limit on the RHS of apply") {
+      // given
+      val nodesPerLabel = 100
+      val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "y")
+        .apply()
+        .|.limit(10)
+        .|.sort(Seq(Ascending("y")))
+        .|.expandAll("(x)-->(y)")
+        .|.argument()
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      val expected = for{
+        x <- aNodes
+        y <- bNodes.sortBy(_.getId).take(10)
+      } yield Array[Any](x, y)
+
+      runtimeResult should beColumns("x", "y").withRows(expected)
+    }
+
+    test("should support limit -> reduce on the RHS of apply") {
+      // given
+      val NODES_PER_LABEL = 100
+      val LIMIT = 10
+      given { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "y")
+        .apply()
+        .|.sort(Seq(Ascending("y")))
+        .|.limit(LIMIT)
+        .|.expandAll("(x)-->(y)")
+        .|.argument()
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+      runtimeResult should beColumns("x", "y").withRows(groupedBy(NODES_PER_LABEL, LIMIT, "x").asc("y"))
+    }
+
+    test("should support chained limits") {
+      // given
+      val nodesPerLabel = 100
+      given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("a2")
+        .limit(10)
+        .expandAll("(b2)<--(a2)")
+        .limit(10)
+        .expandAll("(a1)-->(b2)")
+        .limit(10)
+        .expandAll("(b1)<--(a1)")
+        .limit(10)
+        .expandAll("(x)-->(b1)")
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+      runtimeResult should beColumns("a2").withRows(rowCount(10))
+    }
+
+    test("should support chained limits in the same pipeline") {
+      // given
+      val nodesPerLabel = 100
+      given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      // when
+      // This is a hypothetical query used to excersise some logic
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("a1")
+        .limit(12)
+        .limit(13)
+        .limit(14)
+        .expandAll("(b1)<--(a1)")
+        .limit(15)
+        .limit(16)
+        .limit(17)
+        .expandAll("(x)-->(b1)")
+        .limit(18)
+        .limit(19)
+        .limit(20)
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+      runtimeResult should beColumns("a1").withRows(rowCount(12))
+    }
+
+    test("should support limit with expand") {
+      val nodeConnections = given {
+        val nodes = nodeGraph(sizeHint)
+        randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+          case NodeConnections(node, connections) =>
+            val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")
+            (node.getId, neighbours)
+        }.toMap
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "y")
+        .apply()
+        .|.limit(1)
+        .|.expandAll("(x)-->(y)")
+        .|.argument("x")
+        .allNodeScan("x")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "y").withRows(matching {
+        case rows: Seq[Array[_]] => rows.foreach({
+          case Array(x, y) =>
+            val xid = x.asInstanceOf[VirtualNodeValue].id()
+            val connections: Seq[Node] = nodeConnections(xid)
+            connections should not be empty
+            withClue(s"x id: $xid --") {
+              val yid = y match {
+                case node: VirtualNodeValue => node.id()
+                case _ => y shouldBe a[VirtualNodeValue]
+              }
+              connections.exists(_.getId == yid)
+            }
+            // Assertion on the whole result
+            val xs = rows.map(_ (0)).map(n => n.asInstanceOf[VirtualNodeValue].id())
+            // Check that there is at most one row per x
+            val expected = nodeConnections.filter {
+              case (_, v) => v.nonEmpty
+            }.keys.toList.sorted
+            xs.sorted should equal(expected)
+        }
+        )
+      })
+    }
+
+    test("LIMIT combined with fused-over-pipelines") {
+      val nodesPerLabel = 100
+      given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "rel", "y")
+        .cartesianProduct()
+        .|.argument()
+        .expand("(x)-[rel]->(y)")
+        .limit(1)
+        .nodeByLabelScan("x", "A")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
+    }
+
+    test("limit followed by aggregation") {
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("sum")
+        .aggregation(Seq.empty, Seq("sum(x) AS sum"))
+        .limit(10)
+        .input(variables = Seq("x"))
+        .build()
+
+      val input = inputColumns(100000, 3, _ => 11).stream()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime, input)
+      runtimeResult should beColumns("sum").withSingleRow(110)
+
+      input.hasMore should be(true)
+    }
+
+  test("should support allnodes + limit under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+    val limit = 3
+
     // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(Int.MaxValue)
-      .input(variables = Seq("x"))
-      .build()
-
-    val input = inputColumns(sizeHint, 3, identity)
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withRows(input.flatten)
-  }
-
-  test("should support limit") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(10)
-      .input(variables = Seq("x"))
-      .build()
-
-    val input = inputColumns(100000, 3, identity).stream()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withRows(rowCount(10))
-
-    input.hasMore should be(true)
-  }
-
-  test("should support limit with null values") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(10)
-      .input(variables = Seq("x"))
-      .build()
-
-    val input = inputColumns(100000, 3, x => if (x % 2 == 0) x else null).stream()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withRows(rowCount(10))
-
-    input.hasMore should be(true)
-  }
-
-  test("should support limit in the first of two pipelines") {
-    // given
-    val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .expandAll("(x)-->(y)")
-      .limit(9)
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x", "y").withRows(rowCount(900))
-  }
-
-  test("should support apply-limit") {
-    // given
-    val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .apply()
-      .|.limit(10)
-      .|.expandAll("(x)-->(y)")
-      .|.argument()
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    runtimeResult should beColumns("x").withRows(singleColumn(aNodes.flatMap(n => List().padTo(10, n))))
-  }
-
-  test("should support limit on top of apply") {
-    // given
-    val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-    val limit = nodesPerLabel * nodesPerLabel - 1
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .limit(limit)
-      .apply()
-      .|.expandAll("(x)-->(y)")
-      .|.argument()
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    runtimeResult should beColumns("x").withRows(rowCount(limit))
-  }
-
-  test("should support reduce -> limit on the RHS of apply") {
-    // given
-    val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .apply()
-      .|.limit(10)
-      .|.sort(Seq(Ascending("y")))
-      .|.expandAll("(x)-->(y)")
-      .|.argument()
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    val expected = for{
-      x <- aNodes
-      y <- bNodes.sortBy(_.getId).take(10)
-    } yield Array[Any](x, y)
-
-    runtimeResult should beColumns("x", "y").withRows(expected)
-  }
-
-  test("should support limit -> reduce on the RHS of apply") {
-    // given
-    val NODES_PER_LABEL = 100
-    val LIMIT = 10
-    given { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .apply()
-      .|.sort(Seq(Ascending("y")))
-      .|.limit(LIMIT)
-      .|.expandAll("(x)-->(y)")
-      .|.argument()
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x", "y").withRows(groupedBy(NODES_PER_LABEL, LIMIT, "x").asc("y"))
-  }
-
-  test("should support chained limits") {
-    // given
-    val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a2")
-      .limit(10)
-      .expandAll("(b2)<--(a2)")
-      .limit(10)
-      .expandAll("(a1)-->(b2)")
-      .limit(10)
-      .expandAll("(b1)<--(a1)")
-      .limit(10)
-      .expandAll("(x)-->(b1)")
-      .nodeByLabelScan("x", "A")
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("a2").withRows(rowCount(10))
-  }
-
-  test("should support chained limits in the same pipeline") {
-    // given
-    val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    // when
-    // This is a hypothetical query used to excersise some logic
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a1")
-      .limit(12)
-      .limit(13)
-      .limit(14)
-      .expandAll("(b1)<--(a1)")
-      .limit(15)
-      .limit(16)
-      .limit(17)
-      .expandAll("(x)-->(b1)")
-      .limit(18)
-      .limit(19)
-      .limit(20)
-      .nodeByLabelScan("x", "A")
+      .apply()
+      .|.limit(limit)
+      .|.allNodeScan("a2")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support expand(all) + limit under apply") {
+    val (nodes, _) = given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+    val limit = 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.expand("(a1)-->(b)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support varexpand + limit under apply") {
+    val (nodes, _) = given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+    val limit = 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.expand("(a1)-[*]->(b)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support optional expand + limit under apply") {
+    val (nodes, _) = given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+    val limit = 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.optionalExpandAll("(a1)-->(b)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support expand(into) + limit under apply") {
+    val nodes = given {
+      val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
+      for {a <- aNodes
+           b <- bNodes} {
+        a.createRelationshipTo(b, withName("R"))
+      }
+      aNodes
+    }
+    val limit = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.expandInto("(a1)-->(b)")
+      .|.nonFuseable()
+      .|.nodeByLabelScan("b", "B")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support optional expand(into) + limit under apply") {
+    val nodes = given {
+      val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
+      for {a <- aNodes
+           b <- bNodes} {
+        a.createRelationshipTo(b, withName("R"))
+      }
+      aNodes
+    }
+    val limit = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.optionalExpandInto("(a1)-->(b)")
+      .|.nonFuseable()
+      .|.nodeByLabelScan("b", "B")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support labelscan + limit under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeByLabelScan("a2", "A")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support unwind + limit under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.unwind("[1, 2, 3, 4, 5] AS a2")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support single-nodeByIdSeek + limit under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint, "A")
+    }
+    val limit = 0
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeByIdSeek("a2", Set("a1"), nodes.head.getId)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a1").withNoRows()
+  }
+
+  test("should support multi-nodeByIdSeek + limit under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeByIdSeek("a2", Set("a1"), nodes.take(2 * limit).map(_.getId): _*)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support single-directedRelationshipByIdSeek + limit under apply") {
+    val (nodes, relationships) = given {
+      circleGraph(sizeHint, "A")
+    }
+    val limit = 0
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a1").withNoRows()
+  }
+
+  test("should support multi-directedRelationshipByIdSeek + limit under apply") {
+    val (nodes, relationships) = given {
+      circleGraph(sizeHint, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId):_*)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support single-undirectedRelationshipByIdSeek + limit under apply") {
+    val (nodes, relationships) = given {
+      circleGraph(sizeHint, "A")
+    }
+    val limit = 0
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a1").withNoRows()
+  }
+
+  test("should support multi-undirectedRelationshipByIdSeek + limit under apply") {
+    val (nodes, relationships) = given {
+      circleGraph(sizeHint, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId):_*)
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support nodeIndexScan + limit under apply") {
+    val nodes = given {
+      index("A", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeIndexOperator("x:A(prop)")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support nodeIndexSeek + limit under apply") {
+    val nodes = given {
+      index("A", "prop")
+      nodePropertyGraph(sizeHint, {
+        case _ => Map("prop" -> 42)
+      }, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeIndexOperator("x:A(prop = 42)")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support multi-nodeIndexSeek + limit under apply") {
+    val nodes = given {
+      index("A", "prop")
+      nodePropertyGraph(sizeHint, {
+        case _ => Map("prop" -> 42)
+      }, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeIndexOperator("x:A(prop = 42 OR 76)")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support composite-nodeIndexSeek + limit under apply") {
+    val nodes = given {
+      index("A", "prop1", "prop2")
+      nodePropertyGraph(sizeHint, {
+        case _ => Map("prop1" -> 42, "prop2" -> 1337)
+      }, "A")
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(limit)(_))
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+
+    test("should support limit under apply, with multiple input-rows per argument") {
+      // given
+      val aNodes = given {
+        val a1 = tx.createNode(label("A"))
+        a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+        a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+        val a2 = tx.createNode(label("A"))
+        a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+        val a3 = tx.createNode(label("A"))
+        Seq(a1, a2)
+      }
+
+      val limit = 1
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("a1")
+        .apply()
+        .|.limit(limit)
+        .|.expandAll("(a1)-->(b2)")
+        .|.nonFuseable()
+        .|.expandAll("(a1)-->(b2)")
+        .|.argument()
+        .nodeByLabelScan("a1", "A")
+        .build()
+
+      // then
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
+    }
+
+  test("should support limit under apply, with multiple input-rows per argument, produce result not fused") {
+    // given
+    val aNodes = given {
+      val a1 = tx.createNode(label("A"))
+      a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      val a2 = tx.createNode(label("A"))
+      a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      val a3 = tx.createNode(label("A"))
+      Seq(a1, a2)
+    }
+
+    val limit = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .nonFuseable()
+      .apply()
+      .|.limit(limit)
+      .|.expandAll("(a1)-->(b2)")
+      .|.nonFuseable()
+      .|.expandAll("(a1)-->(b2)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
       .build()
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("a1").withRows(rowCount(12))
+
+    runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
   }
 
-  test("should support limit with expand") {
+
+  test("should support limit under apply, with multiple input-rows per argument with random connections") {
+      val nodeConnections = given {
+        val nodes = nodeGraph(sizeHint, "A")
+        randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+          case NodeConnections(node, connections) =>
+            val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")
+            (node, neighbours)
+        }.toMap
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("a1")
+        .apply()
+        .|.limit(1)
+        .|.expandAll("(a1)-->(b2)")
+        .|.nonFuseable()
+        .|.expandAll("(a1)-->(b2)")
+        .|.argument()
+        .nodeByLabelScan("a1", "A")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodeConnections.keys.filter(node => nodeConnections(node).nonEmpty)
+      runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+    }
+
+  test("should support limit under apply, with multiple input-rows per argument with random connections, produce result not fused") {
     val nodeConnections = given {
-      val nodes = nodeGraph(sizeHint)
+      val nodes = nodeGraph(sizeHint, "A")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
-        case NodeConnections(node, connections) => (node.getId, connections)
+        case NodeConnections(node, connections) =>
+          val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")
+          (node, neighbours)
       }.toMap
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
+      .produceResults("a1")
+      .nonFuseable()
       .apply()
       .|.limit(1)
-      .|.expandAll("(x)-->(y)")
-      .|.argument("x")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withRows(matching {
-      case rows:Seq[Array[_]] if rows.forall {
-        case Array(x, y) =>
-          val xid = x.asInstanceOf[VirtualNodeValue].id()
-          val connections = nodeConnections(xid)
-          connections should not be empty
-          withClue(s"x id: $xid --") {
-            val yid = y match {
-              case node: VirtualNodeValue => node.id()
-              case _ => y shouldBe a[VirtualNodeValue]
-            }
-            connections.values.flatten.exists(_.getId == yid)
-          }
-
-      } && { // Assertion on the whole result
-        val xs = rows.map(_(0))
-        xs.distinct.size == xs.size // Check that there is at most one row per x
-      } =>
-    })
-  }
-
-  test("LIMIT combined with fused-over-pipelines") {
-    val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "rel", "y")
-      .cartesianProduct()
+      .|.expandAll("(a1)-->(b2)")
+      .|.nonFuseable()
+      .|.expandAll("(a1)-->(b2)")
       .|.argument()
-      .expand("(x)-[rel]->(y)")
-      .limit(1)
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("a1", "A")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    runtimeResult should beColumns("x", "rel", "y").withRows(rowCount(nodesPerLabel))
-  }
-
-  test("limit followed by aggregation") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("sum")
-      .aggregation(Seq.empty, Seq("sum(x) AS sum"))
-      .limit(10)
-      .input(variables = Seq("x"))
-      .build()
-
-    val input = inputColumns(100000, 3, _ => 11).stream()
-
     // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("sum").withSingleRow(110)
-
-    input.hasMore should be(true)
+    val expected = nodeConnections.keys.filter(node => nodeConnections(node).nonEmpty)
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
   }
 }
