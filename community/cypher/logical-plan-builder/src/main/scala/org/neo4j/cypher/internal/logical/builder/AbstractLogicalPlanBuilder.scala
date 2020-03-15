@@ -93,6 +93,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -624,6 +625,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)(_)))
 
   def expandAll(pattern: String): IMPL = expand(pattern, ExpandAll)
+
+  def nonFuseable(): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => NonFuseable(lp)(_)))
 
   def cacheProperties(properties: String*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source,

@@ -992,7 +992,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .optional() // The optional is here to avoid fully fusing
+      .nonFuseable()
       .expandAll("(x)-->(y)")
       .nodeIndexOperator("x:A(prop = 42 OR 1337)")
       .build()

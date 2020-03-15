@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -331,6 +332,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case DropResult(_) =>
         DropResultPipe(source)(id = id)
+
+      case NonFuseable(_) => source
 
       case Selection(predicate, _) =>
         val predicateExpression =

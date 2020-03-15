@@ -364,7 +364,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
-      .optional()//this is here to prevent fusing
+      .nonFuseable()
       .optionalExpandAll("(x)-[r]->(y)")
       .allNodeScan("x")
       .build()

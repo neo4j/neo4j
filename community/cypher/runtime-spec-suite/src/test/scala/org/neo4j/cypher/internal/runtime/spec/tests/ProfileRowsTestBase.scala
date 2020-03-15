@@ -557,10 +557,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .optional() // The optionals are to fuse the two expands together without anything else
+      .nonFuseable()
       .expandAll("(y)<--(z)")
       .expandAll("(x)-->(y)")
-      .optional()
+      .nonFuseable()
       .allNodeScan("x")
       .build()
 
