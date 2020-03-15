@@ -85,9 +85,14 @@ class TwoPhaseNodeForRelationshipLocking
             }
         }
         while ( retry );
-        for ( long relId : relIds.toSortedArray() )
+        long[] sortedRelIds = relIds.toSortedArray();
+        if ( sortedRelIds.length > 0 )
         {
-            relIdAction.accept( relId );
+            locks.acquireExclusive( lockTracer, ResourceTypes.RELATIONSHIP, sortedRelIds );
+            for ( long relId : sortedRelIds )
+            {
+                relIdAction.accept( relId );
+            }
         }
     }
 

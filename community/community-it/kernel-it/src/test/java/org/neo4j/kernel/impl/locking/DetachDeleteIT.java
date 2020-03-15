@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -136,6 +138,7 @@ class DetachDeleteIT
             tx.commit();
         }
         long nodeId = makeDenseNode();
+        AtomicLong otherRelId = new AtomicLong();
 
         Future<Object> relationshipAdder = executor.submit( () ->
         {
@@ -143,7 +146,8 @@ class DetachDeleteIT
             {
                 Node node = tx.getNodeById( nodeId );
                 Node other = tx.getNodeById( otherNodeId );
-                node.createRelationshipTo( other, RelationshipType.withName( "R5" ) );
+                long id = node.createRelationshipTo( other, RelationshipType.withName( "R5" ) ).getId();
+                otherRelId.set( id );
                 sequencer.release( Phases.OTHER_REL_CREATED ); // Allow detach delete to commence.
                 sequencer.await( Phases.DETACH_DELETE_HAS_STARTED ); // Wait for the detach delete to have been attempted
                 tx.commit();
@@ -167,6 +171,8 @@ class DetachDeleteIT
                 Locks.Client locksClient = getLocksClient( ignore );
                 // The try-lock should fail because the detach-delete should already be holding an exclusive lock on that node.
                 assertFalse( locksClient.trySharedLock( ResourceTypes.NODE, otherNodeId ) );
+                // The detach-delete should also hold an exclusive lock on the associated relationship.
+                Assertions.assertFalse( locksClient.trySharedLock( ResourceTypes.RELATIONSHIP, otherRelId.get() ) );
             }
             finally
             {
