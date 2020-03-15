@@ -523,8 +523,8 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
         """CATALOG CREATE GRAPH com.neo4j.Users {
-          |MATCH (n)
-          |RETURN n
+          |  MATCH (n)
+          |  RETURN n
           |}""".stripMargin,
 
       "catalog DROP graph com.neo4j.Users" ->
@@ -532,10 +532,10 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog create VIEW com.neo4j.Users($p, $k) { MATCH (n) WHERE n.p=$p RETURN n LIMIT $k }" ->
         """CATALOG CREATE VIEW com.neo4j.Users($p, $k) {
-          |MATCH (n)
-          |  WHERE n.p = $p
-          |RETURN n
-          |  LIMIT $k
+          |  MATCH (n)
+          |    WHERE n.p = $p
+          |  RETURN n
+          |    LIMIT $k
           |}""".stripMargin,
 
       "catalog DROP VIEW com.neo4j.Users" ->
