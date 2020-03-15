@@ -161,6 +161,14 @@ object CodeGeneration {
     //Foo.method(p1, p2,...)
     case InvokeStatic(method, params) =>
       invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
+
+    //Foo.method(p1, p2,...)
+    case InvokeStaticSideEffect(method, params) =>
+      val invocation = invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
+      if (method.returnType.isVoid) block.expression(invocation)
+      else block.expression(codegen.Expression.pop(invocation))
+      codegen.Expression.EMPTY
+
     //target.method(p1,p2,...)
     case Invoke(target, method, params) =>
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
@@ -168,7 +176,6 @@ object CodeGeneration {
     case InvokeSideEffect(target, method, params) =>
       val invocation = invoke(compileExpression(target, block), method.asReference,
                               params.map(p => compileExpression(p, block)): _*)
-
       if (method.returnType.isVoid) block.expression(invocation)
       else block.expression(codegen.Expression.pop(invocation))
       codegen.Expression.EMPTY

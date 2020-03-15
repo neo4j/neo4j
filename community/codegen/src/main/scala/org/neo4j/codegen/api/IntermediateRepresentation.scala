@@ -44,6 +44,14 @@ sealed trait IntermediateRepresentation
 case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
+ * Invoke a static method with side effects
+ *
+ * @param method the method to invoke
+ * @param params the parameter to the static method
+ */
+case class InvokeStaticSideEffect(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+
+/**
   * Invoke a method
   *
   * @param target the target to call the method on
@@ -616,8 +624,12 @@ object IntermediateRepresentation {
   def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11],  in12: Manifest[IN12]): Constructor =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11), typeRef(in12)))
 
-  def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
-    method, params)
+  def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =
+    if (method.returnType == org.neo4j.codegen.TypeReference.VOID) InvokeStaticSideEffect(method, params)
+    else InvokeStatic(method, params)
+
+  def invokeStaticSideEffect(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =
+    InvokeStaticSideEffect(method, params)
 
   def invoke(owner: IntermediateRepresentation, method: Method,
              params: IntermediateRepresentation*): IntermediateRepresentation =
