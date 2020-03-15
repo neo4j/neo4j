@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.set;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 
 class DetachingRelationshipDeleterTest
 {
@@ -72,8 +73,12 @@ class DetachingRelationshipDeleterTest
         locking.lockNodesAndDeleteRelationships( nodeId, ktx );
 
         // then
-        inOrder.verify( locks ).acquireShared( NONE, NODE, nodeId );
         inOrder.verify( locks ).acquireExclusive( NONE, NODE, 3L, 40L, 41L, nodeId, 43L, 49L );
+        inOrder.verify( locks ).acquireExclusive( NONE, RELATIONSHIP, 2L );
+        inOrder.verify( locks ).acquireExclusive( NONE, RELATIONSHIP, 3L );
+        inOrder.verify( locks ).acquireExclusive( NONE, RELATIONSHIP, 22L );
+        inOrder.verify( locks ).acquireExclusive( NONE, RELATIONSHIP, 23L );
+        inOrder.verify( locks ).acquireExclusive( NONE, RELATIONSHIP, 50L );
         assertEquals( set( 21L, 22L, 23L, 2L, 3L, 50L ), collector.set );
     }
 
@@ -87,7 +92,6 @@ class DetachingRelationshipDeleterTest
 
         locking.lockNodesAndDeleteRelationships( nodeId, ktx );
 
-        verify( locks ).acquireShared( NONE, NODE, nodeId );
         verify( locks ).acquireExclusive( NONE, NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }

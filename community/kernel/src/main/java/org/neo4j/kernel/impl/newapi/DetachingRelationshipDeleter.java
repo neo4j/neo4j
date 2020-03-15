@@ -49,36 +49,77 @@ class DetachingRelationshipDeleter
         PageCursorTracer cursorTracer = ktx.pageCursorTracer();
         NodeCursor nodes = ktx.ambientNodeCursor();
         CursorFactory cursors = ktx.cursors();
-        MutableLongSet nodeIds = new LongHashSet();
-        MutableLongSet relIds = new LongHashSet();
+        MutableLongSet nodeIds;
+        MutableLongSet relIds;
+        boolean retry;
 
-        // Read-lock the node, and acquire a consistent view of its relationships and neighbours.
-        locks.acquireShared( lockTracer, ResourceTypes.NODE, nodeId );
-        ktx.dataRead().singleNode( nodeId, nodes );
-        if ( nodes.next() )
+        do
         {
-            nodeIds.add( nodes.nodeReference() );
-            try ( var rels = RelationshipSelections.allCursor( cursors, nodes, null, cursorTracer ) )
+            retry = false;
+            nodeIds = new LongHashSet();
+            relIds = new LongHashSet();
+            // Collect the relationships and neighbours of the node.
+            // If this view ends up being inconsistent, then we will do it over.
+            ktx.dataRead().singleNode( nodeId, nodes );
+            if ( nodes.next() )
             {
-                while ( rels.next() )
+                nodeIds.add( nodes.nodeReference() );
+                try ( var rels = RelationshipSelections.allCursor( cursors, nodes, null, cursorTracer ) )
                 {
-                    relIds.add( rels.relationshipReference() );
-                    nodeIds.add( rels.sourceNodeReference() );
-                    nodeIds.add( rels.targetNodeReference() );
+                    while ( rels.next() )
+                    {
+                        relIds.add( rels.relationshipReference() );
+                        nodeIds.add( rels.sourceNodeReference() );
+                        nodeIds.add( rels.targetNodeReference() );
+                    }
                 }
             }
-        }
 
-        // Lock all the nodes involved by following the node id ordering.
-        locks.acquireExclusive( lockTracer, ResourceTypes.NODE, nodeIds.toSortedArray() );
+            // Lock all the nodes involved by following the node id ordering.
+            locks.acquireExclusive( lockTracer, ResourceTypes.NODE, nodeIds.toSortedArray() );
+
+            // After locking all involved parties, verify that we've collected the right sets.
+            ktx.dataRead().singleNode( nodeId, nodes );
+            if ( nodes.next() )
+            {
+                int verifiedRels = 0;
+                try ( var rels = RelationshipSelections.allCursor( cursors, nodes, null, cursorTracer ) )
+                {
+                    while ( rels.next() && !retry )
+                    {
+                        retry = !relIds.contains( rels.relationshipReference() );
+                        retry |= !nodeIds.contains( rels.sourceNodeReference() );
+                        retry |= !nodeIds.contains( rels.targetNodeReference() );
+                        verifiedRels++;
+                    }
+                }
+                retry |= verifiedRels != relIds.size();
+                if ( retry )
+                {
+                    locks.releaseExclusive( ResourceTypes.NODE, nodeIds.toSortedArray() );
+                }
+            }
+            else
+            {
+                // The node got deleted ahead of us. The job is done, so just return.
+                locks.releaseExclusive( ResourceTypes.NODE, nodeIds.toSortedArray() );
+                return 0;
+            }
+        }
+        while ( retry );
 
         // Then finally remove all relationships incident on our node.
         int relationshipsDeleted = 0;
         for ( long relId : relIds.toSortedArray() )
         {
+            locks.acquireExclusive( lockTracer, ResourceTypes.RELATIONSHIP, relId );
             if ( relationshipDeleter.test( relId ) )
             {
                 relationshipsDeleted++;
+            }
+            else
+            {
+                locks.releaseExclusive( ResourceTypes.RELATIONSHIP, relId );
             }
         }
         return relationshipsDeleted;
