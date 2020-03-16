@@ -760,6 +760,23 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
   }
 
+  test("Should type check predicates in FilteringExpression") {
+    val queries = Seq(
+      "RETURN [x IN [1,2,3] WHERE 42 | x + 1] AS foo",
+      "RETURN all(x IN [1,2,3] WHERE 42) AS foo",
+      "RETURN any(x IN [1,2,3] WHERE 42) AS foo",
+      "RETURN none(x IN [1,2,3] WHERE 42) AS foo",
+      "RETURN single(x IN [1,2,3] WHERE 42) AS foo",
+    )
+    queries.foreach { query =>
+      withClue(query) {
+        val context = new ErrorCollectingContext()
+        pipeline.transform(initStartState(query, Map.empty), context)
+        context.errors.map(_.msg) should equal(List("Type mismatch: expected Boolean but was Integer"))
+      }
+    }
+  }
+
   private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
