@@ -81,7 +81,7 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;

@@ -35,7 +35,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
-import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 

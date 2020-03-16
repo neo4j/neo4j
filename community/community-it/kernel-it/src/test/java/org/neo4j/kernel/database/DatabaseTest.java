@@ -51,7 +51,7 @@ import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheConfig;

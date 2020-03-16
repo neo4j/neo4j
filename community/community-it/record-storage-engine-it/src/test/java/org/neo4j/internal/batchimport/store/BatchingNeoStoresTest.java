@@ -72,10 +72,9 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -98,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -342,7 +340,7 @@ class BatchingNeoStoresTest
                     new RecordStorageEngine( databaseLayout, Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
-                            new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
+                            new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
                             recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE ) );
             // Create the relationship type token

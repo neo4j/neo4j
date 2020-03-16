@@ -49,11 +49,10 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
-import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
@@ -62,7 +61,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -133,9 +131,7 @@ class BatchingTransactionAppenderRotationIT
 
     private static Health getDatabaseHealth()
     {
-        DatabasePanicEventGenerator databasePanicEventGenerator =
-                new DatabasePanicEventGenerator( new DatabaseEventListeners( NullLog.getInstance() ), DEFAULT_DATABASE_NAME );
-        return new DatabaseHealth( databasePanicEventGenerator, NullLog.getInstance() );
+        return new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
     }
 
     private static class RotationLogAppendEvent implements LogAppendEvent

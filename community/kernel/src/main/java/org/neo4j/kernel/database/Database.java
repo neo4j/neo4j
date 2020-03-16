@@ -147,7 +147,7 @@ import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
-import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
@@ -479,7 +479,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
-            eventListeners.databaseStart( namedDatabaseId.name() );
+            eventListeners.databaseStart( namedDatabaseId );
         }
         catch ( Throwable e )
         {
@@ -791,7 +791,7 @@ public class Database extends LifecycleAdapter
             return;
         }
 
-        eventListeners.databaseShutdown( namedDatabaseId.name() );
+        eventListeners.databaseShutdown( namedDatabaseId );
         life.stop();
         awaitAllClosingTransactions();
         life.shutdown();

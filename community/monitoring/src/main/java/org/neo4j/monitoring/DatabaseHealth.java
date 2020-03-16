@@ -34,11 +34,11 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
     private static final Class<? extends Throwable> CRITICAL_EXCEPTION = OutOfMemoryError.class;
 
     private volatile boolean healthy = true;
-    private final DatabasePanicEventGenerator panicEventGenerator;
+    private final PanicEventGenerator panicEventGenerator;
     private final Log log;
     private volatile Throwable causeOfPanic;
 
-    public DatabaseHealth( DatabasePanicEventGenerator panicEventGenerator, Log log )
+    public DatabaseHealth( PanicEventGenerator panicEventGenerator, Log log )
     {
         this.panicEventGenerator = panicEventGenerator;
         this.log = log;
@@ -72,7 +72,10 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
         this.causeOfPanic = cause;
         this.healthy = false;
         log.error( "Database panic: " + panicMessage, cause );
-        panicEventGenerator.panic();
+        if ( panicEventGenerator != null )
+        {
+            panicEventGenerator.panic( cause );
+        }
     }
 
     @Override

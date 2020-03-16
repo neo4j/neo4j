@@ -53,7 +53,7 @@ import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
-import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;

@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +52,7 @@ class DatabaseHealthTest
         databaseHealth.panic( cause );
 
         // THEN
-        verify( generator ).panic();
+        verify( generator ).panic( cause );
     }
 
     @Test

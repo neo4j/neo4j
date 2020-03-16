@@ -61,9 +61,9 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
-import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -139,8 +139,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fs = globalModule.getFileSystem();
         this.transactionStats = editionComponents.getTransactionMonitor();
         this.eventListeners = globalModule.getDatabaseEventListeners();
-        this.databaseHealthFactory = () -> new DatabaseHealth(
-                        new DatabasePanicEventGenerator( eventListeners, namedDatabaseId.name() ),
+        this.databaseHealthFactory = () -> new DatabaseHealth( new DatabasePanicEventGenerator( eventListeners, namedDatabaseId ),
                         databaseLogService.getInternalLog( DatabaseHealth.class ) );
         this.commitProcessFactory = editionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
