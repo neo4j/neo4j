@@ -67,7 +67,7 @@ class NativeTokenScanReaderTest
                 .thenReturn( cursor );
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator iterator = reader.entityWithToken( LABEL_ID, NULL ) )
+        try ( PrimitiveLongResourceIterator iterator = reader.entitiesWithToken( LABEL_ID, NULL ) )
         {
             // THEN
             assertArrayEquals( new long[]{
@@ -95,8 +95,8 @@ class NativeTokenScanReaderTest
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator first = reader.entityWithToken( LABEL_ID, NULL );
-              PrimitiveLongResourceIterator second = reader.entityWithToken( LABEL_ID, NULL ) )
+        try ( PrimitiveLongResourceIterator first = reader.entitiesWithToken( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator second = reader.entitiesWithToken( LABEL_ID, NULL ) )
         {
             // first check test invariants
             verify( cursor1, never() ).close();
@@ -131,8 +131,8 @@ class NativeTokenScanReaderTest
 
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
-        try ( PrimitiveLongResourceIterator ignore1 = reader.entityWithToken( LABEL_ID, NULL );
-              PrimitiveLongResourceIterator ignore2 = reader.entityWithToken( LABEL_ID, NULL )
+        try ( PrimitiveLongResourceIterator ignore1 = reader.entitiesWithToken( LABEL_ID, NULL );
+              PrimitiveLongResourceIterator ignore2 = reader.entitiesWithToken( LABEL_ID, NULL )
         )
         {
             // first check test invariants

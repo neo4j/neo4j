@@ -123,7 +123,7 @@ class LabelScanStoreIT
         {
             assertZeroCursor( cursorTracer );
 
-            var resourceIterator = labelScanReader.entityWithToken( 0, cursorTracer );
+            var resourceIterator = labelScanReader.entitiesWithToken( 0, cursorTracer );
             while ( resourceIterator.hasNext() )
             {
                 resourceIterator.next();
@@ -193,7 +193,7 @@ class LabelScanStoreIT
         TokenScanReader reader = store.newReader();
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
-            long[] actualNodes = closingAsArray( reader.entityWithToken( i, NULL ) );
+            long[] actualNodes = closingAsArray( reader.entitiesWithToken( i, NULL ) );
             long[] expectedNodes = nodesWithLabel( expected, i );
             assertArrayEquals( expectedNodes, actualNodes );
         }

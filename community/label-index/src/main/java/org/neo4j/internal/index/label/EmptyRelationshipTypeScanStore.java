@@ -196,7 +196,7 @@ public class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
         static TokenScanReader instance = new EmptyTokenScanReader();
 
         @Override
-        public PrimitiveLongResourceIterator entityWithToken( int tokenId, PageCursorTracer cursorTracer )
+        public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
         }

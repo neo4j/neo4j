@@ -37,7 +37,7 @@ public interface TokenScanReader
      * @param cursorTracer underlying page cursor tracer
      * @return entity ids with the given {@code tokenId}.
      */
-    PrimitiveLongResourceIterator entityWithToken( int tokenId, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer );
 
     /**
      * Sets the client up for a token scan on <code>tokenId</code>

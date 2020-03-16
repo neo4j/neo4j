@@ -111,9 +111,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -309,8 +309,7 @@ public class FullCheckIntegrationTest
         long labelId = idGenerator.label() - 1;
 
         LabelScanStore labelScanStore = fixture.directStoreAccess().labelScanStore();
-        Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable(
-                EntityTokenUpdate.tokenChanges( nodeId1, new long[]{}, new long[]{labelId} )
+        Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable( tokenChanges( nodeId1, new long[]{}, new long[]{labelId} )
         );
         write( labelScanStore, nodeLabelUpdates );
 
@@ -417,7 +416,7 @@ public class FullCheckIntegrationTest
         labels.remove( 1 );
         long[] after = asArray( labels );
 
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( EntityTokenUpdate.tokenChanges( 42, before, after ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( tokenChanges( 42, before, after ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();

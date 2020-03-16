@@ -393,7 +393,7 @@ public class TokenScanStoreTest
 
         // when
         TokenScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.entityWithToken( (int) labelId, NULL ) );
+        Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.entitiesWithToken( (int) labelId, NULL ) );
 
         // then
         assertEquals( nodes, nodesWithLabel );
@@ -419,7 +419,7 @@ public class TokenScanStoreTest
 
         // then
         TokenScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.entityWithToken( (int) label0Id, NULL ) );
+        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.entitiesWithToken( (int) label0Id, NULL ) );
         assertEquals( nodes, nodesWithLabel0 );
     }
 
@@ -500,7 +500,7 @@ public class TokenScanStoreTest
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
         TokenScanReader reader = store.newReader();
-        PrimitiveLongResourceIterator nodes = reader.entityWithToken( labelId, NULL );
+        PrimitiveLongResourceIterator nodes = reader.entitiesWithToken( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );
@@ -570,7 +570,7 @@ public class TokenScanStoreTest
         // then
         for ( Long labelId : possibleLabelIds )
         {
-            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().entityWithToken( labelId.intValue(), NULL );
+            PrimitiveLongResourceIterator nodesWithLabel = store.newReader().entitiesWithToken( labelId.intValue(), NULL );
             Iterator<EntityTokenUpdate> expected =
                     updates.stream().filter( update -> LongStream.of( update.getTokensAfter() ).anyMatch( candidateId -> candidateId == labelId ) ).iterator();
             while ( nodesWithLabel.hasNext() )
@@ -708,7 +708,7 @@ public class TokenScanStoreTest
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
-        LongIterator nodes = store.newReader().entityWithToken( labelId, NULL );
+        LongIterator nodes = store.newReader().entitiesWithToken( labelId, NULL );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );

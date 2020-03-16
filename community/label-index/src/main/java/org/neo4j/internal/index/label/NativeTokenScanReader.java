@@ -54,7 +54,7 @@ class NativeTokenScanReader implements TokenScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator entityWithToken( int tokenId, PageCursorTracer cursorTracer )
+    public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer )
     {
         Seeker<TokenScanKey,TokenScanValue> cursor;
         try
