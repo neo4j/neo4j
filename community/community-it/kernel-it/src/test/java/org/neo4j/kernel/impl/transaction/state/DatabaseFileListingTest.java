@@ -37,6 +37,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -189,6 +191,10 @@ class DatabaseFileListingTest
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<File> expectedFiles = layout.storeFiles();
+        if ( !TokenScanStore.relationshipTokenScanStoreEnabled() )
+        {
+            expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getName() ) );
+        }
         // there was no rotation
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<File> listedStoreFiles = storeFiles.stream()

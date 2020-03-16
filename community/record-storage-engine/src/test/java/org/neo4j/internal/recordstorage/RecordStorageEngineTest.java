@@ -43,7 +43,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
@@ -175,9 +174,9 @@ class RecordStorageEngineTest
         RecordStorageEngine engine = buildRecordStorageEngine();
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
         Set<File> currentFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
-        // current engine files should contain everything except another count store file and label scan store
         Set<File> allPossibleFiles = databaseLayout.storeFiles();
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
+        allPossibleFiles.remove( databaseLayout.relationshipTypeScanStore() );
         allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
 
         assertEquals( allPossibleFiles, currentFiles );

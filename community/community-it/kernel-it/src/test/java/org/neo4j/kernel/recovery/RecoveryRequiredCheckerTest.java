@@ -31,8 +31,10 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -268,6 +270,11 @@ class RecoveryRequiredCheckerTest
     {
         for ( File file : databaseLayout.storeFiles() )
         {
+            if ( file.getName().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) && !TokenScanStore.relationshipTokenScanStoreEnabled() )
+            {
+                // Skip
+                continue;
+            }
             assertTrue( fileSystem.fileExists( file ), "Store file " + file + " does not exist" );
         }
     }

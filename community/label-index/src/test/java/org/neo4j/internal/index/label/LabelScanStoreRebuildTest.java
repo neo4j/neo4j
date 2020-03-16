@@ -113,7 +113,7 @@ class LabelScanStoreRebuildTest
         {
             labelScanStore.init();
             IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, labelScanStore::start );
-            assertThat( exception.getMessage() ).contains( "unsorted label" );
+            assertThat( exception.getMessage() ).contains( "unsorted tokens" );
             assertThat( exception.getMessage() ).containsSubsequence( "2", "1" );
         }
         finally

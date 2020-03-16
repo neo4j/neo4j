@@ -41,10 +41,11 @@ class RecoveryStoreFileHelper
     static StoreFilesInfo checkStoreFiles( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
         Set<File> storeFiles = databaseLayout.storeFiles();
-        // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
+        // count store, index statistics, label and relationship scan store are not mandatory stores to have since they can be automatically rebuilt
         storeFiles.remove( databaseLayout.countStore() );
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
         storeFiles.remove( databaseLayout.labelScanStore() );
+        storeFiles.remove( databaseLayout.relationshipTypeScanStore() );
         return collectStoreFilesInfo( fileSystem, storeFiles );
     }
 

@@ -111,7 +111,7 @@ class BulkAppendNativeTokenScanWriterTest
             // when/then
             IllegalArgumentException failure =
                     assertThrows( IllegalArgumentException.class, () -> writer.write( tokenChanges( 3, new long[]{1, 2}, new long[]{2, 3} ) ) );
-            assertThat( failure.getMessage() ).contains( "Was expecting no labels before" );
+            assertThat( failure.getMessage() ).contains( "Was expecting no tokens before" );
         }
     }
 
