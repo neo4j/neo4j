@@ -68,6 +68,11 @@
             <artifactId>neo4j-server</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
