@@ -20,43 +20,35 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.IntPredicate;
-
 import javax.annotation.Nullable;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 
-/**
- * Store scan view that will try to minimize the amount of scanned nodes by using label scan store {@link LabelScanStore}
- * as a source of known labeled node ids.
- * @param <FAILURE> type of exception thrown on failure
- */
-public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
+public class RelationshipTypeViewRelationshipStoreScan<FAILURE extends Exception> extends RelationshipStoreScan<FAILURE>
 {
-    private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final PageCursorTracer cursorTracer;
 
-    public LabelViewNodeStoreScan( StorageReader storageReader, LockService locks,
-            LabelScanStore labelScanStore,
-            @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+    public RelationshipTypeViewRelationshipStoreScan( StorageReader storageReader, LockService locks,
+            RelationshipTypeScanStore relationshipTypeScanStore,
+            @Nullable Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            int[] labelIds,
-            IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
+            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
     {
-        super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
-                propertyKeyIdFilter, cursorTracer );
-        this.labelScanStore = labelScanStore;
+        super( storageReader, locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.cursorTracer = cursorTracer;
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator()
+    protected EntityIdIterator getEntityIdIterator()
     {
-        return new TokenScanViewIdIterator<>( labelScanStore.newReader(), labelIds, entityCursor, cursorTracer );
+        return new TokenScanViewIdIterator<>( relationshipTypeScanStore.newReader(), relationshipTypeIds, entityCursor, cursorTracer );
     }
 }

@@ -60,12 +60,14 @@ public interface IndexStoreView
      * @param propertyKeyIdFilter property key ids to generate updates for.
      * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
      * @param relationshipTypeUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
+     * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
+     * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param cursorTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            PageCursorTracer cursorTracer );
+            boolean forceStoreScan, PageCursorTracer cursorTracer );
 
     NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer );
 
@@ -112,7 +114,7 @@ public interface IndexStoreView
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-                PageCursorTracer cursorTracer )
+                boolean forceStoreScan, PageCursorTracer cursorTracer )
         {
             return EMPTY_SCAN;
         }

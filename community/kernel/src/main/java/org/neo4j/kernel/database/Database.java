@@ -396,8 +396,9 @@ public class Database extends LifecycleAdapter
                     buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors );
 
             // Schema indexes
-            DynamicIndexStoreView indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader,
-                    internalLogProvider );
+            DynamicIndexStoreView indexStoreView =
+                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, lockService, storageEngine::newReader,
+                            internalLogProvider );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
                     readOnly, pageCacheTracer );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, pageCacheTracer );
@@ -409,7 +410,8 @@ public class Database extends LifecycleAdapter
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
+            CheckPointerImpl.ForceOperation forceOperation =
+                    new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
                             logEntryReader, transactionIdStore, databaseMonitors );
@@ -608,7 +610,7 @@ public class Database extends LifecycleAdapter
     /**
      * Convenience method for building a {@link RelationshipTypeScanStore}. Doesn't add it to a {@link LifeSupport}.
      */
-    private static RelationshipTypeScanStore buildRelationshipTypeIndex(
+    public static RelationshipTypeScanStore buildRelationshipTypeIndex(
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             StorageEngine storageEngine,
             IndexStoreView indexStoreView,

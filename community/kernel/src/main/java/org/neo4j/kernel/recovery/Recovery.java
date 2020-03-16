@@ -36,6 +36,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -310,10 +311,14 @@ public final class Recovery
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
                 logProvider, databasePageCache, databaseLayout, fs, false );
+        RelationshipTypeScanStore relationshipTypeScanStore =
+                Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
+                        databaseLayout, fs, false );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
-                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
+                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, NO_LOCK_SERVICE, storageEngine::newReader,
+                        logProvider );
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
@@ -354,7 +359,7 @@ public final class Recovery
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
                         schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer() );
 
-        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
+        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
                         databaseHealth, logProvider, tracers, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
@@ -365,6 +370,7 @@ public final class Recovery
         recoveryLife.add( storageEngine );
         recoveryLife.add( new MissingTransactionLogsCheck( config, logTailScanner, recoveryLog ) );
         recoveryLife.add( labelScanStore );
+        recoveryLife.add( relationshipTypeScanStore );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );

@@ -38,9 +38,13 @@ import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
-public class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
+public final class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
 {
-    static RelationshipTypeScanStore instance = new EmptyRelationshipTypeScanStore();
+    public static final RelationshipTypeScanStore instance = new EmptyRelationshipTypeScanStore();
+
+    private EmptyRelationshipTypeScanStore()
+    {
+    }
 
     @Override
     public EntityType entityType()
@@ -102,12 +106,12 @@ public class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
     }
 
     @Override
-    public void init() throws IOException
+    public void init()
     {   // no-op
     }
 
     @Override
-    public void start() throws IOException
+    public void start()
     {   // no-op
     }
 
@@ -210,7 +214,7 @@ public class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
         @Override
         public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
         {
-            return null;
+            return PrimitiveLongResourceCollections.emptyIterator();
         }
     }
 

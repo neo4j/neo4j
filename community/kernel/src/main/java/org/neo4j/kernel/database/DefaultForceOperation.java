@@ -22,6 +22,7 @@ package org.neo4j.kernel.database;
 import java.io.IOException;
 
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -32,12 +33,15 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation
 {
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final StorageEngine storageEngine;
 
-    public DefaultForceOperation( IndexingService indexingService, LabelScanStore labelScanStore, StorageEngine storageEngine )
+    public DefaultForceOperation( IndexingService indexingService, LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore, StorageEngine storageEngine )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.storageEngine = storageEngine;
     }
 
@@ -46,6 +50,7 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation
     {
         indexingService.forceAll( ioLimiter, cursorTracer );
         labelScanStore.force( ioLimiter, cursorTracer );
+        relationshipTypeScanStore.force( ioLimiter, cursorTracer );
         storageEngine.flushAndForce( ioLimiter, cursorTracer );
     }
 }

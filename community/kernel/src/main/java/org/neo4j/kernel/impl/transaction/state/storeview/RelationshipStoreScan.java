@@ -39,7 +39,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
     private final Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor;
-    private final int[] relationshipTypeIds;
+    final int[] relationshipTypeIds;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
 
     public RelationshipStoreScan( StorageReader storageReader, LockService locks,

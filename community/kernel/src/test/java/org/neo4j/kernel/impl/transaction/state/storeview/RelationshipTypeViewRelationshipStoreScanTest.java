@@ -27,7 +27,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
@@ -41,11 +41,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class LabelViewNodeStoreScanTest
+class RelationshipTypeViewRelationshipStoreScanTest
 {
     private final StubStorageCursors cursors = new StubStorageCursors();
-    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private final TokenScanReader labelScanReader = mock( TokenScanReader.class );
+    private final RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
+    private final TokenScanReader relationshipTypeScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final Visitor<EntityTokenUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
@@ -53,23 +53,23 @@ class LabelViewNodeStoreScanTest
     @BeforeEach
     void setUp()
     {
-        when( labelScanStore.newReader() ).thenReturn( labelScanReader );
+        when( relationshipTypeScanStore.newReader() ).thenReturn( relationshipTypeScanReader );
     }
 
     @Test
-    void iterateOverLabeledNodeIds()
+    void iterateOverRelationshipIds()
     {
-        PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
+        PrimitiveLongResourceIterator relationshipsWithType = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 
         long highId = 15L;
         for ( long i = 0; i < highId; i++ )
         {
-            cursors.withNode( i );
+            cursors.withRelationship( i, 1, 0, 1 );
         }
-        int[] labelIds = new int[]{1, 2};
-        when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
+        int[] types = new int[]{1};
+        when( relationshipTypeScanReader.entitiesWithAnyOfTokens( eq( types ), any() ) ).thenReturn( relationshipsWithType );
 
-        LabelViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
+        RelationshipTypeViewRelationshipStoreScan<Exception> storeScan = getRelationshipTypeScanViewStoreScan( types );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -79,9 +79,9 @@ class LabelViewNodeStoreScanTest
         assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
-    private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
+    private RelationshipTypeViewRelationshipStoreScan<Exception> getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
-        return new LabelViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
-                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, PageCursorTracer.NULL );
+        return new RelationshipTypeViewRelationshipStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
+                relationshipTypeScanStore, labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, PageCursorTracer.NULL );
     }
 }

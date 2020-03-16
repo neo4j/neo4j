@@ -191,7 +191,7 @@ class DatabaseFileListingTest
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<File> expectedFiles = layout.storeFiles();
-        if ( !TokenScanStore.relationshipTokenScanStoreEnabled() )
+        if ( !TokenScanStore.relationshipTypeScanStoreEnabled() )
         {
             expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getName() ) );
         }

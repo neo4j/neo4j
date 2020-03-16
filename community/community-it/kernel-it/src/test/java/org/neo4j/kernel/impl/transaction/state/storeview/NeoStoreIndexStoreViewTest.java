@@ -173,7 +173,7 @@ class NeoStoreIndexStoreViewTest
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, true, NULL );
 
         // when
         storeScan.run();
@@ -209,7 +209,7 @@ class NeoStoreIndexStoreViewTest
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, true, NULL );
 
         // when
         storeScan.run();
@@ -249,7 +249,7 @@ class NeoStoreIndexStoreViewTest
         // given
         @SuppressWarnings( "unchecked" )
         Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, NULL );
+        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null, true, NULL );
 
         // when
         storeScan.run();
@@ -379,7 +379,7 @@ class NeoStoreIndexStoreViewTest
         // Given
         CopyTokenUpdateVisitor<Exception> relationshipTypeUpdateVisitor = new CopyTokenUpdateVisitor<>();
         StoreScan<Exception> storeViewRelationshipStoreScan =
-                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, relationshipTypeUpdateVisitor, NULL );
+                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, relationshipTypeUpdateVisitor, true, NULL );
 
         // When
         storeViewRelationshipStoreScan.run();

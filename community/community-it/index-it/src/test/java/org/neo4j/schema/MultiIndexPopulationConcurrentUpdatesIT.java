@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -80,9 +81,9 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -316,11 +317,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();
+        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
 
         try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
-            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore );
+            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore );
 
             IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
@@ -342,11 +344,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction,
-            Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore )
+            Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier );
-        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, locks, readerSupplier, customAction );
+        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -466,6 +469,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.resolveDependency( LabelScanStore.class );
     }
 
+    private RelationshipTypeScanStore getRelationshipTypeScanStore()
+    {
+        return embeddedDatabase.resolveDependency( RelationshipTypeScanStore.class );
+    }
+
     private RecordStorageEngine getStorageEngine()
     {
         return embeddedDatabase.resolveDependency( RecordStorageEngine.class );
@@ -490,10 +498,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         private final Runnable customAction;
 
-        DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
+        DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore,
+                RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
                 Supplier<StorageReader> storageEngine, Runnable customAction )
         {
-            super( neoStoreIndexStoreView, labelScanStore, locks, storageEngine, NullLogProvider.getInstance() );
+            super( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, storageEngine, NullLogProvider.getInstance() );
             this.customAction = customAction;
         }
 

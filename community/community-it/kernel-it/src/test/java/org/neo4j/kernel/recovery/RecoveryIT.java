@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,12 @@ import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -39,10 +45,12 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -78,6 +86,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil.withRTSS;
+import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
@@ -100,495 +111,641 @@ class RecoveryIT
     private DatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
 
-    @Test
-    void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        GraphDatabaseService database = createDatabase();
-        generateSomeData( database );
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-    }
-
-    @Test
-    void recoveryNotRequiredWhenDatabaseNotFound() throws Exception
-    {
-        DatabaseLayout absentDatabase = neo4jLayout.databaseLayout( "absent" );
-        assertFalse( isRecoveryRequired( fileSystem, absentDatabase, defaults() ) );
-    }
-
-    @Test
-    void recoverEmptyDatabase() throws Exception
-    {
-        createDatabase();
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
-    }
-
-    @Test
-    void recoverDatabaseWithNodes() throws Exception
-    {
-        GraphDatabaseService database = createDatabase();
-
-        int numberOfNodes = 10;
-        for ( int i = 0; i < numberOfNodes; i++ )
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            createSingleNode( database );
-        }
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        recoverDatabase();
-
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction tx = recoveredDatabase.beginTx() )
-        {
-            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
-        }
-        finally
-        {
+            GraphDatabaseService database = createDatabase();
+            generateSomeData( database );
             managementService.shutdown();
-        }
+            removeLastCheckpointRecordFromLastLogFile();
+
+            assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+        } );
     }
 
-    @Test
-    void tracePageCacheAccessOnDatabaseRecovery() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoveryNotRequiredWhenDatabaseNotFound( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        GraphDatabaseService database = createDatabase();
-
-        int numberOfNodes = 10;
-        for ( int i = 0; i < numberOfNodes; i++ )
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            createSingleNode( database );
-        }
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+            DatabaseLayout absentDatabase = neo4jLayout.databaseLayout( "absent" );
+            assertFalse( isRecoveryRequired( fileSystem, absentDatabase, defaults() ) );
+        } );
+    }
 
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
-        recoverDatabase( tracers );
-
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 234 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 234 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 153 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
-
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction tx = recoveredDatabase.beginTx() )
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverEmptyDatabase( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
-        }
-        finally
-        {
+            createDatabase();
             managementService.shutdown();
-        }
+            removeLastCheckpointRecordFromLastLogFile();
+
+            assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
+        } );
     }
 
-    @Test
-    void recoverDatabaseWithNodesAndRelationshipsAndRelationshipTypes() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithNodes( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        GraphDatabaseService database = createDatabase();
-
-        int numberOfRelationships = 10;
-        int numberOfNodes = numberOfRelationships * 2;
-        for ( int i = 0; i < numberOfRelationships; i++ )
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfNodes = 10;
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                createSingleNode( database );
+            }
+            managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            recoverDatabase();
+
+            GraphDatabaseService recoveredDatabase = createDatabase();
+            try ( Transaction tx = recoveredDatabase.beginTx() )
+            {
+                assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
+            }
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void tracePageCacheAccessOnDatabaseRecovery( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfNodes = 10;
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                createSingleNode( database );
+            }
+            managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            var pageCacheTracer = new DefaultPageCacheTracer();
+            var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
+            recoverDatabase( tracers );
+
+            if ( enableRelationshipTypeScanStore )
+            {
+                assertThat( pageCacheTracer.pins() ).isEqualTo( 238 );
+                assertThat( pageCacheTracer.unpins() ).isEqualTo( 238 );
+                assertThat( pageCacheTracer.hits() ).isEqualTo( 157 );
+                assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
+            }
+            else
+            {
+                assertThat( pageCacheTracer.pins() ).isEqualTo( 234 );
+                assertThat( pageCacheTracer.unpins() ).isEqualTo( 234 );
+                assertThat( pageCacheTracer.hits() ).isEqualTo( 153 );
+                assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
+            }
+
+            GraphDatabaseService recoveredDatabase = createDatabase();
+            try ( Transaction tx = recoveredDatabase.beginTx() )
+            {
+                assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
+            }
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithNodesAndRelationshipsAndRelationshipTypes( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfRelationships = 10;
+            int numberOfNodes = numberOfRelationships * 2;
+            for ( int i = 0; i < numberOfRelationships; i++ )
+            {
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    Node start = transaction.createNode();
+                    Node stop = transaction.createNode();
+                    start.createRelationshipTo( stop, withName( valueOf( i ) ) );
+                    transaction.commit();
+                }
+            }
+            managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            recoverDatabase();
+
+            GraphDatabaseService recoveredDatabase = createDatabase();
+            try ( Transaction transaction = recoveredDatabase.beginTx() )
+            {
+                assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
+            }
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithProperties( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfRelationships = 10;
+            int numberOfNodes = numberOfRelationships * 2;
+            for ( int i = 0; i < numberOfRelationships; i++ )
+            {
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    Node start = transaction.createNode();
+                    Node stop = transaction.createNode();
+                    start.setProperty( "start" + i, i );
+                    stop.setProperty( "stop" + i, i );
+                    start.createRelationshipTo( stop, withName( valueOf( i ) ) );
+                    transaction.commit();
+                }
+            }
+            managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            recoverDatabase();
+
+            GraphDatabaseService recoveredDatabase = createDatabase();
+            try ( Transaction transaction = recoveredDatabase.beginTx() )
+            {
+                assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
+                assertEquals( numberOfNodes, count( transaction.getAllPropertyKeys() ) );
+            }
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithIndex( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfRelationships = 10;
+            int numberOfNodes = numberOfRelationships * 2;
+            String startProperty = "start";
+            String stopProperty = "stop";
+            Label startMarker = Label.label( "start" );
+            Label stopMarker = Label.label( "stop" );
+
+            try ( Transaction transaction = database.beginTx() )
+            {
+                transaction.schema().indexFor( startMarker ).on( startProperty ).create();
+                transaction.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
+                transaction.commit();
+            }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                transaction.commit();
+            }
+
+            for ( int i = 0; i < numberOfRelationships; i++ )
+            {
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    Node start = transaction.createNode( startMarker );
+                    Node stop = transaction.createNode( stopMarker );
+
+                    start.setProperty( startProperty, i );
+                    stop.setProperty( stopProperty, i );
+                    start.createRelationshipTo( stop, withName( valueOf( i ) ) );
+                    transaction.commit();
+                }
+            }
+            long numberOfPropertyKeys;
+            try ( Transaction transaction = database.beginTx() )
+            {
+                numberOfPropertyKeys = count( transaction.getAllPropertyKeys() );
+            }
+            managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            recoverDatabase();
+
+            GraphDatabaseService recoveredDatabase = createDatabase();
+            try ( Transaction transaction = recoveredDatabase.beginTx() )
+            {
+                assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
+                assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
+                assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
+            }
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithRelationshipIndex( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseService database = createDatabase();
+
+            int numberOfRelationships = 10;
+            RelationshipType type = RelationshipType.withName( "TYPE" );
+            String property = "prop";
+            String indexName = "my index";
+
+            try ( Transaction transaction = database.beginTx() )
+            {
+                transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( indexName ).create();
+                transaction.commit();
+            }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                transaction.commit();
+            }
+
             try ( Transaction transaction = database.beginTx() )
             {
                 Node start = transaction.createNode();
                 Node stop = transaction.createNode();
-                start.createRelationshipTo( stop, withName( valueOf( i ) ) );
+                for ( int i = 0; i < numberOfRelationships; i++ )
+                {
+                    Relationship relationship = start.createRelationshipTo( stop, type );
+                    relationship.setProperty( property, "value" );
+                }
                 transaction.commit();
             }
-        }
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        recoverDatabase();
-
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
-        {
-            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-        }
-        finally
-        {
             managementService.shutdown();
-        }
-    }
+            removeLastCheckpointRecordFromLastLogFile();
 
-    @Test
-    void recoverDatabaseWithProperties() throws Exception
-    {
-        GraphDatabaseService database = createDatabase();
+            recoverDatabase();
 
-        int numberOfRelationships = 10;
-        int numberOfNodes = numberOfRelationships * 2;
-        for ( int i = 0; i < numberOfRelationships; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
+            GraphDatabaseAPI recoveredDatabase = createDatabase();
+            try ( Transaction transaction = recoveredDatabase.beginTx() )
             {
-                Node start = transaction.createNode();
-                Node stop = transaction.createNode();
-                start.setProperty( "start" + i, i );
-                stop.setProperty( "stop" + i, i );
-                start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.commit();
+                KernelTransaction ktx = ((InternalTransaction)transaction).kernelTransaction();
+                IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
+                int relationshipsInIndex = 0;
+                try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
+                {
+                    ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "*" ) );
+                    while ( cursor.next() )
+                    {
+                        relationshipsInIndex++;
+                    }
+                }
+                assertEquals( numberOfRelationships, relationshipsInIndex );
             }
-        }
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        recoverDatabase();
-
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
-        {
-            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfNodes, count( transaction.getAllPropertyKeys() ) );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
-    void recoverDatabaseWithIndex() throws Exception
-    {
-        GraphDatabaseService database = createDatabase();
-
-        int numberOfRelationships = 10;
-        int numberOfNodes = numberOfRelationships * 2;
-        String startProperty = "start";
-        String stopProperty = "stop";
-        Label startMarker = Label.label( "start" );
-        Label stopMarker = Label.label( "stop" );
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().indexFor( startMarker ).on( startProperty ).create();
-            transaction.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
-            transaction.commit();
-        }
-        try ( Transaction transaction = database.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            transaction.commit();
-        }
-
-        for ( int i = 0; i < numberOfRelationships; i++ )
-        {
-            try ( Transaction transaction = database.beginTx() )
+            finally
             {
-                Node start = transaction.createNode( startMarker );
-                Node stop = transaction.createNode( stopMarker );
-
-                start.setProperty( startProperty, i );
-                stop.setProperty( stopProperty, i );
-                start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.commit();
+                managementService.shutdown();
             }
-        }
-        long numberOfPropertyKeys;
-        try ( Transaction transaction = database.beginTx() )
-        {
-            numberOfPropertyKeys = count( transaction.getAllPropertyKeys() );
-        }
-        managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        } );
+    }
 
-        recoverDatabase();
-
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithFirstTransactionLogFileWithoutShutdownCheckpoint( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
-        }
-        finally
-        {
+            GraphDatabaseService database = createDatabase();
+            generateSomeData( database );
             managementService.shutdown();
-        }
+            assertEquals( 1, countCheckPointsInTransactionLogs() );
+            removeLastCheckpointRecordFromLastLogFile();
+
+            assertEquals( 0, countCheckPointsInTransactionLogs() );
+            assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+
+            startStopDatabase();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 2 checkpoints: first will be created after successful recovery and another on shutdown
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+        } );
     }
 
-    @Test
-    void recoverDatabaseWithFirstTransactionLogFileWithoutShutdownCheckpoint() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void failToStartDatabaseWithRemovedTransactionLogs( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        GraphDatabaseService database = createDatabase();
-        generateSomeData( database );
-        managementService.shutdown();
-        assertEquals( 1, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-
-        assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-
-        startStopDatabase();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 2 checkpoints: first will be created after successful recovery and another on shutdown
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-    }
-
-    @Test
-    void failToStartDatabaseWithRemovedTransactionLogs() throws Exception
-    {
-        GraphDatabaseAPI database = createDatabase();
-        generateSomeData( database );
-        managementService.shutdown();
-
-        removeTransactionLogs();
-
-        GraphDatabaseAPI restartedDb = createDatabase();
-        try
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-
-            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
-            assertTrue( failure.isPresent() );
-            assertThat( getRootCause( failure.get() ).getMessage() ).contains( "Transaction logs are missing and recovery is not possible." );
-        }
-        finally
-        {
+            GraphDatabaseAPI database = createDatabase();
+            generateSomeData( database );
             managementService.shutdown();
-        }
-    }
 
-    @Test
-    void startDatabaseWithRemovedSingleTransactionLogFile() throws Exception
-    {
-        GraphDatabaseAPI database = createDatabase();
-        PageCache pageCache = getDatabasePageCache( database );
-        generateSomeData( database );
+            removeTransactionLogs();
 
-        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
-
-        managementService.shutdown();
-
-        removeTransactionLogs();
-
-        startStopDatabaseWithForcedRecovery();
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-
-        verifyRecoveryTimestampPresent( database );
-    }
-
-    @Test
-    void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                        .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        while ( countTransactionLogFiles() < 5 )
-        {
-            generateSomeData( database );
-        }
-        managementService.shutdown();
-
-        removeTransactionLogs();
-
-        startStopDatabaseWithForcedRecovery();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-    }
-
-    @Test
-    void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                        .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        while ( countTransactionLogFiles() < 5 )
-        {
-            generateSomeData( database );
-        }
-        managementService.shutdown();
-
-        removeTransactionLogs();
-        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        assertEquals( 0, countTransactionLogFiles() );
-
-        DatabaseManagementService forcedRecoveryManagementService = forcedRecoveryManagement();
-        GraphDatabaseService service = forcedRecoveryManagementService.database( DEFAULT_DATABASE_NAME );
-        createSingleNode( service );
-        forcedRecoveryManagementService.shutdown();
-
-        assertEquals( 1, countTransactionLogFiles() );
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-
-        startStopDatabase();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 3 checkpoints: one from logs before recovery, second will be created as part of recovery and another on shutdown
-        assertEquals( 3, countCheckPointsInTransactionLogs() );
-    }
-
-    @Test
-    void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                        .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        while ( countTransactionLogFiles() < 5 )
-        {
-            generateSomeData( database );
-        }
-        managementService.shutdown();
-
-        removeHighestLogFile();
-
-        assertEquals( 4, countTransactionLogFiles() );
-        assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-
-        startStopDatabase();
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-        removeLastCheckpointRecordFromLastLogFile();
-
-        startStopDatabase();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-    }
-
-    @Test
-    void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
-    {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
-                        .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        while ( countTransactionLogFiles() < 5 )
-        {
-            generateSomeData( database );
-        }
-        managementService.shutdown();
-
-        removeHighestLogFile();
-
-        assertEquals( 4, countTransactionLogFiles() );
-        assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-
-        startStopDatabase();
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-
-        startStopDatabase();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        // we will have 2 checkpoints here because offset in both of them will be the same and 2 will be truncated instead since truncation is based on position
-        // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
-        assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-
-        GraphDatabaseService service = createDatabase();
-        createSingleNode( service );
-        this.managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
-        startStopDatabase();
-
-        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
-        assertEquals( 3, countCheckPointsInTransactionLogs() );
-    }
-
-    @Test
-    void recoverDatabaseWithoutOneIdFile() throws Exception
-    {
-        GraphDatabaseAPI db = createDatabase();
-        generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
-        managementService.shutdown();
-
-        fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
-        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
-
-        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
-        assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
-
-        assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
-    }
-
-    @Test
-    void recoverDatabaseWithoutIdFiles() throws Exception
-    {
-        GraphDatabaseAPI db = createDatabase();
-        generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
-        managementService.shutdown();
-
-        for ( File idFile : layout.idFiles() )
-        {
-            fileSystem.deleteFileOrThrow( idFile );
-        }
-        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
-
-        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
-        assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
-
-        for ( File idFile : layout.idFiles() )
-        {
-            assertTrue( fileSystem.fileExists( idFile ) );
-        }
-    }
-
-    @Test
-    void cancelRecoveryInTheMiddle() throws Exception
-    {
-        GraphDatabaseAPI db = createDatabase();
-        generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
-        managementService.shutdown();
-
-        removeLastCheckpointRecordFromLastLogFile();
-        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
-
-        Monitors monitors = new Monitors();
-        var recoveryMonitor = new RecoveryMonitor()
-        {
-            @Override
-            public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
+            GraphDatabaseAPI restartedDb = createDatabase();
+            try
             {
-                GlobalGuardConsumer.globalGuard.stop();
+                DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+                var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
+                assertTrue( failure.isPresent() );
+                assertThat( getRootCause( failure.get() ).getMessage() ).contains( "Transaction logs are missing and recovery is not possible." );
             }
-        };
-        monitors.addMonitorListener( recoveryMonitor );
-        var service = new TestDatabaseManagementServiceBuilder( layout.getNeo4jLayout() )
-                .addExtension( new GlobalGuardConsumerTestExtensionFactory() )
-                .setMonitors( monitors ).build();
-        try
+            finally
+            {
+                managementService.shutdown();
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void startDatabaseWithRemovedSingleTransactionLogFile( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            var e = assertThrows( Exception.class, () -> service.database( DEFAULT_DATABASE_NAME ).beginTx() );
-            assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
-        }
-        finally
+            GraphDatabaseAPI database = createDatabase();
+            PageCache pageCache = getDatabasePageCache( database );
+            generateSomeData( database );
+
+            assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
+
+            managementService.shutdown();
+
+            removeTransactionLogs();
+
+            startStopDatabaseWithForcedRecovery();
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+
+            verifyRecoveryTimestampPresent( database );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void startDatabaseWithRemovedMultipleTransactionLogFiles( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            service.shutdown();
-        }
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
+                            .build();
+            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            while ( countTransactionLogFiles() < 5 )
+            {
+                generateSomeData( database );
+            }
+            managementService.shutdown();
+
+            removeTransactionLogs();
+
+            startStopDatabaseWithForcedRecovery();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void killAndStartDatabaseAfterTransactionLogsRemoval( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
+                            .build();
+            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            while ( countTransactionLogFiles() < 5 )
+            {
+                generateSomeData( database );
+            }
+            managementService.shutdown();
+
+            removeTransactionLogs();
+            assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            assertEquals( 0, countTransactionLogFiles() );
+
+            DatabaseManagementService forcedRecoveryManagementService = forcedRecoveryManagement();
+            GraphDatabaseService service = forcedRecoveryManagementService.database( DEFAULT_DATABASE_NAME );
+            createSingleNode( service );
+            forcedRecoveryManagementService.shutdown();
+
+            assertEquals( 1, countTransactionLogFiles() );
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+            removeLastCheckpointRecordFromLastLogFile();
+
+            startStopDatabase();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 3 checkpoints: one from logs before recovery, second will be created as part of recovery and another on shutdown
+            assertEquals( 3, countCheckPointsInTransactionLogs() );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
+                            .build();
+            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            while ( countTransactionLogFiles() < 5 )
+            {
+                generateSomeData( database );
+            }
+            managementService.shutdown();
+
+            removeHighestLogFile();
+
+            assertEquals( 4, countTransactionLogFiles() );
+            assertEquals( 0, countCheckPointsInTransactionLogs() );
+            assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+
+            startStopDatabase();
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+            removeLastCheckpointRecordFromLastLogFile();
+            removeLastCheckpointRecordFromLastLogFile();
+
+            startStopDatabase();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                            .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
+                            .build();
+            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            while ( countTransactionLogFiles() < 5 )
+            {
+                generateSomeData( database );
+            }
+            managementService.shutdown();
+
+            removeHighestLogFile();
+
+            assertEquals( 4, countTransactionLogFiles() );
+            assertEquals( 0, countCheckPointsInTransactionLogs() );
+            assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+
+            startStopDatabase();
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+            removeLastCheckpointRecordFromLastLogFile();
+
+            startStopDatabase();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            // we will have 2 checkpoints here because offset in both of them will be the same
+            // and 2 will be truncated instead since truncation is based on position
+            // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
+            assertEquals( 2, countCheckPointsInTransactionLogs() );
+            removeLastCheckpointRecordFromLastLogFile();
+
+            GraphDatabaseService service = createDatabase();
+            createSingleNode( service );
+            this.managementService.shutdown();
+            removeLastCheckpointRecordFromLastLogFile();
+            startStopDatabase();
+
+            assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
+            assertEquals( 3, countCheckPointsInTransactionLogs() );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithoutOneIdFile( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseAPI db = createDatabase();
+            generateSomeData( db );
+            DatabaseLayout layout = db.databaseLayout();
+            managementService.shutdown();
+
+            fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
+            assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+            performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
+            assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+            assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void recoverDatabaseWithoutIdFiles( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseAPI db = createDatabase();
+            generateSomeData( db );
+            DatabaseLayout layout = db.databaseLayout();
+            managementService.shutdown();
+
+            for ( File idFile : layout.idFiles() )
+            {
+                fileSystem.deleteFileOrThrow( idFile );
+            }
+            assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+            performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
+            assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+            for ( File idFile : layout.idFiles() )
+            {
+                assertTrue( fileSystem.fileExists( idFile ) );
+            }
+        } );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void cancelRecoveryInTheMiddle( boolean enableRelationshipTypeScanStore ) throws Throwable
+    {
+        withRTSS( enableRelationshipTypeScanStore, () ->
+        {
+            GraphDatabaseAPI db = createDatabase();
+            generateSomeData( db );
+            DatabaseLayout layout = db.databaseLayout();
+            managementService.shutdown();
+
+            removeLastCheckpointRecordFromLastLogFile();
+            assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+            Monitors monitors = new Monitors();
+            var recoveryMonitor = new RecoveryMonitor()
+            {
+                @Override
+                public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
+                {
+                    GlobalGuardConsumer.globalGuard.stop();
+                }
+            };
+            monitors.addMonitorListener( recoveryMonitor );
+            var service = new TestDatabaseManagementServiceBuilder( layout.getNeo4jLayout() )
+                    .addExtension( new GlobalGuardConsumerTestExtensionFactory() )
+                    .setMonitors( monitors ).build();
+            try
+            {
+                var e = assertThrows( Exception.class, () -> service.database( DEFAULT_DATABASE_NAME ).beginTx() );
+                assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
+            }
+            finally
+            {
+                service.shutdown();
+            }
+        } );
     }
 
     private void createSingleNode( GraphDatabaseService service )

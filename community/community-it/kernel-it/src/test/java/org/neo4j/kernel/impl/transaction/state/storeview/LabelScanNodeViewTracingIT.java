@@ -37,7 +37,7 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DbmsExtension
-public class LabelScanNodeViewTracingIT
+class LabelScanNodeViewTracingIT
 {
     @Inject
     private GraphDatabaseAPI database;
@@ -68,7 +68,7 @@ public class LabelScanNodeViewTracingIT
         var cacheTracer = new DefaultPageCacheTracer();
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
         {
-            var scan = new LabelScanViewNodeStoreScan<>( storageEngine.newReader(), lockService, labelScanStore,
+            var scan = new LabelViewNodeStoreScan<>( storageEngine.newReader(), lockService, labelScanStore,
                     (Visitor<EntityTokenUpdate,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer );
             scan.run();
         }

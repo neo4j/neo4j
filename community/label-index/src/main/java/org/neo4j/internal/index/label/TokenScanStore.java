@@ -69,14 +69,14 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        if ( relationshipTokenScanStoreEnabled() )
+        if ( relationshipTypeScanStoreEnabled() )
         {
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector );
         }
         return EmptyRelationshipTypeScanStore.instance;
     }
 
-    static boolean relationshipTokenScanStoreEnabled()
+    static boolean relationshipTypeScanStoreEnabled()
     {
         return FeatureToggles.flag( TokenScanStore.class, RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING, false );
     }

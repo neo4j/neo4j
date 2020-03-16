@@ -61,6 +61,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.index.label.EmptyRelationshipTypeScanStore;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -555,8 +556,8 @@ public class BatchInserterImpl implements BatchInserter
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
-        IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE,
-                () -> new RecordStorageReader( neoStores ), logProvider );
+        IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, EmptyRelationshipTypeScanStore.instance,
+                NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory

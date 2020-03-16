@@ -46,6 +46,6 @@ public class FullRelationshipTypeStream extends FullTokenStream
     StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<EntityTokenUpdate,IOException> tokenUpdateVisitor,
             PageCursorTracer cursorTracer )
     {
-        return indexStoreView.visitRelationships( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, cursorTracer );
+        return indexStoreView.visitRelationships( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true, cursorTracer );
     }
 }

@@ -25,25 +25,25 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
 /**
- * Node id iterator used during index population when we go over node ids indexed in label scan store.
+ * Entity id iterator used during index population when we go over entity ids indexed in a token scan store.
  */
-class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements EntityIdIterator
+class TokenScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements EntityIdIterator
 {
-    private final int[] labelIds;
-    private final TokenScanReader labelScanReader;
+    private final int[] tokenIds;
+    private final TokenScanReader tokenScanReader;
     private final CURSOR entityCursor;
     private final PageCursorTracer cursorTracer;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    LabelScanViewIdIterator( TokenScanReader labelScanReader, int[] labelIds, CURSOR entityCursor, PageCursorTracer cursorTracer )
+    TokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, CURSOR entityCursor, PageCursorTracer cursorTracer )
     {
-        this.labelScanReader = labelScanReader;
+        this.tokenScanReader = tokenScanReader;
         this.entityCursor = entityCursor;
         this.cursorTracer = cursorTracer;
-        this.idIterator = labelScanReader.entitiesWithAnyOfTokens( labelIds, cursorTracer );
-        this.labelIds = labelIds;
+        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( tokenIds, cursorTracer );
+        this.tokenIds = tokenIds;
     }
 
     @Override
@@ -72,6 +72,6 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = labelScanReader.entitiesWithAnyOfTokens( lastReturnedId, labelIds, cursorTracer );
+        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( lastReturnedId, tokenIds, cursorTracer );
     }
 }

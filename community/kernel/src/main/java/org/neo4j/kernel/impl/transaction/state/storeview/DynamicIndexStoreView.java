@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.io.IOException;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -38,6 +40,8 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
 
+import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStoreEnabled;
+
 /**
  * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
  * store is empty or explicitly told to use store in which cases it will fallback to whole store scan.
@@ -49,16 +53,19 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     private final NeoStoreIndexStoreView neoStoreIndexStoreView;
     private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     protected final LockService locks;
     private final Log log;
     protected final Supplier<StorageReader> storageEngine;
 
-    public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
+    public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
             Supplier<StorageReader> storageEngine, LogProvider logProvider )
     {
         this.neoStoreIndexStoreView = neoStoreIndexStoreView;
-        this.locks = locks;
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
+        this.locks = locks;
         this.storageEngine = storageEngine;
         this.log = logProvider.getLog( getClass() );
     }
@@ -82,10 +89,16 @@ public class DynamicIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
             Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            PageCursorTracer cursorTracer )
+            boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
-        return neoStoreIndexStoreView
-                .visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, cursorTracer );
+        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds ) )
+        {
+            return neoStoreIndexStoreView
+                    .visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                            cursorTracer );
+        }
+        return new RelationshipTypeViewRelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeScanStore, relationshipTypeUpdateVisitor,
+                propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
     }
 
     private boolean useAllNodeStoreScan( int[] labelIds )
@@ -96,7 +109,20 @@ public class DynamicIndexStoreView implements IndexStoreView
         }
         catch ( Exception e )
         {
-            log.error( "Can not determine number of labeled nodes, falling back to all nodes scan.", e );
+            log.error( "Cannot determine number of labeled nodes, falling back to all nodes scan.", e );
+            return true;
+        }
+    }
+
+    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds )
+    {
+        try
+        {
+            return !relationshipTypeScanStoreEnabled() || ArrayUtils.isEmpty( relationshipTypeIds ) || isEmptyRelationshipTypeStoreScan();
+        }
+        catch ( Exception e )
+        {
+            log.error( "Cannot determine number of relationships in scan store, falling back to all relationships scan.", e );
             return true;
         }
     }
@@ -104,6 +130,11 @@ public class DynamicIndexStoreView implements IndexStoreView
     private boolean isEmptyLabelScanStore() throws Exception
     {
         return labelScanStore.isEmpty();
+    }
+
+    private boolean isEmptyRelationshipTypeStoreScan() throws IOException
+    {
+        return relationshipTypeScanStore.isEmpty();
     }
 
     @Override

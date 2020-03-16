@@ -61,7 +61,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            PageCursorTracer cursorTracer )
+            boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
         return new RelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
                 propertyKeyIdFilter, cursorTracer );

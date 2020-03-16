@@ -270,7 +270,7 @@ class RecoveryRequiredCheckerTest
     {
         for ( File file : databaseLayout.storeFiles() )
         {
-            if ( file.getName().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) && !TokenScanStore.relationshipTokenScanStoreEnabled() )
+            if ( file.getName().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) && !TokenScanStore.relationshipTypeScanStoreEnabled() )
             {
                 // Skip
                 continue;

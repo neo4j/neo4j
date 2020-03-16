@@ -249,7 +249,7 @@ public class StubStorageCursors implements StorageReader
     @Override
     public long relationshipsGetCount()
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        return relationshipData.size();
     }
 
     @Override
