@@ -996,10 +996,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
             "by the `" + "dbms.security.procedures.roles" + "` setting. If the `" + "dbms.security.procedures.default_allowed" +
             "` setting is the empty string (default), procedures will be executed according to the same security " +
-            "rules as normal Cypher statements.\n" +
-            "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
-            "including a migration step for the existing setting value." )
-    @Deprecated
+            "rules as normal Cypher statements." )
     public static final Setting<String> default_allowed = newBuilder( "dbms.security.procedures.default_allowed", STRING, "" ).build();
 
     @Description( "This provides a finer level of control over which roles can execute procedures than the " +
@@ -1008,11 +1005,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "`reader` to execute all procedures in the `apoc.convert` namespace, the role `writer` to execute " +
             "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
             "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
-            "patterns will be subject to the `" + "dbms.security.procedures.default_allowed" + "` setting." +
-            "\n" +
-            "Deprecated: This will be replaced by dynamic configuration in the system graph in 4.0, " +
-            "including a migration step for the existing setting value." )
-    @Deprecated
+            "patterns will be subject to the `" + "dbms.security.procedures.default_allowed" + "` setting." )
     public static final Setting<String> procedure_roles = newBuilder( "dbms.security.procedures.roles", STRING, "" ).build();
 
     @Description( "Default network interface to listen for incoming connections. " +
