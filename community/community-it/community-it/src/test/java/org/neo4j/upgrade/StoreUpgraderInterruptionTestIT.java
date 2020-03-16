@@ -44,6 +44,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
@@ -175,6 +176,41 @@ public class StoreUpgraderInterruptionTestIT
     private SchemaIndexMigrator createIndexMigrator()
     {
         return new SchemaIndexMigrator( "upgrade test indexes", fs, IndexProvider.EMPTY.directoryStructure(), StorageEngineFactory.selectStorageEngine() );
+    }
+
+    @Test
+    public void tracePageCacheAccessOnIdStoreUpgrade() throws IOException, ConsistencyCheckIncompleteException
+    {
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
+                Config.defaults(), NULL );
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        LogService logService = NullLogService.getInstance();
+        var idMigratorTracer = new DefaultPageCacheTracer();
+        var recordMigratorTracer = new DefaultPageCacheTracer();
+        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, idMigratorTracer );
+
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+
+        var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        pageCache.close();
+
+        startStopDatabase( neo4jLayout.homeDirectory() );
+        assertConsistentStore( workingDatabaseLayout );
+
+        assertEquals( 20, idMigratorTracer.faults() );
+        assertEquals( 83, idMigratorTracer.hits() );
+        assertEquals( 103, idMigratorTracer.pins() );
+        assertEquals( 103, idMigratorTracer.unpins() );
+
+        assertEquals( 52, recordMigratorTracer.faults() );
+        assertEquals( 208, recordMigratorTracer.hits() );
+        assertEquals( 260, recordMigratorTracer.pins() );
+        assertEquals( 260, recordMigratorTracer.unpins() );
     }
 
     @Test

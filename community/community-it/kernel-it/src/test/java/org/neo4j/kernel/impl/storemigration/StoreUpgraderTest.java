@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,6 +45,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -262,6 +265,47 @@ public class StoreUpgraderTest
         }
     }
 
+    @Test
+    void tracePageCacheAccessOnStoreUpgrade() throws IOException
+    {
+        init( StandardV3_4.RECORD_FORMATS );
+
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        StoreVersionCheck check = getVersionCheck( pageCache );
+
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        newUpgrader( check, allowMigrateConfig, pageCache, pageCacheTracer ).migrateIfNeeded( databaseLayout );
+
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 208 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 262 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 262 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 54 );
+
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
+        {
+            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
+        }
+    }
+
+    @Test
+    void tracePageCacheAccessOnVersionCheck() throws IOException
+    {
+        init( StandardV3_4.RECORD_FORMATS );
+
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var check = new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
+        assertEquals( Standard.LATEST_STORE_VERSION, check.configuredVersion() );
+
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 0 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 1 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 1 );
+        assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
+    }
+
     @ParameterizedTest
     @MethodSource( "versions" )
     void upgradeShouldNotLeaveLeftoverAndMigrationDirs( RecordFormats formats ) throws Exception
@@ -431,7 +475,12 @@ public class StoreUpgraderTest
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig(), NULL );
+        return getVersionCheck( pageCache, NULL );
+    }
+
+    private StoreVersionCheck getVersionCheck( PageCache pageCache, PageCacheTracer cacheTracer )
+    {
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig(), cacheTracer );
     }
 
     private static StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -460,27 +509,45 @@ public class StoreUpgraderTest
         };
     }
 
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, Config config, PageCache pageCache,
+            PageCacheTracer pageCacheTracer ) throws IOException
+    {
+        return newUpgrader( storeVersionCheck, pageCache, config, pageCacheTracer );
+    }
+
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, Config config, PageCache pageCache ) throws IOException
     {
-        return newUpgrader( storeVersionCheck, pageCache, config );
+        return newUpgrader( storeVersionCheck, pageCache, config, NULL );
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache ) throws IOException
     {
-        return newUpgrader( storeVersionCheck, pageCache, allowMigrateConfig );
+        return newUpgrader( storeVersionCheck, pageCache, allowMigrateConfig, NULL );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config ) throws IOException
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, PageCacheTracer pageCacheTracer ) throws IOException
     {
-        return newUpgrader( storeVersionCheck, pageCache, config, MigrationProgressMonitor.SILENT );
+        return newUpgrader( storeVersionCheck, pageCache, allowMigrateConfig, pageCacheTracer );
+    }
+
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
+            PageCacheTracer pageCacheTracer ) throws IOException
+    {
+        return newUpgrader( storeVersionCheck, pageCache, config, MigrationProgressMonitor.SILENT, pageCacheTracer );
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
             MigrationProgressMonitor progressMonitor ) throws IOException
     {
+        return newUpgrader( storeVersionCheck, pageCache, config, progressMonitor, NULL );
+    }
+
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
+            MigrationProgressMonitor progressMonitor, PageCacheTracer pageCacheTracer ) throws IOException
+    {
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
-        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, NULL,
+        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
                 batchImporterFactory );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
@@ -489,7 +556,7 @@ public class StoreUpgraderTest
                 .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(),
-                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), NULL );
+                logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );
