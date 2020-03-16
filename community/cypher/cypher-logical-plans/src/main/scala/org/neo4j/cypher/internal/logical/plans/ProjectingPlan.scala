@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 
 trait ProjectingPlan extends LogicalPlan {
   val source: LogicalPlan
@@ -29,4 +30,6 @@ trait ProjectingPlan extends LogicalPlan {
   override val lhs: Option[LogicalPlan] = Some(source)
   override val rhs: Option[LogicalPlan] = None
 
+  def aliases: Map[String, Expression] =
+    projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }
 }
