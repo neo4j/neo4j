@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.graphdb.Node
-import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.graphdb.Label.label
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
+import org.neo4j.values.virtual.VirtualNodeValue
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                         runtime: CypherRuntime[CONTEXT],
@@ -658,7 +658,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId):_*)
+      .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId): _*)
       .|.argument()
       .allNodeScan("a1")
       .build()
@@ -703,7 +703,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId):_*)
+      .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId): _*)
       .|.argument()
       .allNodeScan("a1")
       .build()
@@ -819,38 +819,113 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a1").withRows(singleColumn(expected))
   }
 
-
-    test("should support limit under apply, with multiple input-rows per argument") {
-      // given
-      val aNodes = given {
-        val a1 = tx.createNode(label("A"))
-        a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
-        a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
-        val a2 = tx.createNode(label("A"))
-        a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
-        val a3 = tx.createNode(label("A"))
-        Seq(a1, a2)
-      }
-
-      val limit = 1
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("a1")
-        .apply()
-        .|.limit(limit)
-        .|.expandAll("(a1)-->(b2)")
-        .|.nonFuseable()
-        .|.expandAll("(a1)-->(b2)")
-        .|.argument()
-        .nodeByLabelScan("a1", "A")
-        .build()
-
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
+  test("should support chained limits on RHS of Apply") {
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(sizeHint, "A", "B", "R")
+      aNodes
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(2)
+      .|.limit(10)
+      .|.expandAll("(a)-->(b)")
+      .|.argument()
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(2)(_))
+    runtimeResult should beColumns("a").withRows(singleColumn(expected))
+  }
+
+  test("should support multiple limits on RHS of Apply where only first limit is limiting") {
+    val nodeCount = 10
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
+      aNodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(nodeCount + 1)
+      .|.expandAll("(a2)-->(b)")
+      .|.limit(1)
+      .|.nodeByLabelScan("a2", "A")
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(nodeCount)(_))
+
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support multiple limits on RHS of Apply where only second limit is limiting") {
+    val nodeCount = 10
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
+      aNodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(2)
+      .|.expandAll("(a2)-->(b)")
+      .|.limit(nodeCount + 1)
+      .|.nodeByLabelScan("a2", "A")
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(2)(_))
+
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support limit under apply, with multiple input-rows per argument") {
+    // given
+    val aNodes = given {
+      val a1 = tx.createNode(label("A"))
+      a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      val a2 = tx.createNode(label("A"))
+      a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
+      val a3 = tx.createNode(label("A"))
+      Seq(a1, a2)
+    }
+
+    val limit = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(limit)
+      .|.expandAll("(a1)-->(b2)")
+      .|.nonFuseable()
+      .|.expandAll("(a1)-->(b2)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
+  }
 
   test("should support limit under apply, with multiple input-rows per argument, produce result not fused") {
     // given
@@ -884,40 +959,44 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
   }
+}
 
+// Supported by all non-parallel runtimes
+trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
+  self: LimitTestBase[CONTEXT] =>
 
   test("should support limit under apply, with multiple input-rows per argument with random connections") {
-      val nodeConnections = given {
-        val nodes = nodeGraph(sizeHint, "A")
-        randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
-          case NodeConnections(node, connections) =>
-            val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")
-            (node, neighbours)
-        }.toMap
-      }
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("a1")
-        .apply()
-        .|.limit(1)
-        .|.expandAll("(a1)-->(b2)")
-        .|.nonFuseable()
-        .|.expandAll("(a1)-->(b2)")
-        .|.argument()
-        .nodeByLabelScan("a1", "A")
-        .build()
-
-      val runtimeResult = execute(logicalQuery, runtime)
-
-      // then
-      val expected = nodeConnections.keys.filter(node => nodeConnections(node).nonEmpty)
-      runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+    val nodeConnections = given {
+      val nodes = nodeGraph(10, "A")
+      randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+        case NodeConnections(node, connections) =>
+          val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")
+          (node, neighbours)
+      }.toMap
     }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(1)
+      .|.expandAll("(a1)-->(b2)")
+      .|.nonFuseable()
+      .|.expandAll("(a1)-->(b2)")
+      .|.argument()
+      .nodeByLabelScan("a1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodeConnections.keys.filter(node => nodeConnections(node).nonEmpty)
+    runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
 
   test("should support limit under apply, with multiple input-rows per argument with random connections, produce result not fused") {
     val nodeConnections = given {
-      val nodes = nodeGraph(sizeHint, "A")
+      val nodes = nodeGraph(10, "A")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
         case NodeConnections(node, connections) =>
           val neighbours = if (connections.isEmpty) Seq.empty else connections("OTHER")

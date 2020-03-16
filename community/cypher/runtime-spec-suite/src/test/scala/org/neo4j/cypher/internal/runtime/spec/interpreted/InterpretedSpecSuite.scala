@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountSt
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelLimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
@@ -147,6 +148,7 @@ class InterpretedUnwindTest extends UnwindTestBase(COMMUNITY.EDITION, Interprete
 class InterpretedDistinctTest extends DistinctTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedDistinctTest extends OrderedDistinctTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLimitTest extends LimitTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+                           with NonParallelLimitTestBase[CommunityRuntimeContext]
 class InterpretedSkipTest extends SkipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeHashJoinTest extends NodeHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedValueHashJoinTest extends ValueHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
