@@ -486,6 +486,13 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .argument()
       .build())
 
+  testPlan("nonFuseable",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .nonFuseable()
+      .argument()
+      .build())
+
   testPlan("nodeByIdSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")

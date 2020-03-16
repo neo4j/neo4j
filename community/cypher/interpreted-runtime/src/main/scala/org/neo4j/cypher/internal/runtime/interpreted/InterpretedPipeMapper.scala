@@ -182,6 +182,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonFuseablePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -333,7 +334,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case DropResult(_) =>
         DropResultPipe(source)(id = id)
 
-      case NonFuseable(_) => source
+      case NonFuseable(_) =>
+        NonFuseablePipe(source)(id = id)
 
       case Selection(predicate, _) =>
         val predicateExpression =

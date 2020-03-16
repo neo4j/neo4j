@@ -170,6 +170,35 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() should be >= limitSize // all node scan
   }
 
+  test("should profile rows with limit + expand on RHS of Apply") {
+    val nodeCount = sizeHint * 10
+    given {
+      circleGraph(nodeCount)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(1)
+      .|.expand("(x)--(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodeCount // apply
+    // NOTE: Limit & Apply will have 2x higher row counts in Pipelined runtime when _not_ fused
+    queryProfile.operatorProfile(2).rows() should (be (nodeCount) or be (nodeCount * 2)) // limit
+    queryProfile.operatorProfile(3).rows() should (be (nodeCount) or be (nodeCount * 2)) // expand
+    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan
+  }
+
   test("should profile rows of skip") {
     given { nodeGraph(sizeHint) }
 
@@ -570,10 +599,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // produce results
-    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // optional
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // nonFuseable
     queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // expand all
     queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand all
-    queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L) // optional
+    queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L) // nonFuseable
     queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // all node scan
   }
 
@@ -586,7 +615,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.optional("x") // The optional is to prevent fusing the produce results
+      .|.nonFuseable()
       .|.expandAll("(x)-->(y)")
       .|.argument("x")
       .allNodeScan("x")
@@ -597,9 +626,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel + nodesPerLabel) // produce results
-    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel + nodesPerLabel) // apply
-    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel + nodesPerLabel) // optional
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // apply
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
     queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand all
     queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L) // argument
     queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // all node scan
