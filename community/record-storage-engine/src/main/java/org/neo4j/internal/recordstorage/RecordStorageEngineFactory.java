@@ -204,6 +204,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenRecord.setId( tokenId );
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );
+            keyTokenRecord.setCreated();
             keyTokenStore.prepareForCommit( keyTokenRecord );
             keyTokenStore.updateRecord( keyTokenRecord );
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );

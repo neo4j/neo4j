@@ -25,6 +25,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,56 +39,46 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 
-/**
- * Token creation should be able to handle cases of concurrent token creation
- * with different/same names. Short random interval (1-3) give a high chances of same token name in this test.
- * <p>
- * Newly created token should be visible only when token cache already have both mappings:
- * "name -> id" and "id -> name" populated.
- * Otherwise attempt to retrieve labels from newly created node can fail.
- */
 @DbmsExtension
 class TokenCreationIT
 {
     @Inject
     private GraphDatabaseService db;
 
-    private volatile boolean stop;
-
+    /**
+     * Token creation should be able to handle cases of concurrent token creation
+     * with different/same names. Short random interval (1-3) give a high chances of the same token name in this test.
+     * <p>
+     * Newly created token should be visible only when token cache already have both mappings:
+     * "name -> id" and "id -> name" populated.
+     * Otherwise, attempt to retrieve labels from the newly created node can fail.
+     */
     @RepeatedTest( 5 )
     void concurrentLabelTokenCreation() throws InterruptedException
     {
+        AtomicBoolean stop = new AtomicBoolean();
         int concurrentWorkers = 10;
         CountDownLatch latch = new CountDownLatch( concurrentWorkers );
         for ( int i = 0; i < concurrentWorkers; i++ )
         {
-            new LabelCreator( db, latch ).start();
+            new LabelCreator( db, latch, stop ).start();
         }
         LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 500 ) );
-        stop = true;
+        stop.set( true );
         latch.await();
     }
 
-    private Label[] getLabels()
-    {
-        int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
-        Label[] labels = new Label[randomLabelValue];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            labels[i] = Label.label( RandomStringUtils.randomAscii( randomLabelValue ) );
-        }
-        return labels;
-    }
-
-    private class LabelCreator extends Thread
+    private static class LabelCreator extends Thread
     {
         private final GraphDatabaseService database;
         private final CountDownLatch createLatch;
+        private final AtomicBoolean stop;
 
-        LabelCreator( GraphDatabaseService database, CountDownLatch createLatch )
+        LabelCreator( GraphDatabaseService database, CountDownLatch createLatch, AtomicBoolean stop )
         {
             this.database = database;
             this.createLatch = createLatch;
+            this.stop = stop;
         }
 
         @Override
@@ -95,7 +86,7 @@ class TokenCreationIT
         {
             try
             {
-                while ( !stop )
+                while ( !stop.get() )
                 {
 
                     try ( Transaction transaction = database.beginTx() )
@@ -108,7 +99,7 @@ class TokenCreationIT
                     }
                     catch ( Exception e )
                     {
-                        stop = true;
+                        stop.set( true );
                         throw e;
                     }
                 }
@@ -117,6 +108,17 @@ class TokenCreationIT
             {
                 createLatch.countDown();
             }
+        }
+
+        private Label[] getLabels()
+        {
+            int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
+            Label[] labels = new Label[randomLabelValue];
+            for ( int i = 0; i < labels.length; i++ )
+            {
+                labels[i] = Label.label( RandomStringUtils.randomAscii( randomLabelValue ) );
+            }
+            return labels;
         }
     }
 }
