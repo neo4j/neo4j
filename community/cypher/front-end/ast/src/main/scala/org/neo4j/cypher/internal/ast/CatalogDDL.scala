@@ -486,7 +486,7 @@ final case class ShowDefaultDatabase()(val position: InputPosition) extends Mult
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class ShowDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "SHOW DATABASE"
 
@@ -495,7 +495,7 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE DATABASE"
@@ -503,14 +503,16 @@ final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val posi
   }
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified database '$dbName': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _: IfExistsInvalidSyntax =>
+      val name = Prettifier.escapeName(dbName)
+      SemanticError(s"Failed to create the specified database '$name': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
     case _ =>
       super.semanticCheck chain
         SemanticState.recordCurrentScope(this)
   }
 }
 
-final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class DropDatabase(dbName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP DATABASE"
 
@@ -519,7 +521,7 @@ final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: I
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class StartDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "START DATABASE"
 
@@ -528,7 +530,7 @@ final case class StartDatabase(dbName: String)(val position: InputPosition) exte
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class StopDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "STOP DATABASE"
 

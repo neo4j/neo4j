@@ -518,8 +518,14 @@ class PrettifierIT extends CypherFunSuite {
       "catalog show database foO_Bar_42" ->
         "SHOW DATABASE foO_Bar_42",
 
+      "show database $foo" ->
+        "SHOW DATABASE $foo",
+
       "catalog create database foO_Bar_42" ->
         "CREATE DATABASE foO_Bar_42",
+
+      "create database $foo" ->
+        "CREATE DATABASE $foo",
 
       "catalog create database `foO_Bar_42`" ->
         "CREATE DATABASE foO_Bar_42",
@@ -536,17 +542,26 @@ class PrettifierIT extends CypherFunSuite {
       "catalog DROP database foO_Bar_42" ->
         "DROP DATABASE foO_Bar_42",
 
+      "DROP database $foo" ->
+        "DROP DATABASE $foo",
+
       "catalog DROP database foO_Bar_42 if EXISTS" ->
         "DROP DATABASE foO_Bar_42 IF EXISTS",
 
       "catalog start database foO_Bar_42" ->
         "START DATABASE foO_Bar_42",
 
+      "start database $foo" ->
+        "START DATABASE $foo",
+
       "start database foO_Bar_42" ->
         "START DATABASE foO_Bar_42",
 
       "catalog stop database foO_Bar_42" ->
         "STOP DATABASE foO_Bar_42",
+
+      "stop database $foo" ->
+        "STOP DATABASE $foo",
 
       "stop database foO_Bar_42" ->
         "STOP DATABASE foO_Bar_42",

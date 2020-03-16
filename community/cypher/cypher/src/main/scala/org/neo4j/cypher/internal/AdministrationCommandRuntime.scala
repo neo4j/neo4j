@@ -125,14 +125,15 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   def getNameFields(key: String, name: Either[String, AnyRef],
                     prefix: String = "__internal_",
-                    rename: String => String = s => s): (String, Value, MapValueConverter) = name match {
+                    rename: String => String = s => s,
+                    valueMapper: String => String = s => s): (String, Value, MapValueConverter) = name match {
     case Left(u) =>
-      (rename(s"$prefix$key"), Values.utf8Value(u), IdentityConverter)
+      (rename(s"$prefix$key"), Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameter = p.asInstanceOf[ParameterFromSlot]
       validateStringParameterType(parameter)
-      (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename))
+      (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
   }
 
   trait MapValueConverter extends Function[MapValue, MapValue] {
@@ -143,14 +144,15 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   case object IdentityConverter extends MapValueConverter
 
-  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s) extends MapValueConverter {
+  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends MapValueConverter {
     override def overlaps(other: MapValueConverter): Boolean = other match {
-      case RenamingParameterConverter(name, _) => name == parameter
+      case RenamingParameterConverter(name, _, _) => name == parameter
       case _ => false
     }
 
     override def apply(params: MapValue): MapValue = {
-      params.updatedWith(rename(parameter), params.get(parameter))
+      val newValue = valueMapper(params.get(parameter).asInstanceOf[TextValue].stringValue())
+      params.updatedWith(rename(parameter), Values.utf8Value(newValue))
     }
   }
 

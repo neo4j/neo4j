@@ -104,6 +104,17 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true)))
   }
 
+  test(s"should show database $DEFAULT_DATABASE_NAME with params") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASE $db", Map("db" -> DEFAULT_DATABASE_NAME))
+
+    // THEN
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true)))
+  }
+
   test("should give nothing when showing a non-existing database") {
     // GIVEN
     setup(defaultConfig)
@@ -224,6 +235,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   test("should fail on creating database from community") {
     setup( defaultConfig )
     assertFailure("CREATE DATABASE foo", "Unsupported administration command: CREATE DATABASE foo")
+    assertFailure("CREATE DATABASE $foo", "Unsupported administration command: CREATE DATABASE $foo")
     assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS",
       s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS")
     assertFailure(s"CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME",
@@ -242,6 +254,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME")
 
+    assertFailure("DROP DATABASE $foo",
+      "Unsupported administration command: DROP DATABASE $foo")
+
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS",
       s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS")
   }
@@ -255,6 +270,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup( defaultConfig )
     assertFailure(s"START DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: START DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure("START DATABASE $foo",
+      "Unsupported administration command: START DATABASE $foo")
   }
 
   test("should fail on starting non-existing database with correct error message") {
@@ -266,6 +283,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     setup( defaultConfig )
     assertFailure(s"STOP DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: STOP DATABASE $DEFAULT_DATABASE_NAME")
+    assertFailure("STOP DATABASE $foo",
+      "Unsupported administration command: STOP DATABASE $foo")
   }
 
   test("should fail on stopping non-existing database with correct error message") {

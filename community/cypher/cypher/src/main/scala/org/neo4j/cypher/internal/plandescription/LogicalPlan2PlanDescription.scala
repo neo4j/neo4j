@@ -415,9 +415,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
-      case ShowDatabase(normalizedName) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
+      case ShowDatabase(dbName) =>
+        PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
       case ShowDatabases() =>
         PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
@@ -434,8 +433,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case AssertDbmsAdminOrSelf(user, actions) =>
         PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, actions.map(a => DbmsAction(a.name)) :+ getAnnotatedUserArgument(user), variables)
 
-      case AssertDatabaseAdmin(action, normalizedName) =>
-        val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(normalizedName.name)))
+      case AssertDatabaseAdmin(action, dbName) =>
+        val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(dbName)))
         PlanDescriptionImpl(id, "AssertDatabaseAdmin", NoChildren, arguments, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
@@ -737,25 +736,20 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
-      case CreateDatabase(_, normalizedName) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "CreateDatabase", children, Seq(dbName), variables)
+      case CreateDatabase(_, dbName) =>
+        PlanDescriptionImpl(id, "CreateDatabase", children, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
-      case DropDatabase(_, normalizedName) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "DropDatabase", children, Seq(dbName), variables)
+      case DropDatabase(_, dbName) =>
+        PlanDescriptionImpl(id, "DropDatabase", children, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
-      case StartDatabase(_, normalizedName) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "StartDatabase", children, Seq(dbName), variables)
+      case StartDatabase(_, dbName) =>
+        PlanDescriptionImpl(id, "StartDatabase", children, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
-      case StopDatabase(_, normalizedName) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "StopDatabase", children, Seq(dbName), variables)
+      case StopDatabase(_, dbName) =>
+        PlanDescriptionImpl(id, "StopDatabase", children, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
-      case EnsureValidNonSystemDatabase(_, normalizedName, _) =>
-        val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", children, Seq(dbName), variables)
+      case EnsureValidNonSystemDatabase(_, dbName, _) =>
+        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", children, Seq(Database(Prettifier.escapeName(dbName))), variables)
 
       case EnsureValidNumberOfDatabases(_) =>
         PlanDescriptionImpl(id, "EnsureValidNumberOfDatabases", children, Seq.empty, variables)
@@ -763,15 +757,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LogSystemCommand(_, _) =>
         PlanDescriptionImpl(id, "LogSystemCommand", children, Seq.empty, variables)
 
-      case DoNothingIfNotExists(_, label, name) =>
+      case DoNothingIfNotExists(_, label, name, _) =>
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"DoNothingIfNotExists($label)", children, Seq(nameArgument), variables)
 
-      case DoNothingIfExists(_, label, name) =>
+      case DoNothingIfExists(_, label, name, _) =>
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"DoNothingIfExists($label)", children, Seq(nameArgument), variables)
 
-      case EnsureNodeExists(_, label, name) =>
+      case EnsureNodeExists(_, label, name, _) =>
         val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
         PlanDescriptionImpl(id, s"EnsureNodeExists($label)", children, Seq(nameArgument), variables)
 

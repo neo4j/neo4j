@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
@@ -66,6 +68,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.values.storable.ByteArray
+import org.neo4j.values.storable.StringArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -120,8 +123,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for some Database commands
     case AssertDatabaseAdmin(action, database) => (_, _) =>
-      AuthorizationPredicateExecutionPlan((_, securityContext) =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), new DatabaseScope(database.name()), Segment.ALL)),
+      AuthorizationPredicateExecutionPlan((params, securityContext) =>
+        securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
         violationMessage = PERMISSION_DENIED
       )
 
@@ -214,27 +217,26 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW DATABASES
     case ShowDatabases() => (_, _) =>
-      val (query, generator) = makeShowDatabasesQuery()
+      val (query, _, generator, _) = makeShowDatabasesQuery()
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _) =>
-      val (query, generator) = makeShowDatabasesQuery(isDefault = true)
+      val (query, _, generator, _) = makeShowDatabasesQuery(isDefault = true)
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DATABASE foo
-    case ShowDatabase(normalizedName) => (_, _) =>
-      val (query, generator) = makeShowDatabasesQuery(dbName = Some(normalizedName.name))
-      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query,
-        VirtualValues.map(Array("name"), Array(Values.utf8Value(normalizedName.name))), parameterGenerator = generator)
+    case ShowDatabase(databaseName) => (_, _) =>
+      val (query, params, generator, converter) = makeShowDatabasesQuery(dbName = Some(databaseName))
+      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query, params, parameterGenerator = generator, parameterConverter = converter)
 
-    case DoNothingIfNotExists(source, label, name) => (context, parameterMapping) =>
-      val parameterValue = makeParameterValue(name)
+    case DoNothingIfNotExists(source, label, name, valueMapper) => (context, parameterMapping) =>
+      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$name})
+           |MATCH (node:$label {name: $$$nameKey})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(parameterValue)),
+        """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
           .ignoreNoResult()
           .handleError {
@@ -242,16 +244,17 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
             case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
+        parameterConverter = nameConverter
       )
 
-    case DoNothingIfExists(source, label, name) => (context, parameterMapping) =>
-      val parameterValue = makeParameterValue(name)
+    case DoNothingIfExists(source, label, name, valueMapper) => (context, parameterMapping) =>
+      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$name})
+           |MATCH (node:$label {name: $$$nameKey})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(parameterValue)),
+        """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
           .ignoreOnResult()
           .handleError {
@@ -259,12 +262,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
             case (error, p) => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
+        parameterConverter = nameConverter
       )
 
     // Ensure that the role or user exists before being dropped
-    case EnsureNodeExists(source, label, name) => (context, parameterMapping) =>
-      val (nameKey, nameValue, nameConverter) = getNameFields("name", name)
+    case EnsureNodeExists(source, label, name, valueMapper) => (context, parameterMapping) =>
+      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
         s"""MATCH (node:$label {name: $$$nameKey})
            |RETURN node""".stripMargin,
@@ -289,16 +293,23 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)
   }
 
-  private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[String] = None): (String, (Transaction, SecurityContext) => MapValue) = {
+  private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, MapValue => MapValue) = {
     val defaultColumn = if (isDefault) "" else ", d.default as default"
-    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault, dbName)
-    val extraFilter = (isDefault, dbName) match {
+    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault)
+    val (extraFilter, params, paramConverter) = (isDefault, dbName) match {
       // show default database
-      case (true, _) => "AND d.default = true"
+      case (true, _) => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
       // show database name
-      case (_, Some(_)) => "AND d.name = $name"
+      case (_, Some(p)) =>
+        val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
+        val combinedConverter: MapValue => MapValue = m => {
+          val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
+          val filteredDatabases = m.get("accessibleDbs").asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
+          converter(m.updatedWith("accessibleDbs", Values.stringArray(filteredDatabases:_*)))
+        }
+        (s"AND d.name = $$$key", VirtualValues.map(Array(key), Array(value)), combinedConverter)
       // show all databases
-      case _ => ""
+      case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
     }
     val query = s"""
        |MATCH (d: Database)
@@ -308,10 +319,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
        |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
        |ORDER BY name
     """.stripMargin
-    (query, paramGenerator)
+    (query, params, paramGenerator, paramConverter)
   }
 
-  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false, dbName: Option[String] = None ): MapValue = {
+  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false): MapValue = {
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty
@@ -370,11 +381,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
     }
 
-    val filteredDatabases = dbName match {
-      case Some(name) => accessibleDatabases.filter(db => name.equals(db))
-      case _ => accessibleDatabases
-    }
-    VirtualValues.map(Array("accessibleDbs"), Array(Values.stringArray(filteredDatabases: _*)))
+    VirtualValues.map(Array("accessibleDbs"), Array(Values.stringArray(accessibleDatabases: _*)))
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {

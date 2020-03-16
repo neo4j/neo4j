@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.configuration.helpers.DatabaseNameValidator
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
@@ -98,7 +97,6 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SecurityAdministrationLogicalPlan
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.string.UTF8
 
 /**
@@ -418,41 +416,32 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(new NormalizedDatabaseName(dbName)))
+        Some(plans.ShowDatabase(dbName))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>
-        val normalizedName = new NormalizedDatabaseName(dbName)
-        try {
-          DatabaseNameValidator.validateExternalDatabaseName(normalizedName)
-        } catch {
-          case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
-        }
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), normalizedName)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", Left(normalizedName.name()))
+          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName)
+          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
           case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }
-        Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, normalizedName)))
+        Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
 
       // DROP DATABASE foo [IF EXISTS]
       case DropDatabase(dbName, ifExists) =>
-        val normalizedName = new NormalizedDatabaseName(dbName)
         val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", Left(normalizedName.name())) else admin
-        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, normalizedName, "delete"), normalizedName))
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else admin
+        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        val normalizedName = new NormalizedDatabaseName(dbName)
-        Some(plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, normalizedName), normalizedName))
+        Some(plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), dbName))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
-        val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
           plans.EnsureValidNonSystemDatabase(
-            plans.AssertDatabaseAdmin(StopDatabaseAction, normalizedName), normalizedName, "stop"), normalizedName))
+            plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
