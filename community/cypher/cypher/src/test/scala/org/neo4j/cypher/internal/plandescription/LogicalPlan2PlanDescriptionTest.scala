@@ -166,7 +166,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , attach(IndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop = \"Andres\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\""), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0) ->
@@ -176,7 +176,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("UNIQUE x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop > 9)"), 23.0) ->
@@ -200,7 +200,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index("x:Label UNIQUE(Prop) WHERE Prop = \"Andres\""), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\""), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(
@@ -240,7 +240,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , attach(IndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-          Seq(Index("x:Label UNIQUE(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+          Seq(Index("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12"), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
             Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(IndexSeek("x:Label(Prop > 10,Foo)"), 23.0) ->

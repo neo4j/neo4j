@@ -97,10 +97,10 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
                                      properties: Seq[String],
                                      unique: Boolean = false,
                                      caches: Boolean = false): PlanMatcher = {
-    val u = if (unique) " UNIQUE" else ""
+    val u = if (unique) "UNIQUE " else ""
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
-    containingArgumentRegex(s"$varName:$labelName$u\\($p\\).*$c".r)
+    containingArgumentRegex(s"$u$varName:$labelName\\($p\\).*$c".r)
   }
 
   def containingArgumentRegex(argument: Regex*): PlanMatcher

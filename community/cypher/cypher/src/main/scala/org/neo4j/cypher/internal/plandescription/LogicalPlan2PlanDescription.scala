@@ -1154,9 +1154,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def indexInfoString(idName: String, unique: Boolean, label: LabelToken, propertyKeys: Seq[PropertyKeyToken], predicate: String, caches: Seq[expressions.Expression]): String = {
-    val uniqueStr = if (unique) " UNIQUE" else ""
+    val uniqueStr = if (unique) "UNIQUE " else ""
     val propertyKeyString = propertyKeys.map(_.name).mkString(", ")
-    s"$idName:${label.name}$uniqueStr($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
+    s"$uniqueStr$idName:${label.name}($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
   }
 
   private def cachesSuffix(caches: Seq[expressions.Expression]): String = {
