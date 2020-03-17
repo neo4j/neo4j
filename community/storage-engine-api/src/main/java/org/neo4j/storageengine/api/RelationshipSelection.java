@@ -26,17 +26,40 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
+/**
+ * Used to specify a selection of relationships to get from a node.
+ */
 public abstract class RelationshipSelection
 {
+    /**
+     * Tests whether a relationship of a certain type should be part of this selection.
+     * @param type the relationship type id of the relationship to test.
+     * @return whether or not this relationship type is part of this selection.
+     */
     public abstract boolean test( int type );
 
+    /**
+     * Tests whether a relationship of a certain type and direction should be part of this selection.
+     * @param type the relationship type id of the relationship to test.
+     * @param direction {@link RelationshipDirection} of the relationship to test.
+     * @return whether or not this relationship type is part of this selection.
+     */
     public abstract boolean test( int type, RelationshipDirection direction );
 
+    /**
+     * @return whether or not this selection instance is initialized. Most selection instances know upfront their selection criteria,
+     * but others can be initialized after instantiation, when selection criteria is known.
+     */
     public boolean isInitialized()
     {
         return true;
     }
 
+    /**
+     * Selects the correct set of added relationships from transaction state, based on the selection criteria.
+     * @param transactionState the {@link NodeState} to select added relationships from.
+     * @return a {@link LongIterator} of added relationships matching the selection criteria from transaction state.
+     */
     public abstract LongIterator addedRelationship( NodeState transactionState );
 
     public static RelationshipSelection lazyCapture()
@@ -168,9 +191,26 @@ public abstract class RelationshipSelection
             LongIterator[] all = new LongIterator[types.length];
             for ( int i = 0; i < types.length; i++ )
             {
-                all[i] = transactionState.getAddedRelationships( direction, types[i] );
+                // We have to avoid duplication here, so check backwards if this type exists earlier in the array
+                if ( !existsEarlier( types, i ) )
+                {
+                    all[i] = transactionState.getAddedRelationships( direction, types[i] );
+                }
             }
             return PrimitiveLongCollections.concat( all );
+        }
+
+        private boolean existsEarlier( int[] types, int i )
+        {
+            int candidateType = types[i];
+            for ( int j = i - 1; j >= 0 ; j-- )
+            {
+                if ( candidateType == types[j] )
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -228,9 +268,9 @@ public abstract class RelationshipSelection
         switch ( selectionDirection )
         {
         case OUTGOING:
-            return relationshipDirection == RelationshipDirection.OUTGOING;
+            return relationshipDirection == RelationshipDirection.OUTGOING || relationshipDirection == RelationshipDirection.LOOP;
         case INCOMING:
-            return relationshipDirection == RelationshipDirection.INCOMING;
+            return relationshipDirection == RelationshipDirection.INCOMING || relationshipDirection == RelationshipDirection.LOOP;
         case BOTH:
             return true;
         default:

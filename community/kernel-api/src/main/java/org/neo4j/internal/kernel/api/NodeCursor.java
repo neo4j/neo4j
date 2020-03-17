@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
@@ -36,8 +37,6 @@ public interface NodeCursor extends Cursor
 
     void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
 
-    void relationshipGroups( RelationshipGroupCursor groupCursor );
-
     void properties( PropertyCursor cursor );
 
     long relationshipsReference();
@@ -45,4 +44,8 @@ public interface NodeCursor extends Cursor
     long propertiesReference();
 
     boolean isDense();
+
+    int[] relationshipTypes();
+
+    Degrees degrees( RelationshipSelection selection );
 }

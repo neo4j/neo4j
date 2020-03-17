@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.Read
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.SchemaRead
@@ -99,8 +98,6 @@ trait QueryContext extends TokenContext with DbAccess {
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator
 
   def nodeCursor(): NodeCursor
-
-  def groupCursor(): RelationshipGroupCursor
 
   def traversalCursor(): RelationshipTraversalCursor
 

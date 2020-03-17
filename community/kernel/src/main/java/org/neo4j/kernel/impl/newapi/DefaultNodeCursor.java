@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -33,9 +37,11 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDense;
@@ -183,12 +189,6 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public void relationshipGroups( RelationshipGroupCursor groupCursor )
-    {
-        ((DefaultRelationshipGroupCursor) groupCursor).init( nodeReference(), relationshipsReferenceWithoutFlags(), isDense(), read );
-    }
-
-    @Override
     public void properties( PropertyCursor cursor )
     {
         ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
@@ -217,6 +217,68 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     public boolean isDense()
     {
         return currentAddedInTx == NO_ID && storeCursor.isDense();
+    }
+
+    @Override
+    public int[] relationshipTypes()
+    {
+        boolean hasChanges = hasChanges();
+        NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
+        int[] storedTypes = currentAddedInTx == NO_ID ? storeCursor.relationshipTypes() : null;
+        MutableIntSet types = storedTypes != null ? IntSets.mutable.of( storedTypes ) : IntSets.mutable.empty();
+        if ( nodeTxState != null )
+        {
+            types.addAll( nodeTxState.getAddedRelationshipTypes() );
+        }
+        return types.toArray();
+    }
+
+    @Override
+    public Degrees degrees( RelationshipSelection selection )
+    {
+        boolean hasChanges = hasChanges();
+        NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
+        Degrees storedDegrees = currentAddedInTx == NO_ID ? storeCursor.degrees( selection ) : null;
+        if ( nodeTxState == null )
+        {
+            return storedDegrees == null ? Degrees.EMPTY : storedDegrees;
+        }
+
+        IntIterable txTypes = nodeTxState.getAddedRelationshipTypes();
+        if ( storedDegrees == null )
+        {
+            return new Degrees()
+            {
+                @Override
+                public int[] types()
+                {
+                    return txTypes.toArray();
+                }
+
+                @Override
+                public int degree( int type, Direction direction )
+                {
+                    return nodeTxState.augmentDegree( direction, 0, type );
+                }
+            };
+        }
+        return new Degrees()
+        {
+            @Override
+            public int[] types()
+            {
+                MutableIntSet allTypes = IntSets.mutable.of( storedDegrees.types() );
+                allTypes.addAll( txTypes.toArray() );
+                return allTypes.toArray();
+            }
+
+            @Override
+            public int degree( int type, Direction direction )
+            {
+                int storedDegree = storedDegrees.degree( type, direction );
+                return nodeTxState.augmentDegree( direction, storedDegree, type );
+            }
+        };
     }
 
     @Override

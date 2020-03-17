@@ -40,7 +40,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
     private DefaultPropertyCursor propertyCursor;
     private FullAccessPropertyCursor fullAccessPropertyCursor;
-    private DefaultRelationshipGroupCursor relationshipGroupCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultRelationshipIndexCursor relationshipIndexCursor;
@@ -250,34 +249,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
-    {
-        if ( relationshipGroupCursor == null )
-        {
-            return trace( new DefaultRelationshipGroupCursor( this::accept, storageReader.allocateRelationshipGroupCursor( cursorTracer ) ) );
-        }
-
-        try
-        {
-            return relationshipGroupCursor;
-        }
-        finally
-        {
-            relationshipGroupCursor = null;
-        }
-    }
-
-    private void accept( DefaultRelationshipGroupCursor cursor )
-    {
-        if ( relationshipGroupCursor != null )
-        {
-            relationshipGroupCursor.release();
-        }
-        cursor.removeTracer();
-        relationshipGroupCursor = cursor;
-    }
-
-    @Override
     public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor()
     {
         if ( nodeValueIndexCursor == null )
@@ -397,11 +368,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             fullAccessPropertyCursor.release();
             fullAccessPropertyCursor = null;
-        }
-        if ( relationshipGroupCursor != null )
-        {
-            relationshipGroupCursor.release();
-            relationshipGroupCursor = null;
         }
         if ( nodeValueIndexCursor != null )
         {

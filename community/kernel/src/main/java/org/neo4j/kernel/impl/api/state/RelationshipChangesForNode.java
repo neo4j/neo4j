@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
@@ -251,6 +254,23 @@ public class RelationshipChangesForNode
             return nonEmptyConcat( primitiveIdsByType( outgoing, type ), primitiveIdsByType( incoming, type ), primitiveIdsByType( loops, type ) );
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
+        }
+    }
+
+    public IntSet relationshipTypes()
+    {
+        MutableIntSet types = IntSets.mutable.empty();
+        addRelationshipTypes( types, outgoing );
+        addRelationshipTypes( types, incoming );
+        addRelationshipTypes( types, loops );
+        return types;
+    }
+
+    private void addRelationshipTypes( MutableIntSet types, MutableIntObjectMap<MutableLongSet> relationships )
+    {
+        if ( relationships != null )
+        {
+            types.addAll( relationships.keySet() );
         }
     }
 

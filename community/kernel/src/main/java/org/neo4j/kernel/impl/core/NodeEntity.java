@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -66,6 +67,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public class NodeEntity implements Node, RelationshipFactory<Relationship>
 {
@@ -636,7 +638,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
 
-        return Nodes.countAll( nodes, transaction.cursors(), transaction.pageCursorTracer() );
+        return Nodes.countAll( nodes, transaction.pageCursorTracer() );
     }
 
     @Override
@@ -651,7 +653,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        return Nodes.countAll( nodes, transaction.cursors(), typeId, transaction.pageCursorTracer() );
+        return Nodes.countAll( nodes, typeId, transaction.pageCursorTracer() );
     }
 
     @Override
@@ -662,15 +664,14 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
         var cursorTracer = transaction.pageCursorTracer();
-        var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, cursors, cursorTracer );
+            return Nodes.countOutgoing( nodes, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes, cursors, cursorTracer );
+            return Nodes.countIncoming( nodes, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes, cursors, cursorTracer );
+            return Nodes.countAll( nodes, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -689,15 +690,14 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
         var cursorTracer = transaction.pageCursorTracer();
-        var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return Nodes.countOutgoing( nodes, cursors, typeId, cursorTracer );
+            return Nodes.countOutgoing( nodes, typeId, cursorTracer );
         case INCOMING:
-            return Nodes.countIncoming( nodes, cursors, typeId, cursorTracer );
+            return Nodes.countIncoming( nodes, typeId, cursorTracer );
         case BOTH:
-            return Nodes.countAll( nodes, cursors, typeId, cursorTracer );
+            return Nodes.countAll( nodes, typeId, cursorTracer );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -707,19 +707,19 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor( transaction.pageCursorTracer() ) )
+        try
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
-            nodes.relationshipGroups( relationships );
+            Degrees degrees = nodes.degrees( ALL_RELATIONSHIPS );
             List<RelationshipType> types = new ArrayList<>();
-            while ( relationships.next() )
+            for ( int type : degrees.types() )
             {
                 // only include this type if there are any relationships with this type
-                if ( relationships.totalCount() > 0 )
+                if ( degrees.totalDegree( type ) > 0 )
                 {
-                    types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
+                    types.add( RelationshipType.withName( tokenRead.relationshipTypeName( type ) ) );
                 }
             }
 

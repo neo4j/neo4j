@@ -50,13 +50,12 @@ public final class Nodes
      * NOTE: The number of outgoing relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @param cursorTracer underlying page cursor tracer.
      * @return the number of outgoing - including loops - relationships from the node
      */
-    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, PageCursorTracer cursorTracer )
+    public static int countOutgoing( NodeCursor nodeCursor, PageCursorTracer cursorTracer )
     {
-        return count( nodeCursor, cursors, selection( OUTGOING ), RelationshipGroupCursor::outgoingCount );
+        return count( nodeCursor, OUTGOING );
     }
 
     /**
@@ -65,14 +64,13 @@ public final class Nodes
      * NOTE: The number of outgoing relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @param cursorTracer underlying page cursor tracer.
      * @return the number of outgoing - including loops - relationships from the node with the given type
      */
-    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, int type, PageCursorTracer cursorTracer )
+    public static int countOutgoing( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
-        return count( nodeCursor, cursors, selection( type, OUTGOING ), RelationshipGroupCursor::outgoingCount );
+        return count( nodeCursor, type, OUTGOING );
     }
 
     /**
@@ -81,12 +79,11 @@ public final class Nodes
      * NOTE: The number of incoming relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @return the number of incoming - including loops - relationships from the node
      */
     public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        return count( nodeCursor, cursors, selection( INCOMING ), RelationshipGroupCursor::incomingCount );
+        return count( nodeCursor, INCOMING );
     }
 
     /**
@@ -95,85 +92,46 @@ public final class Nodes
      * NOTE: The number of incoming relationships also includes eventual loops.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @param cursorTracer underlying page cursor tracer.
      * @return the number of incoming - including loops - relationships from the node with the given type
      */
-    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors, int type, PageCursorTracer cursorTracer )
+    public static int countIncoming( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
-        return count( nodeCursor, cursors, selection( type, INCOMING ),RelationshipGroupCursor::incomingCount );
+        return count( nodeCursor, type, INCOMING );
     }
 
     /**
      * Counts all the relationships from node where the cursor is positioned.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @return the number of relationships from the node
      */
-    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors )
+    public static int countAll( NodeCursor nodeCursor )
     {
-        return count( nodeCursor, cursors, selection( BOTH ), RelationshipGroupCursor::totalCount );
+        return count( nodeCursor, BOTH );
     }
 
     /**
      * Counts all the relationships of the given type from node where the cursor is positioned.
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
-     * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
      * @param cursorTracer underlying page cursor tracer.
      * @return the number relationships from the node with the given type
      */
-    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors, int type, PageCursorTracer cursorTracer )
+    public static int countAll( NodeCursor nodeCursor, int type, PageCursorTracer cursorTracer )
     {
-        return count( nodeCursor, cursors, selection( type, BOTH ), RelationshipGroupCursor::totalCount );
+        return count( nodeCursor, type, BOTH );
     }
 
-    public static int count( NodeCursor nodeCursor, CursorFactory cursors, RelationshipSelection selection, ToLongFunction<RelationshipGroupCursor> counter )
+    public static int count( NodeCursor nodeCursor, int type, Direction direction )
     {
-        if ( nodeCursor.isDense() )
-        {
-            try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( cursorTracer ) )
-            {
-                return countDense( nodeCursor, group, selection, counter );
-            }
-        }
-        else
-        {
-            try ( RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor( cursorTracer ) )
-            {
-                return countSparse( nodeCursor, traversal, selection );
-            }
-        }
+        return nodeCursor.degrees( selection( type, direction ) ).degree( type, direction );
     }
 
-    public static int countDense( NodeCursor nodeCursor, RelationshipGroupCursor group, RelationshipSelection selection,
-            ToLongFunction<RelationshipGroupCursor> counter )
+    public static int count( NodeCursor nodeCursor, Direction direction, PageCursorTracer pageCursorTracer )
     {
-        assert nodeCursor.isDense();
-        nodeCursor.relationshipGroups( group );
-        int count = 0;
-        while ( group.next() )
-        {
-            if ( selection.test( group.type() ) )
-            {
-                count += counter.applyAsLong( group );
-            }
-        }
-        return count;
-    }
-
-    public static int countSparse( NodeCursor nodeCursor, RelationshipTraversalCursor traversal, RelationshipSelection selection )
-    {
-        assert !nodeCursor.isDense();
-        int count = 0;
-        nodeCursor.relationships( traversal, selection );
-        while ( traversal.next() )
-        {
-            count++;
-        }
-        return count;
+        return nodeCursor.degrees( selection( direction ) ).degree( direction );
     }
 }

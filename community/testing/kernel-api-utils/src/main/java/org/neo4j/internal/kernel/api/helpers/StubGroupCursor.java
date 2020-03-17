@@ -19,12 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-public class StubGroupCursor extends DefaultCloseListenable implements RelationshipGroupCursor
+public class StubGroupCursor extends DefaultCloseListenable implements AutoCloseablePlus
 {
     private int offset;
     private final GroupData[] groups;
@@ -43,14 +41,12 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
         this.isClosed = false;
     }
 
-    @Override
     public boolean next()
     {
         offset++;
         return offset >= 0 && offset < groups.length;
     }
 
-    @Override
     public void close()
     {
         closeInternal();
@@ -61,64 +57,34 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
         }
     }
 
-    @Override
     public void closeInternal()
     {
         isClosed = true;
     }
 
-    @Override
     public boolean isClosed()
     {
         return isClosed;
     }
 
-    @Override
     public int type()
     {
         return groups[offset].type;
     }
 
-    @Override
     public int outgoingCount()
     {
         return groups[offset].countOut + groups[offset].countLoop;
     }
 
-    @Override
     public int incomingCount()
     {
         return groups[offset].countIn + groups[offset].countLoop;
     }
 
-    @Override
     public int totalCount()
     {
         return groups[offset].countOut + groups[offset].countIn + groups[offset].countLoop;
-    }
-
-    @Override
-    public void outgoing( RelationshipTraversalCursor cursor )
-    {
-        ((StubRelationshipCursor) cursor).read( groups[offset].out );
-    }
-
-    @Override
-    public void incoming( RelationshipTraversalCursor cursor )
-    {
-        ((StubRelationshipCursor) cursor).read( groups[offset].in );
-    }
-
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void removeTracer()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     public static class GroupData

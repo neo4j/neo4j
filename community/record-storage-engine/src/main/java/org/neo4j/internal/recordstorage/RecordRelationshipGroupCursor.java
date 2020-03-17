@@ -30,9 +30,8 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 
-class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
+class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements AutoCloseable
 {
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
@@ -52,8 +51,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         this.cursorTracer = cursorTracer;
     }
 
-    @Override
-    public void init( long nodeReference, long reference, boolean nodeIsDense )
+    void init( long nodeReference, long reference, boolean nodeIsDense )
     {
         // the relationships for this node are not grouped in the store
         if ( reference != NO_ID && !nodeIsDense )
@@ -131,8 +129,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         }
     }
 
-    @Override
-    public boolean next()
+    boolean next()
     {
         if ( isBuffered() )
         {
@@ -166,8 +163,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         setFirstLoop( bufferedGroup.loops() );
     }
 
-    @Override
-    public void reset()
+    void reset()
     {
         if ( open )
         {
@@ -178,30 +174,21 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         }
     }
 
-    @Override
-    public int type()
-    {
-        return getType();
-    }
-
-    @Override
-    public int outgoingCount()
+    int outgoingCount()
     {
         return isBuffered()
                ? bufferedGroup.outgoingCount + bufferedGroup.loopsCount
                : count( outgoingRawId() ) + count( loopsRawId() );
     }
 
-    @Override
-    public int incomingCount()
+    int incomingCount()
     {
         return isBuffered()
                ? bufferedGroup.incomingCount + bufferedGroup.loopsCount
                : count( incomingRawId() ) + count( loopsRawId() );
     }
 
-    @Override
-    public int totalCount()
+    int totalCount()
     {
         return isBuffered()
                ? bufferedGroup.outgoingCount + bufferedGroup.incomingCount + bufferedGroup.loopsCount
@@ -227,36 +214,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         {
             return (int) edge.getSecondPrevRel();
         }
-    }
-
-    /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     */
-    @Override
-    public long outgoingReference()
-    {
-        return getFirstOut();
-    }
-
-    /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     */
-    @Override
-    public long incomingReference()
-    {
-        return getFirstIn();
-    }
-
-    /**
-     * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
-     * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     */
-    @Override
-    public long loopsReference()
-    {
-        return getFirstLoop();
     }
 
     @Override

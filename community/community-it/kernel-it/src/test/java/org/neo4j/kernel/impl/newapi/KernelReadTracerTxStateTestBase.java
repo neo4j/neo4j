@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -58,7 +57,6 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipGroup;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSupport>
@@ -216,35 +214,6 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( r ) );
-
-            assertFalse( cursor.next() );
-            tracer.assertEvents();
-        }
-    }
-
-    @Test
-    void shouldTraceGroupTraversal() throws Exception
-    {
-        // given
-        TestKernelReadTracer tracer = new TestKernelReadTracer();
-
-        try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
-              RelationshipGroupCursor cursor = tx.cursors().allocateRelationshipGroupCursor( tx.pageCursorTracer() ) )
-        {
-            long n1 = tx.dataWrite().nodeCreate();
-            long n2 = tx.dataWrite().nodeCreate();
-            tx.dataWrite().relationshipCreate( n1, tx.token().relationshipTypeGetOrCreateForName( "R" ), n2 );
-
-            // when
-            cursor.setTracer( tracer );
-            tx.dataRead().singleNode( n1, nodeCursor );
-            assertTrue( nodeCursor.next() );
-            nodeCursor.relationshipGroups( cursor );
-
-            assertTrue( cursor.next() );
-            int expectedType = cursor.type();
-            tracer.assertEvents( OnRelationshipGroup( expectedType ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();

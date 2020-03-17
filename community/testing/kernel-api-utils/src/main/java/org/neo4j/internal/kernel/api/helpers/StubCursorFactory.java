@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -45,7 +44,6 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
     private final Queue<PropertyCursor> propertyCursors = new ArrayDeque<>();
     private final Queue<PropertyCursor> fullPropertyCursors = new ArrayDeque<>();
-    private final Queue<RelationshipGroupCursor> groupCursors = new ArrayDeque<>();
     private final Queue<NodeValueIndexCursor> nodeValueIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipIndexCursor> relationshipIndexCursors = new ArrayDeque<>();
@@ -103,12 +101,6 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public RelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
-    {
-        return poll( groupCursors );
-    }
-
-    @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor()
     {
         return poll( nodeValueIndexCursors );
@@ -124,12 +116,6 @@ public class StubCursorFactory implements CursorFactory
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         return poll( relationshipIndexCursors );
-    }
-
-    public StubCursorFactory withGroupCursors( RelationshipGroupCursor...cursors )
-    {
-        groupCursors.addAll( Arrays.asList( cursors ) );
-        return this;
     }
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )
