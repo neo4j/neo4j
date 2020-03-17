@@ -158,9 +158,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_COMMIT_T
 public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
-    public static final String RECORD_STORAGE_MIGRATION_TAG = "recordStorageMigration";
-    public static final String NODE_CHUNK_MIGRATION_TAG = "nodeChunkMigration";
-    public static final String RELTIONHIP_CHUNK_MIGRATION_TAG = "relationshipChunkMigration";
+    private static final String RECORD_STORAGE_MIGRATION_TAG = "recordStorageMigration";
+    private static final String NODE_CHUNK_MIGRATION_TAG = "nodeChunkMigration";
+    private static final String RELATIONSHIP_CHUNK_MIGRATION_TAG = "relationshipChunkMigration";
 
     private final Config config;
     private final LogService logService;
@@ -613,7 +613,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                var cursorTracer = cacheTracer.createPageCursorTracer( RELTIONHIP_CHUNK_MIGRATION_TAG );
+                var cursorTracer = cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG );
                 return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer );
             }
         };

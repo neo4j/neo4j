@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -66,8 +67,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     @Override
     public void close()
     {
-        storePropertyCursor.close();
-        cursorTracer.close();
+        IOUtils.closeAllUnchecked( storePropertyCursor, cursorTracer );
     }
 
     @Override

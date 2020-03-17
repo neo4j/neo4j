@@ -45,6 +45,7 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 {
+    private static final String INDEX_CONFIG_MIGRATION_TAG = "indexConfigMigration";
     private final FileSystemAbstraction fs;
     private final Config config;
     private final PageCache pageCache;
@@ -81,7 +82,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private void migrateIndexConfigs( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, String versionToMigrateTo )
             throws IOException, KernelException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "indexConfigMigration" );
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_CONFIG_MIGRATION_TAG );
                 var ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
                 versionToMigrateTo, pageCacheTracer, cursorTracer ) )
         {
