@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.memory.Measurable
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -44,14 +45,7 @@ object CypherRow {
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
 
-trait WithHeapUsageEstimation {
-  /**
-    * Provides an estimation of the number of bytes currently used by this instance.
-    */
-  def estimatedHeapUsage: Long
-}
-
-trait CypherRow extends ReadWriteRow with WithHeapUsageEstimation {
+trait CypherRow extends ReadWriteRow with Measurable {
 
   @deprecated
   def containsName(name: String): Boolean

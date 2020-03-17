@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.memory.Measurable
 import org.neo4j.values.storable.Values
 
 class BoundedMemoryTrackerTest extends CypherFunSuite {
 
-  case class IMem(i: Int) extends WithHeapUsageEstimation {
+  case class IMem(i: Int) extends Measurable {
     override def estimatedHeapUsage: Long = i
   }
 

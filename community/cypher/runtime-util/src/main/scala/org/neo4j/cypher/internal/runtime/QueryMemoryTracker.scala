@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.MemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.exceptions.TransactionOutOfMemoryException
+import org.neo4j.memory.Measurable
 import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.AnyValue
 
@@ -53,7 +54,7 @@ trait QueryMemoryTracker {
     *
     * @param instance the allocated instance
     */
-  def allocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit
+  def allocated(instance: Measurable, operatorId: Int): Unit
 
   /**
     * Record de-allocation of bytes
@@ -74,7 +75,7 @@ trait QueryMemoryTracker {
     *
     * @param instance the de-allocated instance
     */
-  def deallocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit
+  def deallocated(instance: Measurable, operatorId: Int): Unit
 
   /**
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
@@ -129,13 +130,13 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 
   override def allocated(bytes: Long, operatorId: Int): Unit = {}
 
-  override def allocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = {}
+  override def allocated(instance: Measurable, operatorId: Int): Unit = {}
 
   override def deallocated(bytes: Long, operatorId: Int): Unit = {}
 
   override def deallocated(value: AnyValue, operatorId: Int): Unit = {}
 
-  override def deallocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = {}
+  override def deallocated(instance: Measurable, operatorId: Int): Unit = {}
 
   override def totalAllocatedMemory: Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 
@@ -182,7 +183,7 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
 
   override def allocated(value: AnyValue, operatorId: Int): Unit = allocated(value.estimatedHeapUsage(), operatorId)
 
-  override def allocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = allocated(instance.estimatedHeapUsage, operatorId)
+  override def allocated(instance: Measurable, operatorId: Int): Unit = allocated(instance.estimatedHeapUsage, operatorId)
 
   override def deallocated(bytes: Long, operatorId: Int): Unit = {
     _allocatedBytes -= bytes
@@ -193,7 +194,7 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
 
   override def deallocated(value: AnyValue, operatorId: Int): Unit = deallocated(value.estimatedHeapUsage(), operatorId)
 
-  override def deallocated(instance: WithHeapUsageEstimation, operatorId: Int): Unit = deallocated(instance.estimatedHeapUsage, operatorId)
+  override def deallocated(instance: Measurable, operatorId: Int): Unit = deallocated(instance.estimatedHeapUsage, operatorId)
 
   override def totalAllocatedMemory: Long = highWaterMark
 
@@ -202,9 +203,9 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
     if (maxOrNull == null) OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED else maxOrNull.highWaterMark
   }
 
-  override def memoryTrackingIterator[T <: WithHeapUsageEstimation](input: Iterator[T], operatorId: Int): Iterator[T] = new MemoryTrackingIterator[T](input, operatorId)
+  override def memoryTrackingIterator[T <: Measurable](input: Iterator[T], operatorId: Int): Iterator[T] = new MemoryTrackingIterator[T](input, operatorId)
 
-  private class MemoryTrackingIterator[T <: WithHeapUsageEstimation](input: Iterator[T], operatorId: Int) extends Iterator[T] {
+  private class MemoryTrackingIterator[T <: Measurable](input: Iterator[T], operatorId: Int) extends Iterator[T] {
     override def hasNext: Boolean = input.hasNext
 
     override def next(): T = {
