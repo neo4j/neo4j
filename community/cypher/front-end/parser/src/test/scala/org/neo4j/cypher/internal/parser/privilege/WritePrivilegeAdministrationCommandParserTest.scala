@@ -30,7 +30,8 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
 
             Seq(
               ("*", ast.AllGraphsScope()(pos)),
-              ("foo", ast.NamedGraphScope("foo")(pos)),
+              ("foo", ast.NamedGraphScope(literal("foo"))(pos)),
+              ("$foo", ast.NamedGraphScope(param("foo"))(pos))
             ).foreach {
               case (dbName: String, graphScope: ast.GraphScope) =>
 
@@ -56,7 +57,7 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
 
                 test(s"failToParseStatements $graphKeyword $dbName $elementKeyword $preposition") {
                   // Missing `ON`
-                  assertFails( s"$command WRITE {*} $graphKeyword $dbName $elementKeyword * (*) $preposition role")
+                  assertFails( s"$command WRITE $graphKeyword $dbName $elementKeyword * (*) $preposition role")
                   // Missing role
                   assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
                   // Invalid role name
@@ -71,9 +72,8 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             }
 
             test(s"$command WRITE ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
-              yields(func(ast.WritePrivilege()(pos), ast.NamedGraphScope("f:oo") _, ast.ElementsAllQualifier() _, Seq("role")))
+              yields(func(ast.WritePrivilege()(pos), ast.NamedGraphScope(literal("f:oo")) _, ast.ElementsAllQualifier() _, Seq("role")))
             }
-
 
             test(s"parseErrors $command $graphKeyword $elementKeyword $preposition") {
               // Invalid graph name
@@ -84,10 +84,11 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             }
         }
 
-        // Needs to be separate loop to avoid duplicate tests since the test does not have any $nodeKeyword
+        // Needs to be separate loop to avoid duplicate tests since the test does not have any $elementKeyword
         Seq(
           ("*", ast.AllGraphsScope()(pos)),
-          ("foo", ast.NamedGraphScope("foo")(pos))
+          ("foo", ast.NamedGraphScope(literal("foo"))(pos)),
+          ("$foo", ast.NamedGraphScope(param("foo"))(pos))
         ).foreach {
           case (dbName: String, graphScope: ast.GraphScope) =>
 

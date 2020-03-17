@@ -462,7 +462,7 @@ trait Statement extends Parser
 
   private def Database: Rule1[GraphScope] = rule("on a database") {
     group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      (SymbolicNameString ~~>> (ast.NamedGraphScope(_)) | keyword("*") ~~~> ast.AllGraphsScope()) |
+      (SymbolicNameOrStringParameter ~~>> (ast.NamedGraphScope(_)) | keyword("*") ~~~> ast.AllGraphsScope()) |
     keyword("ON DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
   }
 
@@ -528,7 +528,7 @@ trait Statement extends Parser
 
   private def Graph: Rule1[GraphScope] = rule("on a graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
-      (group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
+      (group(SymbolicNameOrStringParameter) ~~>> (name => ast.NamedGraphScope(name)) |
         keyword("*") ~~~> ast.AllGraphsScope())
   )
 

@@ -83,19 +83,23 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
           }
 
           test(s"$command $privilege ON DATABASE foo $preposition role") {
-            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role")))
+            yields(privilegeFunc(action, ast.NamedGraphScope(literal("foo")) _, Seq("role")))
           }
 
           test(s"$command $privilege ON DATABASE `fo:o` $preposition role") {
-            yields(privilegeFunc(action, ast.NamedGraphScope("fo:o") _, Seq("role")))
+            yields(privilegeFunc(action, ast.NamedGraphScope(literal("fo:o")) _, Seq("role")))
           }
 
           test(s"$command $privilege ON DATABASE foo $preposition `r:ole`") {
-            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("r:ole")))
+            yields(privilegeFunc(action, ast.NamedGraphScope(literal("foo")) _, Seq("r:ole")))
           }
 
           test(s"$command $privilege ON DATABASE foo $preposition role1, role2") {
-            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role1", "role2")))
+            yields(privilegeFunc(action, ast.NamedGraphScope(literal("foo")) _, Seq("role1", "role2")))
+          }
+
+          test(s"$command $privilege ON DATABASE $$foo $preposition role") {
+            yields(privilegeFunc(action, ast.NamedGraphScope(param("foo")) _, Seq("role")))
           }
 
           test(s"$command $privilege ON DEFAULT DATABASE $preposition role") {
@@ -211,7 +215,11 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command SHOW TRANSACTIONS (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.ShowTransactionAction, ast.NamedGraphScope("foo") _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.NamedGraphScope(literal("foo")) _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+      }
+
+      test(s"$command SHOW TRANSACTIONS (*) ON DATABASES $$foo $preposition role1, role2") {
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.NamedGraphScope(param("foo")) _, ast.UserAllQualifier() _, Seq("role1", "role2")))
       }
 
       test(s"$command SHOW TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
@@ -231,7 +239,11 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TERMINATE TRANSACTIONS (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, ast.NamedGraphScope("foo") _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.NamedGraphScope(literal("foo")) _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+      }
+
+      test(s"$command TERMINATE TRANSACTIONS (*) ON DATABASES $$foo $preposition role") {
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.NamedGraphScope(param("foo")) _, ast.UserAllQualifier() _, Seq("role")))
       }
 
       test(s"$command TERMINATE TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
@@ -251,7 +263,11 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TRANSACTION (*) ON DATABASES foo $preposition role1, role2") {
-        yields(privilegeFunc(ast.AllTransactionActions, ast.NamedGraphScope("foo") _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.NamedGraphScope(literal("foo")) _, ast.UserAllQualifier() _, Seq("role1", "role2")))
+      }
+
+      test(s"$command TRANSACTION (*) ON DATABASES $$foo $preposition role1, role2") {
+        yields(privilegeFunc(ast.AllTransactionActions, ast.NamedGraphScope(param("foo")) _, ast.UserAllQualifier() _, Seq("role1", "role2")))
       }
 
       test(s"$command TRANSACTION (user) ON DATABASES * $preposition role") {

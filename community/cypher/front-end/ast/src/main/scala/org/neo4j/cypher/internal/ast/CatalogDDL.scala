@@ -258,13 +258,20 @@ final case class UsersQualifier(usernames: Seq[String])(val position: InputPosit
   override def simplify: Seq[PrivilegeQualifier] = usernames.map(UserQualifier(_)(position))
 }
 
-sealed trait GraphScope
+sealed trait GraphScope extends Rewritable
 
-final case class NamedGraphScope(database: String)(val position: InputPosition) extends GraphScope
+final case class NamedGraphScope(database: Either[String, Parameter])(val position: InputPosition) extends GraphScope {
+  override def dup(children: Seq[AnyRef]): NamedGraphScope.this.type =
+    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+}
 
-final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
+final case class AllGraphsScope()(val position: InputPosition) extends GraphScope {
+  override def dup(children: Seq[AnyRef]): AllGraphsScope.this.type = this
+}
 
-final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope
+final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope {
+  override def dup(children: Seq[AnyRef]): DefaultDatabaseScope.this.type = this
+}
 
 sealed trait ShowPrivilegeScope extends Rewritable
 

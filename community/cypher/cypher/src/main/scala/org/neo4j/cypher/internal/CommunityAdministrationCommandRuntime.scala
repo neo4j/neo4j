@@ -323,6 +323,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   }
 
   private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false): MapValue = {
+    // TODO isDefault is not used, should it be?
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty
