@@ -69,6 +69,8 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.RelationshipSelection.lazyCapture;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
@@ -457,25 +459,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
-    {
-        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
-        switch ( encoding )
-        {
-        case NONE:
-            // Reference was retrieved from NodeCursor#relationshipGroupReference() for a sparse node
-            ((DefaultRelationshipGroupCursor) cursor).init( nodeReference, reference, false, this );
-            break;
-        case DENSE:
-            // Reference was retrieved from NodeCursor#relationshipGroupReference() for a sparse node
-            ((DefaultRelationshipGroupCursor) cursor).init( nodeReference, clearEncoding( reference ), true, this );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unexpected encoding " + encoding );
-        }
-    }
-
-    @Override
     public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
     {
         RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
@@ -483,36 +466,21 @@ abstract class Read implements TxStateHolder,
         {
         case NONE:
             // Reference was retrieved from NodeCursor#allRelationshipsReference() for a sparse node.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, false, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, false, ALL_RELATIONSHIPS, this );
             break;
         case DENSE:
             // Reference was retrieved from NodeCursor#allRelationshipsReference() for a dense node
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), true, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), true, ALL_RELATIONSHIPS, this );
             break;
         case SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a sparse node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), TokenRead.ANY_RELATIONSHIP_TYPE, null, false, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), false, lazyCapture(), this );
             break;
         case DENSE_SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a dense node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
             ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), TokenRead.ANY_RELATIONSHIP_TYPE, null, true, this );
-            break;
-        case NO_OUTGOING_OF_TYPE:
-            // Reference was retrieved from RelationshipGroupCursor#outgoingReference() where there were no relationships in store
-            // and so therefore the type and direction was encoded into the reference instead
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, NO_ID, (int) reference, OUTGOING, true, this );
-            break;
-        case NO_INCOMING_OF_TYPE:
-            // Reference was retrieved from RelationshipGroupCursor#incomingReference() where there were no relationships in store
-            // and so therefore the type and direction was encoded into the reference instead
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, NO_ID, (int) reference, INCOMING, true, this );
-            break;
-        case NO_LOOPS_OF_TYPE:
-            // Reference was retrieved from RelationshipGroupCursor#loopsReference() where there were no relationships in store
-            // and so therefore the type and direction was encoded into the reference instead
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, NO_ID, (int) reference, LOOP, true, this );
             break;
         default:
             throw new IllegalArgumentException( "Unexpected encoding " + encoding );

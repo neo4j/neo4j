@@ -76,10 +76,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   protected def manyDbHits(value: LongIterator): LongIterator = value
   protected def manyDbHits(value: RelationshipIterator): RelationshipIterator = value
-  protected def manyDbHits(value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
+  protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(value: RelationshipGroupCursor): RelationshipGroupCursor = value
-  protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
   protected def manyDbHits(count: Int): Int = count
 

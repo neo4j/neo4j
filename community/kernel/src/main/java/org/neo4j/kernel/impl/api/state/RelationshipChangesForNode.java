@@ -28,12 +28,16 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.PrimitiveLongCollections.concat;
+import static org.neo4j.internal.helpers.collection.Iterators.filter;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -113,34 +117,37 @@ public class RelationshipChangesForNode
         return false;
     }
 
-    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+    public int augmentDegree( Direction direction, int degree, int typeId )
     {
         switch ( direction )
         {
         case INCOMING:
-            if ( incoming != null && incoming.containsKey( typeId ) )
-            {
-                return diffStrategy.augmentDegree( degree, incoming.get( typeId ).size() );
-            }
-            break;
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, incoming, loops ) );
         case OUTGOING:
-            if ( outgoing != null && outgoing.containsKey( typeId ) )
-            {
-                return diffStrategy.augmentDegree( degree, outgoing.get( typeId ).size() );
-            }
-            break;
-        case LOOP:
-            if ( loops != null && loops.containsKey( typeId ) )
-            {
-                return diffStrategy.augmentDegree( degree, loops.get( typeId ).size() );
-            }
-            break;
-
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing, loops ) );
+        case BOTH:
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing, incoming, loops ) );
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
+    }
 
-        return degree;
+    @SafeVarargs
+    private int degreeDiff( int type, MutableIntObjectMap<MutableLongSet>... maps )
+    {
+        int diff = 0;
+        for ( MutableIntObjectMap<MutableLongSet> map : maps )
+        {
+            if ( map != null )
+            {
+                MutableLongSet set = map.get( type );
+                if ( set != null )
+                {
+                    diff += set.size();
+                }
+            }
+        }
+        return diff;
     }
 
     public void clear()
@@ -152,10 +159,6 @@ public class RelationshipChangesForNode
         if ( incoming != null )
         {
             incoming.clear();
-        }
-        if ( loops != null )
-        {
-            loops.clear();
         }
     }
 
@@ -208,22 +211,44 @@ public class RelationshipChangesForNode
 
     public LongIterator getRelationships()
     {
-        return PrimitiveLongCollections.concat(
+        return nonEmptyConcat(
                 primitiveIds( incoming ),
                 primitiveIds( outgoing ),
                 primitiveIds( loops ) );
     }
 
-    public LongIterator getRelationships( RelationshipDirection direction, int type )
+    private LongIterator nonEmptyConcat( LongIterator... primitiveIds )
+    {
+        return concat( filter( ids -> ids != ImmutableEmptyLongIterator.INSTANCE, iterator( primitiveIds ) ) );
+    }
+
+    public LongIterator getRelationships( Direction direction )
     {
         switch ( direction )
         {
         case INCOMING:
-            return incoming != null ? primitiveIdsByType( incoming, type ) : ImmutableEmptyLongIterator.INSTANCE;
+            return incoming == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE : nonEmptyConcat( primitiveIds( incoming ), primitiveIds( loops ) );
         case OUTGOING:
-            return outgoing != null ? primitiveIdsByType( outgoing, type ) : ImmutableEmptyLongIterator.INSTANCE;
-        case LOOP:
-            return loops != null ? primitiveIdsByType( loops, type ) : ImmutableEmptyLongIterator.INSTANCE;
+            return outgoing == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE : nonEmptyConcat( primitiveIds( outgoing ), primitiveIds( loops ) );
+        case BOTH:
+            return getRelationships();
+        default:
+            throw new IllegalArgumentException( "Unknown direction: " + direction );
+        }
+    }
+
+    public LongIterator getRelationships( Direction direction, int type )
+    {
+        switch ( direction )
+        {
+        case INCOMING:
+            return incoming == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE :
+                   nonEmptyConcat( primitiveIdsByType( incoming, type ), primitiveIdsByType( loops, type ) );
+        case OUTGOING:
+            return outgoing == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE :
+                   nonEmptyConcat( primitiveIdsByType( outgoing, type ), primitiveIdsByType( loops, type ) );
+        case BOTH:
+            return nonEmptyConcat( primitiveIdsByType( outgoing, type ), primitiveIdsByType( incoming, type ), primitiveIdsByType( loops, type ) );
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
@@ -244,6 +269,10 @@ public class RelationshipChangesForNode
 
     private static LongIterator primitiveIdsByType( IntObjectMap<MutableLongSet> map, int type )
     {
+        if ( map == null )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
         final LongSet relationships = map.get( type );
         return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : relationships.freeze().longIterator();
     }

@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.graphdb.Direction;
 
 /**
  * Represents the transactional changes to a node:
@@ -40,11 +40,13 @@ public interface NodeState extends EntityState
      * This method counts all directions separately, i.e.
      * total count = count(INCOMING) + count(OUTGOING) + count(LOOPS)
      */
-    int augmentDegree( RelationshipDirection direction, int degree, int typeId );
+    int augmentDegree( Direction direction, int degree, int typeId );
 
     long getId();
 
     LongIterator getAddedRelationships();
 
-    LongIterator getAddedRelationships( RelationshipDirection direction, int relType );
+    LongIterator getAddedRelationships( Direction direction );
+
+    LongIterator getAddedRelationships( Direction direction, int relType );
 }

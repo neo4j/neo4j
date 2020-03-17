@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relati
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.NodeValue
@@ -105,7 +105,7 @@ case class ExpandIntoPipe(source: Pipe,
 
 object ExpandIntoPipe {
 
-  def relationshipIterator(cursor: RelationshipSelectionCursor,
+  def relationshipIterator(cursor: RelationshipTraversalCursor,
                            query: QueryContext): Iterator[RelationshipValue] = {
     new CursorIterator[RelationshipValue] {
 

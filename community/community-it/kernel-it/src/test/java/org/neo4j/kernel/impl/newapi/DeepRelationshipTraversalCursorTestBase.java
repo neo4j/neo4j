@@ -111,7 +111,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
             // when
             read.singleNode( three_root, node );
             assertTrue( node.next(), "access root node" );
-            node.relationships( group );
+            node.relationshipGroups( group );
             assertFalse( node.next(), "single root" );
 
             assertTrue( group.next(), "access group of root" );
@@ -123,7 +123,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
                 relationship1.otherNode( node );
 
                 assertTrue( node.next(), "child level 1" );
-                node.relationships( group );
+                node.relationshipGroups( group );
                 assertFalse( node.next(), "single node" );
 
                 assertTrue( group.next(), "group of level 1 child" );

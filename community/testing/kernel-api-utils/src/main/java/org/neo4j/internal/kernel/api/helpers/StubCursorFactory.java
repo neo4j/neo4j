@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -41,7 +42,7 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<NodeCursor> fullNodeCursors = new ArrayDeque<>();
     private final Queue<RelationshipScanCursor> relationshipScanCursors = new ArrayDeque<>();
     private final Queue<RelationshipScanCursor> fullRelationshipScanCursors = new ArrayDeque<>();
-    private final Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new ArrayDeque<>();
+    private final Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
     private final Queue<PropertyCursor> propertyCursors = new ArrayDeque<>();
     private final Queue<PropertyCursor> fullPropertyCursors = new ArrayDeque<>();
     private final Queue<RelationshipGroupCursor> groupCursors = new ArrayDeque<>();
@@ -86,7 +87,7 @@ public class StubCursorFactory implements CursorFactory
     @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
-        return poll( relationshiTraversalCursors );
+        return poll( relationshipTraversalCursors );
     }
 
     @Override
@@ -133,7 +134,7 @@ public class StubCursorFactory implements CursorFactory
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )
     {
-        relationshiTraversalCursors.addAll( Arrays.asList( cursors ) );
+        relationshipTraversalCursors.addAll( Arrays.asList( cursors ) );
         return this;
     }
 

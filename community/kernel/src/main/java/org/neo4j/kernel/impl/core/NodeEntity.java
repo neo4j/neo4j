@@ -712,7 +712,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
-            nodes.relationships( relationships );
+            nodes.relationshipGroups( relationships );
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {

@@ -1065,7 +1065,7 @@ object TransactionBoundQueryContext {
     }
   }
 
-  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator with AutoCloseable {
+  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends RelationshipIterator with AutoCloseable {
 
     import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NOT_INITIALIZED
     import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID

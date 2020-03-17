@@ -132,7 +132,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         read.singleNode( startNode, node );
         node.next();
-        node.relationships( c1 );
+        node.relationshipGroups( c1 );
 
         node.close();
         c1.close();
@@ -151,7 +151,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         read.singleNode( startNode, node );
         node.next();
-        node.relationships( group );
+        node.relationshipGroups( group );
         group.outgoing( c1 );
 
         node.close();

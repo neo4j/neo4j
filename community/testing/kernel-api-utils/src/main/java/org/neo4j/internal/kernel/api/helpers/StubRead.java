@@ -201,12 +201,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean nodeDeletedInTransaction( long node )
     {
         throw new UnsupportedOperationException();

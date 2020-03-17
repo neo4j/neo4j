@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
 public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
@@ -109,13 +110,13 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public void relationships( RelationshipGroupCursor cursor )
+    public void relationshipGroups( RelationshipGroupCursor cursor )
     {
         ((StubGroupCursor) cursor).rewind();
     }
 
     @Override
-    public void allRelationships( RelationshipTraversalCursor relationships )
+    public void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection )
     {
         ((StubRelationshipCursor) relationships).rewind();
     }
@@ -127,13 +128,7 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public long relationshipGroupReference()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public long allRelationshipsReference()
+    public long relationshipsReference()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

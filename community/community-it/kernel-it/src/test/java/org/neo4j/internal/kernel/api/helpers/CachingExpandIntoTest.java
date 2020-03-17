@@ -315,7 +315,7 @@ class CachingExpandIntoTest
                     new CachingExpandInto( tx.dataRead(), INCOMING, MEMORY_TRACKER, INVALID_ID );
 
             //Find r3 first time
-            RelationshipSelectionCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
+            RelationshipTraversalCursor cursor = expandInto.connectingRelationships( nodes, group, traversal, start, types, end );
             assertTrue( cursor.next() );
             assertThat( cursor.relationshipReference() ).isEqualTo( r3 );
             assertThat( cursor.sourceNodeReference() ).isEqualTo( end );
@@ -487,7 +487,7 @@ class CachingExpandIntoTest
         }
     }
 
-    private LongSet toSet(  RelationshipSelectionCursor connections )
+    private LongSet toSet( RelationshipTraversalCursor connections )
     {
         MutableLongSet rels = LongSets.mutable.empty();
         while ( connections.next() )

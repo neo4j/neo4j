@@ -187,19 +187,25 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     @Override
     public int outgoingCount()
     {
-        return isBuffered() ? bufferedGroup.outgoingCount : count( outgoingRawId() );
+        return isBuffered()
+               ? bufferedGroup.outgoingCount + bufferedGroup.loopsCount
+               : count( outgoingRawId() ) + count( loopsRawId() );
     }
 
     @Override
     public int incomingCount()
     {
-        return isBuffered() ? bufferedGroup.incomingCount : count( incomingRawId() );
+        return isBuffered()
+               ? bufferedGroup.incomingCount + bufferedGroup.loopsCount
+               : count( incomingRawId() ) + count( loopsRawId() );
     }
 
     @Override
-    public int loopCount()
+    public int totalCount()
     {
-        return isBuffered() ? bufferedGroup.loopsCount : count( loopsRawId() );
+        return isBuffered()
+               ? bufferedGroup.outgoingCount + bufferedGroup.incomingCount + bufferedGroup.loopsCount
+               : count( outgoingRawId() ) + count( incomingRawId() ) + count( loopsRawId() );
     }
 
     private int count( long reference )

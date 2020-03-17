@@ -29,6 +29,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
@@ -87,7 +88,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         }
 
         @Override
-        public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+        public int augmentDegree( Direction direction, int degree, int typeId )
         {
             return degree;
         }
@@ -117,7 +118,13 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         }
 
         @Override
-        public LongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+        public LongIterator getAddedRelationships( Direction direction )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        @Override
+        public LongIterator getAddedRelationships( Direction direction, int relType )
         {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
@@ -205,7 +212,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     }
 
     @Override
-    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+    public int augmentDegree( Direction direction, int degree, int typeId )
     {
         if ( hasAddedRelationships() )
         {
@@ -271,7 +278,14 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     }
 
     @Override
-    public LongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+    public LongIterator getAddedRelationships( Direction direction )
+    {
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction ) :
+               ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    @Override
+    public LongIterator getAddedRelationships( Direction direction, int relType )
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
                ImmutableEmptyLongIterator.INSTANCE;
