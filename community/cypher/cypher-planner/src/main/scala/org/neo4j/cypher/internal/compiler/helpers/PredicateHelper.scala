@@ -79,6 +79,7 @@ object PredicateHelper {
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
       case  _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:AndedPropertyInequalities |  _:IterablePredicateExpression => true
       case _:ExistsSubClause => true
+      case _:CoerceToPredicate => true
       case _ => false
     }
   }
