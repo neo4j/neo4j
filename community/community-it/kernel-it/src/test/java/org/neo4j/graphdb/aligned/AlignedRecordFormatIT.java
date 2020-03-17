@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -45,6 +46,8 @@ public class AlignedRecordFormatIT
 {
     @Inject
     private GraphDatabaseAPI database;
+    @Inject
+    private StoreIdProvider storeIdProvider;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -55,7 +58,7 @@ public class AlignedRecordFormatIT
     @Test
     void databaseCanBeStartedWithAlignedFormat()
     {
-        assertEquals( ALIGNED_V4_1.versionString(), versionLongToString( database.storeId().getStoreVersion() ) );
+        assertEquals( ALIGNED_V4_1.versionString(), versionLongToString( storeIdProvider.getStoreId().getStoreVersion() ) );
     }
 
     @Test
