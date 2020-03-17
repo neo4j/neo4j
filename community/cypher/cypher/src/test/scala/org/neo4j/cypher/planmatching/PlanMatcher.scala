@@ -83,6 +83,26 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def containingArgument(argument: String*): PlanMatcher
 
+  def containingArgumentForProjection(keys: String*): PlanMatcher = {
+    val k = keys.map(k => s"$k : .*").mkString(", ")
+    containingArgumentRegex(s"\\{$k\\}".r)
+  }
+
+  def containingArgumentForCachedProperty(varName: String, propName: String): PlanMatcher = {
+    containingArgumentRegex(s".*cache\\[$varName\\.$propName]".r)
+  }
+
+  def containingArgumentForIndexPlan(varName: String,
+                                     labelName: String,
+                                     properties: Seq[String],
+                                     unique: Boolean = false,
+                                     caches: Boolean = false): PlanMatcher = {
+    val u = if (unique) " UNIQUE" else ""
+    val p = properties.mkString(", ")
+    val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
+    containingArgumentRegex(s"$varName:$labelName$u\\($p\\).*$c".r)
+  }
+
   def containingArgumentRegex(argument: Regex*): PlanMatcher
 
   def withOrder(providedOrder: ProvidedOrder): PlanMatcher
