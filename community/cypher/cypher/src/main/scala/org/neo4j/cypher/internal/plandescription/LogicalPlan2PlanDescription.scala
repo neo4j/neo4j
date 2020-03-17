@@ -349,8 +349,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case CheckFrozenRole(_, roleName) =>
         PlanDescriptionImpl(id, "CheckFrozenRole", NoChildren, Seq(Role(Prettifier.escapeName(roleName))), variables)
 
-      case AssertDbmsAdmin(action) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(DbmsAction(action.name)), variables)
+      case AssertDbmsAdmin(actions@_*) =>
+        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, actions.map(a => DbmsAction(a.name)), variables)
 
       case AssertDatabaseAdmin(action, normalizedName) =>
         val arguments = Seq(DatabaseAction(action.name), Database(Prettifier.escapeName(normalizedName.name)))
