@@ -25,5 +25,7 @@ public interface QueryExecutionMonitor
 {
     void endFailure( ExecutingQuery query , Throwable failure );
 
+    void endFailure( ExecutingQuery query , String reason );
+
     void endSuccess( ExecutingQuery query  );
 }

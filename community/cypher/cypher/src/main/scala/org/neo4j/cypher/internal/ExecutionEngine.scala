@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
@@ -55,6 +55,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   require(queryService != null, "Can't work with a null graph database")
 
   // HELPER OBJECTS
+  private val queryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   private val preParser = new PreParser(config.version, config.planner, config.runtime, config.expressionEngineOption, config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
@@ -90,16 +91,29 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def execute(query: String, params: MapValue, context: TransactionalContext, profile: Boolean = false): Result = {
     val queryTracer = tracer.compileQuery(query)
 
-    try {
-      val preParsedQuery = preParser.preParseQuery(query, profile)
-      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
-      if (preParsedQuery.executionMode.name != "explain") {
-        checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
-      }
-      val combinedParams = params.updatedWith(executableQuery.extractedParams)
-      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
-      executableQuery.execute(context, preParsedQuery, combinedParams)
+    def parseAndCompile: (ExecutableQuery, PreParsedQuery, MapValue) = {
+      try {
+        val preParsedQuery = preParser.preParseQuery(query, profile)
+        val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
+        if (preParsedQuery.executionMode.name != "explain") {
+          checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
+        }
+        val combinedParams = params.updatedWith(executableQuery.extractedParams)
+        context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
 
+        (executableQuery, preParsedQuery, combinedParams)
+
+      } catch {
+        case up: Throwable =>
+          // log failures in query compilation, the execute method that comes next handles itself
+          queryExecutionMonitor.endFailure(context.executingQuery(), up.getMessage)
+          throw up
+      }
+    }
+
+    try {
+      val (executableQuery, preParsedQuery, combinedParams) = parseAndCompile
+      executableQuery.execute(context, preParsedQuery, combinedParams)
     } catch {
       case t: Throwable =>
         context.close(false)
