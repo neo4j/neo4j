@@ -125,7 +125,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
             return DIRECT_RELATIONSHIP_VALUE_SHALLOW_SIZE +
                     startNode.estimatedHeapUsage() +
                     endNode.estimatedHeapUsage() +
-                    type.estimatedHeapUsage();
+                    type.estimatedHeapUsage() +
+                    properties.estimatedHeapUsage();
         }
     }
 }

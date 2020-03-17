@@ -301,6 +301,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
+    private static final long REVERSED_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ReversedList.class );
     static final class ReversedList extends ListValue
     {
         private final ListValue inner;
@@ -331,7 +332,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public long estimatedHeapUsage()
         {
-            return inner.estimatedHeapUsage();
+            return REVERSED_LIST_SHALLOW_SIZE + inner.estimatedHeapUsage();
         }
     }
 
