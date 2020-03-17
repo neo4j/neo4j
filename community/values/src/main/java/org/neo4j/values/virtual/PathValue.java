@@ -29,6 +29,8 @@ import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public abstract class PathValue extends VirtualValue
 {
     public abstract NodeValue startNode();
@@ -145,14 +147,6 @@ public abstract class PathValue extends VirtualValue
         return "Path";
     }
 
-    @Override
-    public long estimatedHeapUsage()
-    {
-        int length = size();
-        //nodes are assumed to be 32 bytes and relationships 48
-        return 4 + length * 48 + (length + 1) * 32; // TODO: Left as an exercise for the reader
-    }
-
     public ListValue asList()
     {
         NodeValue[] nodes = nodes();
@@ -178,6 +172,7 @@ public abstract class PathValue extends VirtualValue
         return relationships().length;
     }
 
+    private static final long DIRECT_PATH_SHALLOW_SIZE = shallowSizeOfInstance( DirectPathValue.class );
     public static class DirectPathValue extends PathValue
     {
         private final NodeValue[] nodes;
@@ -222,6 +217,21 @@ public abstract class PathValue extends VirtualValue
         public RelationshipValue[] relationships()
         {
             return edges;
+        }
+
+        @Override
+        public long estimatedHeapUsage()
+        {
+            long size = DIRECT_PATH_SHALLOW_SIZE;
+            for ( NodeValue node : nodes )
+            {
+                size += node.estimatedHeapUsage();
+            }
+            for ( RelationshipValue relationship : relationships() )
+            {
+                size += relationship.estimatedHeapUsage();
+            }
+            return size;
         }
     }
 }

@@ -94,7 +94,6 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     @Override
     public long estimatedHeapUsage()
     {
-        //5 references (20) plus the relationship is assumed to use 48 bytes
         long size = SHALLOW_SIZE;
         if ( type != null )
         {

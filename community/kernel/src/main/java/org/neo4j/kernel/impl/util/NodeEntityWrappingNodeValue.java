@@ -37,7 +37,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class NodeEntityWrappingNodeValue extends NodeValue
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntityWrappingNodeValue.class ) + NodeEntity.SHALLOW_SIZE;
+    static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntityWrappingNodeValue.class ) + NodeEntity.SHALLOW_SIZE;
 
     private final Node node;
     private volatile TextArray labels;

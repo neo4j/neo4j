@@ -26,8 +26,12 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class PathWrappingPathValue extends PathValue
 {
+    static final long SHALLOW_SIZE = shallowSizeOfInstance( PathWrappingPathValue.class );
+
     private final Path path;
 
     PathWrappingPathValue( Path path )
@@ -82,5 +86,19 @@ public class PathWrappingPathValue extends PathValue
     public Path path()
     {
         return path;
+    }
+
+    @Override
+    public long estimatedHeapUsage()
+    {
+        int length = path.length();
+
+        long size = SHALLOW_SIZE;
+
+        // There are many different implementations of Path, so here we are left guessing.
+        // We calculate some size for each node and relationship, but that will not include any potentially cached properties, labels, etc.
+        size += length * RelationshipEntityWrappingValue.SHALLOW_SIZE;
+        size += (length + 1) * NodeEntityWrappingNodeValue.SHALLOW_SIZE;
+        return size;
     }
 }
