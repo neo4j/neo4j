@@ -45,4 +45,7 @@ case class OnlyOnceQueryExecutionMonitor(monitor: QueryExecutionMonitor) extends
 
   override def start(query: ExecutingQuery): Unit =
     monitor.start( query )
+
+  override def beforeEnd(query: ExecutingQuery, success: Boolean): Unit =
+    monitor.beforeEnd(query, success)
 }

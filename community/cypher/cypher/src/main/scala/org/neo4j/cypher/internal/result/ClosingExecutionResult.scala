@@ -70,6 +70,10 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     }
 
   override def close(reason: CloseReason): Unit = try {
+    reason match {
+      case Success => monitor.beforeEnd(query, true)
+      case _ => monitor.beforeEnd(query, false)
+    }
     inner.close(reason)
     reason match {
       case Success => monitor.endSuccess(query)

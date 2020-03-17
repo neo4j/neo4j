@@ -31,6 +31,8 @@ public interface QueryExecutionMonitor
 
     void endSuccess( ExecutingQuery query  );
 
+    default void beforeEnd( ExecutingQuery query, boolean success ) {};
+
     QueryExecutionMonitor NO_OP = new QueryExecutionMonitor()
     {
         @Override
@@ -50,6 +52,11 @@ public interface QueryExecutionMonitor
 
         @Override
         public void endSuccess( ExecutingQuery query )
+        {
+        }
+
+        @Override
+        public void beforeEnd( ExecutingQuery query, boolean success )
         {
         }
     };
