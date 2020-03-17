@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -265,10 +264,11 @@ public class StoreUpgraderTest
         }
     }
 
-    @Test
-    void tracePageCacheAccessOnStoreUpgrade() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void tracePageCacheAccessOnStoreUpgrade( RecordFormats formats ) throws IOException
     {
-        init( StandardV3_4.RECORD_FORMATS );
+        init( formats );
 
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -276,13 +276,14 @@ public class StoreUpgraderTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         newUpgrader( check, allowMigrateConfig, pageCache, pageCacheTracer ).migrateIfNeeded( databaseLayout );
 
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 208 );
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 262 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 262 );
-        assertThat( pageCacheTracer.faults() ).isEqualTo( 54 );
+        assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.pins() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.unpins() ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 );
 
-        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                        NullLogProvider.getInstance(), NULL );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
@@ -290,15 +291,15 @@ public class StoreUpgraderTest
         }
     }
 
-    @Test
-    void tracePageCacheAccessOnVersionCheck() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void tracePageCacheAccessOnVersionCheck( RecordFormats formats ) throws IOException
     {
-        init( StandardV3_4.RECORD_FORMATS );
+        init( formats );
 
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var check = new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
-        assertEquals( Standard.LATEST_STORE_VERSION, check.configuredVersion() );
+        new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
 
         assertThat( pageCacheTracer.hits() ).isEqualTo( 0 );
         assertThat( pageCacheTracer.pins() ).isEqualTo( 1 );
