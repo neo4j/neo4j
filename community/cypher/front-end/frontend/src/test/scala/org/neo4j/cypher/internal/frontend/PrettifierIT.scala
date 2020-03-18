@@ -470,6 +470,9 @@ class PrettifierIT extends CypherFunSuite {
       "show user `$user` privileges" ->
         "SHOW USER `$user` PRIVILEGES",
 
+      "show user privileges" ->
+        "SHOW USER PRIVILEGES",
+
       "show role abc privileges" ->
         "SHOW ROLE abc PRIVILEGES",
 

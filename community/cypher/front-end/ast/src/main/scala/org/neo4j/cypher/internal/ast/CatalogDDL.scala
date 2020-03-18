@@ -284,7 +284,7 @@ sealed trait ShowPrivilegeScope
 
 final case class ShowRolePrivileges(role: String)(val position: InputPosition) extends ShowPrivilegeScope
 
-final case class ShowUserPrivileges(user: String)(val position: InputPosition) extends ShowPrivilegeScope
+final case class ShowUserPrivileges(user: Option[String])(val position: InputPosition) extends ShowPrivilegeScope
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 

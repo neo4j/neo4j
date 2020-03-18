@@ -638,7 +638,11 @@ object Prettifier {
 
   def extractScope(scope: ShowPrivilegeScope): String = {
     scope match {
-      case ShowUserPrivileges(name) => s"USER ${escapeName(name)}"
+      case ShowUserPrivileges(name) =>
+        if(name.isDefined)
+          s"USER ${escapeName(name.get)}"
+        else
+          "USER"
       case ShowRolePrivileges(name) => s"ROLE ${escapeName(name)}"
       case ShowAllPrivileges()      => "ALL"
       case _                        => "<unknown>"

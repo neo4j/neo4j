@@ -430,7 +430,7 @@ trait Statement extends Parser
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges(_))
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges) ~~>> (ast.ShowPrivileges(_))
   }
 
   private def PrivilegeProperty: Rule1[ActionResource] = rule("a property")(
@@ -531,9 +531,10 @@ trait Statement extends Parser
   )
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("a database/graph")(
-    group(keyword("ROLE") ~~ SymbolicNameString) ~~>> (ast.ShowRolePrivileges(_)) |
-      group(keyword("USER") ~~ SymbolicNameString) ~~>> (ast.ShowUserPrivileges(_)) |
-      optional(keyword("ALL")) ~~~> (ast.ShowAllPrivileges())
+    group(keyword("ROLE") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolePrivileges(_)) |
+      group(keyword("USER") ~~ optional(SymbolicNameString) ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUserPrivileges(_)) |
+      group(keyword("USER") ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
+      optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   )
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
