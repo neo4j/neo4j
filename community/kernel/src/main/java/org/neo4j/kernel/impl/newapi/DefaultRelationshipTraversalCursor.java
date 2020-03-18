@@ -27,12 +27,10 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
-import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor>
@@ -123,25 +121,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     public boolean next()
     {
-        boolean hasChanges;
-
-        if ( !selection.isInitialized() )
-        {
-            hasChanges = hasChanges(); // <- may setup filter state if needed, for getting the correct relationships from tx-state
-            setupFilterStateIfNeeded();
-            if ( selection.isInitialized() && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
-            {
-                if ( tracer != null )
-                {
-                    tracer.onRelationship( relationshipReference() );
-                }
-                return true;
-            }
-        }
-        else
-        {
-            hasChanges = hasChanges();
-        }
+        boolean hasChanges = hasChanges();
 
         // tx-state relationships
         if ( hasChanges )
@@ -190,14 +170,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         }
     }
 
-    private void setupFilterStateIfNeeded()
-    {
-        if ( !selection.isInitialized() )
-        {
-            storeCursor.next(); // <-- since the store cursor has this selection too it will initialize it right here
-        }
-    }
-
     @Override
     public void closeInternal()
     {
@@ -214,7 +186,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     protected void collectAddedTxStateSnapshot()
     {
-        setupFilterStateIfNeeded();
         NodeState nodeState = read.txState().getNodeState( originNodeReference );
         addedRelationships = selection.addedRelationship( nodeState );
     }

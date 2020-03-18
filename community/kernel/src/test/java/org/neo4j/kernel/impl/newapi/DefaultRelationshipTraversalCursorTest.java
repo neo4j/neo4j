@@ -108,7 +108,7 @@ class DefaultRelationshipTraversalCursorTest
                 selection( type, Direction.OUTGOING ), read );
 
         // then
-        assertRelationships( cursor, 100, 3, 7, 6, 102, 104 );
+        assertRelationships( cursor, 3, 7, 6, 100, 102, 104 );
     }
 
     // Empty store, but filter tx-state
