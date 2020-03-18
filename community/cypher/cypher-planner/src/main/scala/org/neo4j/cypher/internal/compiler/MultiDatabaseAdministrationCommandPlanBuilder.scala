@@ -132,6 +132,14 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         case _ => Some(plans.AssertDbmsAdmin(CreateUserAction))
       }
     }
+    def normalizeGraphScope(graphScope: GraphScope): GraphScope = {
+      graphScope match {
+        case scope@NamedGraphScope(dbName) =>
+          val normalizedName = new NormalizedDatabaseName(dbName).name()
+          NamedGraphScope(normalizedName)(scope.position)
+        case scope => scope
+      }
+    }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
@@ -244,25 +252,28 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
-          (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, role))
+          (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, normalizedDatabase, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
-          (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
+          (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, normalizedDatabase, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP/TOKEN/SCHEMA ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         val source = roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, database, roleName))
+          case (previous, roleName) => Some(plans.AssertValidRevoke(previous, action, normalizedDatabase, roleName))
         }
         planRevokeDatabasePrivileges(source, roleNames, action,
-          (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, database, role, r)))
+          (plan, role, act) => planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, act, normalizedDatabase, role, r)))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
