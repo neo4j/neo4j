@@ -42,7 +42,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.graphdb.{Entity, Path}
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory

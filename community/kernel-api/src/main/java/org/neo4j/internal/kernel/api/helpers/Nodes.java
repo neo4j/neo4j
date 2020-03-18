@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -73,7 +72,7 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @return the number of incoming - including loops - relationships from the node
      */
-    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors )
+    public static int countIncoming( NodeCursor nodeCursor )
     {
         return count( nodeCursor, INCOMING );
     }

@@ -445,19 +445,19 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor)
+    else Nodes.countOutgoing(nodeCursor, relationship)
   }
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor)
+    else Nodes.countIncoming(nodeCursor, relationship)
   }
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor)
+    else Nodes.countAll(nodeCursor, relationship)
   }
 
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = {

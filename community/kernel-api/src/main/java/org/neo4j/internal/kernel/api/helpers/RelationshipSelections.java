@@ -57,6 +57,34 @@ public final class RelationshipSelections
     }
 
     /**
+     * Returns an outgoing selection cursor given the provided cursors and relationship types.
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipTraversalCursor outgoingCursor( RelationshipTraversalCursor traversalCursor,
+            NodeCursor node,
+            int[] types )
+    {
+        return relationshipsCursor( traversalCursor, node, types, Direction.OUTGOING );
+    }
+
+    /**
+     * Returns an incoming selection cursor given the provided cursors and relationship types.
+     * @param traversalCursor A traversal a cursor that will be used when traversing
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipTraversalCursor incomingCursor( RelationshipTraversalCursor traversalCursor,
+            NodeCursor node,
+            int[] types )
+    {
+        return relationshipsCursor( traversalCursor, node, types, Direction.INCOMING );
+    }
+
+    /**
      * Returns an incoming selection cursor given the provided node cursor and relationship types.
      *
      * @param cursors A cursor factor used for allocating the needed cursors

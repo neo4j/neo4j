@@ -112,7 +112,7 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     @Override
     public void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection )
     {
-        ((StubRelationshipCursor) relationships).rewind();
+        ((StubRelationshipCursor) relationships).rewind( nodeReference(), selection );
     }
 
     @Override

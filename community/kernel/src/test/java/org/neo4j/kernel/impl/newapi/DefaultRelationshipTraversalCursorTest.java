@@ -299,11 +299,6 @@ class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense )
-            {
-            }
-
-            @Override
             public int type()
             {
                 return rel.type;

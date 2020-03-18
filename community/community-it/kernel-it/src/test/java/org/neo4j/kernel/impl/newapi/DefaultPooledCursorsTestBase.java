@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -42,6 +41,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.storageengine.api.RelationshipSelection;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +50,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -125,37 +126,16 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    void shouldReuseRelationshipGroupCursor()
-    {
-        NodeCursor node = cursors.allocateNodeCursor( NULL );
-        RelationshipGroupCursor c1 = cursors.allocateRelationshipGroupCursor( NULL );
-
-        read.singleNode( startNode, node );
-        node.next();
-        node.relationshipGroups( c1 );
-
-        node.close();
-        c1.close();
-
-        RelationshipGroupCursor c2 = cursors.allocateRelationshipGroupCursor( NULL );
-        assertEquals( c1, c2 );
-        c2.close();
-    }
-
-    @Test
     void shouldReuseRelationshipTraversalCursor()
     {
         NodeCursor node = cursors.allocateNodeCursor( NULL );
-        RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor( NULL );
         RelationshipTraversalCursor c1 = cursors.allocateRelationshipTraversalCursor( NULL );
 
         read.singleNode( startNode, node );
         node.next();
-        node.relationshipGroups( group );
-        group.outgoing( c1 );
+        node.relationships( c1, ALL_RELATIONSHIPS );
 
         node.close();
-        group.close();
         c1.close();
 
         RelationshipTraversalCursor c2 = cursors.allocateRelationshipTraversalCursor( NULL );
