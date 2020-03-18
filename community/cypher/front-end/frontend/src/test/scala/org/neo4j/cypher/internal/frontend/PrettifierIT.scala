@@ -1142,8 +1142,8 @@ class PrettifierIT extends CypherFunSuite {
           s"$action show transactions (*) on database $$foo $preposition role" ->
             s"$action SHOW TRANSACTION (*) ON DATABASE $$foo $preposition role",
 
-          s"$action show transaction (foo,bar) on default database $preposition role" ->
-            s"$action SHOW TRANSACTION (foo, bar) ON DEFAULT DATABASE $preposition role",
+          s"$action show transaction (foo,$$bar) on default database $preposition role" ->
+            s"$action SHOW TRANSACTION (foo, $$bar) ON DEFAULT DATABASE $preposition role",
 
           s"$action terminate transaction (*) on database * $preposition role" ->
             s"$action TERMINATE TRANSACTION (*) ON DATABASE * $preposition role",
@@ -1154,8 +1154,8 @@ class PrettifierIT extends CypherFunSuite {
           s"$action terminate transactions (*) on database $$foo $preposition role" ->
             s"$action TERMINATE TRANSACTION (*) ON DATABASE $$foo $preposition role",
 
-          s"$action terminate transaction (foo,bar) on default database $preposition role" ->
-            s"$action TERMINATE TRANSACTION (foo, bar) ON DEFAULT DATABASE $preposition role",
+          s"$action terminate transaction (foo,$$bar) on default database $preposition role" ->
+            s"$action TERMINATE TRANSACTION (foo, $$bar) ON DEFAULT DATABASE $preposition role",
 
           s"$action transaction on database * $preposition role" ->
             s"$action TRANSACTION MANAGEMENT (*) ON DATABASE * $preposition role",
@@ -1172,8 +1172,8 @@ class PrettifierIT extends CypherFunSuite {
           s"$action transaction management (*) on database foo $preposition role" ->
             s"$action TRANSACTION MANAGEMENT (*) ON DATABASE foo $preposition role",
 
-          s"$action transaction management (user1,user2) on database foo $preposition role" ->
-            s"$action TRANSACTION MANAGEMENT (user1, user2) ON DATABASE foo $preposition role",
+          s"$action transaction management (user1,$$user2) on database foo $preposition role" ->
+            s"$action TRANSACTION MANAGEMENT (user1, $$user2) ON DATABASE foo $preposition role",
 
           s"$action transaction management on default database $preposition role1,role2" ->
             s"$action TRANSACTION MANAGEMENT (*) ON DEFAULT DATABASE $preposition role1, role2",

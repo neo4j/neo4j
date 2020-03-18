@@ -441,7 +441,7 @@ trait Statement extends Parser
   )
 
   private def UserQualifier: Rule1[PrivilegeQualifier] = rule("(usernameList)")(
-    group("(" ~~ SymbolicNamesList ~~ ")") ~~>> {ast.UsersQualifier(_)} |
+    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {ast.UsersQualifier(_)} |
     group("(" ~~ "*" ~~ ")") ~~~> {ast.UserAllQualifier()}
   )
 

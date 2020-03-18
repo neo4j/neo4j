@@ -220,8 +220,10 @@ final case class AllResource()(val position: InputPosition) extends ActionResour
 
 final case class NoResource()(val position: InputPosition) extends ActionResource
 
-sealed trait PrivilegeQualifier {
+sealed trait PrivilegeQualifier extends Rewritable {
   def simplify: Seq[PrivilegeQualifier] = Seq(this)
+
+  override def dup(children: Seq[AnyRef]): PrivilegeQualifier.this.type = this
 }
 
 final case class LabelQualifier(label: String)(val position: InputPosition) extends PrivilegeQualifier
@@ -252,28 +254,34 @@ final case class AllQualifier()(val position: InputPosition) extends PrivilegeQu
 
 final case class UserAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
 
-final case class UserQualifier(username: String)(val position: InputPosition) extends PrivilegeQualifier
-
-final case class UsersQualifier(usernames: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
-  override def simplify: Seq[PrivilegeQualifier] = usernames.map(UserQualifier(_)(position))
+final case class UserQualifier(username: Either[String, Parameter])(val position: InputPosition) extends PrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): UserQualifier.this.type =
+    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
 }
 
-sealed trait GraphScope extends Rewritable
+final case class UsersQualifier(usernames: Seq[Either[String, Parameter]])(val position: InputPosition) extends PrivilegeQualifier {
+  override def simplify: Seq[PrivilegeQualifier] = usernames.map(UserQualifier(_)(position))
+
+  override def dup(children: Seq[AnyRef]): UsersQualifier.this.type =
+    this.copy(children.map(_.asInstanceOf[Either[String, Parameter]]))(position).asInstanceOf[this.type]
+}
+
+sealed trait GraphScope extends Rewritable {
+  override def dup(children: Seq[AnyRef]): GraphScope.this.type = this
+}
 
 final case class NamedGraphScope(database: Either[String, Parameter])(val position: InputPosition) extends GraphScope {
   override def dup(children: Seq[AnyRef]): NamedGraphScope.this.type =
     this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
 }
 
-final case class AllGraphsScope()(val position: InputPosition) extends GraphScope {
-  override def dup(children: Seq[AnyRef]): AllGraphsScope.this.type = this
-}
+final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
 
-final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope {
-  override def dup(children: Seq[AnyRef]): DefaultDatabaseScope.this.type = this
-}
+final case class DefaultDatabaseScope()(val position: InputPosition) extends GraphScope
 
-sealed trait ShowPrivilegeScope extends Rewritable
+sealed trait ShowPrivilegeScope extends Rewritable {
+  override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this
+}
 
 final case class ShowRolePrivileges(role: Either[String, Parameter])(val position: InputPosition) extends ShowPrivilegeScope {
   override def dup(children: Seq[AnyRef]): ShowRolePrivileges.this.type =
@@ -285,9 +293,7 @@ final case class ShowUserPrivileges(user: Option[Either[String, Parameter]])(val
     this.copy(children.head.asInstanceOf[Option[Either[String, Parameter]]])(position).asInstanceOf[this.type]
 }
 
-final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope {
-  override def dup(children: Seq[AnyRef]): ShowAllPrivileges.this.type = this
-}
+final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
 sealed trait AdminAction {
   def name: String = "<unknown>"

@@ -395,6 +395,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT SHOW TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: GRANT SHOW TRANSACTION (*) ON DATABASE * TO custom")
+    assertFailure("GRANT SHOW TRANSACTION ($user) ON DATABASE * TO custom", "Unsupported administration command: GRANT SHOW TRANSACTION ($user) ON DATABASE * TO custom")
   }
 
   test("should fail on denying show transaction privilege from community") {
@@ -429,6 +430,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY TERMINATE TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: DENY TERMINATE TRANSACTION (*) ON DATABASE * TO custom")
+    assertFailure("DENY TERMINATE TRANSACTION ($user) ON DATABASE * TO custom", "Unsupported administration command: DENY TERMINATE TRANSACTION ($user) ON DATABASE * TO custom")
   }
 
   test("should fail on revoking terminate transaction privilege from community") {
@@ -462,5 +464,6 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE TRANSACTION MANAGEMENT ON DATABASE * FROM custom", "Unsupported administration command: REVOKE TRANSACTION MANAGEMENT ON DATABASE * FROM custom")
+    assertFailure("REVOKE TRANSACTION MANAGEMENT ($user) ON DATABASE * FROM custom", "Unsupported administration command: REVOKE TRANSACTION MANAGEMENT ($user) ON DATABASE * FROM custom")
   }
 }

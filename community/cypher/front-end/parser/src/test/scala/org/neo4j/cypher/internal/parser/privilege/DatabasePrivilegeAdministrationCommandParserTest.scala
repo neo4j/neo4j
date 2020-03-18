@@ -223,11 +223,15 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command SHOW TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.ShowTransactionAction, ast.DefaultDatabaseScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.DefaultDatabaseScope() _, ast.UsersQualifier(Seq(literal("user"))) _, Seq("role")))
+      }
+
+      test(s"$command SHOW TRANSACTION ($$user) ON DEFAULT DATABASE $preposition role") {
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.DefaultDatabaseScope() _, ast.UsersQualifier(Seq(param("user"))) _, Seq("role")))
       }
 
       test(s"$command SHOW TRANSACTIONS (user1,user2) ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.ShowTransactionAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user1", "user2")) _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.ShowTransactionAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(literal("user1"), literal("user2"))) _, Seq("role1", "role2")))
       }
 
       test(s"$command SHOW TRANSACTIONS ON DATABASES * $preposition role") {
@@ -247,11 +251,15 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TERMINATE TRANSACTION (user) ON DEFAULT DATABASE $preposition role") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, ast.DefaultDatabaseScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.DefaultDatabaseScope() _, ast.UsersQualifier(Seq(literal("user"))) _, Seq("role")))
       }
 
       test(s"$command TERMINATE TRANSACTIONS (user1,user2) ON DATABASES * $preposition role1, role2") {
-        yields(privilegeFunc(ast.TerminateTransactionAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user1", "user2")) _, Seq("role1", "role2")))
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(literal("user1"), literal("user2"))) _, Seq("role1", "role2")))
+      }
+
+      test(s"$command TERMINATE TRANSACTIONS ($$user1,$$user2) ON DATABASES * $preposition role1, role2") {
+        yields(privilegeFunc(ast.TerminateTransactionAction, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(param("user1"), param("user2"))) _, Seq("role1", "role2")))
       }
 
       test(s"$command TERMINATE TRANSACTIONS ON DATABASES * $preposition role") {
@@ -271,7 +279,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TRANSACTION (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(literal("user"))) _, Seq("role")))
       }
 
       test(s"$command TRANSACTIONS ON DATABASES * $preposition role") {
@@ -291,7 +299,11 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$command TRANSACTION MANAGEMENT (user) ON DATABASES * $preposition role") {
-        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq("user")) _, Seq("role")))
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(literal("user"))) _, Seq("role")))
+      }
+
+      test(s"$command TRANSACTION MANAGEMENT (user1, $$user2) ON DATABASES * $preposition role") {
+        yields(privilegeFunc(ast.AllTransactionActions, ast.AllGraphsScope() _, ast.UsersQualifier(Seq(literal("user1"), param("user2"))) _, Seq("role")))
       }
 
       test(s"$command TRANSACTIONS MANAGEMENT ON DATABASES * $preposition role") {
