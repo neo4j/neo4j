@@ -43,9 +43,19 @@ public interface NodeCursor extends Cursor
 
     long propertiesReference();
 
-    boolean isDense();
+    /**
+     * @return whether or not this node cursor can decide degree for various relationship selections cheaper than doing a full scan of all relationships.
+     */
+    boolean hasCheapDegrees();
 
     int[] relationshipTypes();
 
+    /**
+     * Gathers degrees for all types and direction provided by the {@link RelationshipSelection}. The returned {@link Degrees} will contain
+     * this information and will be able to answer degrees for each individual type/direction and also sums.
+     *
+     * @param selection which types/directions to get degrees for.
+     * @return a {@link Degrees} instance with the selected degree information.
+     */
     Degrees degrees( RelationshipSelection selection );
 }

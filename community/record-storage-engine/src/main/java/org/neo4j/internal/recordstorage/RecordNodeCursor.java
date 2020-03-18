@@ -38,6 +38,8 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static java.lang.Math.min;
+import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
@@ -52,6 +54,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private boolean open;
     private boolean batched;
     private RecordRelationshipGroupCursor groupCursor;
+    private RecordRelationshipTraversalCursor relationshipCursor;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
     {
@@ -172,27 +175,51 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public long relationshipsReference()
     {
-        return getNextRel();
+        return relationshipsReferenceWithDenseMarker( getNextRel(), isDense() );
+    }
+
+    /**
+     * Marks a relationships reference with a special flag if the node is dense, because if that case the reference actually points
+     * to a relationship group record.
+     */
+    static long relationshipsReferenceWithDenseMarker( long nextRel, boolean isDense )
+    {
+        return isDense ? encodeDense( nextRel ) : nextRel;
     }
 
     @Override
     public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
     {
-        traversalCursor.init( entityReference(), getNextRel(), isDense(), selection );
+        ((RecordRelationshipTraversalCursor) traversalCursor).init( this, selection );
     }
 
     @Override
     public int[] relationshipTypes()
     {
         MutableIntSet types = IntSets.mutable.empty();
-        if ( groupCursor == null )
+        if ( !isDense() )
         {
-            groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+            if ( relationshipCursor == null )
+            {
+                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore );
+            }
+            relationshipCursor.init( this, ALL_RELATIONSHIPS );
+            while ( relationshipCursor.next() )
+            {
+                types.add( relationshipCursor.type() );
+            }
         }
-        groupCursor.init( entityReference(), getNextRel(), isDense() );
-        while ( groupCursor.next() )
+        else
         {
-            types.add( groupCursor.getType() );
+            if ( groupCursor == null )
+            {
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+            }
+            groupCursor.init( entityReference(), getNextRel(), isDense() );
+            while ( groupCursor.next() )
+            {
+                types.add( groupCursor.getType() );
+            }
         }
         return types.toArray();
     }
@@ -200,20 +227,58 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public Degrees degrees( RelationshipSelection selection )
     {
-        if ( groupCursor == null )
-        {
-            groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
-        }
-        groupCursor.init( entityReference(), getNextRel(), isDense() );
         EagerDegrees result = new EagerDegrees();
-        while ( groupCursor.next() )
+        if ( !isDense() )
         {
-            if ( selection.test( groupCursor.getType() ) )
+            if ( relationshipCursor == null )
             {
-                result.add( groupCursor.getType(), groupCursor.outgoingCount(), groupCursor.incomingCount(), groupCursor.totalCount() );
+                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore );
+            }
+            relationshipCursor.init( this, ALL_RELATIONSHIPS );
+            while ( relationshipCursor.next() )
+            {
+                if ( selection.test( relationshipCursor.type() ) )
+                {
+                    if ( relationshipCursor.sourceNodeReference() == entityReference() )
+                    {
+                        if ( relationshipCursor.targetNodeReference() == entityReference() )
+                        {
+                            result.addLoop( relationshipCursor.type(), 1 );
+                        }
+                        else
+                        {
+                            result.addOutgoing( relationshipCursor.type(), 1 );
+                        }
+                    }
+                    else
+                    {
+                        result.addIncoming( relationshipCursor.type(), 1 );
+                    }
+                }
+            }
+        }
+        else
+        {
+            if ( groupCursor == null )
+            {
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+            }
+            groupCursor.init( entityReference(), getNextRel(), isDense() );
+            while ( groupCursor.next() )
+            {
+                if ( selection.test( groupCursor.getType() ) )
+                {
+                    result.add( groupCursor.getType(), groupCursor.outgoingCount(), groupCursor.incomingCount(), groupCursor.loopCount() );
+                }
             }
         }
         return result;
+    }
+
+    @Override
+    public boolean hasCheapDegrees()
+    {
+        return isDense();
     }
 
     @Override
@@ -333,6 +398,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             groupCursor.close();
             groupCursor = null;
+        }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+            relationshipCursor = null;
         }
     }
 

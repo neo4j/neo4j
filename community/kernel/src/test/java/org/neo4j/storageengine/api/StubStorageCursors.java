@@ -541,7 +541,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public boolean isDense()
+        public boolean hasCheapDegrees()
         {
             return false;
         }

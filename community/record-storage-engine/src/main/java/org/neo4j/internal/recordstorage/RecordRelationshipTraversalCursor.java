@@ -23,8 +23,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -46,7 +44,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     private RelationshipSelection selection;
     private long originNodeReference;
     private long next;
-    private Record buffer;
     private PageCursor pageCursor;
     private final RecordRelationshipGroupCursor group;
     private GroupState groupState;
@@ -58,12 +55,36 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
     }
 
-    @Override
-    public void init( long nodeReference, long reference, boolean nodeIsDense, RelationshipSelection selection )
+    void init( RecordNodeCursor nodeCursor, RelationshipSelection selection )
     {
+        init( nodeCursor.entityReference(), nodeCursor.getNextRel(), nodeCursor.isDense(), selection );
+    }
+
+    @Override
+    public void init( long nodeReference, long reference, RelationshipSelection selection )
+    {
+        if ( reference == NO_ID )
+        {
+            resetState();
+            return;
+        }
+
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+        reference = RelationshipReferenceEncoding.clearEncoding( reference );
+
+        init( nodeReference, reference, encoding == RelationshipReferenceEncoding.DENSE, selection );
+    }
+
+    private void init( long nodeReference, long reference, boolean isDense, RelationshipSelection selection )
+    {
+        if ( reference == NO_ID )
+        {
+            resetState();
+            return;
+        }
+
         this.selection = selection;
-        // Read all relationships, regardless of type/direction
-        if ( nodeIsDense )
+        if ( isDense )
         {
             // The reference points to a relationship group record
             groups( nodeReference, reference );
@@ -130,11 +151,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     @Override
     public boolean next()
     {
-        if ( hasBufferedData() )
-        {   // We have buffered data, iterate the chain of buffered records
-            return nextBuffered();
-        }
-
         boolean traversingDenseNode;
         do
         {
@@ -154,23 +170,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             computeNext();
         }
         while ( !inUse() || (!traversingDenseNode && !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) )) );
-
-        return true;
-    }
-
-    private boolean nextBuffered()
-    {
-        buffer = buffer.next;
-        if ( !hasBufferedData() )
-        {
-            resetState();
-            return false;
-        }
-        else
-        {
-            // Copy buffer data to self
-            copyFromBuffer();
-        }
 
         return true;
     }
@@ -283,15 +282,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         }
     }
 
-    private void copyFromBuffer()
-    {
-        this.setId( buffer.id );
-        this.setType( buffer.type );
-        this.setNextProp( buffer.nextProp );
-        this.setFirstNode( buffer.firstNode );
-        this.setSecondNode( buffer.secondNode );
-    }
-
     private boolean traversingDenseNode()
     {
         return groupState != GroupState.NONE;
@@ -312,7 +302,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         setId( next = NO_ID );
         groupState = GroupState.NONE;
         selection = null;
-        buffer = null;
     }
 
     @Override
@@ -337,63 +326,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         else
         {
             String dense = "denseNode=" + traversingDenseNode();
-            String mode = "mode=";
-
-            if ( hasBufferedData() )
-            {
-                mode = mode + "bufferedData";
-            }
-            else
-            {
-                mode = mode + "regular";
-            }
             return "RelationshipTraversalCursor[id=" + getId() +
                     ", open state with: " + dense +
-                    ", next=" + next + ", " + mode +
+                    ", next=" + next + ", " +
                     ", underlying record=" + super.toString() + "]";
-        }
-    }
-
-    private boolean hasBufferedData()
-    {
-        return buffer != null;
-    }
-
-    /*
-     * Record is both a data holder for buffering data from a RelationshipRecord
-     * as well as a linked list over the records in the group.
-     */
-    static class Record
-    {
-        final long id;
-        final int type;
-        final long nextProp;
-        final long firstNode;
-        final long secondNode;
-        final Record next;
-
-        /*
-         * Initialize the record chain or push a new record as the new head of the record chain
-         */
-        Record( RelationshipRecord record, Record next )
-        {
-            if ( record != null )
-            {
-                id = record.getId();
-                type = record.getType();
-                nextProp = record.getNextProp();
-                firstNode = record.getFirstNode();
-                secondNode = record.getSecondNode();
-            }
-            else
-            {
-                id = NO_ID;
-                type = NO_ID;
-                nextProp = NO_ID;
-                firstNode = NO_ID;
-                secondNode = NO_ID;
-            }
-            this.next = next;
         }
     }
 }

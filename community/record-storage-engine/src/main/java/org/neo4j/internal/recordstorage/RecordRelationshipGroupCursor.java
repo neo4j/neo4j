@@ -19,10 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-
-import org.neo4j.internal.recordstorage.RecordRelationshipTraversalCursor.Record;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -38,7 +34,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private final PageCursorTracer cursorTracer;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
 
-    private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
     private boolean open;
@@ -56,7 +51,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         // the relationships for this node are not grouped in the store
         if ( reference != NO_ID && !nodeIsDense )
         {
-            buffer( nodeReference, reference );
+            throw new UnsupportedOperationException( "Not a dense node" );
         }
         else // this is a normal group reference.
         {
@@ -66,60 +61,10 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     /**
-     * Sparse node, i.e. fake groups by reading the whole chain and buffering it.
-     */
-    private void buffer( long nodeReference, long relationshipReference )
-    {
-        setOwningNode( nodeReference );
-        setId( NO_ID );
-        setNext( NO_ID );
-
-        try ( PageCursor edgePage = relationshipStore.openPageCursorForReading( relationshipReference, cursorTracer ) )
-        {
-            final MutableIntObjectMap<BufferedGroup> buffer = new IntObjectHashMap<>();
-            BufferedGroup current = null;
-            while ( relationshipReference != NO_ID )
-            {
-                relationshipStore.getRecordByCursor( relationshipReference, edge, RecordLoad.FORCE, edgePage );
-                // find the group
-                BufferedGroup group = buffer.get( edge.getType() );
-                if ( group == null )
-                {
-                    buffer.put( edge.getType(), current = group = new BufferedGroup( edge, current ) );
-                }
-                // buffer the relationship into the group
-                if ( edge.getFirstNode() == nodeReference ) // outgoing or loop
-                {
-                    if ( edge.getSecondNode() == nodeReference ) // loop
-                    {
-                        group.loop( edge );
-                    }
-                    else // outgoing
-                    {
-                        group.outgoing( edge );
-                    }
-                    relationshipReference = edge.getFirstNextRel();
-                }
-                else if ( edge.getSecondNode() == nodeReference ) // incoming
-                {
-                    group.incoming( edge );
-                    relationshipReference = edge.getSecondNextRel();
-                }
-                else
-                {
-                    throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
-                }
-            }
-            this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
-        }
-    }
-
-    /**
      * Dense node, real groups iterated with every call to next.
      */
     void direct( long nodeReference, long reference )
     {
-        bufferedGroup = null;
         clear();
         setOwningNode( nodeReference );
         setNext( reference );
@@ -131,16 +76,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     boolean next()
     {
-        if ( isBuffered() )
-        {
-            bufferedGroup = bufferedGroup.next;
-            if ( bufferedGroup != null )
-            {
-                loadFromBuffer();
-                return true;
-            }
-        }
-
         do
         {
             if ( getNext() == NO_ID )
@@ -155,20 +90,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         return true;
     }
 
-    private void loadFromBuffer()
-    {
-        setType( bufferedGroup.label );
-        setFirstOut( bufferedGroup.outgoing() );
-        setFirstIn( bufferedGroup.incoming() );
-        setFirstLoop( bufferedGroup.loops() );
-    }
-
     void reset()
     {
         if ( open )
         {
             open = false;
-            bufferedGroup = null;
             setId( NO_ID );
             clear();
         }
@@ -176,23 +102,17 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     int outgoingCount()
     {
-        return isBuffered()
-               ? bufferedGroup.outgoingCount + bufferedGroup.loopsCount
-               : count( outgoingRawId() ) + count( loopsRawId() );
+        return count( outgoingRawId() );
     }
 
     int incomingCount()
     {
-        return isBuffered()
-               ? bufferedGroup.incomingCount + bufferedGroup.loopsCount
-               : count( incomingRawId() ) + count( loopsRawId() );
+        return count( incomingRawId() );
     }
 
-    int totalCount()
+    int loopCount()
     {
-        return isBuffered()
-               ? bufferedGroup.outgoingCount + bufferedGroup.incomingCount + bufferedGroup.loopsCount
-               : count( outgoingRawId() ) + count( incomingRawId() ) + count( loopsRawId() );
+        return count( loopsRawId() );
     }
 
     private int count( long reference )
@@ -231,16 +151,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         }
         else
         {
-            String mode = "mode=";
-            if ( isBuffered() )
-            {
-                mode = mode + "group";
-            }
-            else
-            {
-                mode = mode + "direct";
-            }
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + "]";
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString() + "]";
         }
     }
 
@@ -268,11 +179,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         return getFirstLoop();
     }
 
-    private boolean isBuffered()
-    {
-        return bufferedGroup != null;
-    }
-
     @Override
     public void close()
     {
@@ -286,72 +192,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         {
             page.close();
             page = null;
-        }
-    }
-
-    static class BufferedGroup
-    {
-        final int label;
-        final BufferedGroup next;
-        Record outgoing;
-        Record incoming;
-        Record loops;
-        private long firstOut = NO_ID;
-        private long firstIn = NO_ID;
-        private long firstLoop = NO_ID;
-        int outgoingCount;
-        int incomingCount;
-        int loopsCount;
-
-        BufferedGroup( RelationshipRecord edge, BufferedGroup next )
-        {
-            this.label = edge.getType();
-            this.next = next;
-        }
-
-        void outgoing( RelationshipRecord edge )
-        {
-            if ( outgoing == null )
-            {
-                firstOut = edge.getId();
-            }
-            outgoing = new Record( edge, outgoing );
-            outgoingCount++;
-        }
-
-        void incoming( RelationshipRecord edge )
-        {
-            if ( incoming == null )
-            {
-                firstIn = edge.getId();
-            }
-            incoming = new Record( edge, incoming );
-            incomingCount++;
-        }
-
-        void loop( RelationshipRecord edge )
-        {
-            if ( loops == null )
-            {
-                firstLoop = edge.getId();
-            }
-            loops = new Record( edge, loops );
-            loopsCount++;
-        }
-
-        long outgoing()
-        {
-            return firstOut;
-        }
-
-        long incoming()
-        {
-            return firstIn;
-        }
-
-        long loops()
-        {
-            return firstLoop;
         }
     }
 

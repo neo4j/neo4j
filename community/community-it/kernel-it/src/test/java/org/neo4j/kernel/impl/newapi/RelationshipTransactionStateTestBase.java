@@ -293,27 +293,27 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void shouldTraverseSparseNodeWithoutGroups() throws Exception
+    void shouldTraverseSparseNode() throws Exception
     {
-        traverseWithoutGroups( sparse( graphDb ), false );
+        traverse( sparse( graphDb ), false );
     }
 
     @Test
-    void shouldTraverseDenseNodeWithoutGroups() throws Exception
+    void shouldTraverseDenseNode() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), false );
+        traverse( RelationshipTestSupport.dense( graphDb ), false );
     }
 
     @Test
-    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithDetachedReferences() throws Exception
     {
-        traverseWithoutGroups( sparse( graphDb ), true );
+        traverse( sparse( graphDb ), true );
     }
 
     @Test
-    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithDetachedReferences() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), true );
+        traverse( RelationshipTestSupport.dense( graphDb ), true );
     }
 
     @Test
@@ -666,7 +666,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldSeeNewTypes() throws Exception
+    void shouldSeeNewTypes() throws Exception
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -720,7 +720,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldAddToCountFromTxState() throws Exception
+    void shouldAddToCountFromTxState() throws Exception
     {
         long start;
         long existingRelationship;
@@ -754,7 +754,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldSeeBothOldAndNewRelationshipsFromSparseNode() throws Exception
+    void shouldSeeBothOldAndNewRelationshipsFromSparseNode() throws Exception
     {
         long start;
         long existingRelationship;
@@ -780,7 +780,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertFalse( node.isDense() );
+                assertFalse( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
@@ -807,7 +807,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldSeeBothOldAndNewRelationshipsFromDenseNode() throws Exception
+    void shouldSeeBothOldAndNewRelationshipsFromDenseNode() throws Exception
     {
         long start;
         long existingRelationship;
@@ -838,7 +838,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertTrue( node.isDense() );
+                assertTrue( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
@@ -870,7 +870,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldNewRelationshipBetweenAlreadyConnectedSparseNodes() throws Exception
+    void shouldNewRelationshipBetweenAlreadyConnectedSparseNodes() throws Exception
     {
         long start;
         long end;
@@ -897,7 +897,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertFalse( node.isDense() );
+                assertFalse( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( selection( type, BOTH ) );
                 assertEquals( 2, degrees.outgoingDegree() );
                 assertEquals( 0, degrees.incomingDegree() );
@@ -907,7 +907,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    void groupCursorShouldNewRelationshipBetweenAlreadyConnectedDenseNodes() throws Exception
+    void shouldNewRelationshipBetweenAlreadyConnectedDenseNodes() throws Exception
     {
         long start;
         long end;
@@ -939,7 +939,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 org.neo4j.internal.kernel.api.Read read = tx.dataRead();
                 read.singleNode( start, node );
                 assertTrue( node.next() );
-                assertTrue( node.isDense() );
+                assertTrue( node.hasCheapDegrees() );
                 Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
                 for ( int t : degrees.types() )
                 {
@@ -1088,7 +1088,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         node.relationships( traversal, selection( type, direction ) );
     }
 
-    private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
+    private void traverse( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -1104,7 +1104,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
-                    tx.dataRead().relationships( start.id, node.relationshipsReference(), relationship );
+                    tx.dataRead().relationships( start.id, node.relationshipsReference(), ALL_RELATIONSHIPS, relationship );
                 }
                 else
                 {

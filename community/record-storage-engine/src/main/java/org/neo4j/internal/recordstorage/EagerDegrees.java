@@ -27,13 +27,34 @@ import org.neo4j.storageengine.api.Degrees;
 
 class EagerDegrees implements Degrees
 {
-    private static final int[] UNKNOWNS = new int[3];
+    private final MutableIntObjectMap<Degree> degrees = IntObjectMaps.mutable.empty();
 
-    private final MutableIntObjectMap<int[]> degrees = IntObjectMaps.mutable.empty();
-
-    void add( int type, int outgoing, int incoming, int total )
+    void add( int type, int outgoing, int incoming, int loop )
     {
-        degrees.put( type, new int[]{outgoing, incoming, total} );
+        Degree degree = getOrCreateDegree( type );
+        degree.outgoing += outgoing;
+        degree.incoming += incoming;
+        degree.loop += loop;
+    }
+
+    void addOutgoing( int type, int count )
+    {
+        getOrCreateDegree( type ).outgoing += count;
+    }
+
+    void addIncoming( int type, int count )
+    {
+        getOrCreateDegree( type ).incoming += count;
+    }
+
+    void addLoop( int type, int count )
+    {
+        getOrCreateDegree( type ).loop += count;
+    }
+
+    private Degree getOrCreateDegree( int type )
+    {
+        return degrees.getIfAbsentPut( type, Degree::new );
     }
 
     @Override
@@ -45,6 +66,28 @@ class EagerDegrees implements Degrees
     @Override
     public int degree( int type, Direction direction )
     {
-        return degrees.getIfAbsent( type, () -> UNKNOWNS )[direction.ordinal()];
+        Degree degree = degrees.get( type );
+        if ( degree == null )
+        {
+            return 0;
+        }
+        switch ( direction )
+        {
+        case OUTGOING:
+            return degree.outgoing + degree.loop;
+        case INCOMING:
+            return degree.incoming + degree.loop;
+        case BOTH:
+            return degree.outgoing + degree.incoming + degree.loop;
+        default:
+            throw new IllegalArgumentException( "Unrecognized direction " + direction );
+        }
+    }
+
+    private static class Degree
+    {
+        private int outgoing;
+        private int incoming;
+        private int loop;
     }
 }

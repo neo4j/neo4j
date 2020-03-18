@@ -266,8 +266,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                            indexOrder: IndexOrder): NodeValueIndexCursor =
     translateException(inner.indexScan(index, needsValues, indexOrder))
 
-  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean =
-    translateException(inner.nodeIsDense(node, nodeCursor))
+  override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean =
+    translateException(inner.nodeHasCheapDegrees(node, nodeCursor))
 
   override def asObject(value: AnyValue): AnyRef =
     translateException(inner.asObject(value))

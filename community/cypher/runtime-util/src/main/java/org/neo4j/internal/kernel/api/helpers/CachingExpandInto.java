@@ -58,7 +58,7 @@ public class CachingExpandInto
 {
     private static final long RELATIONSHIP_SIZE = shallowSizeOfInstance( Relationship.class );
 
-    private static final int NOT_DENSE_DEGREE = -1;
+    private static final int EXPENSIVE_DEGREE = -1;
 
     private final RelationshipCache relationshipCache;
     private long fromNode = -1L;
@@ -111,26 +111,26 @@ public class CachingExpandInto
         }
         Direction reverseDirection = direction.reverse();
         //Check toNode, will position nodeCursor at toNode
-        int toDegree = calculateTotalDegreeIfDense( read, toNode, nodeCursor, reverseDirection, types );
+        int toDegree = calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types );
         if ( toDegree == 0 )
         {
             done();
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean toNodeIsDense = toDegree != NOT_DENSE_DEGREE;
+        boolean toNodeHasCheapDegrees = toDegree != EXPENSIVE_DEGREE;
 
         //Check fromNode, note that nodeCursor is now pointing at fromNode
         if ( !singleNode( read, nodeCursor, fromNode ) )
         {
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean fromNodeIsDense = nodeCursor.isDense();
+        boolean fromNodeHasCheapDegrees = nodeCursor.hasCheapDegrees();
 
-        //Both are dense, start with the one with the lesser degree
-        if ( fromNodeIsDense && toNodeIsDense )
+        //Both can determine degree cheaply, start with the one with the lesser degree
+        if ( fromNodeHasCheapDegrees && toNodeHasCheapDegrees )
         {
             //Note that we have already position the cursor at fromNode
-            int fromDegree = calculateTotalDegreeDense( nodeCursor, direction, types );
+            int fromDegree = calculateTotalDegree( nodeCursor, direction, types );
             long startNode;
             long endNode;
             Direction relDirection;
@@ -150,11 +150,11 @@ public class CachingExpandInto
 
             return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), endNode );
         }
-        else if ( toNodeIsDense )
+        else if ( toNodeHasCheapDegrees )
         {
             return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
         }
-        else if ( fromNodeIsDense )
+        else if ( fromNodeHasCheapDegrees )
         {
             //must move to toNode
             singleNode( read, nodeCursor, toNode );
@@ -183,21 +183,21 @@ public class CachingExpandInto
         return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorTracer ), fromNode, types, toNode );
     }
 
-    private int calculateTotalDegreeIfDense( Read read, long node, NodeCursor nodeCursor, Direction direction,
+    private int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
             int[] types )
     {
         if ( !singleNode( read, nodeCursor, node ) )
         {
             return 0;
         }
-        if ( !nodeCursor.isDense() )
+        if ( !nodeCursor.hasCheapDegrees() )
         {
-            return NOT_DENSE_DEGREE;
+            return EXPENSIVE_DEGREE;
         }
-        return calculateTotalDegreeDense( nodeCursor, direction, types );
+        return calculateTotalDegree( nodeCursor, direction, types );
     }
 
-    private int calculateTotalDegreeDense( NodeCursor nodeCursor, Direction direction, int[] types )
+    private int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
     {
         return nodeCursor.degrees( selection( types, direction ) ).degree( direction );
     }
@@ -623,4 +623,3 @@ public class CachingExpandInto
         }
     }
 }
-

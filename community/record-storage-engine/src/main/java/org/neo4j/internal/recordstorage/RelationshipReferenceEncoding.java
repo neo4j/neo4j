@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.internal.recordstorage;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import org.neo4j.internal.kernel.api.Read;
 
 /**
  * Relationship/relationship group references that are exposed from the kernel API surface into the client
@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
  * to silently detect that we have a group reference, parse the groups, and setup the cursor to serve relationship
  * via this mode instead.
  * <p>
- * Note that {@code -1} is used to encode {@link Read#NO_ID that a reference is invalid}. In terms of
+ * Note that {@code -1} is used to encode that a reference is invalid. In terms of
  * encoding {@code -1} is considered to have all flags, so setting one will not change {@code -1}. This however also
  * means that calling code must check for {@code -1} references before checking flags existence.
  * <p>
@@ -52,13 +52,7 @@ enum RelationshipReferenceEncoding
     NONE( 0 ),
 
     /** @see #encodeDense(long) */
-    DENSE( 1 ),
-
-    /** @see #encodeSelection(long)  */
-    SELECTION( 2 ),
-
-    /** @see #encodeDenseSelection(long)   */
-    DENSE_SELECTION( 3 );
+    DENSE( 1 );
 
     private static final RelationshipReferenceEncoding[] ENCODINGS = RelationshipReferenceEncoding.values();
     static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
@@ -76,7 +70,7 @@ enum RelationshipReferenceEncoding
 
     static RelationshipReferenceEncoding parseEncoding( long reference )
     {
-        if ( reference == NO_ID )
+        if ( reference == Read.NO_ID )
         {
             return NONE;
         }
@@ -97,22 +91,6 @@ enum RelationshipReferenceEncoding
     }
 
     /**
-     * Encode the fact that a relationship reference from a selected group came from a sparse node.
-     */
-    static long encodeSelection( long reference )
-    {
-        return reference | SELECTION.bits | FLAG_MARKER;
-    }
-
-    /**
-     * Encode the fact that a relationship reference from a selected group came from a dense node.
-     */
-    static long encodeDenseSelection( long reference )
-    {
-        return reference | DENSE_SELECTION.bits | FLAG_MARKER;
-    }
-
-    /**
      * Clear all encoding from a reference.
      *
      * @param reference The reference to clear.
@@ -120,7 +98,7 @@ enum RelationshipReferenceEncoding
      */
     static long clearEncoding( long reference )
     {
-        assert reference != NO_ID;
+        assert reference != Read.NO_ID;
         return reference & ~FLAGS;
     }
 }

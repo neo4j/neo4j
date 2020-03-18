@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read
@@ -183,7 +184,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
+    public void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
