@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import java.util.concurrent.ThreadLocalRandom
+
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -1015,5 +1017,110 @@ trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodeConnections.keys.filter(node => nodeConnections(node).nonEmpty)
     runtimeResult should beColumns("a1").withRows(singleColumn(expected))
+  }
+
+  test("should support two limits at different different nesting levels - when RHS limit is lower than top limit") {
+    val nodeCount = 10
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
+      aNodes
+    }
+
+    val topLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+    val rhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .limit(topLimit)
+      .apply()
+      .|.limit(rhsLimit)
+      .|.expand("(a)-->(b1)")
+      .|.nonFuseable()
+      .|.expand("(a)-->(b0)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(rhsLimit)(_)).take(topLimit)
+
+    withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
+      runtimeResult should beColumns("a").withRows(singleColumn(expected))
+    }
+  }
+
+  test("should support two limits at  different nesting levels - when RHS limit is higher than top limit") {
+    val nodeCount = 10
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
+      aNodes
+    }
+
+    val topLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+    val rhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .limit(topLimit)
+      .apply()
+      .|.limit(rhsLimit)
+      .|.expand("(a)-->(b1)")
+      .|.nonFuseable()
+      .|.expand("(a)-->(b0)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(List.fill(rhsLimit)(_)).take(topLimit)
+
+    withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
+      runtimeResult should beColumns("a").withRows(singleColumn(expected))
+    }
+  }
+
+  test("should support three limits at different nesting levels") {
+    val nodeCount = 10
+    val nodes = given {
+      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
+      aNodes
+    }
+
+    val topLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+    val firstRhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+    val secondRhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .limit(topLimit)
+      .apply()
+      .|.limit(firstRhsLimit)
+      .|.expand("(a)-->(b3)")
+      .|.nonFuseable()
+      .|.|.apply()
+      .|.|.limit(secondRhsLimit)
+      .|.|.expand("(a)-->(b2)")
+      .|.|.nonFuseable()
+      .|.|.expand("(a)-->(b1)")
+      .|.|.argument("a")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+
+    val expected = nodes.flatMap(List.fill(firstRhsLimit)(_)).take(topLimit)
+    withClue(s"Top Limit = $topLimit , 1st RHS Limit = $firstRhsLimit, 2nd RHS Limit = $secondRhsLimit") {
+      runtimeResult should beColumns("a").withRows(singleColumn(expected))
+    }
   }
 }
