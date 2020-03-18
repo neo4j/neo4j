@@ -21,6 +21,7 @@ org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static 
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::DEFAULT org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_35 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_40 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
+org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_41 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::toString() java.lang.String public
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::values() org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion[] public static
@@ -157,6 +158,8 @@ org.neo4j.configuration.GraphDatabaseSettings::forbid_shortestpath_common_nodes 
 org.neo4j.configuration.GraphDatabaseSettings::force_small_id_cache org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::forced_kernel_id org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_background_sampling_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::index_population_parallelism org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::index_population_workers org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sample_size_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sampling_parallelism org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sampling_update_percentage org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
@@ -168,6 +171,7 @@ org.neo4j.configuration.GraphDatabaseSettings::lock_manager org.neo4j.graphdb.co
 org.neo4j.configuration.GraphDatabaseSettings::log_queries org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_allocation_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_detailed_time_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::log_queries_early_raw_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_filename org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_page_detail_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -180,9 +184,10 @@ org.neo4j.configuration.GraphDatabaseSettings::logical_logs_location org.neo4j.g
 org.neo4j.configuration.GraphDatabaseSettings::logs_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lucene_searcher_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::max_concurrent_transactions org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
-org.neo4j.configuration.GraphDatabaseSettings::multi_threaded_schema_index_population_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::neo4j_home org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
+org.neo4j.configuration.GraphDatabaseSettings::pagecache_direct_io org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_memory org.neo4j.graphdb.config.Setting<java.lang.String> public static final
+org.neo4j.configuration.GraphDatabaseSettings::pagecache_scan_prefetch org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_swapper org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_prefetch org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -206,6 +211,7 @@ org.neo4j.configuration.GraphDatabaseSettings::reconciler_may_retry org.neo4j.gr
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_minimum_backoff org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::record_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_ttl org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.GraphDatabaseSettings::scripts_dir org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::shutdown_transaction_end_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::snapshot_query org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::snapshot_query_retries org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
@@ -222,6 +228,7 @@ org.neo4j.configuration.GraphDatabaseSettings::store_user_log_rotation_threshold
 org.neo4j.configuration.GraphDatabaseSettings::store_user_log_to_stdout org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::strict_config_validation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::string_block_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::system_init_file org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tracer org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_allocation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_cpu_time org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -235,6 +242,7 @@ org.neo4j.configuration.GraphDatabaseSettings::tx_state_max_off_heap_memory org.
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_memory_allocation org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_block_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_max_cacheable_block_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.GraphDatabaseSettings::upgrade_processors org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::vm_pause_monitor_measurement_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::vm_pause_monitor_stall_alert_threshold org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GroupSetting public abstract class extends java.lang.Object
@@ -262,6 +270,8 @@ org.neo4j.configuration.connectors.BoltConnector::thread_pool_keep_alive org.neo
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_max_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_min_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_shutdown_wait_time org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::unsupported_bolt_unauth_connection_max_inbound_bytes org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.connectors.BoltConnector::unsupported_bolt_unauth_connection_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.connectors.BoltConnector::unsupported_thread_pool_queue_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.connectors.HttpConnector public final class extends java.lang.Object implements org.neo4j.configuration.SettingsDeclaration
 org.neo4j.configuration.connectors.HttpConnector::DEFAULT_PORT int public static final = 7474

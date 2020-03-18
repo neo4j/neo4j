@@ -27,7 +27,7 @@ org.neo4j.harness.Neo4jConfigurator<T>::withUnmanagedExtension(java.lang.String,
 org.neo4j.harness.Neo4jConfigurator<T>::withUnmanagedExtension(java.lang.String, java.lang.String) #T public abstract
 org.neo4j.harness.Neo4jConfigurator<T>::withWorkingDir(java.io.File) #T public abstract
 org.neo4j.harness.internal.InProcessNeo4j public class extends java.lang.Object implements org.neo4j.harness.Neo4j
-org.neo4j.harness.internal.InProcessNeo4j::InProcessNeo4j(java.io.File, java.io.File, java.io.File, org.neo4j.server.NeoServer, java.io.Closeable) void public
+org.neo4j.harness.internal.InProcessNeo4j::InProcessNeo4j(java.io.File, java.io.File, java.io.File, org.neo4j.dbms.api.DatabaseManagementService, org.neo4j.configuration.Config, java.io.Closeable) void public
 org.neo4j.harness.internal.InProcessNeo4j::boltURI() java.net.URI public
 org.neo4j.harness.internal.InProcessNeo4j::close() void public
 org.neo4j.harness.internal.InProcessNeo4j::config() org.neo4j.graphdb.config.Configuration public

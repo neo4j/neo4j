@@ -35,6 +35,7 @@ org.neo4j.kernel.api.exceptions.Status.Database::values() org.neo4j.kernel.api.e
 org.neo4j.kernel.api.exceptions.Status.Fabric public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Fabric> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Fabric::AccessMode org.neo4j.kernel.api.exceptions.Status.Fabric public static final
 org.neo4j.kernel.api.exceptions.Status.Fabric::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Fabric public static final
+org.neo4j.kernel.api.exceptions.Status.Fabric::Routing org.neo4j.kernel.api.exceptions.Status.Fabric public static final
 org.neo4j.kernel.api.exceptions.Status.Fabric::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Fabric::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Fabric public static
 org.neo4j.kernel.api.exceptions.Status.Fabric::values() org.neo4j.kernel.api.exceptions.Status.Fabric[] public static
