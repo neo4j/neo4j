@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.stream.IntStream;
-
 import org.neo4j.graphdb.Direction;
 
 /**
@@ -97,7 +95,12 @@ public interface Degrees
      */
     default int outgoingDegree()
     {
-        return IntStream.of( types() ).map( this::outgoingDegree ).sum();
+        int degree = 0;
+        for ( int type : types() )
+        {
+            degree += outgoingDegree( type );
+        }
+        return degree;
     }
 
     /**
@@ -105,7 +108,12 @@ public interface Degrees
      */
     default int incomingDegree()
     {
-        return IntStream.of( types() ).map( this::incomingDegree ).sum();
+        int degree = 0;
+        for ( int type : types() )
+        {
+            degree += incomingDegree( type );
+        }
+        return degree;
     }
 
     /**
@@ -113,7 +121,12 @@ public interface Degrees
      */
     default int totalDegree()
     {
-        return IntStream.of( types() ).map( this::totalDegree ).sum();
+        int degree = 0;
+        for ( int type : types() )
+        {
+            degree += totalDegree( type );
+        }
+        return degree;
     }
 
     /**
