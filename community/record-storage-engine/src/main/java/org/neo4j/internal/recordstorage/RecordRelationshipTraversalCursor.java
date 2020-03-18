@@ -23,6 +23,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -33,6 +34,8 @@ import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStric
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
 {
+    private ReadTracer tracer;
+
     private enum GroupState
     {
         INCOMING,
@@ -168,9 +171,12 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
             relationshipFull( this, next, pageCursor );
             computeNext();
+            if ( tracer != null )
+            {
+                tracer.onRelationship( entityReference() );
+            }
         }
         while ( !inUse() || (!traversingDenseNode && !selection.test( getType(), directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) )) );
-
         return true;
     }
 
@@ -218,6 +224,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
                 {
                     assert next == NO_ID;
                     return; // no more groups nor relationships
+                }
+                if ( tracer != null )
+                {
+                    tracer.dbHit();
                 }
                 if ( !selection.test( group.getType() ) )
                 {
@@ -295,6 +305,20 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             open = false;
             resetState();
         }
+    }
+
+    @Override
+    public void setTracer( ReadTracer tracer )
+    {
+        // Since this cursor does its own filtering on relationships and has internal relationship group records and such,
+        // the kernel can't possible tell the number of db hits and therefore we do it here in this cursor instead.
+        this.tracer = tracer;
+    }
+
+    @Override
+    public void removeTracer()
+    {
+        this.tracer = null;
     }
 
     private void resetState()

@@ -37,6 +37,14 @@ public interface StorageCursor extends AutoCloseable
      */
     void reset();
 
+    default void setTracer( ReadTracer tracer )
+    {
+    }
+
+    default void removeTracer()
+    {
+    }
+
     /**
      * Closes and releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
      */

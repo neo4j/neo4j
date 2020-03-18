@@ -418,7 +418,7 @@ public class RelationshipSelectionsIT
     {
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
     }
 
     private void assertOneCursor( PageCursorTracer cursorTracer )
