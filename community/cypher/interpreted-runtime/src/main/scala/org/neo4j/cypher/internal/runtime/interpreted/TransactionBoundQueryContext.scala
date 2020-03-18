@@ -463,7 +463,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) false
-    else nodeCursor.hasCheapDegrees
+    else nodeCursor.supportsFastDegreeLookup
   }
 
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)

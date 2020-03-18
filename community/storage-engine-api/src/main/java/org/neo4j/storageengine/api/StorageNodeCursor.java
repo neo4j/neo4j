@@ -51,5 +51,5 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      *
      * @return whether or not this node is dense.
      */
-    boolean hasCheapDegrees();
+    boolean supportsFastDegreeLookup();
 }

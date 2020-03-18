@@ -276,7 +276,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public boolean hasCheapDegrees()
+    public boolean supportsFastDegreeLookup()
     {
         return isDense();
     }
