@@ -24,11 +24,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
  * Utilities for dealing with RelationshipSelectionCursor and corresponding iterators.
@@ -104,7 +101,7 @@ public final class RelationshipSelections
                                                          int[] types )
     {
         node.relationships( traversalCursor, RelationshipSelection.selection( types, Direction.BOTH ) );
-        return null;
+        return traversalCursor;
     }
 
     public static RelationshipTraversalCursor relationshipsCursor( RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types,
