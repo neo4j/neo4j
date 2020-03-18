@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>community-integration-tests</artifactId>
-        <version>4.0.2-SNAPSHOT</version>
+        <version>4.0.3-SNAPSHOT</version>
     </parent>
 
     <groupId>org.neo4j.community</groupId>
     <artifactId>batch-insert-it</artifactId>
-    <version>4.0.2-SNAPSHOT</version>
+    <version>4.0.3-SNAPSHOT</version>
 
     <name>Neo4j - Legacy Batch Inserter Integration Tests</name>
     <packaging>jar</packaging>
