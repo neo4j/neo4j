@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
@@ -112,11 +112,11 @@ object SortPlanner {
     if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id))) {
       if (satisfiedPrefix.isEmpty) {
         // Full sort required
-        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, ProvidedOrder(providedOrderColumns), interestingOrder, context))
+        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, ProvidedOrder(providedOrderColumns, ProvidedOrder.Self), interestingOrder, context))
       } else {
         // Partial sort suffices
         val (prefixColumnOrders, suffixColumnOrders) = sortColumns.splitAt(satisfiedPrefix.length)
-        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, ProvidedOrder(providedOrderColumns), interestingOrder, context))
+        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, ProvidedOrder(providedOrderColumns, ProvidedOrder.Left), interestingOrder, context))
       }
     } else {
       None

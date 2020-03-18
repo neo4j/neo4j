@@ -111,6 +111,16 @@ class NonEmptyListTest extends CypherFunSuite {
     Seq(2) ++: NonEmptyList(1) should equal(NonEmptyList(2, 1))
     Seq(2) ++: NonEmptyList(1, 4) should equal(NonEmptyList(2, 1, 4))
     Seq(2, 3, 5) ++: NonEmptyList(1, 4) should equal(NonEmptyList(2, 3, 5, 1, 4))
+    Seq() ++: NonEmptyList(1, 4) should equal(NonEmptyList(1, 4))
+  }
+
+  test("Should append multiple elements to NonEmptyLists") {
+    NonEmptyList(1) :++ Seq(2, 3).iterator should equal(NonEmptyList(1, 2, 3))
+    NonEmptyList(1) :++ Seq(2, 3) should equal(NonEmptyList(1, 2, 3))
+    NonEmptyList(1) :++ Seq(2) should equal(NonEmptyList(1, 2))
+    NonEmptyList(1, 4) :++ Seq(2) should equal(NonEmptyList(1, 4, 2))
+    NonEmptyList(1, 4) :++ Seq(2, 3, 5) should equal(NonEmptyList(1, 4, 2, 3, 5))
+    NonEmptyList(1, 4) :++ Seq() should equal(NonEmptyList(1, 4))
   }
 
   test("Should concatenate NonEmptyLists") {

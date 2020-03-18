@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.OrderOrigin
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 object ProvidedOrder {
 
@@ -46,51 +48,121 @@ object ProvidedOrder {
     override val isAscending: Boolean = false
   }
 
-  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
+  // ---
 
-  def asc(expression: Expression): ProvidedOrder = empty.asc(expression)
-  def desc(expression: Expression): ProvidedOrder = empty.desc(expression)
+  /**
+   * The origin of a provided order.
+   * If a plan introduced the ordering itself: [[Self]].
+   * If it kept or modified a provided order from the left or right, [[Left]] or [[Right]].
+   */
+  sealed trait OrderOrigin
+  case object Self extends OrderOrigin
+  case object Left  extends OrderOrigin
+  case object Right extends OrderOrigin
+
+  // ---
+
+  def apply(columns: Seq[ProvidedOrder.Column], orderOrigin: OrderOrigin): ProvidedOrder = {
+    if (columns.isEmpty) NoProvidedOrder
+    else NonEmptyProvidedOrder(NonEmptyList.from(columns), orderOrigin)
+  }
+
+  def unapply(arg: ProvidedOrder): Option[Seq[ProvidedOrder.Column]] = arg match {
+    case NoProvidedOrder => Some(Seq.empty)
+    case NonEmptyProvidedOrder(allColumns, _) => Some(allColumns.toIndexedSeq)
+  }
+
+  val empty: ProvidedOrder = NoProvidedOrder
+
+  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Asc(expression)), Self)
+  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Desc(expression)), Self)
 }
 
 /**
-  * A LogicalPlan can guarantee to provide its results in a particular order. This class
-  * is used for the purpose of conveying the information of which order the results are in,
-  * if they are in any defined order.
-  *
-  * @param columns a sequence of columns with sort direction
-  */
-case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
-
-  val isEmpty: Boolean = columns.isEmpty
-
-  def asc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Asc(expression))
-  def desc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Desc(expression))
+ * A LogicalPlan can guarantee to provide its results in a particular order. This trait
+ * is used for the purpose of conveying the information of which order the results are in,
+ * if they are in any defined order.
+ */
+sealed trait ProvidedOrder {
+  /**
+   * @return sequence of columns with sort direction
+   */
+  def columns: Seq[ProvidedOrder.Column]
 
   /**
-    * Returns a new provided order where the order columns of this are concatenated with
-    * the order columns of the other provided order. Example:
-    * [n.foo ASC, n.bar DESC].followedBy([n.baz ASC]) = [n.foo ASC, n.bar DESC, n.baz ASC]
-    *
-    * If this is empty, then the returned provided order will also be empty, regardless of the
-    * given nextOrder.
-    */
-  def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = {
-    if (this.columns.isEmpty) {
-      this
-    } else {
-      ProvidedOrder(columns ++ nextOrder.columns)
-    }
+   * @return whether this ProvidedOrder is empty
+   */
+  def isEmpty: Boolean
+
+  /**
+   * Returns a new provided order where the order columns of this are concatenated with
+   * the order columns of the other provided order. Example:
+   * [n.foo ASC, n.bar DESC].followedBy([n.baz ASC]) = [n.foo ASC, n.bar DESC, n.baz ASC]
+   *
+   * If this is empty, then the returned provided order will also be empty, regardless of the
+   * given nextOrder.
+   */
+  def followedBy(nextOrder: ProvidedOrder): ProvidedOrder
+
+  /**
+   * Trim provided order up until a sort column that matches any of the given args.
+   */
+  def upToExcluding(args: Set[String]): ProvidedOrder
+
+  /**
+   * Map the columns with some mapping function
+   */
+  def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): ProvidedOrder
+
+  /**
+   * The same order columns, but with OrderOrigin = [[Left]]
+   */
+  def fromLeft: ProvidedOrder
+
+  /**
+   * The same order columns, but with OrderOrigin = [[Right]]
+   */
+  def fromRight: ProvidedOrder
+}
+
+case object NoProvidedOrder extends ProvidedOrder {
+  override def columns: Seq[ProvidedOrder.Column] = Seq.empty
+  override def isEmpty: Boolean = true
+  override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
+  override def upToExcluding(args: Set[String]): ProvidedOrder = this
+  override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): ProvidedOrder = this
+  override def fromLeft: ProvidedOrder = this
+  override def fromRight: ProvidedOrder = this
+}
+
+case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ProvidedOrder.Column], orderOrigin: OrderOrigin) extends ProvidedOrder {
+
+  override def columns: Seq[ProvidedOrder.Column] = allColumns.toIndexedSeq
+
+  override def isEmpty: Boolean = false
+
+  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression), orderOrigin)
+  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression), orderOrigin)
+
+  override def fromLeft: NonEmptyProvidedOrder = copy(orderOrigin = ProvidedOrder.Left)
+  override def fromRight: NonEmptyProvidedOrder = copy(orderOrigin = ProvidedOrder.Right)
+
+  override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
+
+  override def followedBy(nextOrder: ProvidedOrder): NonEmptyProvidedOrder = {
+    NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, orderOrigin)
   }
 
-  /**
-    * Trim provided order up until a sort column that matches any of the given args.
-    */
-  def upToExcluding(args: Set[String]): ProvidedOrder = {
-    val trimmed = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
+  override def upToExcluding(args: Set[String]): ProvidedOrder = {
+    val (_, trimmed) = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
       case (acc, _) if acc._1 => acc
       case (acc, col) if args.contains(col.expression.asCanonicalStringVal) => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)
     }
-    ProvidedOrder(trimmed._2)
+    if (trimmed.isEmpty) {
+      NoProvidedOrder
+    } else {
+      NonEmptyProvidedOrder(NonEmptyList.from(trimmed), orderOrigin)
+    }
   }
 }

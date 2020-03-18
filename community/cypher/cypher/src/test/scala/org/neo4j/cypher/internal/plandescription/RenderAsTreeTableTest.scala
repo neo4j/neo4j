@@ -25,35 +25,19 @@ import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelToken
-import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.GetValue
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
-import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
-import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.RangeBetween
-import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
-import org.neo4j.cypher.internal.logical.plans.RangeLessThan
-import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
@@ -69,15 +53,9 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.scalatest.BeforeAndAfterAll
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
@@ -359,7 +337,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")), ProvidedOrder.Desc(varFor("bar")))))
+    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("foo")).desc(varFor("bar")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -375,7 +353,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("  FRESHID42")))))
+    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(

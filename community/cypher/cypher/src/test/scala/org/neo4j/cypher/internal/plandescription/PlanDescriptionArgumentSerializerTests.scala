@@ -42,10 +42,10 @@ import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializ
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
@@ -101,9 +101,9 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("should serialize provided order") {
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("a")), ProvidedOrder.Desc(varFor("b")), ProvidedOrder.Asc(prop("c","foo")))))) should be("a ASC, b DESC, c.foo ASC")
+    serialize(Order(ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(prop("c","foo")))) should be("a ASC, b DESC, c.foo ASC")
     serialize(Order(ProvidedOrder.empty)) should be("")
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("  FRESHID42")))))) should be("anon[42] ASC")
+    serialize(Order(ProvidedOrder.asc(varFor("  FRESHID42")))) should be("anon[42] ASC")
   }
 
   private val pos: InputPosition = DummyPosition(0)

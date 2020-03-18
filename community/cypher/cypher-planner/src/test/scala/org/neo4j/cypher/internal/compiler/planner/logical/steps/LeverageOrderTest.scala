@@ -20,45 +20,43 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should leverage ASC order for exact match with grouping column") {
-    val po = ProvidedOrder(Seq(Asc(varFor("a"))))
+    val po = ProvidedOrder.asc(varFor("a"))
     val grouping = Map("newA" -> varFor("a"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
 
   test("should leverage DESC order for exact match with grouping column") {
-    val po = ProvidedOrder(Seq(Desc(varFor("a"))))
+    val po = ProvidedOrder.desc(varFor("a"))
     val grouping = Map("newA" -> varFor("a"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
 
   test("should leverage order for prefix match with grouping column") {
-    val po = ProvidedOrder(Seq(Asc(varFor("a")), Desc(varFor("b"))))
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
     val grouping = Map("newA" -> varFor("a"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
 
   test("should leverage order for exact match with one of grouping columns") {
-    val po = ProvidedOrder(Seq(Asc(varFor("a"))))
+    val po = ProvidedOrder.asc(varFor("a"))
     val grouping = Map("newA" -> varFor("a"), "newB" -> varFor("b"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
 
   test("should leverage order for prefix match with one of grouping columns") {
-    val po = ProvidedOrder(Seq(Asc(varFor("a")), Desc(varFor("b"))))
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
     val grouping = Map("newA" -> varFor("a"),  "newC" -> varFor("c"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
 
   test("should leverage order for prefix match with one of grouping columns as prefix and one as suffix") {
-    val po = ProvidedOrder(Seq(Asc(varFor("a")), Desc(varFor("b")), Asc(varFor("c"))))
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(varFor("c"))
     val grouping = Map("newA" -> varFor("a"), "newC" -> varFor("c"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }

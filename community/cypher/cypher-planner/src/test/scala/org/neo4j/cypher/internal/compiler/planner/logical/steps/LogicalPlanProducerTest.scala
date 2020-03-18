@@ -31,7 +31,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x","foo")))
       // projection
       val projections = Map("xfoo" -> prop("x", "foo"))
 
@@ -39,7 +39,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planRegularProjection(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("xfoo")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("xfoo")).fromLeft)
     }
   }
 
@@ -48,7 +48,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x","foo")))
       // projection
       val projections = Map("y" -> varFor("x"))
 
@@ -56,7 +56,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planRegularProjection(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","foo")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(prop("y","foo")).fromLeft)
     }
   }
 
@@ -65,7 +65,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("x")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("x")))
       // projection
       val projections = Map("y" -> varFor("x"))
 
@@ -73,7 +73,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planRegularProjection(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
     }
   }
 
@@ -82,7 +82,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x","foo")))
       // projection
       val projections = Map("carrot" -> cachedNodeProp("x", "foo"))
 
@@ -90,7 +90,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planRegularProjection(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("carrot")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("carrot")).fromLeft)
     }
   }
 
@@ -99,7 +99,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x","foo")))
       // projection
       val projections = Map("xfoo" -> prop("x", "foo"))
 
@@ -107,7 +107,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planDistinct(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("xfoo")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("xfoo")).fromLeft)
     }
   }
 
@@ -116,7 +116,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "id(n)")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(id(varFor("n"))))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(id(varFor("n"))))
       // projection
       val projections = Map("id(n)" -> id(varFor("n")))
 
@@ -124,7 +124,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planDistinct(plan, projections, projections, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("id(n)")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("id(n)")).fromLeft)
     }
   }
 
@@ -133,7 +133,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("y" -> varFor("y"))
@@ -151,7 +151,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")), ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("y")).asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("y" -> varFor("y"))
@@ -160,7 +160,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
     }
   }
 
@@ -169,7 +169,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")), ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("y")).asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("z" -> varFor("y"))
@@ -178,7 +178,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("z")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("z")).fromLeft)
     }
   }
 
@@ -187,7 +187,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y.bar")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("y","bar")).asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("z" -> varFor("y"))
@@ -205,7 +205,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y.bar")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("y","bar")).asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("z" -> prop("y", "bar"))
@@ -214,7 +214,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("z")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("z")).fromLeft)
     }
   }
 
@@ -223,7 +223,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo", "y.bar")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("y","bar")).asc(prop("x","foo")))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
       val groupings = Map("z" -> cachedNodeProp("y", "bar"))
@@ -232,7 +232,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("z")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("z")).fromLeft)
     }
   }
 
@@ -241,9 +241,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "z.bar")
-      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("z","bar")), ProvidedOrder.Desc(varFor("x")))))
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.asc(prop("z","bar")).desc(varFor("x")))
       val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
-      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(varFor("x")), ProvidedOrder.Desc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.asc(prop("y","bar")).asc(varFor("x")).desc(prop("x","foo")))
 
       val joinColumns = Set("x")
 
@@ -251,7 +251,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(prop("y","bar")).fromRight)
     }
   }
 
@@ -260,9 +260,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "size(x)", "y")
-      context.planningAttributes.providedOrders.set(plan.id,
-        ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")),
-          ProvidedOrder.Asc(function("size", varFor("x"))))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("y")).asc(function("size", varFor("x"))))
 
       val aggregations = Map("size(x)" -> function("size", varFor("x")))
       val groupings = Map("y" -> varFor("y"))
@@ -271,7 +269,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
     }
   }
 
@@ -283,7 +281,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val propOfProp = prop(prop("x","foo"), "bar")
 
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")), ProvidedOrder.Asc(propOfProp))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("y")).asc(propOfProp))
 
       val aggregations = Map("xfoobar" -> propOfProp)
       val groupings = Map("y" -> varFor("y"))
@@ -292,7 +290,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
 
       // then
-      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
     }
   }
 }

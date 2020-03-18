@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -35,13 +35,13 @@ import org.scalatest.matchers.Matcher
 case class OrderArgumentMatcher(expected: ProvidedOrder) extends Matcher[InternalPlanDescription] {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val args = plan.arguments.collect { case Order(providedOrder) => providedOrder }
-    val anonArgs = args.map(arg => ProvidedOrder(arg.columns.map(col => {
+    val anonArgs = args.map(arg => arg.mapColumns(col => {
       col.expression match {
         case variable@Variable(varName) => ProvidedOrder.Column(Variable(removeGeneratedNames(varName))(variable.position), col.isAscending)
         case prop@Property(v@Variable(varName), p@PropertyKeyName(propName)) =>
           ProvidedOrder.Column(Property(Variable(removeGeneratedNames(varName))(v.position), PropertyKeyName(propName)(p.position))(prop.position), col.isAscending)
       }
-    })))
+    }))
     MatchResult(
       matches = anonArgs.contains(expected),
       rawFailureMessage = s"Expected ${plan.name} to have order $expected but got $anonArgs.",

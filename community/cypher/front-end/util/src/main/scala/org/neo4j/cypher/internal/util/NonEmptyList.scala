@@ -130,6 +130,19 @@ sealed trait NonEmptyList[+T] {
       case None => self
     }
 
+  final def :++[X >: T](iterable: Iterable[X]): NonEmptyList[X] =
+    self.:++(iterable.iterator)
+
+  final def :++[X >: T](iterator: Iterator[X]): NonEmptyList[X] = iterator.asNonEmptyListOption match {
+    case Some(suffix) => appendLoop(suffix)
+    case None => self
+  }
+
+  private def appendLoop[X >: T](suffix: NonEmptyList[X]): NonEmptyList[X] = self match {
+    case Last(head) => Fby(head, suffix)
+    case Fby(head, tail) => Fby(head, tail.appendLoop(suffix))
+  }
+
   def ++[X >: T](other: NonEmptyList[X]): NonEmptyList[X] =
     reverse.mapAndPrependReversedTo[X, X](identity, other)
 
