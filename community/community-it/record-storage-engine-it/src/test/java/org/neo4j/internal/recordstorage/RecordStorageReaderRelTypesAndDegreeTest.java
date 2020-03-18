@@ -372,7 +372,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     private Set<TestRelType> relTypes( StorageNodeCursor cursor )
     {
         Set<TestRelType> types = new HashSet<>();
-        for ( int relType : cursor.relationshipTypes( NULL ) )
+        for ( int relType : cursor.relationshipTypes() )
         {
             types.add( relTypeForId( relType ) );
         }
@@ -463,7 +463,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
         Degrees nodeDegrees = nodeCursor.degrees( ALL_RELATIONSHIPS );
-        for ( int type : nodeDegrees.types( NULL ) )
+        for ( int type : nodeDegrees.types() )
         {
             degrees.add( new TestDegreeItem( type, nodeDegrees.outgoingDegree( type ), nodeDegrees.incomingDegree( type ) ) );
         }

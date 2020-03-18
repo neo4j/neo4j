@@ -36,8 +36,8 @@ import org.neo4j.token.TokenHolders;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -106,7 +106,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     @Test
     void shouldTraverseTreeOfDepthThree()
     {
-        try ( NodeCursor node = cursors.allocateNodeCursor();
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
               RelationshipTraversalCursor relationship1 = cursors.allocateRelationshipTraversalCursor( NULL );
               RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor( NULL ) )
         {

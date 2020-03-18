@@ -77,12 +77,10 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.Read
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
@@ -249,7 +247,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       val read = reads()
       val cursors = transactionalContext.cursors
-      var cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
+      val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
       read.singleNode(node, cursor)
       if (!cursor.next()) RelationshipIterator.EMPTY
       else {
@@ -429,37 +427,37 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countOutgoing(nodeCursor)
   }
 
   override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countIncoming(nodeCursor)
   }
 
   override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countAll(nodeCursor)
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countOutgoing(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countOutgoing(nodeCursor)
   }
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countIncoming(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countIncoming(nodeCursor)
   }
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
-    else Nodes.countAll(nodeCursor, relationship, transactionalContext.kernelTransaction.pageCursorTracer)
+    else Nodes.countAll(nodeCursor)
   }
 
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = {
@@ -1059,8 +1057,8 @@ object TransactionBoundQueryContext {
 
   class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends RelationshipIterator with AutoCloseable {
 
-    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NOT_INITIALIZED
-    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID
+    import RelationshipCursorIterator.NOT_INITIALIZED
+    import RelationshipCursorIterator.NO_ID
 
     private var _next = NOT_INITIALIZED
     private var typeId: Int = NO_ID

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -407,7 +406,7 @@ public class RelationshipSelectionsIT
         assertTrue( nodeCursor.next() );
     }
 
-    private void consumeCursor( RelationshipSelectionCursor cursor )
+    private void consumeCursor( RelationshipTraversalCursor cursor )
     {
         while ( cursor.next() )
         {

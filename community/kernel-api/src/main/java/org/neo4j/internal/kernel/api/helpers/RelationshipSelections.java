@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
  * Utilities for dealing with RelationshipSelectionCursor and corresponding iterators.
