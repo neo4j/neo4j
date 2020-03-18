@@ -21,6 +21,9 @@ package org.neo4j.storageengine.api;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+
+import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
@@ -55,9 +58,13 @@ public abstract class RelationshipSelection
 
     public static RelationshipSelection selection( int[] types, Direction direction )
     {
-        if ( types == null || types.length == 0 )
+        if ( types == null )
         {
-            return direction == Direction.BOTH ? ALL_RELATIONSHIPS : new DirectionalAllTypes( direction );
+            return selection( direction );
+        }
+        else if ( types.length == 0 )
+        {
+            return NO_RELATIONSHIPS;
         }
         else if ( types.length == 1 )
         {
@@ -104,6 +111,12 @@ public abstract class RelationshipSelection
         {
             return transactionState.getAddedRelationships( direction, type );
         }
+
+        @Override
+        public String toString()
+        {
+            return "RelationshipSelection[" + "type=" + type + ", " + direction + "]";
+        }
     }
 
     private static class DirectionalMultipleTypes extends RelationshipSelection
@@ -142,6 +155,12 @@ public abstract class RelationshipSelection
                 }
             }
             return PrimitiveLongCollections.concat( all );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + "]";
         }
 
         private boolean existsEarlier( int[] types, int i )
@@ -184,6 +203,12 @@ public abstract class RelationshipSelection
         {
             return transactionState.getAddedRelationships( direction );
         }
+
+        @Override
+        public String toString()
+        {
+            return "RelationshipSelection[" + direction + "]";
+        }
     }
 
     public static RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection()
@@ -204,6 +229,39 @@ public abstract class RelationshipSelection
         public LongIterator addedRelationship( NodeState transactionState )
         {
             return transactionState.getAddedRelationships();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RelationshipSelection[*]";
+        }
+    };
+
+    public static RelationshipSelection NO_RELATIONSHIPS = new RelationshipSelection()
+    {
+        @Override
+        public boolean test( int type )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean test( int type, RelationshipDirection direction )
+        {
+            return false;
+        }
+
+        @Override
+        public LongIterator addedRelationship( NodeState transactionState )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RelationshipSelection[NOTHING]";
         }
     };
 
