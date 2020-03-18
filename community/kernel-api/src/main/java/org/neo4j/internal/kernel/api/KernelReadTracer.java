@@ -63,13 +63,6 @@ public interface KernelReadTracer
     void onRelationship( long relationshipReference );
 
     /**
-     * Called just before {@link RelationshipGroupCursor#next()} returns true.
-     *
-     * @param type the relationship type that will be available.
-     */
-    void onRelationshipGroup( int type );
-
-    /**
      * Called just before {@link PropertyCursor#next()} returns true.
      *
      * @param propertyKey the property key of the next property.

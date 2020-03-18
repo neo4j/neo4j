@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -620,48 +621,48 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     void shouldCountFromTxState() throws Exception
     {
         //dense outgoing
-        assertCount( 100, RelationshipDirection.OUTGOING, group ->
+        assertCount( 100, RelationshipDirection.OUTGOING, degree ->
         {
-            assertEquals( 101, group.outgoingDegree() );
-            assertEquals( 0, group.incomingDegree() );
-            assertEquals( 101, group.totalDegree() );
+            assertEquals( 101, degree.outgoingDegree() );
+            assertEquals( 0, degree.incomingDegree() );
+            assertEquals( 101, degree.totalDegree() );
         } );
         //sparse outgoing
-        assertCount( 1, RelationshipDirection.OUTGOING, group ->
+        assertCount( 1, RelationshipDirection.OUTGOING, degree ->
         {
-            assertEquals( 2, group.outgoingDegree() );
-            assertEquals( 0, group.incomingDegree() );
-            assertEquals( 2, group.totalDegree() );
+            assertEquals( 2, degree.outgoingDegree() );
+            assertEquals( 0, degree.incomingDegree() );
+            assertEquals( 2, degree.totalDegree() );
         } );
         //dense incoming
-        assertCount( 100, RelationshipDirection.INCOMING, group ->
+        assertCount( 100, RelationshipDirection.INCOMING, degree ->
         {
-            assertEquals( 0, group.outgoingDegree() );
-            assertEquals( 101, group.incomingDegree() );
-            assertEquals( 0, group.outgoingDegree() );
-            assertEquals( 101, group.totalDegree() );
+            assertEquals( 0, degree.outgoingDegree() );
+            assertEquals( 101, degree.incomingDegree() );
+            assertEquals( 0, degree.outgoingDegree() );
+            assertEquals( 101, degree.totalDegree() );
         } );
         //sparse incoming
-        assertCount( 1, RelationshipDirection.INCOMING, group ->
+        assertCount( 1, RelationshipDirection.INCOMING, degree ->
         {
-            assertEquals( 0, group.outgoingDegree() );
-            assertEquals( 2, group.incomingDegree() );
-            assertEquals( 2, group.totalDegree() );
+            assertEquals( 0, degree.outgoingDegree() );
+            assertEquals( 2, degree.incomingDegree() );
+            assertEquals( 2, degree.totalDegree() );
         } );
 
         //dense loops
-        assertCount( 100, RelationshipDirection.LOOP, group ->
+        assertCount( 100, RelationshipDirection.LOOP, degree ->
         {
-            assertEquals( 101, group.incomingDegree() );
-            assertEquals( 101, group.outgoingDegree() );
-            assertEquals( 101, group.totalDegree() );
+            assertEquals( 101, degree.incomingDegree() );
+            assertEquals( 101, degree.outgoingDegree() );
+            assertEquals( 101, degree.totalDegree() );
         } );
         //sparse loops
-        assertCount( 1, RelationshipDirection.LOOP, group ->
+        assertCount( 1, RelationshipDirection.LOOP, degree ->
         {
-            assertEquals( 2, group.outgoingDegree() );
-            assertEquals( 2, group.incomingDegree() );
-            assertEquals( 2, group.totalDegree() );
+            assertEquals( 2, degree.outgoingDegree() );
+            assertEquals( 2, degree.incomingDegree() );
+            assertEquals( 2, degree.totalDegree() );
         } );
     }
 
@@ -1069,9 +1070,66 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+    @Test
+    void shouldIncludeAddedRelationshipsByTypeAndDirection() throws Exception
+    {
+        int typeId1;
+        int typeId2;
+        long relationship1;
+        long relationship2;
+        long sourceNode;
+        long targetNode;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            typeId1 = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            typeId2 = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R2" );
+            sourceNode = write.nodeCreate();
+            relationship1 = write.relationshipCreate( sourceNode, typeId1, write.nodeCreate() );
+            relationship2 = write.relationshipCreate( sourceNode, typeId2, write.nodeCreate() );
+            targetNode = write.nodeCreate();
+            tx.commit();
+        }
+
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ) );
+        try ( KernelTransaction tx = beginTransaction( loginContext );
+                NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
+                RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )
+        {
+            Write write = tx.dataWrite();
+            long r1 = write.relationshipCreate( sourceNode, typeId1, targetNode ); // OUTGOING :R
+            long r2 = write.relationshipCreate( targetNode, typeId1, sourceNode ); // INCOMING :R
+            long r3 = write.relationshipCreate( sourceNode, typeId1, sourceNode ); // LOOP :R
+            long r4 = write.relationshipCreate( sourceNode, typeId2, targetNode ); // OUTGOING :R2
+            long r5 = write.relationshipCreate( targetNode, typeId2, sourceNode ); // INCOMING :R2
+            long r6 = write.relationshipCreate( sourceNode, typeId2, sourceNode ); // LOOP :R2
+
+            org.neo4j.internal.kernel.api.Read read = tx.dataRead();
+            read.singleNode( sourceNode, node );
+            assertTrue( node.next() );
+
+            assertRelationships( node, traversal, ALL_RELATIONSHIPS, relationship1, relationship2, r1, r2, r3, r4, r5, r6 );
+            assertRelationships( node, traversal, selection( OUTGOING ), relationship1, relationship2, r1, r3, r4, r6 );
+            assertRelationships( node, traversal, selection( typeId1, BOTH ), relationship1, r1, r2, r3 );
+            assertRelationships( node, traversal, selection( typeId1, OUTGOING ), relationship1, r1, r3 );
+            assertRelationships( node, traversal, selection( typeId1, INCOMING ), r2, r3 );
+            assertRelationships( node, traversal, selection( typeId2, BOTH ), relationship2, r4, r5, r6 );
+            assertRelationships( node, traversal, selection( typeId2, OUTGOING ), relationship2, r4, r6 );
+            assertRelationships( node, traversal, selection( typeId2, INCOMING ), r5, r6 );
+            assertRelationships( node, traversal, selection( new int[]{typeId1, typeId2}, BOTH ), relationship1, relationship2, r1, r2, r3, r4, r5, r6 );
+            assertRelationships( node, traversal, selection( new int[]{typeId1, typeId2}, OUTGOING ), relationship1, relationship2, r1, r3, r4, r6 );
+            assertRelationships( node, traversal, selection( new int[]{typeId1, typeId2}, INCOMING ), r2, r3, r5, r6 );
+        }
+    }
+
     private void assertRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal, long... relationships )
     {
-        node.relationships( traversal, selection( type, direction ) );
+        assertRelationships( node, traversal, selection( type, direction ), relationships );
+    }
+
+    private void assertRelationships( NodeCursor node, RelationshipTraversalCursor traversal, RelationshipSelection selection, long... relationships )
+    {
+        node.relationships( traversal, selection );
         MutableLongSet set = LongHashSet.newSetWith( relationships );
         for ( long relationship : relationships )
         {
@@ -1086,6 +1144,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     private void assertNoRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal )
     {
         node.relationships( traversal, selection( type, direction ) );
+        assertFalse( traversal.next() );
     }
 
     private void traverse( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
