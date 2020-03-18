@@ -40,9 +40,9 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
 import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable

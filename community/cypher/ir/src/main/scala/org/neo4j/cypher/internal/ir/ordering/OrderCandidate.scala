@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir
+package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
-import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
 
 /**
   * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.

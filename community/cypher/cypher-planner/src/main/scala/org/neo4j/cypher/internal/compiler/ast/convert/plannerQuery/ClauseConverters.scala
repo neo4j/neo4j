@@ -79,11 +79,6 @@ import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.HasHeaders
-import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
-import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
-import org.neo4j.cypher.internal.ir.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
@@ -97,7 +92,6 @@ import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.RequiredOrderCandidate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
@@ -112,6 +106,12 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException

@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
-import org.neo4j.cypher.internal.ir.InterestingOrder.NoSatisfaction
-import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending

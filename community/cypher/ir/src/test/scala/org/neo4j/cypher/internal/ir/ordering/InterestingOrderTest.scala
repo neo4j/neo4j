@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir
+package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Expression
@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
-import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
-import org.neo4j.cypher.internal.ir.InterestingOrder.NoSatisfaction
-import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

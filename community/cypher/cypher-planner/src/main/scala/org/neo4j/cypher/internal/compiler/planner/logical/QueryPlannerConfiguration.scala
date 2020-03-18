@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
-import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {

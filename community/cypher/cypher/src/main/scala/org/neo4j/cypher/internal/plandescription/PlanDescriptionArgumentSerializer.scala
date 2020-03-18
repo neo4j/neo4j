@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.ConstraintName
 import org.neo4j.cypher.internal.plandescription.Arguments.CountNodesExpression

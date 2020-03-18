@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir
+package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.InterestingOrder.ColumnOrder
-import org.neo4j.cypher.internal.ir.InterestingOrder.Desc
-import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
-import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 
 import scala.annotation.tailrec
 
@@ -73,8 +73,6 @@ object InterestingOrder {
   * from an ORDER BY, or even from distinct or aggregation. The requirement on the ordering can
   * be strict (it needs to be ordered for correct results) or weak (ordering will allow for optimizations).
   * A weak requirement might in addition not care about column order and sort direction.
-  *
-  * Right now this type only encodes strict requirements that emerged because of an ORDER BY.
   *
   * @param requiredOrderCandidate     a candidate for required sort directions of columns
   * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns

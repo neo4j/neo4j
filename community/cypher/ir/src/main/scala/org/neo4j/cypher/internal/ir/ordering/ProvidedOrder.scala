@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir
+package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.ProvidedOrder.Asc
-import org.neo4j.cypher.internal.ir.ProvidedOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
 
 object ProvidedOrder {
 

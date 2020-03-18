@@ -20,7 +20,7 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.plandescription.Arguments
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
