@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label.label
-import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.values.virtual.VirtualNodeValue
 
