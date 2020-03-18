@@ -20,33 +20,23 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Objects.requireNonNull;
 
 public class ExternalStoreId
 {
     private final UUID id;
-    private final long creationTime;
 
-    public ExternalStoreId( UUID id, long creationTime )
+    public ExternalStoreId( UUID id )
     {
+        requireNonNull( id );
         this.id = id;
-        this.creationTime = creationTime;
     }
 
-    public ExternalStoreId( long creationTime )
+    public UUID getId()
     {
-        this( null, creationTime );
-    }
-
-    public Optional<UUID> getId()
-    {
-        return Optional.ofNullable( id );
-    }
-
-    public long getCreationTime()
-    {
-        return creationTime;
+        return id;
     }
 
     @Override
@@ -61,12 +51,12 @@ public class ExternalStoreId
             return false;
         }
         ExternalStoreId that = (ExternalStoreId) o;
-        return creationTime == that.creationTime && Objects.equals( id, that.id );
+        return Objects.equals( id, that.id );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( id, creationTime );
+        return Objects.hash( id );
     }
 }

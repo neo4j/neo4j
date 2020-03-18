@@ -79,9 +79,8 @@ public class BuiltInDbmsProcedures
     {
         var systemGraph = getSystemDatabase();
         var storeIdProvider = getSystemDatabaseStoreIdProvider( systemGraph );
-        var externalStoreId = storeIdProvider.getExternalStoreId();
-        var creationTime = formatTime( externalStoreId.getCreationTime(), getConfiguredTimeZone() );
-        return Stream.of( new SystemInfo( decodeId( externalStoreId, storeIdProvider.getStoreId() ), systemGraph.databaseName(), creationTime ) );
+        var creationTime = formatTime( storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone() );
+        return Stream.of( new SystemInfo( decodeId( storeIdProvider ), systemGraph.databaseName(), creationTime ) );
     }
 
     @Admin

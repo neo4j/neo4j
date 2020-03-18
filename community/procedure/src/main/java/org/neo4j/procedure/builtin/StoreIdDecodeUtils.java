@@ -22,13 +22,12 @@ package org.neo4j.procedure.builtin;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.string.HexString;
 
 import static java.lang.String.format;
 
-public class StoreIdDecodeUtils
+class StoreIdDecodeUtils
 {
     private static final String DEFAULT_ALGORITHM = "SHA-256";
 
@@ -36,9 +35,11 @@ public class StoreIdDecodeUtils
     {
     }
 
-    public static String decodeId( ExternalStoreId externalStoreId, StoreId storeId ) throws NoSuchAlgorithmException
+    static String decodeId( StoreIdProvider storeIdProvider ) throws NoSuchAlgorithmException
     {
-        var storeIdString = externalStoreId.getId().isPresent() ? externalStoreId.getId().get().toString()
+        var externalStoreId = storeIdProvider.getExternalStoreId();
+        var storeId = storeIdProvider.getStoreId();
+        var storeIdString = externalStoreId.isPresent() ? externalStoreId.get().toString()
                                         : format( "%d%d%d", storeId.getCreationTime(), storeId.getRandomId(), storeId.getStoreVersion() );
         var messageDigest = MessageDigest.getInstance( DEFAULT_ALGORITHM );
         messageDigest.update( storeIdString.getBytes() );

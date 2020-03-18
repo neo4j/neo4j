@@ -107,9 +107,8 @@ public class BuiltInProcedures
     public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException
     {
         var storeIdProvider = graphDatabaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
-        var externalStoreId = storeIdProvider.getExternalStoreId();
-        var creationTime = formatTime( externalStoreId.getCreationTime(), getConfiguredTimeZone() );
-        return Stream.of( new DatabaseInfo( decodeId( externalStoreId, storeIdProvider.getStoreId() ), graphDatabaseAPI.databaseName(), creationTime ) );
+        var creationTime = formatTime( storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone() );
+        return Stream.of( new DatabaseInfo( decodeId( storeIdProvider ), graphDatabaseAPI.databaseName(), creationTime ) );
     }
 
     @SystemProcedure

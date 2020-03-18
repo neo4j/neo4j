@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -357,12 +358,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public ExternalStoreId getExternalStoreId()
+    public Optional<ExternalStoreId> getExternalStoreId()
     {
         assertNotClosed();
         var externalStoreUUID = getExternalStoreUUID();
-        return isNotInitialisedExternalUUID( externalStoreUUID ) ? new ExternalStoreId( getCreationTime() )
-                                                                 : new ExternalStoreId( externalStoreUUID, getCreationTime() );
+        return isNotInitialisedExternalUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
     public static StoreId getStoreId( PageCache pageCache, File neoStore, PageCursorTracer cursorTracer ) throws IOException

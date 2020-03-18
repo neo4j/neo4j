@@ -675,7 +675,7 @@ class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             var externalStoreId = metaDataStore.getExternalStoreId();
-            var externalUUID = externalStoreId.getId().orElseThrow();
+            var externalUUID = externalStoreId.orElseThrow().getId();
             assertThat( externalUUID.getLeastSignificantBits() ).isNotZero();
             assertThat( externalUUID.getMostSignificantBits() ).isNotZero();
         }
