@@ -330,11 +330,7 @@ class RecoveryIT
                 transaction.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
                 transaction.commit();
             }
-            try ( Transaction transaction = database.beginTx() )
-            {
-                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                transaction.commit();
-            }
+            awaitIndexesOnline( database );
 
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
@@ -392,11 +388,7 @@ class RecoveryIT
                 transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( indexName ).create();
                 transaction.commit();
             }
-            try ( Transaction transaction = database.beginTx() )
-            {
-                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                transaction.commit();
-            }
+            awaitIndexesOnline( database );
 
             try ( Transaction transaction = database.beginTx() )
             {
@@ -415,6 +407,7 @@ class RecoveryIT
             recoverDatabase();
 
             GraphDatabaseAPI recoveredDatabase = createDatabase();
+            awaitIndexesOnline( recoveredDatabase );
             try ( Transaction transaction = recoveredDatabase.beginTx() )
             {
                 KernelTransaction ktx = ((InternalTransaction)transaction).kernelTransaction();
@@ -746,6 +739,15 @@ class RecoveryIT
                 service.shutdown();
             }
         } );
+    }
+
+    private static void awaitIndexesOnline( GraphDatabaseService database )
+    {
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+            transaction.commit();
+        }
     }
 
     private void createSingleNode( GraphDatabaseService service )

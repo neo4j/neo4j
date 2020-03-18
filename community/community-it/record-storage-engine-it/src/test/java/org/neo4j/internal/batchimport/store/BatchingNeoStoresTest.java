@@ -20,6 +20,8 @@
 package org.neo4j.internal.batchimport.store;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,9 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.index.label.FullStoreChangeStream;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -70,6 +75,7 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -97,6 +103,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
+import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
@@ -117,26 +124,30 @@ class BatchingNeoStoresTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    @Test
-    void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotOpenStoreWithNodesOrRelationshipsInIt( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        // GIVEN
-        someDataInTheDatabase();
-
-        // WHEN
-        IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
+        RelationshipTypeScanStoreUtil.withRTSS( enableRelationshipTypeScanStore, () ->
         {
-            try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
+            // GIVEN
+            someDataInTheDatabase();
+
+            // WHEN
+            IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
             {
-                RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
-                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
+                try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
                 {
-                    store.createNew();
+                    RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
+                    try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
+                            NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
+                    {
+                        store.createNew();
+                    }
                 }
-            }
+            } );
+            assertThat( exception.getMessage() ).contains( "already contains" );
         } );
-        assertThat( exception.getMessage() ).contains( "already contains" );
     }
 
     @Test
@@ -248,7 +259,7 @@ class BatchingNeoStoresTest
     }
 
     @Test
-    void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
+    void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
     {
         // given
         RecordFormats formats = LATEST_RECORD_FORMATS;
@@ -326,21 +337,27 @@ class BatchingNeoStoresTest
                     new DelegatingTokenHolder( labelTokenCreator, TokenHolder.TYPE_LABEL ),
                     new DelegatingTokenHolder( relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
             IndexConfigCompleter indexConfigCompleter = index -> index;
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
             RecordStorageEngine storageEngine = life.add(
                     new RecordStorageEngine( databaseLayout, Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
-                            RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true ) );
+                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true ) );
             // Create the relationship type token
             TxState txState = new TxState();
+            Monitors monitors = new Monitors();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL );
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
+            RelationshipTypeScanStore relationshipTypeScanStore = life.add(
+                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
+                            recoveryCleanupWorkCollector ) );
+            storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
             apply( txState, commandCreationContext, storageEngine );
 
             // Finally, we're initialized and ready to create two nodes and a relationship

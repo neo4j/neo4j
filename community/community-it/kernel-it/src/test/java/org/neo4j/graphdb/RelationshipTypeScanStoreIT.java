@@ -220,6 +220,7 @@ class RelationshipTypeScanStoreIT
             removeLastCheckpointRecordFromLastLogFile();
             return builder;
         } );
+        awaitIndexesOnline();
 
         assertEquals( numberOfRelationships, countRelationshipsInFulltextIndex( indexName ) );
     }
@@ -243,17 +244,14 @@ class RelationshipTypeScanStoreIT
         RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
         TokenScanReader tokenScanReader = relationshipTypeScanStore.newReader();
         PrimitiveLongResourceIterator relationships = tokenScanReader.entitiesWithToken( relationshipTypeId, NULL );
-        List<Long> additionalRelationships = new ArrayList<>();
+        List<Long> actualIds = new ArrayList<>();
         while ( relationships.hasNext() )
         {
-            long next = relationships.next();
-            if ( !expectedIds.remove( next ) )
-            {
-                additionalRelationships.add( next );
-            }
+            actualIds.add( relationships.next() );
         }
-        assertThat( expectedIds ).as( "expected ids" ).isEmpty();
-        assertThat( additionalRelationships ).as( "additional ids" ).isEmpty();
+        expectedIds.sort( Long::compareTo );
+        actualIds.sort( Long::compareTo );
+        assertThat( actualIds ).isEqualTo( expectedIds );
     }
 
     private int countRelationshipsInFulltextIndex( String indexName ) throws KernelException
@@ -284,12 +282,17 @@ class RelationshipTypeScanStoreIT
             indexName = transaction.schema().indexFor( REL_TYPE ).on( PROPERTY ).withIndexType( IndexType.FULLTEXT ).create().getName();
             transaction.commit();
         }
+        awaitIndexesOnline();
+        return indexName;
+    }
+
+    private void awaitIndexesOnline()
+    {
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
             transaction.commit();
         }
-        return indexName;
     }
 
     private int getRelationshipTypeId()
