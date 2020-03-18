@@ -42,9 +42,11 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.MatchPrivilege
+import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadPrivilege
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
@@ -120,6 +122,15 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
       case t => planRevoke(source, t.relType)
     }
+    def normalizeGraphScope(graphScope: GraphScope): GraphScope = {
+      graphScope match {
+        case scope@NamedGraphScope(dbName) =>
+          val normalizedName = new NormalizedDatabaseName(dbName).name()
+          NamedGraphScope(normalizedName)(scope.position)
+        case scope => scope
+      }
+    }
+
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
       case _: ShowUsers =>
@@ -239,29 +250,32 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT _ ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (role, qualifier)) =>
-            Some(plans.GrantDatabaseAction(source, action, database, qualifier, role))
+            Some(plans.GrantDatabaseAction(source, action, normalizedDatabase, qualifier, role))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(Some(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, (role, qualifier)) =>
-            Some(plans.DenyDatabaseAction(source, action, database, qualifier, role))
+            Some(plans.DenyDatabaseAction(source, action, normalizedDatabase, qualifier, role))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
+        val normalizedDatabase = normalizeGraphScope(database)
         (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(Some(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (plan, (role, qualifier)) =>
-            planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, action, database, qualifier, role, r)))
+            planRevokes(plan, revokeType, (s, r) => Some(plans.RevokeDatabaseAction(s, action, normalizedDatabase, qualifier, role, r)))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
