@@ -108,6 +108,7 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public class TransactionImpl implements InternalTransaction
 {
+    private static final String UNABLE_TO_COMPLETE_TRANSACTION = "Unable to complete transaction.";
     private static final EntityLocker locker = new EntityLocker();
     private final TokenHolders tokenHolders;
     private final TransactionalContextFactory contextFactory;
@@ -505,13 +506,13 @@ public class TransactionImpl implements InternalTransaction
             Code statusCode = e.status().code();
             if ( statusCode.classification() == Classification.TransientError )
             {
-                throw new TransientTransactionFailureException( closeFailureMessage() + ": " + statusCode.description(), e );
+                throw new TransientTransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
             }
-            throw new TransactionFailureException( closeFailureMessage(), e );
+            throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( closeFailureMessage(), e );
+            throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
         }
     }
 
@@ -520,11 +521,6 @@ public class TransactionImpl implements InternalTransaction
     {
         this.transaction = transaction;
         transaction.bindToUserTransaction( this );
-    }
-
-    private String closeFailureMessage()
-    {
-        return "Unable to complete transaction.";
     }
 
     @Override
