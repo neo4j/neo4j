@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.Condition
@@ -38,8 +41,46 @@ import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
-// Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
-case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseState] {
+import scala.util.Try
+
+trait RewriteProcedureCalls {
+
+  def process(from: BaseState, resolver: ProcedureSignatureResolver): BaseState = {
+    val rewrittenStatement = from.statement().endoRewrite(rewriter(resolver))
+    from.withStatement(rewrittenStatement)
+      // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
+      // so now we can assign them in the state.
+      .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
+  }
+
+  def rewriter(resolver: ProcedureSignatureResolver): Rewriter =
+    resolverProcedureCall(resolver) andThen fakeStandaloneCallDeclarations
+
+  // rewriter that amends unresolved procedure calls with procedure signature information
+  private def resolverProcedureCall(resolver: ProcedureSignatureResolver): Rewriter =
+    bottomUp(Rewriter.lift {
+      case unresolved: UnresolvedCall =>
+        resolveProcedure(resolver, unresolved)
+
+      case function: FunctionInvocation if function.needsToBeResolved =>
+        resolveFunction(resolver, function)
+    })
+
+  def resolveProcedure(resolver: ProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause = {
+    val resolved = ResolvedCall(resolver.procedureSignature)(unresolved)
+    // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+    // to the coercion expressions
+    val coerced = resolved.coerceArguments
+    coerced
+  }
+
+  def resolveFunction(resolver: ProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
+    val resolved = ResolvedFunctionInvocation(resolver.functionSignature)(unresolved)
+    // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+    // to the coercion expression
+    val coerced = resolved.coerceArguments
+    coerced
+  }
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to
@@ -48,47 +89,57 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) =>
+    case q @ Query(None, part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
+
       val newResolved = resolved.withFakedFullDeclarations
+
       //Add the equivalent of a return for each item yielded by the procedure
-      val aliases = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
-      val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
-        None, None, None)(resolved.position)
+      val projection = Return(
+        distinct = false,
+        returnItems = ReturnItems(
+          includeExisting = false,
+          items = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
+        )(resolved.position),
+        None, None, None
+      )(resolved.position)
+
       q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
   }
+}
 
-  def resolverProcedureCall(context: ProcedureSignatureResolver) = bottomUp(Rewriter.lift {
-    case unresolved: UnresolvedCall =>
-      val resolved = ResolvedCall(context.procedureSignature)(unresolved)
-      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-      // to the coercion expressions
-      val coerced = resolved.coerceArguments
-      coerced
-
-    case function: FunctionInvocation if function.needsToBeResolved =>
-      val resolved = ResolvedFunctionInvocation(context.functionSignature)(function)
-
-      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-      // to the coercion expression
-      val coerced = resolved.coerceArguments
-      coerced
-  })
-
-  // rewriter that amends unresolved procedure calls with procedure signature information
-  def rewriter(context: ProcedureSignatureResolver): AnyRef => AnyRef =
-    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations
+// Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
+case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseState] with RewriteProcedureCalls {
 
   override def phase = AST_REWRITE
 
   override def description = "resolve procedure calls"
 
-  override def process(from: BaseState, context: PlannerContext): BaseState = {
-    val rewrittenStatement = from.statement().endoRewrite(rewriter(context.planContext))
-    from.withStatement(rewrittenStatement)
-      // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
-      // so now we can assign them in the state.
-      .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
-  }
+  override def process(from: BaseState, context: PlannerContext): BaseState = process(from, context.planContext)
 
   override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+
+}
+
+// Rewrites unresolved calls into resolved calls, or leaves them unresolved if not found
+case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver) extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
+
+  override def phase = AST_REWRITE
+
+  override def description = "try to resolve procedure calls"
+
+  override def process(from: BaseState, context: BaseContext): BaseState = process(from, resolver)
+
+  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+
+  override def resolveProcedure(resolver: ProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause =
+    Try(super.resolveProcedure(resolver, unresolved)).getOrElse(unresolved)
+
+  override def resolveFunction(resolver: ProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
+    super.resolveFunction(resolver, unresolved) match {
+      case resolved @ ResolvedFunctionInvocation(_, Some(_), _) => resolved
+      case _                                                    => unresolved
+    }
+  }
+
+  val rewriter: Rewriter = rewriter(resolver)
 }
