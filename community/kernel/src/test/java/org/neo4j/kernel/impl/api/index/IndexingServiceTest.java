@@ -55,6 +55,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -170,6 +171,8 @@ class IndexingServiceTest
     private static final IndexProviderDescriptor nativeBtree10Descriptor =
             new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
     private static final IndexProviderDescriptor fulltextDescriptor = new IndexProviderDescriptor( "fulltext", "1.0" );
+    private static final IndexProviderDescriptor[] indexProviderDescriptors =
+            new IndexProviderDescriptor[]{native30Descriptor, nativeBtree10Descriptor, fulltextDescriptor};
     private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
     private final int propertyKeyId = 15;
@@ -481,120 +484,78 @@ class IndexingServiceTest
     }
 
     @Test
-    void shouldNotLogWhenNoDeprecatedIndexesOnInit() throws IOException
-    {
-        // given
-        IndexDescriptor nativeBtree10Index  = storeIndex( 5, 1, 5, nativeBtree10Descriptor );
-        IndexDescriptor fulltextIndex  = storeIndex( 6, 1, 6, fulltextDescriptor );
-
-        IndexProvider native30Provider = mockIndexProviderWithAccessor( native30Descriptor );
-        IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
-        IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
-
-        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
-        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
-
-        Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies =
-                buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
-        providerMap.init();
-
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
-                Collections.singletonList( nativeBtree10Index ),internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, false );
-
-        // when
-        indexingService.init();
-
-        // then
-        onBothLogProviders(
-                logProvider -> logProvider.rawMessageMatcher().assertNotContains( "IndexingService.init: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
-    }
-
-    @Test
-    void shouldNotLogWhenNoDeprecatedIndexesOnStart() throws Throwable
-    {
-        // given
-        IndexDescriptor nativeBtree10Index  = storeIndex( 5, 1, 5, nativeBtree10Descriptor );
-        IndexDescriptor fulltextIndex  = storeIndex( 6, 1, 6, fulltextDescriptor );
-
-        IndexProvider native30Provider = mockIndexProviderWithAccessor( native30Descriptor );
-        IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
-        IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
-
-        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
-        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
-
-        Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies =
-                buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
-        providerMap.init();
-
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
-                Collections.singletonList( nativeBtree10Index ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, false );
-
-        // when
-        indexingService.init();
-        internalLogProvider.clear();
-        indexingService.start();
-
-        // then
-        AssertableLogProvider.MessageMatcher messageMatcher = internalLogProvider.rawMessageMatcher();
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( "IndexingService.start: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( fulltextDescriptor.name() ) );
-    }
-
-    @Test
     void shouldLogDeprecatedIndexesOnStart() throws Exception
     {
-        // given
-        IndexDescriptor native30Index1      = storeIndex( 3, 1, 3, native30Descriptor );
-        IndexDescriptor native30Index2      = storeIndex( 4, 1, 4, native30Descriptor );
-        IndexDescriptor nativeBtree10Index  = storeIndex( 5, 1, 5, nativeBtree10Descriptor );
-        IndexDescriptor fulltextIndex  = storeIndex( 6, 1, 6, fulltextDescriptor );
+        // given two indexes per available index provider
+        int id = 1;
+        List<IndexDescriptor> indexDescriptors = new ArrayList<>();
+        IndexProvider[] indexProviders = new IndexProvider[indexProviderDescriptors.length];
+        for ( int i = 0; i < indexProviderDescriptors.length; i++ )
+        {
+            IndexProviderDescriptor indexProviderDescriptor = indexProviderDescriptors[i];
+            IndexProvider indexProvider = mockIndexProviderWithAccessor( indexProviderDescriptor );
+            indexProviders[i] = indexProvider;
 
-        IndexProvider native30Provider = mockIndexProviderWithAccessor( native30Descriptor );
-        IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
-        IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
-
-        when( native30Provider.getInitialState( native30Index1 ) ).thenReturn( ONLINE );
-        when( native30Provider.getInitialState( native30Index2 ) ).thenReturn( ONLINE );
-        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
-        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
+            // Two indexes per provider
+            for ( int j = 0; j < 2; j++ )
+            {
+                IndexDescriptor index = storeIndex( id, 1, id, indexProviderDescriptor );
+                indexDescriptors.add( index );
+                when( indexProvider.getInitialState( index ) ).thenReturn( ONLINE );
+                id++;
+            }
+        }
 
         Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies = buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
+        DependencyResolver dependencies = buildIndexDependencies( indexProviders );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
-                asList( native30Index1, native30Index2, nativeBtree10Index ), internalLogProvider, userLogProvider,
+                indexDescriptors, internalLogProvider, userLogProvider,
                 IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, false );
 
-        // when
+        // when starting IndexingService
         indexingService.init();
+        for ( IndexProviderDescriptor indexProviderDescriptor : indexProviderDescriptors )
+        {
+            onBothLogProviders( logProvider -> logProvider.rawMessageMatcher().assertNotContains( indexProviderDescriptor.name() ) );
+        }
+
         userLogProvider.clear();
         indexingService.start();
 
-        // then
-        userLogProvider.rawMessageMatcher().assertContainsSingle(
-                Matchers.allOf(
-                        Matchers.containsString( "Deprecated index providers in use:" ),
-                        Matchers.containsString( native30Descriptor.name() + " (2 indexes)" ),
-                        Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
-                )
-        );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
+        // then we should see log messages about deprecated providers if any
+        for ( IndexProviderDescriptor indexProviderDescriptor : indexProviderDescriptors )
+        {
+            if ( isDeprecated( indexProviderDescriptor ) )
+            {
+                userLogProvider.rawMessageMatcher().assertContainsSingle(
+                        Matchers.allOf(
+                                Matchers.containsString( "Deprecated index providers in use:" ),
+                                Matchers.containsString( indexProviderDescriptor.name() + " (2 indexes)" ),
+                                Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
+                        )
+                );
+            }
+            else
+            {
+                onBothLogProviders( logProvider -> logProvider.rawMessageMatcher().assertNotContains( indexProviderDescriptor.name() ) );
+            }
+        }
+    }
+
+    private boolean isDeprecated( IndexProviderDescriptor indexProviderDescriptor )
+    {
+        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
+        {
+            if ( schemaIndex.providerName().equals( indexProviderDescriptor.name() ) )
+            {
+                return schemaIndex.deprecated();
+            }
+        }
+        return false;
     }
 
     @Test
@@ -1692,10 +1653,10 @@ class IndexingServiceTest
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), false );
     }
 
-    private static DependencyResolver buildIndexDependencies( Object... providers )
+    private static DependencyResolver buildIndexDependencies( IndexProvider... providers )
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( providers );
+        dependencies.satisfyDependencies( (Object[]) providers );
         return dependencies;
     }
 
