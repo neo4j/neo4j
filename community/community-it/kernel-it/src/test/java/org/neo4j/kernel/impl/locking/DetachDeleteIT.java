@@ -23,6 +23,7 @@ import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Node;
@@ -138,6 +140,7 @@ public class DetachDeleteIT
             tx.success();
         }
         long nodeId = makeDenseNode();
+        AtomicLong otherRelId = new AtomicLong();
 
         Future<Object> relationshipAdder = executor.submit( () ->
         {
@@ -145,7 +148,8 @@ public class DetachDeleteIT
             {
                 Node node = db.getNodeById( nodeId );
                 Node other = db.getNodeById( otherNodeId );
-                node.createRelationshipTo( other, RelationshipType.withName( "R5" ) );
+                long id = node.createRelationshipTo( other, RelationshipType.withName( "R5" ) ).getId();
+                otherRelId.set( id );
                 tx1.success();
                 sequencer.release( Phases.OTHER_REL_CREATED ); // Allow detach delete to commence.
                 sequencer.await( Phases.DETACH_DELETE_HAS_STARTED ); // Wait for the detach delete to have been attempted
@@ -169,6 +173,8 @@ public class DetachDeleteIT
                 Locks.Client locksClient = getLocksClient();
                 // The try-lock should fail because the detach-delete should already be holding an exclusive lock on that node.
                 assertFalse( locksClient.trySharedLock( ResourceTypes.NODE, otherNodeId ) );
+                // The detach-delete should also hold an exclusive lock on the associated relationship.
+                Assertions.assertFalse( locksClient.trySharedLock( ResourceTypes.RELATIONSHIP, otherRelId.get() ) );
             }
             finally
             {
