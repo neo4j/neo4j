@@ -683,7 +683,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public enum SchemaIndex
     {
         NATIVE_BTREE10( "native-btree", "1.0", false ),
-        NATIVE30( "lucene+native", "3.0", true );
+        NATIVE30( "lucene+native", "3.0", false );
 
         private final String providerKey;
         private final String providerVersion;
