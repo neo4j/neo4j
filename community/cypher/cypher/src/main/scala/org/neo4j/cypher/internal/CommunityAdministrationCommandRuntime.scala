@@ -64,7 +64,6 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
-import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -93,9 +92,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
-  private lazy val authManager = {
-    resolver.resolveDependency(classOf[AuthManager])
-  }
   private val secureHasher = new SecureHasher
 
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
@@ -114,7 +110,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertNotCurrentUser(source, userName, violationMessage) => (context, parameterMapping, securityContext) =>
       AuthorizationPredicateExecutionPlan(() => !securityContext.subject().hasUsername(userName),
         violationMessage = violationMessage,
-        source = source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // Check Admin Rights for some Database commands
@@ -130,7 +126,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         """MATCH (u:User)
           |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
         VirtualValues.EMPTY_MAP,
-        source = source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password
@@ -157,7 +153,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                 new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
               case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", e)
             }),
-          source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+          Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
         )
       } finally {
         // Clear password
@@ -185,7 +181,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '$userName': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
           },
-        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -269,7 +265,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     case DoNothingIfExists(source, label, name) => (context, parameterMapping, securityContext) =>
@@ -285,7 +281,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // Ensure that the role or user exists before being dropped
@@ -301,7 +297,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
           },
-        source.map(fullLogicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
+        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
