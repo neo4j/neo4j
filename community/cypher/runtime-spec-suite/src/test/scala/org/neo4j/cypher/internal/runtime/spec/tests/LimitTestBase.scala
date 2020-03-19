@@ -575,6 +575,31 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a1").withRows(singleColumn(expected))
   }
 
+  //TODO: This triggers a bug in physical planning while constructing the execution graph
+  ignore("should support union + limit under apply") {
+    val nodes = given {
+      nodeGraph(10)
+    }
+    val limit = 3
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(limit)
+      .|.union()
+      .|.|.allNodeScan("a")
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(n => (n +: nodes).take(limit))
+    runtimeResult should beColumns("a").withRows(singleColumn(expected))
+  }
+
   test("should support single-nodeByIdSeek + limit under apply") {
     val nodes = given {
       nodeGraph(sizeHint, "A")
