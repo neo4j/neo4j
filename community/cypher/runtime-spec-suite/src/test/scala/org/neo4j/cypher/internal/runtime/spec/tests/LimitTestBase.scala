@@ -402,7 +402,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support expand(all) + limit under apply") {
     val (nodes, _) = given {
-      bipartiteGraph(sizeHint, "A", "B", "R")
+      bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
 
@@ -425,7 +425,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support varexpand + limit under apply") {
     val (nodes, _) = given {
-      bipartiteGraph(sizeHint, "A", "B", "R")
+      bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
 
@@ -448,7 +448,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support optional expand + limit under apply") {
     val (nodes, _) = given {
-      bipartiteGraph(sizeHint, "A", "B", "R")
+      bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
 
@@ -841,7 +841,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support chained limits on RHS of Apply") {
     val nodes = given {
-      val (aNodes, _) = bipartiteGraph(sizeHint, "A", "B", "R")
+      val (aNodes, _) = bipartiteGraph(10, "A", "B", "R")
       aNodes
     }
 
@@ -1106,45 +1106,6 @@ trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
     val expected = nodes.flatMap(List.fill(rhsLimit)(_)).take(topLimit)
 
     withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
-      runtimeResult should beColumns("a").withRows(singleColumn(expected))
-    }
-  }
-
-  test("should support three limits at different nesting levels") {
-    val nodeCount = 10
-    val nodes = given {
-      val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
-      aNodes
-    }
-
-    val topLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
-    val firstRhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
-    val secondRhsLimit = ThreadLocalRandom.current().nextInt(1, nodeCount)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a")
-      .limit(topLimit)
-      .apply()
-      .|.limit(firstRhsLimit)
-      .|.expand("(a)-->(b3)")
-      .|.nonFuseable()
-      .|.|.apply()
-      .|.|.limit(secondRhsLimit)
-      .|.|.expand("(a)-->(b2)")
-      .|.|.nonFuseable()
-      .|.|.expand("(a)-->(b1)")
-      .|.|.argument("a")
-      .|.argument("a")
-      .nodeByLabelScan("a", "A")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-
-    val expected = nodes.flatMap(List.fill(firstRhsLimit)(_)).take(topLimit)
-    withClue(s"Top Limit = $topLimit , 1st RHS Limit = $firstRhsLimit, 2nd RHS Limit = $secondRhsLimit") {
       runtimeResult should beColumns("a").withRows(singleColumn(expected))
     }
   }
