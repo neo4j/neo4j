@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.IncludeTies
@@ -163,9 +162,13 @@ case object planShortestPaths {
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap, context)
     val sortDescription = Seq(Ascending(columnName))
-    val sorted = lpp.planSort(rhsProjected, sortDescription, ProvidedOrder.empty, InterestingOrder.empty, context)
+    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty, InterestingOrder.empty, context)
     val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
     val one = SignedDecimalIntegerLiteral("1")(pos)
-    lpp.planLimit(sorted, one, one, ties, context)
+    val plan = lpp.planLimit(sorted, one, one, InterestingOrder.empty, ties, context)
+    // Even though we don't use ProvidedOrder or Interesting order, since we don't affect other parts of the planning here
+    // we can still set leveragedOrder to true, correctly.
+    context.planningAttributes.leveragedOrders.set(plan.id, true)
+    plan
   }
 }

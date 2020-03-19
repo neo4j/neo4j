@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 import scala.collection.mutable
@@ -57,7 +58,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
             case None => planWithUpdates
           }
 
-          val projectedPlan = planEventHorizon(in, planWithInput, contextAfterUpdates)
+          val projectedPlan = planEventHorizon(in, planWithInput, None, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
           (projectedPlan, projectedContext)
       }
@@ -106,7 +107,7 @@ trait PartPlanner {
 }
 
 trait EventHorizonPlanner {
-  def apply(query: SinglePlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan
+  def apply(query: SinglePlannerQuery, plan: LogicalPlan, previousInterestingOrder: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan
 }
 
 trait TailPlanner {

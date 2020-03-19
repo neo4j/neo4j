@@ -31,9 +31,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -42,7 +39,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   private val planB = allNodesScan("b")
   private val planC = allNodesScan("c")
 
-  private def allNodesScan(n: String, planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders)): LogicalPlan = {
+  private def allNodesScan(n: String, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n)))
     val cardinality = Cardinality(0)
     val res = AllNodesScan(n, Set.empty)

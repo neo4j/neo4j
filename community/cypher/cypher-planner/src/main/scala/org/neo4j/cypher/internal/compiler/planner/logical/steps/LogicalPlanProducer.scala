@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -46,6 +47,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
@@ -167,6 +170,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -175,6 +179,8 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 import org.neo4j.exceptions.InternalException
+
+import scala.annotation.tailrec
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -187,6 +193,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private val solveds = planningAttributes.solveds
   private val cardinalities = planningAttributes.cardinalities
   private val providedOrders = planningAttributes.providedOrders
+  private val leveragedOrders = planningAttributes.leveragedOrders
 
   /**
    * This object is simply to group methods that are used by the pattern expression solver, and thus do not need to update `solveds`
@@ -225,7 +232,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def solvePredicate(plan: LogicalPlan, solvedExpression: Expression, context: LogicalPlanningContext): LogicalPlan = {
     // Keep other attributes but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, providedOrders)
+    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
     val solvedPlannerQuery = solveds.get(plan.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(solvedExpression))
     solveds.set(newPlan.id, solvedPlannerQuery)
@@ -714,7 +721,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planStarProjection(inner: LogicalPlan, reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val newSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     // Keep some attributes, but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, providedOrders)
+    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
     val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
     solveds.set(newPlan.id, newSolved)
     newPlan
@@ -730,15 +737,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-   * @param grouping    must be solved by the PatternExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
-   *                    thus this logic is put into [[aggregation]] instead.
-   * @param aggregation must be solved by the PatternExpressionSolver.
+   * @param grouping                 must be solved by the PatternExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
+   *                                 thus this logic is put into [[aggregation]] instead.
+   * @param aggregation              must be solved by the PatternExpressionSolver.
+   * @param previousInterestingOrder the interesting order of the previous query part, if there was a previous part
    */
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
                       reportedGrouping: Map[String, Expression],
                       reportedAggregation: Map[String, Expression],
+                      previousInterestingOrder: Option[InterestingOrder],
                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
@@ -746,7 +755,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
-    annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+    val plan = annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+
+    def hasCollectOrUDF = aggregation.values.exists {
+      case fi:FunctionInvocation => fi.function == Collect || fi.function == UnresolvedFunction
+      case _ => false
+    }
+    // Aggregation functions may leverage the order of a preceding ORDER BY.
+    // In practice, this is only collect and potentially user defined aggregations
+    if (previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) && hasCollectOrUDF) {
+      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    }
+
+    plan
   }
 
   def planOrderedAggregation(left: LogicalPlan,
@@ -762,7 +783,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
-    annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+    val plan = annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    plan
   }
 
   /**
@@ -787,10 +810,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
-  def planSkip(inner: LogicalPlan, count: Expression, context: LogicalPlanningContext): LogicalPlan = {
+  def planSkip(inner: LogicalPlan, count: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     // `count` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(count))))
-    annotate(Skip(inner, count), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(Skip(inner, count), solved, providedOrders.get(inner.id).fromLeft, context)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    }
+    plan
   }
 
   def planLoadCSV(inner: LogicalPlan, variableName: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
@@ -821,16 +848,25 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
-    // Keep cardinality, but change solved
-    val keptAttributes = Attributes(idGen, cardinalities)
+    // Keep some attributes, but change solved
+    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders)
     val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
     annotate(newPlan, solved, providedOrders.get(inner.id).fromLeft, context)
   }
 
-  def planLimit(inner: LogicalPlan, effectiveCount: Expression, reportedCount: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
+  def planLimit(inner: LogicalPlan,
+                effectiveCount: Expression,
+                reportedCount: Expression,
+                interestingOrder: InterestingOrder,
+                ties: Ties = DoNotIncludeTies,
+                context: LogicalPlanningContext): LogicalPlan = {
     // `effectiveCount` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
-    annotate(Limit(inner, effectiveCount, ties), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(Limit(inner, effectiveCount, ties), solved, providedOrders.get(inner.id).fromLeft, context)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    }
+    plan
   }
 
   def planLimitForAggregation(inner: LogicalPlan,
@@ -844,19 +880,34 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id).fromLeft
     val limitPlan = Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties)
-    val annotatedPlan = annotate(limitPlan, solved, providedOrder, context)
-    val plan = Optional(annotatedPlan)
+    val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
+
+    // The limit leverages the order, not the following optional
+    markOrderAsLeveragedBackwardsUntilOrigin(annotatedLimitPlan)
+
+    val plan = Optional(annotatedLimitPlan)
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], providedOrder: ProvidedOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  def planSort(inner: LogicalPlan,
+               sortColumns: Seq[ColumnOrder],
+               orderColumns: Seq[ProvidedOrder.Column],
+               interestingOrder: InterestingOrder,
+               context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    annotate(Sort(inner, sortColumns), solved, providedOrder, context)
+    annotate(Sort(inner, sortColumns), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
   }
 
-  def planPartialSort(inner: LogicalPlan, alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], providedOrder: ProvidedOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  def planPartialSort(inner: LogicalPlan,
+                      alreadySortedPrefix: Seq[ColumnOrder],
+                      stillToSortSuffix: Seq[ColumnOrder],
+                      orderColumns: Seq[ProvidedOrder.Column],
+                      interestingOrder: InterestingOrder,
+                      context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix), solved, providedOrder, context)
+    val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix), solved, ProvidedOrder(orderColumns, ProvidedOrder.Left), context)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    plan
   }
 
   def planShortestPath(inner: LogicalPlan,
@@ -978,7 +1029,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
     val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)
     // Change solved and cardinality
-    val keptAttributes = Attributes(idGen, providedOrders)
+    val keptAttributes = Attributes(idGen, providedOrders, leveragedOrders)
     val newPlan = orPlan.copyPlanWithIdGen(keptAttributes.copy(orPlan.id))
     solveds.set(newPlan.id, solved)
     cardinalities.set(newPlan.id, cardinality)
@@ -1135,13 +1186,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException, context: LogicalPlanningContext): LogicalPlan =
     annotate(ErrorPlan(inner, exception), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
 
-  def planProduceResult(inner: LogicalPlan, columns: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
+  /**
+   * @param lastInterestingOrders the interesting order of the last part of the whole query, or `None` for UNION queries.
+   */
+  def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
     solveds.copy(inner.id, produceResult.id)
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
     // It will get a wrong value with some projections. Use the cardinality of inner instead
     cardinalities.copy(inner.id, produceResult.id)
     providedOrders.set(produceResult.id, providedOrders.get(inner.id).fromLeft)
+
+    if (lastInterestingOrders.exists(_.requiredOrderCandidate.nonEmpty)) {
+      markOrderAsLeveragedBackwardsUntilOrigin(produceResult)
+    }
+
     produceResult
   }
 
@@ -1239,4 +1298,41 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
     renameProvidedOrderColumns(trimmed, grouping)
   }
+
+  /**
+   * Starting from `lp`, traverse the logical plan backwards until finding the origin of the current provided order.
+   * For each plan on the way, set `leveragedOrder` to `true`.
+   *
+   * @param lp the plan that leverages a provided order. Must be an already annotated plan.
+   */
+  private def markOrderAsLeveragedBackwardsUntilOrigin(lp: LogicalPlan): Unit = {
+    leveragedOrders.set(lp.id, true)
+
+    @tailrec
+    def loop(current: LogicalPlan): Unit = {
+      leveragedOrders.set(current.id, true)
+      val origin = providedOrders.get(current.id).orderOrigin
+      origin match {
+        case Some(ProvidedOrder.Left) => loop(current.lhs.get)
+        case Some(ProvidedOrder.Right) => loop(current.rhs.get)
+        case Some(ProvidedOrder.Self) => // done
+        case None =>
+          AssertMacros.checkOnlyWhenAssertionsAreEnabled(false,
+            s"While marking leveraged order we encountered a plan with no provided order: $current")
+      }
+    }
+
+    providedOrders.get(lp.id).orderOrigin match {
+      case Some(ProvidedOrder.Left) => lp.lhs.foreach(loop)
+      case Some(ProvidedOrder.Right) => lp.rhs.foreach(loop)
+      case Some(ProvidedOrder.Self) => // If the plan both introduces and leverages the order, we do not want to traverse into the children
+      case None =>
+        // The plan itself leverages the order, but does not maintain it.
+        // Currently, in that case we assume it is a one-child plan,
+        // since at the time of writing there is no two child plan that leverages and destroys ordering
+        lp.lhs.foreach(loop)
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(lp.rhs.isEmpty, "We assume that there is no two-child plan leveraging but destroying ordering.")
+    }
+  }
+
 }

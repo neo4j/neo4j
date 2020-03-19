@@ -31,7 +31,9 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -401,6 +403,72 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 200.0
       case _ => throw new IllegalStateException("Unexpected PlannerQuery")
     }
+  }
+
+  test("should mark leveragedOrder in collect with ORDER BY") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN collect(a.name)")
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(true)
+  }
+
+  test("should not mark leveragedOrder in count with ORDER BY") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN count(a.name)")
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(false)
+  }
+
+  test("should not mark leveragedOrder in collect with no ORDER BY") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN collect(a.name)")
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(false)
+  }
+
+  test("should mark leveragedOrder if using ORDER BY in RETURN") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age", stripProduceResults = false)
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(true)
+  }
+
+  test("should mark leveragedOrder if using ORDER BY in RETURN after a WITH") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a AS a, 1 AS foo RETURN a ORDER BY a.age", stripProduceResults = false)
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(true)
+  }
+
+  test("should not mark leveragedOrder if using ORDER BY in RETURN in a UNION") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age UNION RETURN 1 AS a", stripProduceResults = false)
+    val leveragedOrders = attrs.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(false)
+  }
+
+  test("should mark leveragedOrder in LIMIT with ORDER BY") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age LIMIT 1 RETURN a.name")
+    val leveragedOrders = attrs.leveragedOrders
+
+    val projection = plan.asInstanceOf[Projection]
+    val top = projection.lhs.get.asInstanceOf[Top]
+
+    leveragedOrders.get(projection.id) should be(false)
+    leveragedOrders.get(top.id) should be(true)
+  }
+
+  test("should mark leveragedOrder in SKIP with ORDER BY") {
+    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age SKIP 1 RETURN a.name")
+    val leveragedOrders = attrs.leveragedOrders
+
+    val projection = plan.asInstanceOf[Projection]
+    val skip = projection.source.asInstanceOf[Skip]
+    val sort = skip.source.asInstanceOf[Sort]
+
+    leveragedOrders.get(projection.id) should be(false)
+    leveragedOrders.get(skip.id) should be(true)
+    leveragedOrders.get(sort.id) should be(true)
   }
 
   test("Should plan sort before first expand when sorting on property") {

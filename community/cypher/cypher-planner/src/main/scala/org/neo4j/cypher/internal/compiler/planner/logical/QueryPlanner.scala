@@ -107,16 +107,16 @@ case object QueryPlanner
 
   def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): (Option[PeriodicCommit], LogicalPlan, LogicalPlanningContext) = {
     val (plan, newContext) = plannerQueryPartPlanner.plan(query.query, context)
-    val planWithProduceResults = createProduceResultOperator(plan, produceResultColumns, newContext)
-    verifyBestPlan(planWithProduceResults, query.query,newContext)
+
+    val lastInterestingOrder = query.query match {
+      case spq: SinglePlannerQuery => Some(spq.last.interestingOrder)
+      case _ => None
+    }
+
+    val planWithProduceResults = newContext.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, newContext)
+    verifyBestPlan(planWithProduceResults, query.query, newContext)
     (query.periodicCommit, planWithProduceResults, newContext)
   }
-
-  private def createProduceResultOperator(in: LogicalPlan,
-                                          produceResultColumns: Seq[String],
-                                          context: LogicalPlanningContext): LogicalPlan =
-    context.logicalPlanProducer.planProduceResult(in, produceResultColumns, context)
-
 }
 
 /**

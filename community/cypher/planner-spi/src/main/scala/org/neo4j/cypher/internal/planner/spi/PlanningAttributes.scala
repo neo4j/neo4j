@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
@@ -30,6 +31,7 @@ import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.PartialAttribute
 
 object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
@@ -37,15 +39,25 @@ object PlanningAttributes {
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder] {
     def hasProvidedOrder(id: Id): Boolean = if (isDefinedAt(id)) !get(id).isEmpty else false
   }
+  class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
+
+  def newAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders, new LeveragedOrders)
 }
 
-case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders) {
-  def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, solveds, cardinalities, providedOrders)
+case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders) {
+  private val attributes = productIterator.asInstanceOf[Iterator[Attribute[LogicalPlan, _]]].toSeq
+
+  def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, attributes: _*)
 
   def copy() : PlanningAttributes =
-    PlanningAttributes(solveds.copyTo(new Solveds()), cardinalities.copyTo(new Cardinalities()), providedOrders.copyTo(new ProvidedOrders()))
+    PlanningAttributes(solveds.copyTo(new Solveds()),
+      cardinalities.copyTo(new Cardinalities()),
+      providedOrders.copyTo(new ProvidedOrders()),
+      leveragedOrders.copyTo(new LeveragedOrders())
+    )
 
   def hasEqualSizeAttributes: Boolean = {
-    providedOrders.size == cardinalities.size && providedOrders.size == solveds.size
+    val fullAttributes = attributes.filter(!_.isInstanceOf[PartialAttribute[_, _]])
+    fullAttributes.tail.forall(_.size == fullAttributes.head.size)
   }
 }

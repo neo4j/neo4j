@@ -75,7 +75,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val idGen = context.logicalPlanIdGen
-    val otherAttributes = Attributes[LogicalPlan](idGen)
+    val otherAttributes = Attributes[LogicalPlan](idGen, from.planningAttributes.leveragedOrders)
     val rewritten = from.logicalPlan.endoRewrite(
       instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, from.planningAttributes.providedOrders, otherAttributes))
     from.copy(maybeLogicalPlan = Some(rewritten))

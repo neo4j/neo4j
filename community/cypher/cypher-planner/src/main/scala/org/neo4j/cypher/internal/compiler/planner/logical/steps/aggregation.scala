@@ -23,13 +23,21 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  /**
+   * @param interestingOrder         the interesting order of this query part
+   * @param previousInterestingOrder the interesting order of the previous query part, if there was a previous part
+   */
+  def apply(plan: LogicalPlan,
+            aggregation: AggregatingQueryProjection,
+            interestingOrder: InterestingOrder,
+            previousInterestingOrder: Option[InterestingOrder],
+            context: LogicalPlanningContext): LogicalPlan = {
 
     val solver = PatternExpressionSolver.solverFor(plan, interestingOrder, context)
     val groupingExpressions = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
@@ -92,6 +100,7 @@ object aggregation {
           aggregations,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
+          previousInterestingOrder,
           context)
       } else {
         context.logicalPlanProducer.planOrderedAggregation(

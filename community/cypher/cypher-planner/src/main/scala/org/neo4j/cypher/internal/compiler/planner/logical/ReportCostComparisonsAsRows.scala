@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
@@ -119,6 +120,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     val solveds = new Solveds
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
+    val leveragedOrders = new LeveragedOrders
 
     var current: Option[LogicalPlan] = Some(plan)
     do {
@@ -128,7 +130,10 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       current = current.get.lhs
     } while (current.nonEmpty)
 
-    in.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders))
+    in.copy(maybePeriodicCommit = Some(None),
+      maybeLogicalPlan = Some(plan),
+      maybeStatement = Some(newStatement),
+      planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders, leveragedOrders))
   }
 
   private def varFor(s: String) = Variable(s)(pos)

@@ -314,7 +314,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         |RETURN *
       """.stripMargin
 
-    val (_, plan, _, _, cardinalities) = lom.getLogicalPlanFor(query)
+    val (_, plan, _, attributes) = lom.getLogicalPlanFor(query)
+    val cardinalities = attributes.cardinalities
     plan.treeExists {
       case plan: LogicalPlan =>
         cardinalities.get(plan.id) match {

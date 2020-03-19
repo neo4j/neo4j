@@ -38,7 +38,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
 
   test("same predicate on both sides - Selection is removed entirely") {
     // Given
-    val planningAttributes = newAttributes()
+    val planningAttributes = PlanningAttributes.newAttributes
     val lhsSelection = selectionOp("a", planningAttributes, aHasLabel)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel), rhsLeaf)
@@ -54,7 +54,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   test("multiple predicates on both sides - only one is common on both sides and is removed") {
     // Given
     val predEquals = equals(literalInt(44), literalInt(44))
-    val planningAttributes = newAttributes()
+    val planningAttributes = PlanningAttributes.newAttributes
     val lhsSelection = selectionOp("a", planningAttributes, aHasLabel, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel, predEquals), rhsLeaf)
@@ -72,7 +72,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
 
   test("same predicate on both sides, but not depending on the join ids - nothing should be removed") {
     // Given
-    val planningAttributes = newAttributes()
+    val planningAttributes = PlanningAttributes.newAttributes
     val lhsSelection = selectionOp("a", planningAttributes, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(pred), rhsLeaf)

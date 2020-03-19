@@ -28,7 +28,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   test("one UNION all") {
 
-    val (_, logicalPlan, _, _, _) = new given {
+    val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B")
     }.getLogicalPlanFor(
       """
@@ -55,7 +55,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   test("one UNION distinct") {
 
-    val (_, logicalPlan, _, _, _) = new given {
+    val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B")
     }.getLogicalPlanFor(
       """
@@ -82,7 +82,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
   test("two UNION all") {
 
-    val (_, logicalPlan, _, _, _) = new given {
+    val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B", "C")
     }.getLogicalPlanFor(
       """MATCH (a:A) RETURN a AS a, 1 AS b
@@ -116,7 +116,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   test("two UNION distinct") {
 
-    val (_, logicalPlan, _, _, _) = new given {
+    val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B", "C")
     }.getLogicalPlanFor(
       """MATCH (a:A) RETURN a AS a, 1 AS b
@@ -151,7 +151,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   test("one UNION distinct without columns") {
 
-    val (_, logicalPlan, _, _, _) = new given {
+    val (_, logicalPlan, _, _) = new given {
     }.getLogicalPlanFor(
       """
         |CREATE (a)

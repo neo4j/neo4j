@@ -1055,4 +1055,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
   }
+
+  test("should mark leveragedOrder in collect with ORDER BY") {
+    val (_, plan, _, attributes) = new given {
+      indexOn("Awesome", "prop").providesOrder(BOTH)
+    } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n.prop AS p ORDER BY n.prop RETURN collect(p)"
+    val leveragedOrders = attributes.leveragedOrders
+
+    leveragedOrders.get(plan.id) should be(true)
+  }
 }

@@ -402,7 +402,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _, _) = new given {
+    val (_, plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -421,7 +421,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _, _) = new given {
+    val (_, plan, _, _) = new given {
       uniqueIndexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -440,7 +440,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         |WHERE n.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _, _) = new given {
+    val (_, plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -459,7 +459,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         |WHERE n.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _, _) = new given {
+    val (_, plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 

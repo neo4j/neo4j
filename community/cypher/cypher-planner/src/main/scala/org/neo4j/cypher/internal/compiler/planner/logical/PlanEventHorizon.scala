@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 
@@ -42,12 +43,12 @@ aggregation and UNWIND.
  */
 case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def apply(query: SinglePlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: SinglePlannerQuery, plan: LogicalPlan, previousInterestingOrder: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.interestingOrder, context)
 
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
+        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, previousInterestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
         val sorted = SortPlanner.ensureSortedPlanWithSolved(aggregationPlan, query.interestingOrder, context)

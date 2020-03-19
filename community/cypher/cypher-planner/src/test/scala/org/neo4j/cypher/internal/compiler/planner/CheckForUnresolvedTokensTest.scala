@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LabelId
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
 import org.neo4j.values.storable.TemporalValue.TemporalFields
+
 import scala.collection.JavaConverters.asScalaSetConverter
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
@@ -196,7 +196,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val compilationState = LogicalPlanState(queryText = "apa",
       startPosition = None,
       plannerName = IDPPlannerName,
-      PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders),
+      newStubbedPlanningAttributes,
       maybeStatement = Some(ast),
       maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)

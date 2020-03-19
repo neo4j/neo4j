@@ -43,7 +43,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
         val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
-        val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
+        val projectedPlan = planEventHorizon(plannerQuery, applyPlan, Some(in.interestingOrder), applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
         this.apply(projectedPlan, plannerQuery, projectedContext)

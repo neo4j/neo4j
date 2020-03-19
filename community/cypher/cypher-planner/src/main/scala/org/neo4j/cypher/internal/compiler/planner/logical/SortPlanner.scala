@@ -112,11 +112,11 @@ object SortPlanner {
     if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id))) {
       if (satisfiedPrefix.isEmpty) {
         // Full sort required
-        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, ProvidedOrder(providedOrderColumns, ProvidedOrder.Self), interestingOrder, context))
+        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, providedOrderColumns, interestingOrder, context))
       } else {
         // Partial sort suffices
         val (prefixColumnOrders, suffixColumnOrders) = sortColumns.splitAt(satisfiedPrefix.length)
-        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, ProvidedOrder(providedOrderColumns, ProvidedOrder.Left), interestingOrder, context))
+        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, providedOrderColumns, interestingOrder, context))
       }
     } else {
       None

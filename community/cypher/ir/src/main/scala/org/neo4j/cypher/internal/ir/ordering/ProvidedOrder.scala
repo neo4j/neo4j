@@ -95,6 +95,11 @@ sealed trait ProvidedOrder {
   def isEmpty: Boolean
 
   /**
+   * @return the origin of the order, or None, if this is empty.
+   */
+  def orderOrigin: Option[OrderOrigin]
+
+  /**
    * Returns a new provided order where the order columns of this are concatenated with
    * the order columns of the other provided order. Example:
    * [n.foo ASC, n.bar DESC].followedBy([n.baz ASC]) = [n.foo ASC, n.bar DESC, n.baz ASC]
@@ -128,6 +133,7 @@ sealed trait ProvidedOrder {
 case object NoProvidedOrder extends ProvidedOrder {
   override def columns: Seq[ProvidedOrder.Column] = Seq.empty
   override def isEmpty: Boolean = true
+  override def orderOrigin: Option[OrderOrigin] = None
   override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
   override def upToExcluding(args: Set[String]): ProvidedOrder = this
   override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): ProvidedOrder = this
@@ -135,22 +141,24 @@ case object NoProvidedOrder extends ProvidedOrder {
   override def fromRight: ProvidedOrder = this
 }
 
-case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ProvidedOrder.Column], orderOrigin: OrderOrigin) extends ProvidedOrder {
+case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ProvidedOrder.Column], theOrderOrigin: OrderOrigin) extends ProvidedOrder {
 
   override def columns: Seq[ProvidedOrder.Column] = allColumns.toIndexedSeq
 
   override def isEmpty: Boolean = false
 
-  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression), orderOrigin)
-  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression), orderOrigin)
+  override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
-  override def fromLeft: NonEmptyProvidedOrder = copy(orderOrigin = ProvidedOrder.Left)
-  override def fromRight: NonEmptyProvidedOrder = copy(orderOrigin = ProvidedOrder.Right)
+  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression), theOrderOrigin)
+  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression), theOrderOrigin)
+
+  override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
+  override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)
 
   override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
 
   override def followedBy(nextOrder: ProvidedOrder): NonEmptyProvidedOrder = {
-    NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, orderOrigin)
+    NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, theOrderOrigin)
   }
 
   override def upToExcluding(args: Set[String]): ProvidedOrder = {
@@ -162,7 +170,7 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ProvidedOrder.Column],
     if (trimmed.isEmpty) {
       NoProvidedOrder
     } else {
-      NonEmptyProvidedOrder(NonEmptyList.from(trimmed), orderOrigin)
+      NonEmptyProvidedOrder(NonEmptyList.from(trimmed), theOrderOrigin)
     }
   }
 }

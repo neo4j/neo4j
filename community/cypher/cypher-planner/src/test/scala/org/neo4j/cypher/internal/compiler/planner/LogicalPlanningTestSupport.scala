@@ -98,9 +98,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
@@ -198,10 +195,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
-    val solveds = new Solveds
-    val cardinalities = new Cardinalities
-    val providedOrders = new ProvidedOrders
-    val planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders)
+    val planningAttributes = PlanningAttributes.newAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
@@ -221,10 +215,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                                         strictness: Option[StrictnessMode] = None,
                                                         notificationLogger: InternalNotificationLogger = devNullLogger,
                                                         useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
-    val solveds = new StubSolveds
-    val cardinalities = new StubCardinalities
-    val providedOrders = new StubProvidedOrders
-    val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
+    val planningAttributes = newStubbedPlanningAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
@@ -265,14 +256,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newMockedLogicalPlan(idNames: Set[String],
-                           planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
+                           planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
                            hints: Set[Hint] = Set[Hint](),
                            availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
-  def newMockedLogicalPlanWithSolved(planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
+  def newMockedLogicalPlanWithSolved(planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
                                      idNames: Set[String],
                                      solved: SinglePlannerQuery,
                                      cardinality: Cardinality = Cardinality(1),
@@ -291,13 +282,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                        availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
-  }
-
-  def newAttributes() : PlanningAttributes = {
-    val solveds = new Solveds
-    val cardinalities = new Cardinalities
-    val providedOrders = new ProvidedOrders
-    PlanningAttributes(solveds, cardinalities, providedOrders)
   }
 
   val config = CypherPlannerConfiguration(
@@ -359,7 +343,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = LogicalPlanState(query, None, CostBasedPlannerName.default, PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders))
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default, PlanningAttributes.newAttributes)
     val context = ContextHelper.create(cypherExceptionFactory = exceptionFactory, planContext = planContext, logicalPlanIdGen = idGen)
     val output = pipeLine.transform(state, context)
 

@@ -30,9 +30,6 @@ import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -82,7 +79,7 @@ object LogicalPlanState {
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
                      initialFields = state.initialFields,
-                     planningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
+                     planningAttributes = PlanningAttributes.newAttributes,
                      maybeStatement = state.maybeStatement,
                      maybeSemantics = state.maybeSemantics,
                      maybeExtractedParams = state.maybeExtractedParams,

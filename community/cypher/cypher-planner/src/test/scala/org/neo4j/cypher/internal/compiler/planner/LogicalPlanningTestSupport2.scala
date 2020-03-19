@@ -74,8 +74,6 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.ValidatingRewriterStepSequencer
@@ -218,7 +216,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(queryString: String,
                           config:CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-                          stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
+                          stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
       def context = ContextHelper.create(planContext = planContext,
@@ -235,7 +233,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case p:ProduceResult if stripProduceResults => p.source
         case p => p
       }
-      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
+      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty): Cardinality =
@@ -245,10 +243,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
-      val solveds = new Solveds
-      val cardinalities = new Cardinalities
-      val providedOrders = new ProvidedOrders
-      val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
+      val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
@@ -269,10 +264,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
-      val solveds = new StubSolveds
-      val cardinalities = new StubCardinalities
-      val providedOrders = new StubProvidedOrders
-      val planningAttributes = new PlanningAttributes(solveds, cardinalities, providedOrders)
+      val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
@@ -314,7 +306,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def planFor(queryString: String,
               config:CypherPlannerConfiguration = cypherCompilerConfig,
               queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-              stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
+              stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) =
     new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
