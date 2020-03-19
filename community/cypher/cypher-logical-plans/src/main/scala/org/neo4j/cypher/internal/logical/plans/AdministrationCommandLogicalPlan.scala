@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
 
-abstract class MultiDatabaseLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+abstract class AdministrationCommandLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 
   override def rhs: Option[LogicalPlan] = None
@@ -44,11 +44,11 @@ abstract class MultiDatabaseLogicalPlan(source: Option[MultiDatabaseLogicalPlan]
   def invalid(message: String): RuntimeException
 }
 
-abstract class DatabaseAdministrationLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(source) {
+abstract class DatabaseAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
   override def invalid(message: String): DatabaseAdministrationException = new DatabaseAdministrationException(message)
 }
 
-abstract class SecurityAdministrationLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(source) {
+abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
   override def invalid(message: String): SecurityAdministrationException = new SecurityAdministrationException(message)
 }
 
@@ -101,7 +101,7 @@ case class RevokeWrite(source: PrivilegePlan, database: GraphScope, qualifier: P
 
 case class ShowPrivileges(source: PrivilegePlan, scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
-case class LogSystemCommand(source: MultiDatabaseLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class EnsureNodeExists(source: PrivilegePlan, label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -110,10 +110,10 @@ case class EnsureNodeExists(source: PrivilegePlan, label: String, name: String)(
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class ShowDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class CreateDatabase(source: MultiDatabaseLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
-case class DropDatabase(source: MultiDatabaseLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
-case class StartDatabase(source: MultiDatabaseLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
-case class StopDatabase(source: MultiDatabaseLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class CreateDatabase(source: AdministrationCommandLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class DropDatabase(source: AdministrationCommandLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class StartDatabase(source: AdministrationCommandLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class StopDatabase(source: AdministrationCommandLogicalPlan, normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class EnsureValidNonSystemDatabase(source: SecurityAdministrationLogicalPlan, normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen)
   extends DatabaseAdministrationLogicalPlan(Some(source))
 case class EnsureValidNumberOfDatabases(source: CreateDatabase)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))

@@ -103,7 +103,7 @@ import org.neo4j.string.UTF8
  * This planner takes on queries that run at the DBMS level for multi-database administration
  */
 //noinspection DuplicatedCode
-case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
+case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 

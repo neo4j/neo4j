@@ -69,7 +69,7 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MultiDatabaseLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
@@ -349,7 +349,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           logicalPlanState.maybeLogicalPlan match {
             case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => (FineToReuse, false)
             case Some(_: ProcedureCall) => throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
-            case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
+            case Some(plan: AdministrationCommandLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
             case _ => throw new DatabaseAdministrationException("Attempting invalid administration command in administration runtime")
           }
         }

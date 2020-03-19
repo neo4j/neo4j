@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQuer
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.Cypher9Comparability
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.compiler.MultiDatabaseAdministrationCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
 import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
@@ -132,7 +132,7 @@ object CompilationPhases {
   // Alternative Phase 3
   def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     RewriteProcedureCalls andThen
-      MultiDatabaseAdministrationCommandPlanBuilder andThen
+      AdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         UnsupportedSystemCommand
       )

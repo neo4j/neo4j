@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MultiDatabaseLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -131,8 +131,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       }
 
       logicalPlan match {
-        case l@LogSystemCommand(source: MultiDatabaseLogicalPlan, _) =>
-          LogSystemCommand(resolveParameterForManagementCommands(source).asInstanceOf[MultiDatabaseLogicalPlan], l.command)(new SequentialIdGen(l.id.x + 1))
+        case l@LogSystemCommand(source: AdministrationCommandLogicalPlan, _) =>
+          LogSystemCommand(resolveParameterForManagementCommands(source).asInstanceOf[AdministrationCommandLogicalPlan], l.command)(new SequentialIdGen(l.id.x + 1))
         case c@CreateUser(_, _, _, Some(paramPassword), _, _) =>
           CreateUser(c.source, c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, _, Some(paramPassword), _, _) =>
