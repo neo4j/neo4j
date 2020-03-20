@@ -74,7 +74,7 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
-        int id = reserveTokenId( commandCreationContext::reserveLabelTokenId, TokenHolder.TYPE_LABEL );
+        int id = reserveTokenId( commandCreationContext::reserveLabelTokenId, tokenHolders.labelTokens() );
         txState.labelDoCreateForName( labelName, internal, id );
         return id;
     }
@@ -84,7 +84,7 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
-        int id = reserveTokenId( commandCreationContext::reserveRelationshipTypeTokenId, TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        int id = reserveTokenId( commandCreationContext::reserveRelationshipTypeTokenId, tokenHolders.relationshipTypeTokens() );
         txState.relationshipTypeDoCreateForName( relationshipTypeName, internal, id );
         return id;
     }
@@ -94,7 +94,7 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
-        int id = reserveTokenId( commandCreationContext::reservePropertyKeyTokenId, TokenHolder.TYPE_PROPERTY_KEY );
+        int id = reserveTokenId( commandCreationContext::reservePropertyKeyTokenId, tokenHolders.propertyKeyTokens() );
         txState.propertyKeyDoCreateForName( propertyKeyName, internal, id );
         return id;
     }
@@ -282,15 +282,21 @@ public class KernelToken implements Token
         }
     }
 
-    private static int reserveTokenId( IntSupplier generator, String tokenType ) throws KernelException
+    private static int reserveTokenId( IntSupplier generator, TokenHolder holder ) throws KernelException
     {
         try
         {
-            return generator.getAsInt();
+            int id;
+            do
+            {
+                id = generator.getAsInt();
+            }
+            while ( holder.hasToken( id ) ); // Retry if id is already taken.
+            return id;
         }
         catch ( IdCapacityExceededException e )
         {
-            throw new TokenCapacityExceededKernelException( e, tokenType );
+            throw new TokenCapacityExceededKernelException( e, holder.getTokenType() );
         }
     }
 

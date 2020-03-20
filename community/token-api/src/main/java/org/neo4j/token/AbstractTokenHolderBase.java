@@ -104,6 +104,18 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
     }
 
     @Override
+    public String getTokenType()
+    {
+        return tokenRegistry.getTokenType();
+    }
+
+    @Override
+    public boolean hasToken( int id )
+    {
+        return tokenRegistry.hasToken( id );
+    }
+
+    @Override
     public int size()
     {
         return tokenRegistry.size();

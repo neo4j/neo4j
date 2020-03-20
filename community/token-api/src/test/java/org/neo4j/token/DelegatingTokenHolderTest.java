@@ -58,6 +58,12 @@ class DelegatingTokenHolderTest
     }
 
     @Test
+    void mustKnownItsTokenType()
+    {
+        assertEquals( "Dummy", holder.getTokenType() );
+    }
+
+    @Test
     void mustCreateAndCacheNewTokens() throws Exception
     {
         when( creator.createToken( "token", false ) ).thenReturn( 42 );
