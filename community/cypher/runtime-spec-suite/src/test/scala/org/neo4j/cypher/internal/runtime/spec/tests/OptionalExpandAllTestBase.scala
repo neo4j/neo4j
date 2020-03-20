@@ -581,8 +581,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should gracefully handle non-node reference as input") {
     // given
-    val n = sizeHint
-    val input = inputValues((1 to n).map(Array[Any](_)):_*)
+    val input = inputValues(Array[Any]("nonNode"))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
