@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.OperatorMemoryTracker
+import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.MemoryPerOperator
+import org.neo4j.cypher.internal.util.attribution.Attribute
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.memory.Measurable
 import org.neo4j.memory.MemoryTracker
@@ -160,16 +162,23 @@ object BoundedMemoryTracker {
       _allocatedBytes -= bytes
     }
   }
+
+  class MemoryPerOperator extends Attribute[Id, OperatorMemoryTracker]
 }
 
 class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker) extends QueryMemoryTracker {
   override val isEnabled: Boolean = true
 
-  private val maxMemoryPerOperator = new IntObjectHashMap[OperatorMemoryTracker]()
+  private val maxMemoryPerOperator = new MemoryPerOperator()
 
   def allocated(bytes: Long, operatorId: Int): Unit = {
     transactionMemoryTracker.allocateHeap(bytes)
-    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new OperatorMemoryTracker()).allocated(bytes)
+    val id = Id(operatorId)
+    maxMemoryPerOperator.getOrElse(id, {
+      val newTracker = new OperatorMemoryTracker()
+      maxMemoryPerOperator.set(id, newTracker)
+      newTracker
+    }).allocated(bytes)
   }
 
   override def allocated(value: AnyValue, operatorId: Int): Unit = allocated(value.estimatedHeapUsage(), operatorId)
@@ -178,7 +187,12 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker) extends Quer
 
   override def deallocated(bytes: Long, operatorId: Int): Unit = {
     transactionMemoryTracker.releaseHeap(bytes)
-    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new OperatorMemoryTracker()).deallocated(bytes)
+    val id = Id(operatorId)
+    maxMemoryPerOperator.getOrElse(id, {
+      val newTracker = new OperatorMemoryTracker()
+      maxMemoryPerOperator.set(id, newTracker)
+      newTracker
+    }).deallocated(bytes)
   }
 
   override def deallocated(value: AnyValue, operatorId: Int): Unit = deallocated(value.estimatedHeapUsage(), operatorId)
@@ -189,8 +203,12 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker) extends Quer
     transactionMemoryTracker.heapHighWaterMark()
 
   override def maxMemoryOfOperator(operatorId: Int): Long = {
-    val maxOrNull = maxMemoryPerOperator.get(operatorId)
-    if (maxOrNull == null) OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED else maxOrNull.highWaterMark
+    val id = Id(operatorId)
+    if (maxMemoryPerOperator.isDefinedAt(id)) {
+      maxMemoryPerOperator.get(id).highWaterMark
+    } else {
+      OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+    }
   }
 
   override def memoryTrackingIterator[T <: Measurable](input: Iterator[T], operatorId: Int): Iterator[T] = new MemoryTrackingIterator[T](input, operatorId)
