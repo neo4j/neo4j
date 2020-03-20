@@ -192,9 +192,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
     queryProfile.operatorProfile(1).rows() shouldBe nodeCount // apply
-    // NOTE: Limit & Apply will have 2x higher row counts in Pipelined runtime when _not_ fused
-    queryProfile.operatorProfile(2).rows() should (be (nodeCount) or be (nodeCount * 2)) // limit
-    queryProfile.operatorProfile(3).rows() should (be (nodeCount) or be (nodeCount * 2)) // expand
+    queryProfile.operatorProfile(2).rows() shouldBe nodeCount // limit
+    // Depending on morsel size, the limit might or might not cancel the second row of the expand.
+    queryProfile.operatorProfile(3).rows() should (be >= 1L* nodeCount and be <= 2L*nodeCount) // expand
     queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
     queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan
   }
