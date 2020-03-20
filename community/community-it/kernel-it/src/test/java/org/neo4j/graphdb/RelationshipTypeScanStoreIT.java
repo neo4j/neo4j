@@ -251,7 +251,7 @@ class RelationshipTypeScanStoreIT
         }
         expectedIds.sort( Long::compareTo );
         actualIds.sort( Long::compareTo );
-        assertThat( actualIds ).isEqualTo( expectedIds );
+        assertThat( actualIds ).as( "using RTSS " + relationshipTypeScanStore.getClass().getSimpleName() ).isEqualTo( expectedIds );
     }
 
     private int countRelationshipsInFulltextIndex( String indexName ) throws KernelException
