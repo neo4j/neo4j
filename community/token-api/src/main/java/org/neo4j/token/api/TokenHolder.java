@@ -100,6 +100,19 @@ public interface TokenHolder
     Iterable<NamedToken> getAllTokens();
 
     /**
+     * Get the type of the tokens held in this holder.
+     * @return the type of tokens in this holder.
+     */
+    String getTokenType();
+
+    /**
+     * Tests whether or not the given token id is in use.
+     * @param id the id to test for.
+     * @return {@code true} if the given token id is in use.
+     */
+    boolean hasToken( int id );
+
+    /**
      * @return the number of public tokens currently in this token holder.
      */
     int size();

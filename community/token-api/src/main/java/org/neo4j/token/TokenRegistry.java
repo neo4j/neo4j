@@ -145,6 +145,11 @@ public class TokenRegistry
         return unmodifiableCollection( list );
     }
 
+    public boolean hasToken( int id )
+    {
+        return registries.idToToken.containsKey( id );
+    }
+
     public int size()
     {
         return registries.publicNameToId.size();

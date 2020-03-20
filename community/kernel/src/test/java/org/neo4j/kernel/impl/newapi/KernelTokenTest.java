@@ -32,8 +32,11 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -139,5 +142,38 @@ class KernelTokenTest
             kernelToken.relationshipTypeGetOrCreateForName( validName );
             kernelToken.propertyKeyGetOrCreateForName( validName );
         }
+    }
+
+    /**
+     * This is to work around broken id allocators, which has happened once before.
+     * A broke id allocator could end up handing out ids for tokens that are already allocated.
+     * However, since we know that tokens are never deleted,
+     * we can work around this by ignoring ids that are already assigned to some other token.
+     */
+    @Test
+    void mustSkipAlreadyAllocatedPropertyKeyTokenIds() throws Exception
+    {
+        when( propertyKeyTokens.hasToken( 13 ) ).thenReturn( true );
+        when( commandCreationContext.reservePropertyKeyTokenId() ).thenReturn( 13, 13, 14 );
+        int id = kernelToken.propertyKeyCreateForName( "poke", false );
+        assertEquals( 14, id );
+    }
+
+    @Test
+    void mustSkipAlreadyAllocatedLabelTokenIds() throws Exception
+    {
+        when( labelTokens.hasToken( 13 ) ).thenReturn( true );
+        when( commandCreationContext.reserveLabelTokenId() ).thenReturn( 13, 13, 14 );
+        int id = kernelToken.labelCreateForName( "poke", false );
+        assertEquals( 14, id );
+    }
+
+    @Test
+    void mustSkipAlreadyAllocatedRelationshipTypeTokenIds() throws Exception
+    {
+        when( relationshipTypeTokens.hasToken( 13 ) ).thenReturn( true );
+        when( commandCreationContext.reserveRelationshipTypeTokenId() ).thenReturn( 13, 13, 14 );
+        int id = kernelToken.relationshipTypeCreateForName( "poke", false );
+        assertEquals( 14, id );
     }
 }
