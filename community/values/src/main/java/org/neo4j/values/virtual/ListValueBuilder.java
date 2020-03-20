@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
+import org.neo4j.memory.Measurable;
 import org.neo4j.values.AnyValue;
 
 
@@ -57,7 +58,7 @@ public abstract class ListValueBuilder
      * Start building a list of unknown size
      * @return a new builder
      */
-    public static ListValueBuilder newListBuilder()
+    public static UnknownSizeListValueBuilder newListBuilder()
     {
         return new UnknownSizeListValueBuilder();
     }
@@ -95,7 +96,7 @@ public abstract class ListValueBuilder
         }
     }
 
-    private static class UnknownSizeListValueBuilder extends ListValueBuilder
+    public static class UnknownSizeListValueBuilder extends ListValueBuilder implements Measurable
     {
         private final ArrayList<AnyValue> values = new ArrayList<>();
 
@@ -105,7 +106,7 @@ public abstract class ListValueBuilder
             values.add( value );
         }
 
-        UnknownSizeListValueBuilder combine( UnknownSizeListValueBuilder rhs )
+        public UnknownSizeListValueBuilder combine( UnknownSizeListValueBuilder rhs )
         {
             values.addAll( rhs.values );
             estimatedHeapSize += rhs.estimatedHeapSize;
@@ -116,6 +117,12 @@ public abstract class ListValueBuilder
         public ListValue build()
         {
             return new ListValue.JavaListListValue( values, estimatedHeapSize );
+        }
+
+        @Override
+        public long estimatedHeapUsage()
+        {
+            return estimatedHeapSize;
         }
     }
 
