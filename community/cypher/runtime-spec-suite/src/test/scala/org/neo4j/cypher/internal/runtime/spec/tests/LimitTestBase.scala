@@ -389,7 +389,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.allNodeScan("a2")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -541,7 +540,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeByLabelScan("a2", "A")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
