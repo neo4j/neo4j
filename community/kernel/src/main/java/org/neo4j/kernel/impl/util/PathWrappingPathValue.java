@@ -93,12 +93,10 @@ public class PathWrappingPathValue extends PathValue
     {
         int length = path.length();
 
-        long size = SHALLOW_SIZE;
-
         // There are many different implementations of Path, so here we are left guessing.
         // We calculate some size for each node and relationship, but that will not include any potentially cached properties, labels, etc.
-        size += length * RelationshipEntityWrappingValue.SHALLOW_SIZE;
-        size += (length + 1) * NodeEntityWrappingNodeValue.SHALLOW_SIZE;
-        return size;
+        return SHALLOW_SIZE
+               + length * RelationshipEntityWrappingValue.SHALLOW_SIZE
+               + (length + 1) * NodeEntityWrappingNodeValue.SHALLOW_SIZE;
     }
 }

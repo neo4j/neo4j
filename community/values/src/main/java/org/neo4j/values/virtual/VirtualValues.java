@@ -129,7 +129,16 @@ public final class VirtualValues
         {
             throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
         }
-        return new DirectPathValue( nodes, relationships );
+        long payloadSize = 0;
+        for ( NodeValue node : nodes )
+        {
+            payloadSize += node.estimatedHeapUsage();
+        }
+        for ( RelationshipValue relationship : relationships )
+        {
+            payloadSize += relationship.estimatedHeapUsage();
+        }
+        return new DirectPathValue( nodes, relationships, payloadSize );
     }
 
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )

@@ -173,12 +173,13 @@ public abstract class PathValue extends VirtualValue
     }
 
     private static final long DIRECT_PATH_SHALLOW_SIZE = shallowSizeOfInstance( DirectPathValue.class );
-    public static class DirectPathValue extends PathValue
+    static class DirectPathValue extends PathValue
     {
         private final NodeValue[] nodes;
         private final RelationshipValue[] edges;
+        private final long payloadSize;
 
-        DirectPathValue( NodeValue[] nodes, RelationshipValue[] edges )
+        DirectPathValue( NodeValue[] nodes, RelationshipValue[] edges, long payloadSize )
         {
             assert nodes != null;
             assert edges != null;
@@ -186,6 +187,7 @@ public abstract class PathValue extends VirtualValue
 
             this.nodes = nodes;
             this.edges = edges;
+            this.payloadSize = payloadSize;
         }
 
         @Override
@@ -222,16 +224,7 @@ public abstract class PathValue extends VirtualValue
         @Override
         public long estimatedHeapUsage()
         {
-            long size = DIRECT_PATH_SHALLOW_SIZE;
-            for ( NodeValue node : nodes )
-            {
-                size += node.estimatedHeapUsage();
-            }
-            for ( RelationshipValue relationship : relationships() )
-            {
-                size += relationship.estimatedHeapUsage();
-            }
-            return size;
+            return DIRECT_PATH_SHALLOW_SIZE + payloadSize;
         }
     }
 }
