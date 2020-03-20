@@ -173,19 +173,18 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
     case SetOwnPassword(newPassword, currentPassword) => (_, _) =>
-      val (newKey, newValue, newConverter) = getPasswordFields(newPassword)
-      val (newKeyBytes, newValueBytes, newConverterBytes) = getPasswordFields(newPassword, rename = s => s + "_bytes", hashPw = false)
+      val newPw = getPasswordExpression(newPassword)
       val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
       def currentUser(p: MapValue): String = p.get("name").asInstanceOf[TextValue].stringValue()
       val query =
         s"""MATCH (user:User {name: $$name})
           |WITH user, user.credentials AS oldCredentials
-          |SET user.credentials = $$$newKey
+          |SET user.credentials = $$${newPw.key}
           |SET user.passwordChangeRequired = false
           |RETURN oldCredentials""".stripMargin
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
-        VirtualValues.map(Array(newKey, newKeyBytes, currentKeyBytes), Array(newValue, newValueBytes, currentValueBytes)),
+        VirtualValues.map(Array(newPw.key, newPw.bytesKey, currentKeyBytes), Array(newPw.value, newPw.bytesValue, currentValueBytes)),
         QueryHandler
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
@@ -195,7 +194,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           }
           .handleResult((_, value, p) => {
             val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            val newValue = p.get(newKeyBytes).asInstanceOf[ByteArray].asObjectCopy()
+            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObjectCopy()
             val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObjectCopy()
             if (!oldCredentials.matchesPassword(currentValue))
               Some(new InvalidArgumentsException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
@@ -212,7 +211,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           }),
         checkCredentialsExpired = false,
         parameterGenerator = (_, securityContext) => VirtualValues.map(Array("name"), Array(Values.utf8Value(securityContext.subject().username()))),
-        parameterConverter = m => newConverter(newConverterBytes(currentConverterBytes(m)))
+        parameterConverter = m => newPw.mapValueConverter(currentConverterBytes(m))
       )
 
     // SHOW DATABASES

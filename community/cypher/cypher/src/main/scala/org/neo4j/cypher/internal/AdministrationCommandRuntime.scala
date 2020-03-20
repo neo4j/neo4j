@@ -50,12 +50,12 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
 
-  def validatePassword(password: Array[Byte]): Array[Byte] = {
+  protected def validatePassword(password: Array[Byte]): Array[Byte] = {
     if (password == null || password.length == 0) throw new InvalidArgumentsException("A password cannot be empty.")
     password
   }
 
-  def hashPassword(initialPassword: Array[Byte]): TextValue = {
+  protected def hashPassword(initialPassword: Array[Byte]): TextValue = {
     try {
       Values.utf8Value(SystemGraphCredential.createCredentialForPassword(initialPassword, secureHasher).serialize())
     } finally {
@@ -64,25 +64,61 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  def getPasswordFieldsCurrent(password: Either[Array[Byte], AnyRef]): (String, Value, MapValueConverter) =
-    getPasswordFields(password, prefix = "__current_internal_", rename = s => s"__current_${s}_bytes", hashPw = false)
+  trait PasswordExpression {
+    def key: String
+    def value: Value
+    def bytesKey: String
+    def bytesValue: Value
+    def mapValueConverter: MapValue => MapValue
+  }
 
-  def getPasswordFields(password: Either[Array[Byte], AnyRef],
-                        prefix: String = "__internal_",
-                        rename: String => String = s => s,
-                        hashPw: Boolean = true): (String, Value, MapValueConverter) = password match {
-    case Left(encodedPassword) =>
-      validatePassword(encodedPassword)
-      if (hashPw) {
-        (rename(s"${prefix}credentials"), hashPassword(encodedPassword), IdentityConverter)
-      } else {
-        (rename(s"${prefix}credentials"), Values.byteArray(encodedPassword), IdentityConverter)
-      }
-    case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
-      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-      val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
-      validateStringParameterType(parameterPassword)
-      (rename(parameterPassword.name), Values.NO_VALUE, PasswordParameterConverter(parameterPassword.name, rename, hashPw = hashPw))
+  case class LiteralPasswordExpression(key: String, value: Value, bytesKey: String, bytesValue: Value) extends PasswordExpression {
+    val mapValueConverter = IdentityConverter
+  }
+
+  case class ParameterPasswordExpression(key: String,
+                                         value: Value,
+                                         bytesKey: String,
+                                         bytesValue: Value,
+                                         mapValueConverter: MapValue => MapValue) extends PasswordExpression
+
+  protected def getPasswordExpression(password: Either[Array[Byte], AnyRef]): PasswordExpression =
+    password match {
+      case Left(encodedPassword) =>
+        validatePassword(encodedPassword)
+        LiteralPasswordExpression("__internal_credentials", hashPassword(encodedPassword), "__internal_credentials_bytes", Values.byteArray(encodedPassword))
+      case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
+        // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
+        val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
+        validateStringParameterType(parameterPassword)
+        def convertPasswordParameters(params: MapValue): MapValue = {
+          val passwordParameter = parameterPassword.name
+          val encodedPassword = getValidPasswordParameter(params, passwordParameter)
+          validatePassword(encodedPassword)
+          val hashedPassword = hashPassword(encodedPassword)
+          params.updatedWith(passwordParameter, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
+        }
+        ParameterPasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
+    }
+
+  protected def getPasswordFieldsCurrent(password: Either[Array[Byte], AnyRef]): (String, Value, MapValue => MapValue) = {
+    password match {
+      case Left(encodedPassword) =>
+        validatePassword(encodedPassword)
+        ("__current_internal_credentials_bytes", Values.byteArray(encodedPassword), IdentityConverter)
+      case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
+        // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
+        val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
+        validateStringParameterType(parameterPassword)
+        val passwordParameter = parameterPassword.name
+        val renamedParameter = s"__current_${passwordParameter}_bytes"
+        def convertPasswordParameters(params: MapValue): MapValue = {
+          val encodedPassword = getValidPasswordParameter(params, passwordParameter)
+          validatePassword(encodedPassword)
+          params.updatedWith(renamedParameter, Values.byteArray(encodedPassword))
+        }
+        (renamedParameter, Values.NO_VALUE, convertPasswordParameters)
+    }
   }
 
   private def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
@@ -123,10 +159,10 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       params.get(p.asInstanceOf[Parameter].name).asInstanceOf[Value].asObject().toString
   }
 
-  def getNameFields(key: String, name: Either[String, AnyRef],
+  protected def getNameFields(key: String, name: Either[String, AnyRef],
                     prefix: String = "__internal_",
                     rename: String => String = s => s,
-                    valueMapper: String => String = s => s): (String, Value, MapValueConverter) = name match {
+                    valueMapper: String => String = s => s): (String, Value, MapValue => MapValue) = name match {
     case Left(u) =>
       (rename(s"$prefix$key"), Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
@@ -136,62 +172,40 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
   }
 
-  trait MapValueConverter extends Function[MapValue, MapValue] {
-    def overlaps(other: MapValueConverter) = false
-
-    def apply(params: MapValue): MapValue = params
+  case object IdentityConverter extends Function[MapValue, MapValue] {
+    def apply(map: MapValue): MapValue = map
   }
 
-  case object IdentityConverter extends MapValueConverter
-
-  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends MapValueConverter {
-    override def overlaps(other: MapValueConverter): Boolean = other match {
-      case RenamingParameterConverter(name, _, _) => name == parameter
-      case _ => false
-    }
-
-    override def apply(params: MapValue): MapValue = {
+  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends Function[MapValue, MapValue] {
+    def apply(params: MapValue): MapValue = {
       val newValue = valueMapper(params.get(parameter).asInstanceOf[TextValue].stringValue())
       params.updatedWith(rename(parameter), Values.utf8Value(newValue))
     }
   }
 
-  case class PasswordParameterConverter(passwordParameter: String, rename: String => String = s => s, hashPw: Boolean = true) extends MapValueConverter {
-    override def overlaps(other: MapValueConverter): Boolean = other match {
-      case PasswordParameterConverter(name, _, _) => name == passwordParameter
-      case _ => false
-    }
-
-    override def apply(params: MapValue): MapValue = {
-      val encodedPassword = getValidPasswordParameter(params, passwordParameter)
-      validatePassword(encodedPassword)
-      if (hashPw) {
-        val hashedPassword = hashPassword(encodedPassword)
-        params.updatedWith(rename(passwordParameter), hashedPassword)
-      } else {
-        params.updatedWith(rename(passwordParameter), Values.byteArray(encodedPassword))
-      }
-    }
+  protected def makeParameterValue(userName: Either[String, Parameter]): Value = userName match {
+    case Left(s) => Values.utf8Value(s)
+    case Right(_) => Values.NO_VALUE
   }
 
-  def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
+  protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
                                   password: Either[Array[Byte], Parameter],
                                   requirePasswordChange: Boolean,
                                   suspended: Boolean)(
                                    sourcePlan: Option[ExecutionPlan],
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
-    val (credentialsKey, credentialsValue, credentialsConverter) = getPasswordFields(password)
-    val mapValueConverter: MapValue => MapValue = p => credentialsConverter(userNameConverter(p))
+    val credentials = getPasswordExpression(password)
+    val mapValueConverter: MapValue => MapValue = p => credentials.mapValueConverter(userNameConverter(p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$$credentialsKey, passwordChangeRequired: $$passwordChangeRequired, suspended: $$suspended})
+      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$${credentials.key}, passwordChangeRequired: $$passwordChangeRequired, suspended: $$suspended})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameKey, credentialsKey, "passwordChangeRequired", "suspended"),
+        Array(userNameKey, credentials.key, "passwordChangeRequired", "suspended"),
         Array(
           userNameValue,
-          credentialsValue,
+          credentials.value,
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended))),
       QueryHandler
