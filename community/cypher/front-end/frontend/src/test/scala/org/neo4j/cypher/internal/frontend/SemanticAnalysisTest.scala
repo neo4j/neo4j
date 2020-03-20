@@ -95,6 +95,40 @@ class SemanticAnalysisTest extends CypherFunSuite {
     context.errors.map(_.msg) should equal(List("Variable `n` already declared"))
   }
 
+  test("Should allow parameter as valid predicate in FilteringExpression") {
+    val queries = Seq(
+      "RETURN [x IN [1,2,3] WHERE $p | x + 1] AS foo",
+      "RETURN all(x IN [1,2,3] WHERE $p) AS foo",
+      "RETURN any(x IN [1,2,3] WHERE $p) AS foo",
+      "RETURN none(x IN [1,2,3] WHERE $p) AS foo",
+      "RETURN single(x IN [1,2,3] WHERE $p) AS foo",
+    )
+    queries.foreach { query =>
+      withClue(query) {
+        val context = new ErrorCollectingContext()
+        pipeline.transform(initStartState(query, Map.empty).withParams(Map("p" -> 42)), context)
+        context.errors shouldBe empty
+      }
+    }
+  }
+
+  test("Should allow pattern as valid predicate in FilteringExpression") {
+    val queries = Seq(
+      "MATCH (n) RETURN [x IN [1,2,3] WHERE (n)--() | x + 1] AS foo",
+      "MATCH (n) RETURN all(x IN [1,2,3] WHERE (n)--()) AS foo",
+      "MATCH (n) RETURN any(x IN [1,2,3] WHERE (n)--()) AS foo",
+      "MATCH (n) RETURN none(x IN [1,2,3] WHERE (n)--()) AS foo",
+      "MATCH (n) RETURN single(x IN [1,2,3] WHERE (n)--()) AS foo",
+    )
+    queries.foreach { query =>
+      withClue(query) {
+        val context = new ErrorCollectingContext()
+        pipeline.transform(initStartState(query, Map.empty), context)
+        context.errors shouldBe empty
+      }
+    }
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
