@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.io.File
+import java.io.PrintWriter
+
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -37,6 +40,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
@@ -195,6 +199,15 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                  runtime: CypherRuntime[CONTEXT],
                                  input: InputValues
                                 ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
+
+  def printQueryProfile(fileName: String, queryProfile: QueryProfile): Unit = {
+    val pw = new PrintWriter(new File(fileName))
+    try {
+      pw.println(s"Max allocated memory: ${queryProfile.maxAllocatedMemory()}")
+    } finally {
+      pw.close()
+    }
+  }
 
   // PROCEDURES
 
