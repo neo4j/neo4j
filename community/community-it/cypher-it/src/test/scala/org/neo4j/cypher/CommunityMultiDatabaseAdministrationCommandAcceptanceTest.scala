@@ -83,7 +83,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
 
     // Too long name
-    val name = "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould"
+    val name = "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould"
     the[IllegalArgumentException] thrownBy {
       // WHEN
       Config.defaults(default_database, name)

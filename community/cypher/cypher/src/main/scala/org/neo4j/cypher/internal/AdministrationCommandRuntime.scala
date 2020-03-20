@@ -174,11 +174,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  def makeParameterValue(userName: Either[String, Parameter]): Value = userName match {
-    case Left(s) => Values.utf8Value(s)
-    case Right(_) => Values.NO_VALUE
-  }
-
   def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
                                   password: Either[Array[Byte], Parameter],
                                   requirePasswordChange: Boolean,

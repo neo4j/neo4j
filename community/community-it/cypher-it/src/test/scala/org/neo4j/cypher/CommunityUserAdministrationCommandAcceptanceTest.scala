@@ -40,6 +40,8 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
 class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
@@ -265,6 +267,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // THEN
     } should have message "Failed to create the specified user 'neo4j': User already exists."
 
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("CREATE USER $user SET PASSWORD 'password'", Map("user" -> "neo4j"))
+      // THEN
+    } should have message "Failed to create the specified user 'neo4j': User already exists."
+
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
   }
@@ -293,12 +301,26 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // THEN
     } should have message "The provided username is empty."
 
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute("CREATE USER $user SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED", Map("user" -> ""))
+      // THEN
+    } should have message "The provided username is empty."
+
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("CREATE USER `neo:4j` SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED")
+      // THEN
+    } should have message
+      """Username 'neo:4j' contains illegal characters.
+        |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin
+
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute("CREATE USER $user SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED", Map("user" -> "neo:4j"))
       // THEN
     } should have message
       """Username 'neo:4j' contains illegal characters.
@@ -353,6 +375,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // THEN
     } should have message "Failed to replace the specified user 'neo4j': Deleting yourself is not allowed."
 
+    the[QueryExecutionException] thrownBy {
+      // WHEN
+      executeOnSystem("neo4j", "bar", "CREATE OR REPLACE USER $user SET PASSWORD 'baz'", Map[String, Object]("user" -> "neo4j").asJava)
+      // THEN
+    } should have message "Failed to replace the specified user 'neo4j': Deleting yourself is not allowed."
+
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j", passwordChangeRequired = false))
     testUserLogin("neo4j", "bar", AuthenticationResult.SUCCESS)
@@ -368,6 +396,12 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     }
     // THEN
     exception.getMessage should include("Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
+    // WHEN
+    val exception2 = the[SyntaxException] thrownBy {
+      execute("CREATE OR REPLACE USER $user IF NOT EXISTS SET PASSWORD 'pass'", Map("user" -> "foo"))
+    }
+    // THEN
+    exception2.getMessage should include("Failed to create the specified user '$user': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
   }
 
   test("should fail when creating user when not on system database") {
@@ -460,7 +494,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOnSystem("foo", "bar", "DROP USER foo")
+      executeOnSystem("foo", "bar", "DROP USER $user", Map[String, Object]("user" -> "foo").asJava)
       // THEN
     } should have message "Failed to delete the specified user 'foo': Deleting yourself is not allowed."
 
@@ -488,6 +522,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // THEN
     } should have message "Failed to delete the specified user 'foo': User does not exist."
 
+    // using parameter
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("DROP USER $user", Map("user" -> "foo"))
+      // THEN
+    } should have message "Failed to delete the specified user 'foo': User does not exist."
+
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
 
@@ -495,6 +536,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     the[InvalidArgumentsException] thrownBy {
       // WHEN
       execute("DROP USER `:foo`")
+      // THEN
+    } should have message "Failed to delete the specified user ':foo': User does not exist."
+
+    // and an invalid (non-existing) one using parameter
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("DROP USER $user", Map("user" -> ":foo"))
       // THEN
     } should have message "Failed to delete the specified user ':foo': User does not exist."
 

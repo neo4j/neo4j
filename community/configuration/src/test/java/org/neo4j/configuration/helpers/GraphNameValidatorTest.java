@@ -81,7 +81,7 @@ class GraphNameValidatorTest
 
         // Too long
         Exception e2 = assertThrows( IllegalArgumentException.class,
-                                     () -> checkGraphName( "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould" ) );
+                                     () -> checkGraphName( "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould" ) );
         assertEquals( "The provided graph name must have a length between 3 and 63 characters.", e2.getMessage() );
     }
 

@@ -81,7 +81,7 @@ class DatabaseNameValidatorTest
 
         // Too long
         Exception e2 = assertThrows( IllegalArgumentException.class,
-                () -> assertValid( "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould" ) );
+                () -> assertValid( "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould" ) );
         assertEquals( "The provided database name must have a length between 3 and 63 characters.", e2.getMessage() );
     }
 
