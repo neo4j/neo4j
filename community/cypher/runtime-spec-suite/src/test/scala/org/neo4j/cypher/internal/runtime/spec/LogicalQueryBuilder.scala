@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Default
@@ -46,6 +47,8 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
   private val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
     override val defaultValue: Cardinality = Cardinality.SINGLE
   }
+
+  private val leveragedOrders: LeveragedOrders = new LeveragedOrders
 
   override def newNode(node: Variable): Unit = {
     semanticTable = semanticTable.addNode(node)
@@ -69,6 +72,11 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
     this
   }
 
+  def withLeveragedOrder(): this.type = {
+    leveragedOrders.set(idOfLastPlan, true)
+    this
+  }
+
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
     LogicalQuery(logicalPlan,
@@ -78,6 +86,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  semanticTable,
                  cardinalities,
                  providedOrders,
+                 leveragedOrders,
                  hasLoadCSV = false,
                  None,
                  idGen)

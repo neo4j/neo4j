@@ -142,6 +142,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.semanticTable(),
       planningAttributesCopy.cardinalities,
       planningAttributesCopy.providedOrders,
+      planningAttributesCopy.leveragedOrders,
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
       new SequentialIdGen(planningAttributesCopy.cardinalities.size))

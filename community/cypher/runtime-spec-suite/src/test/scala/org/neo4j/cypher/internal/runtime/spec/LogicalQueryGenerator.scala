@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.cypher.internal.util.Cost
@@ -40,6 +41,7 @@ object LogicalQueryGenerator {
     val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
+    val leveragedOrders = new LeveragedOrders
 
     val tokenRead = txContext.kernelTransaction().tokenRead()
     val stats = TransactionBoundGraphStatistics(txContext, NullLog.getInstance())
@@ -56,6 +58,7 @@ object LogicalQueryGenerator {
       state.semanticTable,
       state.cardinalities,
       providedOrders,
+      leveragedOrders,
       hasLoadCSV = false,
       None,
       state.idGen), state)
