@@ -148,7 +148,6 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -669,7 +668,7 @@ object Prettifier {
                                         dbScope: GraphScope,
                                         qualifier: PrivilegeQualifier,
                                         preposition: String,
-                                        roleNames: Seq[String]): String = {
+                                        roleNames: Seq[Either[String, Parameter]]): String = {
     val (dbName, default) = Prettifier.extractDbScope(dbScope)
     val db = if (default) s"DEFAULT DATABASE" else s"DATABASE $dbName"
     qualifier match {
@@ -726,6 +725,6 @@ object Prettifier {
     case Right(p) => s"$$${p.name}"
   }
 
-  def escapeNames(names: Seq[String]): String = names.map(escapeName).mkString(", ")
+  def escapeNames(names: Seq[Either[String, Parameter]]): String = names.map(escapeName).mkString(", ")
 
 }

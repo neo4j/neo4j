@@ -35,7 +35,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT ACCESS ON DATABASE * TO custom", "Unsupported administration command: GRANT ACCESS ON DATABASE * TO custom")
-    assertFailure("GRANT ACCESS ON DATABASE $foo TO custom", "Unsupported administration command: GRANT ACCESS ON DATABASE $foo TO custom")
+    assertFailure("GRANT ACCESS ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT ACCESS ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying access privilege from community") {
@@ -68,7 +68,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY START ON DATABASE * TO custom", "Unsupported administration command: DENY START ON DATABASE * TO custom")
-    assertFailure("DENY START ON DATABASE $foo TO custom", "Unsupported administration command: DENY START ON DATABASE $foo TO custom")
+    assertFailure("DENY START ON DATABASE $foo TO $custom", "Unsupported administration command: DENY START ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking start privilege from community") {
@@ -101,7 +101,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE STOP ON DATABASE * FROM custom", "Unsupported administration command: REVOKE STOP ON DATABASE * FROM custom")
-    assertFailure("REVOKE STOP ON DATABASE $foo FROM custom", "Unsupported administration command: REVOKE STOP ON DATABASE $foo FROM custom")
+    assertFailure("REVOKE STOP ON DATABASE $foo FROM $custom", "Unsupported administration command: REVOKE STOP ON DATABASE $foo FROM $custom")
   }
 
   // Index privileges
@@ -112,7 +112,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT CREATE INDEX ON DATABASE * TO custom", "Unsupported administration command: GRANT CREATE INDEX ON DATABASE * TO custom")
-    assertFailure("GRANT CREATE INDEX ON DATABASE $foo TO custom", "Unsupported administration command: GRANT CREATE INDEX ON DATABASE $foo TO custom")
+    assertFailure("GRANT CREATE INDEX ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT CREATE INDEX ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying create index privilege from community") {
@@ -145,7 +145,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY DROP INDEX ON DATABASE * TO custom", "Unsupported administration command: DENY DROP INDEX ON DATABASE * TO custom")
-    assertFailure("DENY DROP INDEX ON DATABASE $foo TO custom", "Unsupported administration command: DENY DROP INDEX ON DATABASE $foo TO custom")
+    assertFailure("DENY DROP INDEX ON DATABASE $foo TO $custom", "Unsupported administration command: DENY DROP INDEX ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking drop index privilege from community") {
@@ -178,7 +178,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE INDEX MANAGEMENT ON DATABASE * FROM custom", "Unsupported administration command: REVOKE INDEX MANAGEMENT ON DATABASE * FROM custom")
-    assertFailure("REVOKE INDEX MANAGEMENT ON DATABASE $foo FROM custom", "Unsupported administration command: REVOKE INDEX MANAGEMENT ON DATABASE $foo FROM custom")
+    assertFailure("REVOKE INDEX MANAGEMENT ON DATABASE $foo FROM $custom", "Unsupported administration command: REVOKE INDEX MANAGEMENT ON DATABASE $foo FROM $custom")
   }
 
   // Constraint privileges
@@ -189,7 +189,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT CREATE CONSTRAINT ON DATABASE * TO custom", "Unsupported administration command: GRANT CREATE CONSTRAINT ON DATABASE * TO custom")
-    assertFailure("GRANT CREATE CONSTRAINT ON DATABASE $foo TO custom", "Unsupported administration command: GRANT CREATE CONSTRAINT ON DATABASE $foo TO custom")
+    assertFailure("GRANT CREATE CONSTRAINT ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT CREATE CONSTRAINT ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying create constraint privilege from community") {
@@ -222,7 +222,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY DROP CONSTRAINT ON DATABASE * TO custom", "Unsupported administration command: DENY DROP CONSTRAINT ON DATABASE * TO custom")
-    assertFailure("DENY DROP CONSTRAINT ON DATABASE $foo TO custom", "Unsupported administration command: DENY DROP CONSTRAINT ON DATABASE $foo TO custom")
+    assertFailure("DENY DROP CONSTRAINT ON DATABASE $foo TO $custom", "Unsupported administration command: DENY DROP CONSTRAINT ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking drop constraint privilege from community") {
@@ -255,7 +255,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE CONSTRAINT MANAGEMENT ON DATABASE * FROM custom", "Unsupported administration command: REVOKE CONSTRAINT MANAGEMENT ON DATABASE * FROM custom")
-    assertFailure("REVOKE CONSTRAINT MANAGEMENT ON DATABASE $foo FROM custom", "Unsupported administration command: REVOKE CONSTRAINT MANAGEMENT ON DATABASE $foo FROM custom")
+    assertFailure("REVOKE CONSTRAINT MANAGEMENT ON DATABASE $foo FROM $custom", "Unsupported administration command: REVOKE CONSTRAINT MANAGEMENT ON DATABASE $foo FROM $custom")
   }
 
   // Token privileges
@@ -266,7 +266,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT CREATE NEW LABEL ON DATABASE * TO custom", "Unsupported administration command: GRANT CREATE NEW LABEL ON DATABASE * TO custom")
-    assertFailure("GRANT CREATE NEW LABEL ON DATABASE $foo TO custom", "Unsupported administration command: GRANT CREATE NEW LABEL ON DATABASE $foo TO custom")
+    assertFailure("GRANT CREATE NEW LABEL ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT CREATE NEW LABEL ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying create label privilege from community") {
@@ -299,7 +299,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY CREATE NEW TYPE ON DATABASE * TO custom", "Unsupported administration command: DENY CREATE NEW TYPE ON DATABASE * TO custom")
-    assertFailure("DENY CREATE NEW TYPE ON DATABASE $foo TO custom", "Unsupported administration command: DENY CREATE NEW TYPE ON DATABASE $foo TO custom")
+    assertFailure("DENY CREATE NEW TYPE ON DATABASE $foo TO $custom", "Unsupported administration command: DENY CREATE NEW TYPE ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking create reltype privilege from community") {
@@ -332,7 +332,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE CREATE NEW NAME ON DATABASE * FROM custom", "Unsupported administration command: REVOKE CREATE NEW NAME ON DATABASE * FROM custom")
-    assertFailure("REVOKE CREATE NEW NAME ON DATABASE $foo FROM custom", "Unsupported administration command: REVOKE CREATE NEW NAME ON DATABASE $foo FROM custom")
+    assertFailure("REVOKE CREATE NEW NAME ON DATABASE $foo FROM $custom", "Unsupported administration command: REVOKE CREATE NEW NAME ON DATABASE $foo FROM $custom")
   }
 
   test("should fail on granting name management privilege from community") {
@@ -341,7 +341,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT NAME MANAGEMENT ON DATABASE * TO custom", "Unsupported administration command: GRANT NAME MANAGEMENT ON DATABASE * TO custom")
-    assertFailure("GRANT NAME MANAGEMENT ON DATABASE $foo TO custom", "Unsupported administration command: GRANT NAME MANAGEMENT ON DATABASE $foo TO custom")
+    assertFailure("GRANT NAME MANAGEMENT ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT NAME MANAGEMENT ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying name management privilege from community") {
@@ -376,7 +376,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY ALL ON DATABASE * TO custom", "Unsupported administration command: DENY ALL ON DATABASE * TO custom")
-    assertFailure("DENY ALL ON DATABASE $foo TO custom", "Unsupported administration command: DENY ALL ON DATABASE $foo TO custom")
+    assertFailure("DENY ALL ON DATABASE $foo TO $custom", "Unsupported administration command: DENY ALL ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking all database privilege from community") {
@@ -412,7 +412,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("REVOKE SHOW TRANSACTION (*) ON DATABASE * FROM custom", "Unsupported administration command: REVOKE SHOW TRANSACTION (*) ON DATABASE * FROM custom")
-    assertFailure("REVOKE SHOW TRANSACTION (*) ON DATABASE $foo FROM custom", "Unsupported administration command: REVOKE SHOW TRANSACTION (*) ON DATABASE $foo FROM custom")
+    assertFailure("REVOKE SHOW TRANSACTION (*) ON DATABASE $foo FROM $custom", "Unsupported administration command: REVOKE SHOW TRANSACTION (*) ON DATABASE $foo FROM $custom")
   }
 
   test("should fail on granting terminate transaction privilege from community") {
@@ -421,7 +421,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("GRANT TERMINATE TRANSACTION (*) ON DATABASE * TO custom", "Unsupported administration command: GRANT TERMINATE TRANSACTION (*) ON DATABASE * TO custom")
-    assertFailure("GRANT TERMINATE TRANSACTION (*) ON DATABASE $foo TO custom", "Unsupported administration command: GRANT TERMINATE TRANSACTION (*) ON DATABASE $foo TO custom")
+    assertFailure("GRANT TERMINATE TRANSACTION (*) ON DATABASE $foo TO $custom", "Unsupported administration command: GRANT TERMINATE TRANSACTION (*) ON DATABASE $foo TO $custom")
   }
 
   test("should fail on denying terminate transaction privilege from community") {
@@ -455,7 +455,7 @@ class CommunityDatabasePrivilegeAdministrationCommandAcceptanceTest extends Comm
 
     // THEN
     assertFailure("DENY TRANSACTION MANAGEMENT ON DATABASE * TO custom", "Unsupported administration command: DENY TRANSACTION MANAGEMENT ON DATABASE * TO custom")
-    assertFailure("DENY TRANSACTION MANAGEMENT ON DATABASE $foo TO custom", "Unsupported administration command: DENY TRANSACTION MANAGEMENT ON DATABASE $foo TO custom")
+    assertFailure("DENY TRANSACTION MANAGEMENT ON DATABASE $foo TO $custom", "Unsupported administration command: DENY TRANSACTION MANAGEMENT ON DATABASE $foo TO $custom")
   }
 
   test("should fail on revoking transaction management privilege from community") {

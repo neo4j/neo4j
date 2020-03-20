@@ -46,15 +46,15 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       case (privilege: String, action: ast.AdminAction) =>
 
         test(s"$command $privilege ON DBMS $preposition role") {
-          yields(privilegeFunc(action, Seq("role")))
+          yields(privilegeFunc(action, Seq(literal("role"))))
         }
 
-        test(s"$command $privilege ON DBMS $preposition role1, role2") {
-          yields(privilegeFunc(action, Seq("role1", "role2")))
+        test(s"$command $privilege ON DBMS $preposition role1, $$role2") {
+          yields(privilegeFunc(action, Seq(literal("role1"), param("role2"))))
         }
 
         test(s"$command $privilege ON DBMS $preposition `r:ole`") {
-          yields(privilegeFunc(action, Seq("r:ole")))
+          yields(privilegeFunc(action, Seq(literal("r:ole"))))
         }
 
         test(s"dbmsPrivilegeParsingErrors$command $privilege $preposition") {
@@ -70,20 +70,20 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
 
     // The tests below needs to be outside the loop since ALL [PRIVILEGES] ON DATABASE is a valid (but different) command
 
-    test(s"$command ALL ON DBMS $preposition role") {
-      yields(privilegeFunc(ast.AllDbmsAction, Seq("role")))
+    test(s"$command ALL ON DBMS $preposition $$role") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq(param("role"))))
     }
 
     test(s"$command ALL ON DBMS $preposition role1, role2") {
-      yields(privilegeFunc(ast.AllDbmsAction, Seq("role1", "role2")))
+      yields(privilegeFunc(ast.AllDbmsAction, Seq(literal("role1"), literal("role2"))))
     }
 
     test(s"$command ALL PRIVILEGES ON DBMS $preposition role") {
-      yields(privilegeFunc(ast.AllDbmsAction, Seq("role")))
+      yields(privilegeFunc(ast.AllDbmsAction, Seq(literal("role"))))
     }
 
-    test(s"$command ALL PRIVILEGES ON DBMS $preposition role1, role2") {
-      yields(privilegeFunc(ast.AllDbmsAction, Seq("role1", "role2")))
+    test(s"$command ALL PRIVILEGES ON DBMS $preposition $$role1, role2") {
+      yields(privilegeFunc(ast.AllDbmsAction, Seq(param("role1"), literal("role2"))))
     }
   }
 }

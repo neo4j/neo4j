@@ -1006,7 +1006,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     if (caches.isEmpty) "" else caches.map(asPrettyString).mkString(", ", ", ", "")
   }
 
-  private def extractDatabaseArguments(action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String): Seq[Argument] =
+  private def extractDatabaseArguments(action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter]): Seq[Argument] =
     Seq(DatabaseAction(action.name), Database(extractDbScope(database))) ++ extractUserQualifier(qualifier).map(Qualifier).toSeq :+ getAnnotatedRoleArgument(roleName)
 
   private def getNameArgumentForLabelInAdministrationCommand(label: String, name: Either[String, Parameter]) = {
@@ -1046,8 +1046,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     case AllGraphsScope() => "ALL DATABASES"
     case DefaultDatabaseScope() => "DEFAULT DATABASE"
   }
-
-  private def getAnnotatedRoleArgument(role: String): Role = Role(s"ROLE ${Prettifier.escapeName(role)}")
 
   private def getAnnotatedUserArgument(user: Either[String, Parameter]): User = User(s"USER ${Prettifier.escapeName(user)}")
 

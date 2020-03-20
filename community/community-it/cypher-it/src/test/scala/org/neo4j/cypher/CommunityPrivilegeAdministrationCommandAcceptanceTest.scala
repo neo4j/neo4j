@@ -114,7 +114,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
         selectDatabase(SYSTEM_DATABASE_NAME)
 
         // THEN
-        assertFailure(s"REVOKE GRANT $command FROM custom", s"Unsupported administration command: REVOKE GRANT $command FROM custom")
+        assertFailure(s"REVOKE GRANT $command FROM $$custom", s"Unsupported administration command: REVOKE GRANT $command FROM $$custom")
       }
   }
 

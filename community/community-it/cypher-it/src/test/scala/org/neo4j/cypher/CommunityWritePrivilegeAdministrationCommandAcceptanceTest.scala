@@ -64,6 +64,6 @@ class CommunityWritePrivilegeAdministrationCommandAcceptanceTest extends Communi
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE WRITE ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported administration command: REVOKE WRITE ON GRAPH * ELEMENTS * (*) FROM custom")
+    assertFailure("REVOKE WRITE ON GRAPH * ELEMENTS * (*) FROM $custom", "Unsupported administration command: REVOKE WRITE ON GRAPH * ELEMENTS * (*) FROM $custom")
   }
 }

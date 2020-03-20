@@ -35,24 +35,24 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             ).foreach {
               case (dbName: String, graphScope: ast.GraphScope) =>
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition role") {
-                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq("role")))
+                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition $$role") {
+                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq(param("role"))))
                 }
 
                 test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
-                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq("role")))
+                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq(literal("role"))))
                 }
 
                 test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") {
-                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq("r:ole")))
+                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq(literal("r:ole"))))
                 }
 
                 test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A $preposition role") {
-                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
+                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq(literal("role"))))
                 }
 
                 test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") {
-                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
+                  yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsQualifier(Seq("A")) _, Seq(literal("role"))))
                 }
 
                 test(s"failToParseStatements $graphKeyword $dbName $elementKeyword $preposition") {
@@ -72,7 +72,7 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
             }
 
             test(s"$command WRITE ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
-              yields(func(ast.WritePrivilege()(pos), ast.NamedGraphScope(literal("f:oo")) _, ast.ElementsAllQualifier() _, Seq("role")))
+              yields(func(ast.WritePrivilege()(pos), ast.NamedGraphScope(literal("f:oo")) _, ast.ElementsAllQualifier() _, Seq(literal("role"))))
             }
 
             test(s"parseErrors $command $graphKeyword $elementKeyword $preposition") {
@@ -93,7 +93,7 @@ abstract class WritePrivilegeAdministrationCommandParserTest extends Administrat
           case (dbName: String, graphScope: ast.GraphScope) =>
 
             test(s"$command WRITE ON $graphKeyword $dbName $preposition role") {
-              yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq("role")))
+              yields(func(ast.WritePrivilege()(pos), graphScope, ast.ElementsAllQualifier() _, Seq(literal("role"))))
             }
         }
     }
