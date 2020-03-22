@@ -29,11 +29,7 @@ public interface BoltStateMachine extends AutoCloseable
 {
     void process( RequestMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality;
 
-    boolean shouldStickOnThread();
-
     void validateTransaction() throws KernelException;
-
-    boolean hasOpenStatement();
 
     void interrupt();
 

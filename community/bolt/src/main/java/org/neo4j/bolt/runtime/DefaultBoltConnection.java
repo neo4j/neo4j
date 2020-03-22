@@ -35,6 +35,7 @@ import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -192,9 +193,7 @@ public class DefaultBoltConnection implements BoltConnection
     {
         try
         {
-            boolean waitForMessage = false;
-            boolean loop = false;
-            do
+            while ( hasPendingJobs() && batchCount > 0 )
             {
                 // exit loop if we'll close the connection
                 if ( willClose() )
@@ -202,61 +201,25 @@ public class DefaultBoltConnection implements BoltConnection
                     break;
                 }
 
-                // do we have pending jobs or shall we wait for new jobs to
-                // arrive, which is required only for releasing stickiness
-                // condition to this thread
-                if ( waitForMessage || !queue.isEmpty() )
+                queue.drainTo( batch, batchCount );
+                // if we expect one message but did not get any (because it was already
+                // processed), silently exit
+                if ( batch.size() == 0 && !exitIfNoJobsAvailable )
                 {
-                    queue.drainTo( batch, batchCount );
-                    // if we expect one message but did not get any (because it was already
-                    // processed), silently exit
-                    if ( batch.isEmpty() && !exitIfNoJobsAvailable )
-                    {
-                        // loop until we get a new job, if we cannot then validate
-                        // transaction to check for termination condition. We'll
-                        // break loop if we'll close the connection
-                        while ( !willClose() )
-                        {
-                            Job nextJob = queue.poll( 10, SECONDS );
-                            if ( nextJob != null )
-                            {
-                                batch.add( nextJob );
-
-                                break;
-                            }
-                            else
-                            {
-                                machine.validateTransaction();
-                            }
-                        }
-                    }
-                    notifyDrained( batch );
-
-                    // execute each job that's in the batch
-                    while ( !batch.isEmpty() )
-                    {
-                        Job current = batch.remove( 0 );
-
-                        current.perform( machine );
-                    }
-
-                    // do we have any condition that require this connection to
-                    // stick to the current thread (i.e. is there an open statement
-                    // or an open transaction)?
-                    loop = machine.shouldStickOnThread();
-                    waitForMessage = loop;
+                    waitForJobs();
                 }
+                notifyDrained( batch );
+                batchCount -= batch.size();
 
-                // we processed all pending messages, let's flush underlying channel
-                if ( queue.isEmpty() )
+                // execute each job that's in the batch
+                while ( batch.size() > 0 )
                 {
-                    output.flush();
+                    Job current = batch.remove( 0 );
+                    current.perform( machine );
                 }
             }
-            while ( loop );
-
-            // assert only if we'll stay alive
-            assert willClose() || !machine.hasOpenStatement();
+            // we processed all pending messages, let's flush underlying channel
+            output.flush();
         }
         catch ( BoltConnectionAuthFatality ex )
         {
@@ -290,6 +253,27 @@ public class DefaultBoltConnection implements BoltConnection
         }
 
         return !closed.get();
+    }
+
+    private void waitForJobs() throws InterruptedException, KernelException
+    {
+        // loop until we get a new job, if we cannot then validate
+        // transaction to check for termination condition. We'll
+        // break loop if we'll close the connection
+        while ( !willClose() )
+        {
+            Job nextJob = queue.poll( 10, SECONDS );
+            if ( nextJob != null )
+            {
+                batch.add( nextJob );
+
+                break;
+            }
+            else
+            {
+                machine.validateTransaction();
+            }
+        }
     }
 
     @Override

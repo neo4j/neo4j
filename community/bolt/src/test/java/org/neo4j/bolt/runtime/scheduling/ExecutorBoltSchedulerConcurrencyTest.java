@@ -26,6 +26,8 @@ import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -145,6 +147,36 @@ class ExecutorBoltSchedulerConcurrencyTest
         // verify that handleSchedulingError is called once and processNextBatch never.
         assertEquals( 1, handleSchedulingErrorCounter.get() );
         verify( newConnection, never() ).processNextBatch();
+    }
+
+    @Test
+    void shouldShutDownStopConnections() throws Throwable
+    {
+        Set<BoltConnection> set = new HashSet<>();
+        for ( int i = 0; i < maxPoolSize; i++ )
+        {
+            BoltConnection connection = newConnection( UUID.randomUUID().toString() );
+            boltScheduler.created( connection );
+            boltScheduler.enqueued( connection, Jobs.noop() );
+            set.add( connection );
+        }
+
+        // before worker threads could start handling jobs, we shut down the database
+        boltScheduler.shutdown();
+
+        beforeExecuteEvent.countDown();
+        beforeExecuteBarrier.await();
+
+        // allow all threads to complete
+        afterExecuteEvent.countDown();
+        afterExecuteBarrier.await();
+
+        // all connections in the set shall be stopped and no jobs shall be handled after shutdown signal
+        for ( BoltConnection conn : set )
+        {
+            verify( conn ).stop();
+            verify( conn, never() ).hasPendingJobs();
+        }
     }
 
     private void blockAllThreads() throws InterruptedException
