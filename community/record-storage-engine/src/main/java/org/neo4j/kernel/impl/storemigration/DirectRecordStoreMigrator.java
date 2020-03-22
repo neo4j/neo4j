@@ -43,7 +43,6 @@ import org.neo4j.logging.NullLogProvider;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for
@@ -51,6 +50,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  */
 class DirectRecordStoreMigrator
 {
+    private static final String DIRECT_STORE_MIGRATOR_TAG = "directStoreMigrator";
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -76,13 +76,14 @@ class DirectRecordStoreMigrator
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
-                        .openNeoStores( true, storesToOpen ) )
+                        .openNeoStores( true, storesToOpen );
+                var cursorTracer = cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) )
         {
-            toStores.start( NULL );
+            toStores.start( cursorTracer );
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.
-                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), NULL );
+                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorTracer );
                 progressReporter.progress( 1 );
             }
         }

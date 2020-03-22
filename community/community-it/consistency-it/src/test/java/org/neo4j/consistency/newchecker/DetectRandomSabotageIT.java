@@ -93,8 +93,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -721,7 +721,7 @@ public class DetectRandomSabotageIT
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
-                        try ( TokenScanWriter writer = labelIndex.newWriter() )
+                        try ( TokenScanWriter writer = labelIndex.newWriter( NULL ) )
                         {
                             if ( nodeRecord.inUse() )
                             {

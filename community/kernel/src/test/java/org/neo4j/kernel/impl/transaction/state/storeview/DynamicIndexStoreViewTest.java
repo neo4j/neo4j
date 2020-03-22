@@ -72,8 +72,8 @@ class DynamicIndexStoreViewTest
     @BeforeEach
     void setUp()
     {
-        when( labelScanStore.allEntityTokenRanges()).thenReturn( nodeLabelRanges );
-        when( relationshipTypeScanStore.allEntityTokenRanges() ).thenReturn( relationshipTypeRanges );
+        when( labelScanStore.allEntityTokenRanges( NULL )).thenReturn( nodeLabelRanges );
+        when( relationshipTypeScanStore.allEntityTokenRanges( NULL ) ).thenReturn( relationshipTypeRanges );
     }
 
     @Test
@@ -164,7 +164,7 @@ class DynamicIndexStoreViewTest
             PageCursorTracer cursorTracer = NULL;
             int[] typeIds = {1};
             boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty() ).thenReturn( false );
+            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
             // When
             dynamicIndexStoreView
@@ -189,7 +189,7 @@ class DynamicIndexStoreViewTest
             Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
             PageCursorTracer cursorTracer = NULL;
             int[] typeIds = {1};
-            when( relationshipTypeScanStore.isEmpty() ).thenReturn( false );
+            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
             // When
             boolean forceStoreScan = true;
@@ -215,7 +215,7 @@ class DynamicIndexStoreViewTest
             Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
             PageCursorTracer cursorTracer = NULL;
             boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty() ).thenReturn( false );
+            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
             // When
             int[] typeIds = EMPTY_INT_ARRAY;
@@ -242,7 +242,7 @@ class DynamicIndexStoreViewTest
             PageCursorTracer cursorTracer = NULL;
             int[] typeIds = {1};
             boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty() ).thenReturn( false );
+            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
             // When
             dynamicIndexStoreView
@@ -270,7 +270,7 @@ class DynamicIndexStoreViewTest
             boolean forceStoreScan = false;
 
             // When
-            when( relationshipTypeScanStore.isEmpty() ).thenReturn( true );
+            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( true );
             dynamicIndexStoreView
                     .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 

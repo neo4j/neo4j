@@ -229,7 +229,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         life = new LifeSupport();
         life.start();
-        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() );
+        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(),
+                pageCacheTracer );
         life.add( labelScanStore );
     }
 

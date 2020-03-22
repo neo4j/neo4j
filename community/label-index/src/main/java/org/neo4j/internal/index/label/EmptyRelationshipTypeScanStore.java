@@ -59,13 +59,13 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     }
 
     @Override
-    public TokenScanWriter newWriter()
+    public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
         return EmptyTokenScanWriter.instance;
     }
 
     @Override
-    public TokenScanWriter newBulkAppendWriter()
+    public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
     {
         return EmptyTokenScanWriter.instance;
     }
@@ -76,13 +76,13 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges()
+    public AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer )
     {
         return EmptyAllEntriesTokenScanReader.instance;
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer  )
     {
         return EmptyAllEntriesTokenScanReader.instance;
     }
@@ -100,7 +100,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     }
 
     @Override
-    public boolean isEmpty()
+    public boolean isEmpty( PageCursorTracer cursorTracer )
     {
         return true;
     }
@@ -147,7 +147,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
         static EntityTokenUpdateListener instance = new EmptyEntityTokenUpdateListener();
 
         @Override
-        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates )
+        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, PageCursorTracer cursorTracer )
         {   // no-op
         }
     }

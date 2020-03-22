@@ -55,6 +55,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -183,7 +184,7 @@ public class TokenScanStoreTest
     void failToRetrieveWriterOnReadOnlyScanStore()
     {
         createAndStartReadOnly();
-        assertThrows( UnsupportedOperationException.class, () -> store.newWriter() );
+        assertThrows( UnsupportedOperationException.class, () -> store.newWriter( NULL ) );
     }
 
     @Test
@@ -209,7 +210,8 @@ public class TokenScanStoreTest
     {
         // WHEN
         life = new LifeSupport();
-        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
+                PageCacheTracer.NULL );
         life.add( store );
 
         final Exception exception = assertThrows( Exception.class, () -> life.start() );
@@ -222,7 +224,7 @@ public class TokenScanStoreTest
     @Test
     void shouldUseLabelScanStoreFile()
     {
-        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(), PageCacheTracer.NULL );
         ResourceIterator<File> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
         File storeFile = files.next();
@@ -233,7 +235,8 @@ public class TokenScanStoreTest
     @Test
     void shouldUseRelationshipTypeScanStoreFile()
     {
-        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore() );
+        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
+                PageCacheTracer.NULL );
         ResourceIterator<File> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
         File storeFile = files.next();
@@ -337,7 +340,7 @@ public class TokenScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges();
+        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges( NULL );
         EntityTokenRange range = single( reader.iterator() );
 
         // THEN
@@ -361,7 +364,7 @@ public class TokenScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges();
+        BoundedIterable<EntityTokenRange> reader = store.allEntityTokenRanges( NULL );
         Iterator<EntityTokenRange> iterator = reader.iterator();
         EntityTokenRange range1 = iterator.next();
         EntityTokenRange range2 = iterator.next();
@@ -435,7 +438,7 @@ public class TokenScanStoreTest
 
         // when
         MutableInt count = new MutableInt();
-        AllEntriesTokenScanReader nodeLabelRanges = store.allEntityTokenRanges();
+        AllEntriesTokenScanReader nodeLabelRanges = store.allEntityTokenRanges( NULL );
         nodeLabelRanges.forEach( nlr ->
         {
             for ( long nodeId : nlr.entities() )
@@ -559,7 +562,7 @@ public class TokenScanStoreTest
         }
 
         // when
-        try ( TokenScanWriter writer = store.newBulkAppendWriter() )
+        try ( TokenScanWriter writer = store.newBulkAppendWriter( NULL ) )
         {
             for ( EntityTokenUpdate update : updates )
             {
@@ -597,7 +600,7 @@ public class TokenScanStoreTest
     {
         // When
         RelationshipTypeScanStore relationshipTypeScanStore =
-                relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+                relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore(), PageCacheTracer.NULL );
 
         // When
         assertThat( relationshipTypeScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
@@ -607,7 +610,8 @@ public class TokenScanStoreTest
     void toggledRelationshipTypeScanStoreShouldBeOffByDefault()
     {
         RelationshipTypeScanStore relationshipTypeScanStore =
-                toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+                toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore(),
+                        PageCacheTracer.NULL );
 
         assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyRelationshipTypeScanStore.class );
     }
@@ -619,7 +623,8 @@ public class TokenScanStoreTest
         try
         {
             RelationshipTypeScanStore relationshipTypeScanStore =
-                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore() );
+                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore(),
+                            PageCacheTracer.NULL );
 
             assertThat( relationshipTypeScanStore ).isInstanceOf( NativeTokenScanStore.class );
         }
@@ -641,7 +646,7 @@ public class TokenScanStoreTest
     private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
     {
-        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate() );
+        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate(), PageCacheTracer.NULL );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
@@ -652,7 +657,7 @@ public class TokenScanStoreTest
 
     private void write( Iterator<EntityTokenUpdate> iterator ) throws IOException
     {
-        try ( TokenScanWriter writer = store.newWriter() )
+        try ( TokenScanWriter writer = store.newWriter( NULL ) )
         {
             while ( iterator.hasNext() )
             {
@@ -685,7 +690,7 @@ public class TokenScanStoreTest
     private void prepareIndex() throws IOException
     {
         start();
-        try ( TokenScanWriter labelScanWriter = store.newWriter() )
+        try ( TokenScanWriter labelScanWriter = store.newWriter( NULL ) )
         {
             labelScanWriter.write( EntityTokenUpdate.tokenChanges( 1, new long[]{}, new long[]{1} ) );
         }

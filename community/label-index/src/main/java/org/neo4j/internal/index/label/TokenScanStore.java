@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -51,27 +52,32 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      * Create a new {@link LabelScanStore}.
      */
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            PageCacheTracer cacheTracer )
     {
-        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE );
+        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE,
+                cacheTracer );
     }
 
     /**
      * Create a new {@link RelationshipTypeScanStore}.
      */
     static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            PageCacheTracer cacheTracer )
     {
         return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                RELATIONSHIP );
+                RELATIONSHIP, cacheTracer );
     }
 
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            PageCacheTracer cacheTracer )
     {
         if ( relationshipTypeScanStoreEnabled() )
         {
-            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector );
+            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+                    cacheTracer );
         }
         return EmptyRelationshipTypeScanStore.instance;
     }
@@ -94,22 +100,25 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a writer for updating the store.
      *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
-    TokenScanWriter newWriter();
+    TokenScanWriter newWriter( PageCursorTracer cursorTracer );
 
     /**
      * Acquire a writer that is specialized in bulk-append writing, e.g. building from initial data.
      *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
-    TokenScanWriter newBulkAppendWriter();
+    TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer );
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. There cannot be any essential state not forced to disk
      * after completion of this call .
      *
+     *      * @param cursorTracer underlying page cursor events tracer.@param cursorTracer underlying page cursor events tracer.
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
     void force( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException;
@@ -117,16 +126,18 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allEntityTokenRanges();
+    AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer );
 
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId );
+    AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer );
 
     ResourceIterator<File> snapshotStoreFiles();
 
@@ -139,7 +150,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      * @return {@code true} if there's no data at all in this token scan store, otherwise {@code false}.
      * @throws IOException on I/O error.
      */
-    boolean isEmpty() throws IOException;
+    boolean isEmpty( PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Initializes the store. Recovery updates can be processed after this has been called.

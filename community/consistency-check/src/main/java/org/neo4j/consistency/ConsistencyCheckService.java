@@ -239,7 +239,8 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector );
+            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors,
+                    workCollector, PageCacheTracer.NULL );
             life.add( labelScanStore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, PageCacheTracer.NULL );
             life.add( indexStatisticsStore );

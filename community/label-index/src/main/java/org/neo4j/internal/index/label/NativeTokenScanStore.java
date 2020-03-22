@@ -55,7 +55,6 @@ import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Implements {@link TokenScanStore} and thus also implements {@link LabelScanStore}.
@@ -82,6 +81,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
  */
 public abstract class NativeTokenScanStore implements TokenScanStore, EntityTokenUpdateListener
 {
+    private static final String TOKEN_SCAN_REBUILD_TAG = "tokenScanRebuild";
     /**
      * Written in header to indicate native token scan store is clean
      */
@@ -143,6 +143,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * Layout of the database.
      */
     private final DatabaseLayout directoryStructure;
+    private final PageCacheTracer cacheTracer;
 
     /**
      * The index which backs this token scan store. Instantiated in {@link #init()} and considered
@@ -183,12 +184,14 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType )
+            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
+            PageCacheTracer cacheTracer )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
+        this.cacheTracer = cacheTracer;
         this.storeFile = entityType == EntityType.NODE ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
@@ -220,18 +223,19 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * Returns {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * Only a single writer is allowed at any given point in time.
      *
+     * @param cursorTracer underlying page cursor events tracer.
      * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public TokenScanWriter newWriter()
+    public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
         assertWritable();
 
         try
         {
-            return writer();
+            return writer( cursorTracer );
         }
         catch ( IOException e )
         {
@@ -240,20 +244,20 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     /**
-     * Returns a {@link TokenScanWriter} like that from {@link #newWriter()}, but is specialized in bulk-writing new data.
+     * Returns a {@link TokenScanWriter} like that from {@link #newWriter(PageCursorTracer)}, but is specialized in bulk-writing new data.
      *
      * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public TokenScanWriter newBulkAppendWriter()
+    public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
     {
         assertWritable();
 
         try
         {
-            return new BulkAppendNativeTokenScanWriter( index.writer( NULL ) );
+            return new BulkAppendNativeTokenScanWriter( index.writer( cursorTracer ) );
         }
         catch ( IOException e )
         {
@@ -270,9 +274,9 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     @Override
-    public void applyUpdates( Iterable<EntityTokenUpdate> tokenUpdates )
+    public void applyUpdates( Iterable<EntityTokenUpdate> tokenUpdates, PageCursorTracer cursorTracer )
     {
-        try ( TokenScanWriter writer = newWriter() )
+        try ( TokenScanWriter writer = newWriter( cursorTracer ) )
         {
             for ( EntityTokenUpdate update : tokenUpdates )
             {
@@ -300,13 +304,13 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges()
+    public AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer )
     {
-        return allEntityTokenRanges( 0, Long.MAX_VALUE );
+        return allEntityTokenRanges( 0, Long.MAX_VALUE, cursorTracer );
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {
@@ -314,7 +318,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             {
                 return index.seek(
                         new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
-                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), NULL );
+                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorTracer );
             }
             catch ( IOException e )
             {
@@ -325,7 +329,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         int highestTokenId = -1;
         try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
                 new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new TokenScanKey().set( 0, -1 ), NULL ) )
+                new TokenScanKey().set( 0, -1 ), cursorTracer ) )
         {
             if ( cursor.next() )
             {
@@ -469,8 +473,8 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             long numberOfEntities;
 
             // Intentionally ignore read-only flag here when rebuilding.
-            final PageCursorTracer cursorTracer = NULL;
-            try ( TokenScanWriter writer = newBulkAppendWriter() )
+            final PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG );
+            try ( TokenScanWriter writer = newBulkAppendWriter( cursorTracer ) )
             {
                 numberOfEntities = fullStoreChangeStream.applyTo( writer, cursorTracer );
             }
@@ -482,17 +486,17 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         }
     }
 
-    private NativeTokenScanWriter writer() throws IOException
+    private NativeTokenScanWriter writer( PageCursorTracer cursorTracer ) throws IOException
     {
-        return singleWriter.initialize( index.writer( NULL ) );
+        return singleWriter.initialize( index.writer( cursorTracer ) );
     }
 
     @Override
-    public boolean isEmpty() throws IOException
+    public boolean isEmpty( PageCursorTracer cursorTracer ) throws IOException
     {
         try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
                 new TokenScanKey( 0, 0 ),
-                new TokenScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), NULL ) )
+                new TokenScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), cursorTracer ) )
         {
             return !cursor.next();
         }

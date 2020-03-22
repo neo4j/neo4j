@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.ToIntBiFunction;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.RawIterator;
@@ -45,6 +46,7 @@ import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
@@ -52,6 +54,7 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -237,7 +240,7 @@ public class CsvInput implements Input
     }
 
     @Override
-    public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator ) throws IOException
+    public Estimates calculateEstimates( ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator ) throws IOException
     {
         long[] nodeSample = sample( nodeDataFactory, nodeHeaderFactory, valueSizeCalculator, node -> node.labels().length );
         long[] relationshipSample = sample( relationshipDataFactory, relationshipHeaderFactory, valueSizeCalculator, entity -> 0 );
@@ -250,7 +253,7 @@ public class CsvInput implements Input
     }
 
     private long[] sample( Iterable<DataFactory> dataFactories, Header.Factory headerFactory,
-            ToIntFunction<Value[]> valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
+            ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
     {
         long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
         try ( CsvInputChunkProxy chunk = new CsvInputChunkProxy() )
@@ -286,7 +289,7 @@ public class CsvInput implements Input
                                 for ( ; chunk.next( entity ); entities++ )
                                 {
                                     properties += entity.propertyCount();
-                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator );
+                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL );
                                     additional += additionalCalculator.applyAsInt( entity );
                                 }
                             }

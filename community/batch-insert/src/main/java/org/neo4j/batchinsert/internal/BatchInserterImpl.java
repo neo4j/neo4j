@@ -1097,7 +1097,8 @@ public class BatchInserterImpl implements BatchInserter
     private LabelScanStore buildLabelIndex() throws IOException
     {
         FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
-        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate() );
+        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate(),
+                pageCacheTracer );
         if ( labelsTouched )
         {
             labelIndex.drop();

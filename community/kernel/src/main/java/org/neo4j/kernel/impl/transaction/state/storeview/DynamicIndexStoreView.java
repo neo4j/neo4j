@@ -76,7 +76,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
-        if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
+        if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds, cursorTracer ) )
         {
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
                     forceStoreScan, cursorTracer );
@@ -91,7 +91,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer )
     {
-        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds ) )
+        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds, cursorTracer ) )
         {
             return neoStoreIndexStoreView
                     .visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
@@ -101,11 +101,11 @@ public class DynamicIndexStoreView implements IndexStoreView
                 propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer );
     }
 
-    private boolean useAllNodeStoreScan( int[] labelIds )
+    private boolean useAllNodeStoreScan( int[] labelIds, PageCursorTracer cursorTracer )
     {
         try
         {
-            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore();
+            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore( cursorTracer );
         }
         catch ( Exception e )
         {
@@ -114,11 +114,11 @@ public class DynamicIndexStoreView implements IndexStoreView
         }
     }
 
-    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds )
+    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds, PageCursorTracer cursorTracer )
     {
         try
         {
-            return !relationshipTypeScanStoreEnabled() || ArrayUtils.isEmpty( relationshipTypeIds ) || isEmptyRelationshipTypeStoreScan();
+            return !relationshipTypeScanStoreEnabled() || ArrayUtils.isEmpty( relationshipTypeIds ) || isEmptyRelationshipTypeStoreScan( cursorTracer );
         }
         catch ( Exception e )
         {
@@ -127,14 +127,14 @@ public class DynamicIndexStoreView implements IndexStoreView
         }
     }
 
-    private boolean isEmptyLabelScanStore() throws Exception
+    private boolean isEmptyLabelScanStore( PageCursorTracer cursorTracer ) throws Exception
     {
-        return labelScanStore.isEmpty();
+        return labelScanStore.isEmpty( cursorTracer );
     }
 
-    private boolean isEmptyRelationshipTypeStoreScan() throws IOException
+    private boolean isEmptyRelationshipTypeStoreScan( PageCursorTracer cursorTracer ) throws IOException
     {
-        return relationshipTypeScanStore.isEmpty();
+        return relationshipTypeScanStore.isEmpty( cursorTracer );
     }
 
     @Override

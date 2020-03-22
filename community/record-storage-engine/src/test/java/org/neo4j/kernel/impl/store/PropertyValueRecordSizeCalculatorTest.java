@@ -30,6 +30,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 class PropertyValueRecordSizeCalculatorTest
@@ -47,7 +48,7 @@ class PropertyValueRecordSizeCalculatorTest
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.applyAsInt( new Value[] {Values.of( 10 )} );
+        int size = calculator.applyAsInt( new Value[] {Values.of( 10 )}, NULL );
 
         // then
         assertEquals( PropertyRecordFormat.RECORD_SIZE, size );
@@ -60,7 +61,7 @@ class PropertyValueRecordSizeCalculatorTest
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.applyAsInt( new Value[] {Values.of( string( 80 ) ), Values.of( new String[] {string( 150 )} )} );
+        int size = calculator.applyAsInt( new Value[] {Values.of( string( 80 ) ), Values.of( new String[] {string( 150 )} )}, NULL );
 
         // then
         assertEquals( PROPERTY_RECORD_SIZE + DYNAMIC_RECORD_SIZE + DYNAMIC_RECORD_SIZE * 2, size );
@@ -82,7 +83,7 @@ class PropertyValueRecordSizeCalculatorTest
                 Values.of( 1234567890123456789L ),        // 2 blocks go to record 3
                 Values.of( 5 ),                           // 1 block
                 Values.of( "value" )                      // 1 block
-        } );
+        }, NULL );
 
         // then
         assertEquals( PROPERTY_RECORD_SIZE * 3 + DYNAMIC_RECORD_SIZE, size );

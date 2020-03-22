@@ -28,6 +28,9 @@ import java.util.List;
 
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -36,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 @ExtendWith( RandomExtension.class )
@@ -132,7 +138,9 @@ class GapFreeAllEntriesTokenScanReaderTest
 
     private static GapFreeAllEntriesTokenScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
     {
-        return new GapFreeAllEntriesTokenScanReader( ranges( RANGE_SIZE, ranges ), RANGE_SIZE * ranges.length );
+        var labelScanStore = mock( LabelScanStore.class );
+        when( labelScanStore.allEntityTokenRanges( any( PageCursorTracer.class ) ) ).thenReturn( ranges( RANGE_SIZE, ranges ) );
+        return new GapFreeAllEntriesTokenScanReader( labelScanStore, RANGE_SIZE * ranges.length, PageCacheTracer.NULL );
     }
 
     private static AllEntriesTokenScanReader ranges( int rangeSize, int... ranges )

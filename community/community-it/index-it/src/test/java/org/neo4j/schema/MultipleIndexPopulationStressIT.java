@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.ToIntFunction;
+import java.util.function.ToIntBiFunction;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
@@ -60,6 +60,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -367,7 +368,7 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
+        public Estimates calculateEstimates( ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator )
         {
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }

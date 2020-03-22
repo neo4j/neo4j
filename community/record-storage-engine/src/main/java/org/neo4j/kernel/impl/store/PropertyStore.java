@@ -28,7 +28,6 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.ToIntFunction;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -697,7 +696,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     /**
      * @return a calculator of property value sizes. The returned instance is designed to be used multiple times by a single thread only.
      */
-    public ToIntFunction<Value[]> newValueEncodedSizeCalculator()
+    public PropertyValueRecordSizeCalculator newValueEncodedSizeCalculator()
     {
         return new PropertyValueRecordSizeCalculator( this );
     }

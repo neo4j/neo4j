@@ -80,8 +80,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
@@ -1275,7 +1275,7 @@ public class CsvInputTest
         // when
         CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( true ), relationshipData, defaultFormatRelationshipFileHeader( true ),
                 IdType.INTEGER, COMMAS, monitor );
-        input.calculateEstimates( values -> 1 /*doesn't quite matter*/ );
+        input.calculateEstimates( ( values, NULL ) -> 1 /*doesn't quite matter*/ );
 
         // then
         verify( monitor, times( 1 ) ).typeNormalized( "source1", "shortProp", "short", "long" );

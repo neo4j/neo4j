@@ -308,10 +308,10 @@ public final class Recovery
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
-                logProvider, databasePageCache, databaseLayout, fs, false );
+                logProvider, databasePageCache, databaseLayout, fs, false, tracers.getPageCacheTracer() );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
-                        databaseLayout, fs, false );
+                        databaseLayout, fs, false, tracers.getPageCacheTracer() );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =

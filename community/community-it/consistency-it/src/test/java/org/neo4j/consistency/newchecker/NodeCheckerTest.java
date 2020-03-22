@@ -47,7 +47,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 class NodeCheckerTest extends CheckerTestBase
 {
@@ -115,7 +114,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -135,7 +134,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // A couple of nodes w/ correct label indexing
-            try ( TokenScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
             {
                 for ( int i = 0; i < 10; i++ )
                 {
@@ -145,7 +144,7 @@ class NodeCheckerTest extends CheckerTestBase
             }
 
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -245,7 +244,7 @@ class NodeCheckerTest extends CheckerTestBase
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
             long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
-            try ( TokenScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -282,7 +281,7 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            try ( TokenScanWriter writer = labelIndex.newWriter() )
+            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
             {
                 for ( int i = 0; i < 20; i++ )
                 {

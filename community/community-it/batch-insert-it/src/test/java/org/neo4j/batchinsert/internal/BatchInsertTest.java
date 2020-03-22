@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -1425,7 +1426,7 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate() );
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate(), PageCacheTracer.NULL );
     }
 
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

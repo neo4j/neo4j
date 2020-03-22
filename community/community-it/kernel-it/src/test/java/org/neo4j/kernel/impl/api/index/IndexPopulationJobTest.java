@@ -75,9 +75,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -205,9 +205,9 @@ class IndexPopulationJobTest
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 18 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 18 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 19 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 19 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 18 );
         assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
     }
 

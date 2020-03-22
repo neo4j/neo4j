@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.ToIntFunction;
+import java.util.function.ToIntBiFunction;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
@@ -31,10 +31,12 @@ import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -121,7 +123,7 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
+    public Estimates calculateEstimates( ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator )
     {
         int sampleSize = 100;
         InputEntity[] nodeSample = sample( nodes( Collector.EMPTY ), sampleSize );
@@ -170,7 +172,7 @@ public class DataGeneratorInput implements Input
         return (double) labels / nodes.length;
     }
 
-    private static double[] sampleProperties( InputEntity[] sample, ToIntFunction<Value[]> valueSizeCalculator )
+    private static double[] sampleProperties( InputEntity[] sample, ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator )
     {
         int propertiesPerEntity = sample[0].propertyCount();
         long propertiesSize = 0;
@@ -178,20 +180,11 @@ public class DataGeneratorInput implements Input
         {
             if ( entity != null )
             {
-                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator );
+                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL );
             }
         }
         double propertySizePerEntity = (double) propertiesSize / sample.length;
         return new double[] {propertiesPerEntity, propertySizePerEntity};
-    }
-
-    public static Header sillyNodeHeader( IdType idType, Extractors extractors )
-    {
-        return new Header( new Entry( null, Type.ID, null, idExtractor( idType, extractors ) ),
-                new Entry( "name", Type.PROPERTY, null, extractors.string() ),
-                new Entry( "age", Type.PROPERTY, null, extractors.int_() ),
-                new Entry( "something", Type.PROPERTY, null, extractors.string() ),
-                new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
     }
 
     public static Header bareboneNodeHeader( IdType idType, Extractors extractors )

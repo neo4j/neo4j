@@ -24,14 +24,15 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.monitoring.Monitors;
 
 class NativeRelationshipTypeScanStore extends NativeTokenScanStore implements RelationshipTypeScanStore
 {
-    NativeRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure,
-            FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType )
+    NativeRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            EntityType entityType, PageCacheTracer cacheTracer )
     {
-        super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType );
+        super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer );
     }
 }

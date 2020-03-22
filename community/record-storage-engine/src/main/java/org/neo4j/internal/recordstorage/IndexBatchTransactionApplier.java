@@ -103,12 +103,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             // Updates are sorted according to node id here, an artifact of node commands being sorted
             // by node id when extracting from TransactionRecordState.
-            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates ) );
+            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates, cursorTracer ) );
             labelUpdates = null;
         }
         if ( relationshipTypeUpdates != null )
         {
-            relationshipTypeUpdatesApply = relationshipTypeScanStoreSync.applyAsync( new TokenUpdateWork( relationshipTypeUpdates ) );
+            relationshipTypeUpdatesApply = relationshipTypeScanStoreSync.applyAsync( new TokenUpdateWork( relationshipTypeUpdates, cursorTracer ) );
             relationshipTypeUpdates = null;
         }
         if ( indexUpdates != null && indexUpdates.hasUpdates() )

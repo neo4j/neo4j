@@ -24,6 +24,10 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Inserts empty {@link EntityTokenRange} for those ranges missing from the source iterator.
@@ -31,12 +35,15 @@ import org.neo4j.internal.index.label.EntityTokenRange;
  */
 class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
 {
+    private static final String GAP_FREE_ALL_ENTRIES_READER_TAG = "gapFreeAllEntriesReader";
     private final AllEntriesTokenScanReader entityTokenRanges;
     private final long highId;
+    private final PageCursorTracer cursorTracer;
 
-    GapFreeAllEntriesTokenScanReader( AllEntriesTokenScanReader entityTokenRanges, long highId )
+    GapFreeAllEntriesTokenScanReader( LabelScanStore scanStore, long highId, PageCacheTracer cacheTracer )
     {
-        this.entityTokenRanges = entityTokenRanges;
+        this.cursorTracer = cacheTracer.createPageCursorTracer( GAP_FREE_ALL_ENTRIES_READER_TAG );
+        this.entityTokenRanges = scanStore.allEntityTokenRanges( cursorTracer );
         this.highId = highId;
     }
 
@@ -49,7 +56,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     @Override
     public void close() throws Exception
     {
-        entityTokenRanges.close();
+        IOUtils.closeAll( entityTokenRanges, cursorTracer );
     }
 
     @Override

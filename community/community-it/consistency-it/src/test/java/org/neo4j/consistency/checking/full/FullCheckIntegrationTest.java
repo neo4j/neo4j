@@ -324,7 +324,7 @@ public class FullCheckIntegrationTest
     private void write( LabelScanStore labelScanStore, Iterable<EntityTokenUpdate> nodeLabelUpdates )
             throws IOException
     {
-        try ( TokenScanWriter writer = labelScanStore.newWriter() )
+        try ( TokenScanWriter writer = labelScanStore.newWriter( NULL ) )
         {
             for ( EntityTokenUpdate update : nodeLabelUpdates )
             {

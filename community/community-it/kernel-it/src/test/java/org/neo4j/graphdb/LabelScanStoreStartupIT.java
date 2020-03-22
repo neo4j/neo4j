@@ -27,10 +27,10 @@ import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.TokenScanWriter;
+import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.TokenScanStoreTest;
+import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -140,7 +140,7 @@ class LabelScanStoreStartupIT
     private static void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {
         int labelId = 1;
-        try ( TokenScanWriter labelScanWriter = labelScanStore.newWriter() )
+        try ( TokenScanWriter labelScanWriter = labelScanStore.newWriter( NULL ) )
         {
             labelScanWriter.write( EntityTokenUpdate.tokenChanges( 1, new long[]{}, new long[]{labelId} ) );
         }

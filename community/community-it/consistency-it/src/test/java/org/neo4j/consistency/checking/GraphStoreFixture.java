@@ -286,7 +286,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
     {
         FullLabelStream labelStream = new FullLabelStream( indexStoreView );
-        LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout(), fileSystem, labelStream, readOnly, monitors, immediate() );
+        LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout(), fileSystem, labelStream, readOnly, monitors, immediate(),
+                PageCacheTracer.NULL );
         try
         {
             labelScanStore.init();

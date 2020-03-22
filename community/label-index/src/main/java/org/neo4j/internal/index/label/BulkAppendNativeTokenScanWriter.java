@@ -45,7 +45,7 @@ class BulkAppendNativeTokenScanWriter implements TokenScanWriter
 {
     private final Writer<TokenScanKey,TokenScanValue> writer;
     private final ValueMerger<TokenScanKey,TokenScanValue> merger;
-    private MutableIntObjectMap<Pair<TokenScanKey,TokenScanValue>> ranges = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<Pair<TokenScanKey,TokenScanValue>> ranges = IntObjectMaps.mutable.empty();
 
     BulkAppendNativeTokenScanWriter( Writer<TokenScanKey,TokenScanValue> writer )
     {

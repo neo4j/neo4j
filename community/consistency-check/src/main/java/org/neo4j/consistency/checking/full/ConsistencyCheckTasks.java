@@ -64,7 +64,7 @@ import static org.neo4j.consistency.checking.full.QueueDistribution.ROUND_ROBIN;
 
 class ConsistencyCheckTasks
 {
-    private static final String CONSISTENCY_TOKEN_READER_CHECK_TAG = "consistencyTokenReaderCheeck";
+    private static final String CONSISTENCY_TOKEN_READER_CHECK_TAG = "consistencyTokenReaderCheck";
     private final ProgressMonitorFactory.MultiPartBuilder multiPartBuilder;
     private final StoreProcessor defaultProcessor;
     private final StoreAccess nativeStores;
@@ -201,7 +201,7 @@ class ConsistencyCheckTasks
         {
             long highId = nativeStores.getNodeStore().getHighId();
             tasks.add( recordScanner( "LabelScanStore",
-                    new GapFreeAllEntriesTokenScanReader( labelScanStore.allEntityTokenRanges(), highId ),
+                    new GapFreeAllEntriesTokenScanReader( labelScanStore, highId, pageCacheTracer ),
                     new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
                     ROUND_ROBIN ) );
         }

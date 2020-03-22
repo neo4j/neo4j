@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
@@ -50,7 +51,6 @@ import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -76,7 +76,8 @@ class LabelScanStoreIT
     @BeforeEach
     void before()
     {
-        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() ) );
+        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
+                immediate(), PageCacheTracer.NULL ) );
     }
 
     @Test
@@ -113,7 +114,7 @@ class LabelScanStoreIT
     @Test
     void tracePageCacheAccessOnNodesWithLabelRead() throws IOException
     {
-        try ( var scanWriter = store.newWriter() )
+        try ( var scanWriter = store.newWriter( NULL ) )
         {
             scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
@@ -138,7 +139,7 @@ class LabelScanStoreIT
     @Test
     void tracePageCacheAccessOnNodesWithAnyLabelRead() throws IOException
     {
-        try ( var scanWriter = store.newWriter() )
+        try ( var scanWriter = store.newWriter( NULL ) )
         {
             scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
@@ -170,7 +171,7 @@ class LabelScanStoreIT
     @Test
     void tracePageCacheAccessOnNodeLabelScan() throws IOException
     {
-        try ( var scanWriter = store.newWriter() )
+        try ( var scanWriter = store.newWriter( NULL ) )
         {
             scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
@@ -227,7 +228,7 @@ class LabelScanStoreIT
     private void randomModifications( long[] expected, int count ) throws IOException
     {
         BitSet editedNodes = new BitSet();
-        try ( TokenScanWriter writer = store.newWriter() )
+        try ( TokenScanWriter writer = store.newWriter( NULL ) )
         {
             for ( int i = 0; i < count; i++ )
             {

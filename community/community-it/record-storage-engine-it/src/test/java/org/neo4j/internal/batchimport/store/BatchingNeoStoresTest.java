@@ -356,7 +356,7 @@ class BatchingNeoStoresTest
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
             RelationshipTypeScanStore relationshipTypeScanStore = life.add(
                     toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
-                            recoveryCleanupWorkCollector ) );
+                            recoveryCleanupWorkCollector, PageCacheTracer.NULL ) );
             storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
             apply( txState, commandCreationContext, storageEngine );
 

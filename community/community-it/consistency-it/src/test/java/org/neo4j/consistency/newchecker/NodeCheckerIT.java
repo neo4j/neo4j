@@ -19,12 +19,10 @@
  */
 package org.neo4j.consistency.newchecker;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -108,9 +106,9 @@ class NodeCheckerIT
 
         nodeChecker.check( LongRange.range( 0, nodeId + 1 ), true, false );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 8 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 6 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 8 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 10 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 8 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 10 );
     }
 
     private void prepareContext() throws Exception

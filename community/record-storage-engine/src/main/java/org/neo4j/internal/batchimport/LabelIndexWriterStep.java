@@ -28,22 +28,25 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
 import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
 public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
 {
+    private static final String INDEX_WRITE_STEP_TAG = "indexWriteStep";
     private final TokenScanWriter writer;
     private final NodeStore nodeStore;
+    private final PageCursorTracer cursorTracer;
 
     public LabelIndexWriterStep( StageControl control, Configuration config, LabelScanStore store,
             NodeStore nodeStore, PageCacheTracer pageCacheTracer )
     {
         super( control, "LABEL INDEX", config, 1, pageCacheTracer );
-        this.writer = store.newBulkAppendWriter();
+        this.cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_WRITE_STEP_TAG );
+        this.writer = store.newBulkAppendWriter( cursorTracer );
         this.nodeStore = nodeStore;
     }
 
@@ -64,6 +67,6 @@ public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
     public void close() throws Exception
     {
         super.close();
-        writer.close();
+        closeAll( writer, cursorTracer );
     }
 }
