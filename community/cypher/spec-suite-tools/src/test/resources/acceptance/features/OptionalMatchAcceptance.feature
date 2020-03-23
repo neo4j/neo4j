@@ -129,3 +129,15 @@ Feature: OptionalMatchAcceptance
       | n    | r    | m    | m2   |
       | null | null | null | null |
     And no side effects
+
+  Scenario: optional match followed by aggregation and map-projection
+    Given an empty graph
+    When executing query:
+      """
+       OPTIONAL MATCH (n)-->(m)
+       RETURN collect(n {.*, m, meta: {prop: 42}}) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | []     |
+    And no side effects
