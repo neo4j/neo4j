@@ -45,9 +45,8 @@ import org.neo4j.util.Preconditions;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
-import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 /**
  * Utility for performing Expand(Into)
@@ -64,7 +63,7 @@ public class CachingExpandInto
     private static final int EXPENSIVE_DEGREE = -1;
 
     private final RelationshipCache relationshipCache;
-    private final NodeDegreeCache degreeCache = new NodeDegreeCache( );
+    private final NodeDegreeCache degreeCache;
     private long fromNode = -1L;
     private long toNode = -1L;
 
@@ -84,6 +83,7 @@ public class CachingExpandInto
         this.read = read;
         this.direction = direction;
         this.relationshipCache = new RelationshipCache( memoryTracker, operatorId );
+        this.degreeCache = new NodeDegreeCache( memoryTracker, operatorId );
     }
 
     /**
@@ -511,17 +511,22 @@ public class CachingExpandInto
     static class NodeDegreeCache
     {
         private final int capacity;
+        private final QueryMemoryTracker memoryTracker;
+        private final int operatorId;
         private MutableLongIntMap degreeCache = new LongIntHashMap();
 
-        NodeDegreeCache()
+        NodeDegreeCache( QueryMemoryTracker memoryTracker, int operatorId )
         {
-            this( DEFAULT_CAPACITY );
+            this( DEFAULT_CAPACITY, memoryTracker, operatorId );
         }
 
-        NodeDegreeCache( int capacity )
+        NodeDegreeCache( int capacity, QueryMemoryTracker memoryTracker, int operatorId )
         {
             this.capacity = capacity;
+            this.memoryTracker = memoryTracker;
+            this.operatorId = operatorId;
         }
+
 
         public int getIfAbsentPut( long node, IntFunction0 update )
         {
@@ -536,7 +541,20 @@ public class CachingExpandInto
                     return update.getAsInt();
                 }
             }
-            return degreeCache.getIfAbsentPut( node, update );
+            else
+            {
+                if ( degreeCache.containsKey( node ) )
+                {
+                    return degreeCache.get( node );
+                }
+                else
+                {
+                    int value = update.getAsInt();
+                    degreeCache.put( node, value );
+                    memoryTracker.allocated( Long.BYTES + Integer.BYTES, operatorId );
+                    return value;
+                }
+            }
         }
     }
 
