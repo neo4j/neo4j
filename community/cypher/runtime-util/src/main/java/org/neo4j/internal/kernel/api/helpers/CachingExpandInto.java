@@ -527,7 +527,6 @@ public class CachingExpandInto
             this.operatorId = operatorId;
         }
 
-
         public int getIfAbsentPut( long node, IntFunction0 update )
         {
             if ( degreeCache.size() > capacity )
