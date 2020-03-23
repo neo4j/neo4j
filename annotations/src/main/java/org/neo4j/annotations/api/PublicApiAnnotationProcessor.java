@@ -185,8 +185,13 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                 String oldSignature = Files.readString( oldSignaturePath, UTF_8 );
                 if ( !oldSignature.equals( newSignature ) )
                 {
-                    error( format( "Public API signature mismatch. The generated signature, %s, does not match the old signature in %s.%n" +
-                            "Specify `-Doverwrite` to maven to replace it.", path, oldSignaturePath ) );
+                    oldSignature = oldSignature.replace( "\r\n", "\n" );
+                    newSignature = newSignature.replace( "\r\n", "\n" );
+                    if ( !oldSignature.equals( newSignature ) )
+                    {
+                        error( format( "Public API signature mismatch. The generated signature, %s, does not match the old signature in %s.%n" +
+                                "Specify `-Doverwrite` to maven to replace it.", path, oldSignaturePath ) );
+                    }
                 }
                 else
                 {
