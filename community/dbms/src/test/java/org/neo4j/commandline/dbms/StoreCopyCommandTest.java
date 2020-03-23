@@ -27,9 +27,17 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.dbms.StoreCopyCommand.StoreFormatCandidates;
+import org.neo4j.internal.helpers.collection.Iterators;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.commandline.dbms.storeutil.StoreCopy.FormatEnum.same;
+import static org.neo4j.commandline.dbms.storeutil.StoreCopy.FormatEnum.standard;
 
 class StoreCopyCommandTest
 {
@@ -71,10 +79,11 @@ class StoreCopyCommandTest
                 "      --force                Force the command to run even if the integrity of%n" +
                 "                               the database can not be verified.%n" +
                 "      --to-format=<format>   Set the format for the new database. Must be one%n" +
-                "                               of same, standard, high_limit. 'same' will use%n" +
-                "                               the same format as the source. WARNING: If you%n" +
-                "                               go from 'high_limit' to 'standard' there is no%n" +
-                "                               validation that the data will actually fit.%n" +
+                "                               of same, standard. 'same' will use the same%n" +
+                "                               format as the source. WARNING: 'high_limit'%n" +
+                "                               format is only available in enterprise edition.%n" +
+                "                               If you go from 'high_limit' to 'standard' there%n" +
+                "                               is no validation that the data will actually fit.%n" +
                 "                               Default: same%n" +
                 "      --delete-nodes-with-labels=<label>[,<label>...]%n" +
                 "                             A comma separated list of labels. All nodes that%n" +
@@ -91,5 +100,22 @@ class StoreCopyCommandTest
                 "      --to-pagecache=<size>  The size of the page cache to use for writing.%n" +
                 "                               Default: 8m"
         ) ) );
+    }
+
+    @Test
+    void doNotIncludeHighLimitInAListOfFormatCandidates()
+    {
+        var candidates = Iterators.asList( new StoreFormatCandidates().iterator() );
+        assertFalse( candidates.contains( "high_limit" ) );
+        assertTrue( candidates.contains( "standard" ) );
+    }
+
+    @Test
+    void highLimitFormatIsInvalidFormatInCommunity()
+    {
+        var formatConverter = new StoreCopyCommand.FormatNameConverter();
+        assertEquals( standard, formatConverter.convert( "standard" ) );
+        assertEquals( same, formatConverter.convert( "same" ) );
+        assertThrows( CommandLine.TypeConversionException.class, () -> formatConverter.convert( "high_limit" ) );
     }
 }

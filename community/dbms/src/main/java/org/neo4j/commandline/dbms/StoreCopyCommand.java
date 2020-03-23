@@ -19,19 +19,25 @@
  */
 package org.neo4j.commandline.dbms;
 
+import picocli.CommandLine;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.storeutil.StoreCopy;
+import org.neo4j.commandline.dbms.storeutil.StoreCopy.FormatEnum;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -42,11 +48,14 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
+import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.allFormats;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -86,12 +95,15 @@ public class StoreCopyCommand extends AbstractCommand
     private boolean force;
 
     @Option(
+            completionCandidates = StoreFormatCandidates.class,
             names = "--to-format",
             defaultValue = "same",
+            converter = FormatNameConverter.class,
             description = "Set the format for the new database. Must be one of ${COMPLETION-CANDIDATES}. 'same' will use the same format as the source. " +
-                    "WARNING: If you go from 'high_limit' to 'standard' there is no validation that the data will actually fit."
+                    "WARNING: 'high_limit' format is only available in enterprise edition. If you go from 'high_limit' to 'standard' there is " +
+                    "no validation that the data will actually fit."
     )
-    private StoreCopy.FormatEnum format;
+    private FormatEnum format;
 
     @Option(
             names = "--delete-nodes-with-labels",
@@ -299,5 +311,45 @@ public class StoreCopyCommand extends AbstractCommand
                 .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
+    }
+
+    private static boolean isHighLimitFormatMissing()
+    {
+        return stream( allFormats() ).noneMatch( format -> "high_limit".equals( format.name() ) );
+    }
+
+    public static class FormatNameConverter implements CommandLine.ITypeConverter<FormatEnum>
+    {
+        @Override
+        public FormatEnum convert( String name )
+        {
+            try
+            {
+                var format = FormatEnum.valueOf( name );
+                if ( format == FormatEnum.high_limit && isHighLimitFormatMissing() )
+                {
+                    throw new CommandLine.TypeConversionException( "High limit format available only in enterprise edition." );
+                }
+                return format;
+            }
+            catch ( Exception e )
+            {
+                throw new CommandLine.TypeConversionException( format( "Invalid database format name '%s'. (%s)", name, e ) );
+            }
+        }
+    }
+
+    public static class StoreFormatCandidates implements Iterable<String>
+    {
+        @Override
+        public Iterator<String> iterator()
+        {
+            List<String> storeFormats = new ArrayList<>( Arrays.stream( FormatEnum.values() ).map( Enum::name ).collect( Collectors.toList() ) );
+            if ( isHighLimitFormatMissing() )
+            {
+                storeFormats.remove( FormatEnum.high_limit.name() );
+            }
+            return storeFormats.iterator();
+        }
     }
 }
