@@ -260,6 +260,8 @@ object LogicalPlanToPlanBuilderString {
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         indexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr)
+      case RollUpApply(_, _, collectionName, variableToCollect, nullableVariables) =>
+        s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}, Set(${wrapInQuotationsAndMkString(nullableVariables)})"""
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>

@@ -621,7 +621,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def semiApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SemiApply(lhs, rhs)(_)))
 
-  def rollupApply(collectionName: String,
+  def rollUpApply(collectionName: String,
                   variableToCollect: String,
                   nullableIdentifiers: Set[String] = Set.empty): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect, nullableIdentifiers)(_)))

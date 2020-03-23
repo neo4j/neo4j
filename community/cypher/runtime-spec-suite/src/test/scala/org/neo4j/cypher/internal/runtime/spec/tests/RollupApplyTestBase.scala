@@ -39,7 +39,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollupApply("list", "y")
+      .rollUpApply("list", "y")
       .|.unwind("[1,2,3] AS y")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -58,7 +58,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollupApply("list", "y")
+      .rollUpApply("list", "y")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
       .build()
@@ -79,7 +79,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollupApply("list", "y")
+      .rollUpApply("list", "y")
       .|.unwind("[x, x] AS y")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -103,7 +103,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollupApply("list", "y", Set("y"))
+      .rollUpApply("list", "y", Set("y"))
       .|.argument("y")
       .optionalExpandAll("(x)-->(y)")
       .allNodeScan("x")
@@ -127,7 +127,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollupApply("list", "y")
+      .rollUpApply("list", "y")
       .|.sort(Seq(Ascending("y"))) // to get consistent order in the produced lists
       .|.optionalExpandAll("(x)-->(y)")
       .|.argument("y")
