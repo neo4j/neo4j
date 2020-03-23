@@ -351,9 +351,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should work with limit on top") {
     val size = sizeHint / 2
     // given
-    val nodes = given {
-      nodeGraph(size)
-    }
+    given { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -370,6 +368,27 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x").withRows(rowCount(1))
+  }
+
+  test("should work with limit under apply") {
+    val size = sizeHint / 2
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(1)
+      .|.union()
+      .|.|.allNodeScan("a")
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withRows(rowCount(size))
   }
 
   test("should union under apply") {
