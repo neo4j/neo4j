@@ -302,6 +302,30 @@ class FileUtilsTest
         assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ), is( 2L ) );
     }
 
+    @Test
+    void nonExistingDirectoryCanBeDeleted() throws Exception
+    {
+        File dir = new File( path, "dir" );
+        assertTrue( FileUtils.deleteFile( dir ) );
+    }
+
+    @Test
+    void emptyDirectoryCanBeDeleted() throws Exception
+    {
+        File dir = directory( "dir" );
+        assertTrue( FileUtils.deleteFile( dir ) );
+    }
+
+    @Test
+    void nonEmptyDirectoryCannotBeDeleted() throws Exception
+    {
+        File dir = directory( "dir" );
+        File file = new File( dir, "file" );
+
+        assertTrue( file.createNewFile() );
+        assertFalse( FileUtils.deleteFile( dir ) );
+    }
+
     private File directory( String name )
     {
         File dir = new File( path, name );
