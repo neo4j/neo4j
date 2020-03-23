@@ -193,6 +193,19 @@ public final class FileUtils
         {
             return true;
         }
+        else if ( file.isDirectory() )
+        {
+            File[] files = file.listFiles();
+            if ( files == null )
+            {
+                // should typically mean IOException because we already confirmed existence, however code is not thread-safe
+                return false;
+            }
+            else if ( files.length > 0 )
+            {
+                return false;
+            }
+        }
         int count = 0;
         boolean deleted;
         do
