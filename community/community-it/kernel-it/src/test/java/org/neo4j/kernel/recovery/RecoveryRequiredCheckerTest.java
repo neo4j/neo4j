@@ -31,7 +31,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -50,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 
 @Neo4jLayoutExtension
 class RecoveryRequiredCheckerTest
@@ -270,7 +270,7 @@ class RecoveryRequiredCheckerTest
     {
         for ( File file : databaseLayout.storeFiles() )
         {
-            if ( file.getName().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) && !TokenScanStore.relationshipTypeScanStoreEnabled() )
+            if ( file.getName().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) && !Config.defaults().get( enable_relationship_type_scan_store ) )
             {
                 // Skip
                 continue;

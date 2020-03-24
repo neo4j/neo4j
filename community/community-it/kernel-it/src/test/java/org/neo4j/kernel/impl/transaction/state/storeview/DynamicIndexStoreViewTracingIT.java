@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -72,7 +73,7 @@ class DynamicIndexStoreViewTracingIT
         {
             var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
             var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
-                    lockService, storageEngine::newReader, NullLogProvider.nullLogProvider() );
+                    lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
             var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
                     (Visitor<EntityTokenUpdate,Exception>) element -> false, false, cursorTracer );
             storeScan.run();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -33,6 +31,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -51,20 +50,20 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil.clearRelationshipTypeStoreScan;
-import static org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil.enableRelationshipTypeStoreScan;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 class RelationshipTypeScanStoreIT
 {
     private static final RelationshipType REL_TYPE = RelationshipType.withName( "REL_TYPE" );
@@ -81,16 +80,10 @@ class RelationshipTypeScanStoreIT
     @Inject
     StorageEngineFactory storageEngineFactory;
 
-    @BeforeAll
-    static void toggleOn()
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
     {
-        enableRelationshipTypeStoreScan();
-    }
-
-    @AfterAll
-    static void toggleOff()
-    {
-        clearRelationshipTypeStoreScan();
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
     }
 
     @Test

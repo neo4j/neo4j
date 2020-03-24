@@ -29,11 +29,13 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -54,8 +56,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
-import static org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil.withRTSS;
-import static org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil.withoutRTSS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class DynamicIndexStoreViewTest
@@ -68,6 +68,7 @@ class DynamicIndexStoreViewTest
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesTokenScanReader nodeLabelRanges = mock( AllEntriesTokenScanReader.class );
     private final AllEntriesTokenScanReader relationshipTypeRanges = mock( AllEntriesTokenScanReader.class );
+    private final Config config = Config.newBuilder().set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ).build();
 
     @BeforeEach
     void setUp()
@@ -107,177 +108,160 @@ class DynamicIndexStoreViewTest
     @Test
     void propertyUpdateVisitorVisitOnlyTargetRelationships() throws Throwable
     {
-        withRTSS( () ->
+        TokenScanReader relationshipScanReader = mock( TokenScanReader.class );
+        when( relationshipTypeScanStore.newReader() ).thenReturn( relationshipScanReader );
+        when( relationshipTypeRanges.maxCount() ).thenReturn( 1L );
+
+        int targetType = 1;
+        int notTargetType = 2;
+        int[] targetTypeArray = {targetType};
+        String targetPropertyKey = "key";
+        String notTargetPropertyKey = "not-key";
+        Value propertyValue = Values.stringValue( "value" );
+        MutableLongList relationshipsWithTargetType = LongLists.mutable.empty();
+        long id = 0;
+        int wantedPropertyUpdates = 5;
+        for ( int i = 0; i < wantedPropertyUpdates; i++ )
         {
-            TokenScanReader relationshipScanReader = mock( TokenScanReader.class );
-            when( relationshipTypeScanStore.newReader() ).thenReturn( relationshipScanReader );
-            when( relationshipTypeRanges.maxCount() ).thenReturn( 1L );
+            // Relationship fitting our target
+            cursors.withRelationship( id, 1, targetType, 3 ).properties( targetPropertyKey, propertyValue );
+            relationshipsWithTargetType.add( id++ );
+            // Relationship with wrong property
+            cursors.withRelationship( id, 1, targetType, 3 ).properties( notTargetPropertyKey, propertyValue );
+            relationshipsWithTargetType.add( id++ );
+            // Relationship with wrong type
+            cursors.withRelationship( id, 1, notTargetType, 3 ).properties( targetPropertyKey, propertyValue );
+        }
+        PrimitiveLongResourceIterator targetRelationshipsIterator = iterator( null, relationshipsWithTargetType.toArray() );
+        when( relationshipScanReader.entitiesWithAnyOfTokens( eq( targetTypeArray ), any() ) ).thenReturn( targetRelationshipsIterator );
+        int targetPropertyKeyId = cursors.propertyKeyTokenHolder().getIdByName( targetPropertyKey );
+        IntPredicate propertyKeyIdFilter = value -> value == targetPropertyKeyId;
 
-            int targetType = 1;
-            int notTargetType = 2;
-            int[] targetTypeArray = {targetType};
-            String targetPropertyKey = "key";
-            String notTargetPropertyKey = "not-key";
-            Value propertyValue = Values.stringValue( "value" );
-            MutableLongList relationshipsWithTargetType = LongLists.mutable.empty();
-            long id = 0;
-            int wantedPropertyUpdates = 5;
-            for ( int i = 0; i < wantedPropertyUpdates; i++ )
-            {
-                // Relationship fitting our target
-                cursors.withRelationship( id, 1, targetType, 3 ).properties( targetPropertyKey, propertyValue );
-                relationshipsWithTargetType.add( id++ );
-                // Relationship with wrong property
-                cursors.withRelationship( id, 1, targetType, 3 ).properties( notTargetPropertyKey, propertyValue );
-                relationshipsWithTargetType.add( id++ );
-                // Relationship with wrong type
-                cursors.withRelationship( id, 1, notTargetType, 3 ).properties( targetPropertyKey, propertyValue );
-            }
-            PrimitiveLongResourceIterator targetRelationshipsIterator = iterator( null, relationshipsWithTargetType.toArray() );
-            when( relationshipScanReader.entitiesWithAnyOfTokens( eq( targetTypeArray ), any() ) ).thenReturn( targetRelationshipsIterator );
-            int targetPropertyKeyId = cursors.propertyKeyTokenHolder().getIdByName( targetPropertyKey );
-            IntPredicate propertyKeyIdFilter = value -> value == targetPropertyKeyId;
+        DynamicIndexStoreView storeView = dynamicIndexStoreView();
+        StoreScan<Exception> storeScan =
+                storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL );
+        storeScan.run();
 
-            DynamicIndexStoreView storeView = dynamicIndexStoreView();
-            StoreScan<Exception> storeScan =
-                    storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL );
-            storeScan.run();
-
-            // Then make sure all the fitting relationships where included
-            verify( propertyUpdateVisitor, times( wantedPropertyUpdates ) ).visit( any() );
-            // and that we didn't visit any more relationships than what we would get from scan store
-            verify( tokenUpdateVisitor, times( relationshipsWithTargetType.size() ) ).visit( any() );
-        } );
+        // Then make sure all the fitting relationships where included
+        verify( propertyUpdateVisitor, times( wantedPropertyUpdates ) ).visit( any() );
+        // and that we didn't visit any more relationships than what we would get from scan store
+        verify( tokenUpdateVisitor, times( relationshipsWithTargetType.size() ) ).visit( any() );
     }
 
     @Test
     void shouldNotDelegateToNeoStoreIndexStoreViewForRelationships() throws Throwable
     {
-        withRTSS( () ->
-        {
-            // Given
-            NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
-            DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
-            IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-            Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-            Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-            PageCursorTracer cursorTracer = NULL;
-            int[] typeIds = {1};
-            boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = NULL;
+        int[] typeIds = {1};
+        boolean forceStoreScan = false;
+        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
-            // When
-            dynamicIndexStoreView
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        // When
+        dynamicIndexStoreView
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 
-            // Then
-            Mockito.verify( neoStoreIndexStoreView, Mockito.times( 0 ) )
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
-        } );
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 0 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
     }
 
     @Test
     void shouldDelegateToNeoStoreIndexStoreViewForRelationshipsIfForceStoreScan() throws Throwable
     {
-        withRTSS( () ->
-        {
-            // Given
-            NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
-            DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
-            IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-            Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-            Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-            PageCursorTracer cursorTracer = NULL;
-            int[] typeIds = {1};
-            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = NULL;
+        int[] typeIds = {1};
+        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
-            // When
-            boolean forceStoreScan = true;
-            dynamicIndexStoreView
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        // When
+        boolean forceStoreScan = true;
+        dynamicIndexStoreView
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 
-            // Then
-            Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
-        } );
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
     }
 
     @Test
     void shouldDelegateToNeoStoreIndexStoreViewForRelationshipsIfEmptyTypeArray() throws Throwable
     {
-        withRTSS( () ->
-        {
-            // Given
-            NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
-            DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
-            IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-            Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-            Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-            PageCursorTracer cursorTracer = NULL;
-            boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = NULL;
+        boolean forceStoreScan = false;
+        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
-            // When
-            int[] typeIds = EMPTY_INT_ARRAY;
-            dynamicIndexStoreView
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        // When
+        int[] typeIds = EMPTY_INT_ARRAY;
+        dynamicIndexStoreView
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 
-            // Then
-            Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
-        } );
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
     }
 
     @Test
     void shouldDelegateToNeoStoreIndexStoreViewForRelationshipsIfFeatureToggleOff() throws Throwable
     {
-        withoutRTSS( () ->
-        {
-            // Given
-            NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
-            DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
-            IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-            Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-            Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-            PageCursorTracer cursorTracer = NULL;
-            int[] typeIds = {1};
-            boolean forceStoreScan = false;
-            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        Config config = Config.newBuilder().set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false ).build();
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView, config );
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = NULL;
+        int[] typeIds = {1};
+        boolean forceStoreScan = false;
+        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
-            // When
-            dynamicIndexStoreView
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        // When
+        dynamicIndexStoreView
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 
-            // Then
-            Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
-        } );
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
     }
 
     @Test
     void shouldDelegateToNeoStoreIndexStoreViewForRelationshipsIfEmptyRTSS() throws Throwable
     {
-        withRTSS( () ->
-        {
-            // Given
-            NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
-            DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
-            IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-            Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-            Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-            PageCursorTracer cursorTracer = NULL;
-            int[] typeIds = {1};
-            boolean forceStoreScan = false;
+        // Given
+        NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
+        DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
+        IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        PageCursorTracer cursorTracer = NULL;
+        int[] typeIds = {1};
+        boolean forceStoreScan = false;
 
-            // When
-            when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( true );
-            dynamicIndexStoreView
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        // When
+        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( true );
+        dynamicIndexStoreView
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
 
-            // Then
-            Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                    .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
-        } );
+        // Then
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
+                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView()
@@ -285,14 +269,19 @@ class DynamicIndexStoreViewTest
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
         return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore, relationshipTypeScanStore,
-                locks, storageReaderSupplier, NullLogProvider.getInstance() );
+                locks, storageReaderSupplier, NullLogProvider.getInstance(), config );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView )
     {
+        return dynamicIndexStoreView( neoStoreIndexStoreView, config );
+    }
+
+    private DynamicIndexStoreView dynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, Config config )
+    {
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
         return new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, storageReaderSupplier,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), config );
     }
 }

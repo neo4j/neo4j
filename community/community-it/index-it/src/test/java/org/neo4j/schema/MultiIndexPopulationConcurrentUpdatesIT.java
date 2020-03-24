@@ -321,14 +321,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
         try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
+            Config config = Config.defaults();
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
-            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore );
+            DynamicIndexStoreView storeView =
+                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore, config );
 
             IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
 
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-            indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
+            indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, storeView, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
                     mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, false );
@@ -345,11 +347,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction,
             Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore )
+            RelationshipTypeScanStore relationshipTypeScanStore, Config config )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier );
-        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction );
+        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction,
+                config );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -500,9 +503,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
         DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore,
                 RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
-                Supplier<StorageReader> storageEngine, Runnable customAction )
+                Supplier<StorageReader> storageEngine, Runnable customAction, Config config )
         {
-            super( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, storageEngine, NullLogProvider.getInstance() );
+            super( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, storageEngine, NullLogProvider.getInstance(), config );
             this.customAction = customAction;
         }
 

@@ -395,12 +395,13 @@ public class Database extends LifecycleAdapter
                     buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors,
                             pageCacheTracer );
             RelationshipTypeScanStore relationshipTypeScanStore =
-                    buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors );
+                    buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors,
+                            databaseConfig );
 
             // Schema indexes
             DynamicIndexStoreView indexStoreView =
                     new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, lockService, storageEngine::newReader,
-                            internalLogProvider );
+                            internalLogProvider, databaseConfig );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
                     readOnly, pageCacheTracer );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, pageCacheTracer );
@@ -578,10 +579,11 @@ public class Database extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             StorageEngine storageEngine,
             NeoStoreIndexStoreView neoStoreIndexStoreView,
-            Monitors monitors )
+            Monitors monitors,
+            Config config )
     {
         return life.add( buildRelationshipTypeIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnly, tracers.getPageCacheTracer() ) );
+                pageCache, databaseLayout, fs, readOnly, config, tracers.getPageCacheTracer() ) );
     }
 
     /**
@@ -620,13 +622,14 @@ public class Database extends LifecycleAdapter
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fs,
             boolean readOnly,
+            Config config,
             PageCacheTracer cacheTracer )
     {
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ) );
         FullStoreChangeStream relationshipTypeStream = new FullRelationshipTypeStream( indexStoreView );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                        cacheTracer );
+                        config, cacheTracer );
          storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
         return relationshipTypeScanStore;
     }

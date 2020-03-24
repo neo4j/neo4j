@@ -311,12 +311,12 @@ public final class Recovery
                 logProvider, databasePageCache, databaseLayout, fs, false, tracers.getPageCacheTracer() );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
-                        databaseLayout, fs, false, tracers.getPageCacheTracer() );
+                        databaseLayout, fs, false, config, tracers.getPageCacheTracer() );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, NO_LOCK_SERVICE, storageEngine::newReader,
-                        logProvider );
+                        logProvider, config );
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
-import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -46,8 +46,6 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
  */
 public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 {
-    String RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING = "relationship_type_scan_store_enable";
-
     /**
      * Create a new {@link LabelScanStore}.
      */
@@ -72,19 +70,14 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer )
+            Config config, PageCacheTracer cacheTracer )
     {
-        if ( relationshipTypeScanStoreEnabled() )
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                     cacheTracer );
         }
         return EmptyRelationshipTypeScanStore.instance;
-    }
-
-    static boolean relationshipTypeScanStoreEnabled()
-    {
-        return FeatureToggles.flag( TokenScanStore.class, RELATIONSHIP_TYPE_SCAN_STORE_ENABLE_STRING, false );
     }
 
     /**

@@ -38,7 +38,6 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
-import org.neo4j.internal.index.label.RelationshipTypeScanStoreUtil;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -103,6 +102,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
+import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
@@ -128,26 +128,24 @@ class BatchingNeoStoresTest
     @ValueSource( booleans = {true, false} )
     void shouldNotOpenStoreWithNodesOrRelationshipsInIt( boolean enableRelationshipTypeScanStore ) throws Throwable
     {
-        RelationshipTypeScanStoreUtil.withRTSS( enableRelationshipTypeScanStore, () ->
-        {
-            // GIVEN
-            someDataInTheDatabase();
+        Config config = Config.newBuilder().set( enable_relationship_type_scan_store, enableRelationshipTypeScanStore ).build();
+        // GIVEN
+        someDataInTheDatabase( config );
 
-            // WHEN
-            IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
+        // WHEN
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
+        {
+            try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
-                try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
+                RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
+                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
+                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
                 {
-                    RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-                    try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
-                            NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
-                    {
-                        store.createNew();
-                    }
+                    store.createNew();
                 }
-            } );
-            assertThat( exception.getMessage() ).contains( "already contains" );
+            }
         } );
+        assertThat( exception.getMessage() ).contains( "already contains" );
     }
 
     @Test
@@ -299,7 +297,7 @@ class BatchingNeoStoresTest
         store.updateRecord( record, NULL );
     }
 
-    private void someDataInTheDatabase() throws Exception
+    private void someDataInTheDatabase( Config config ) throws Exception
     {
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -356,7 +354,7 @@ class BatchingNeoStoresTest
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
             RelationshipTypeScanStore relationshipTypeScanStore = life.add(
                     toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
-                            recoveryCleanupWorkCollector, PageCacheTracer.NULL ) );
+                            recoveryCleanupWorkCollector, config, PageCacheTracer.NULL ) );
             storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
             apply( txState, commandCreationContext, storageEngine );
 

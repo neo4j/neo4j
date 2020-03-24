@@ -25,9 +25,11 @@ import java.io.IOException;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -39,8 +41,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
-
-import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStoreEnabled;
 
 /**
  * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
@@ -56,11 +56,12 @@ public class DynamicIndexStoreView implements IndexStoreView
     private final RelationshipTypeScanStore relationshipTypeScanStore;
     protected final LockService locks;
     private final Log log;
+    private final Config config;
     protected final Supplier<StorageReader> storageEngine;
 
     public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
-            Supplier<StorageReader> storageEngine, LogProvider logProvider )
+            Supplier<StorageReader> storageEngine, LogProvider logProvider, Config config )
     {
         this.neoStoreIndexStoreView = neoStoreIndexStoreView;
         this.labelScanStore = labelScanStore;
@@ -68,6 +69,7 @@ public class DynamicIndexStoreView implements IndexStoreView
         this.locks = locks;
         this.storageEngine = storageEngine;
         this.log = logProvider.getLog( getClass() );
+        this.config = config;
     }
 
     @Override
@@ -118,7 +120,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     {
         try
         {
-            return !relationshipTypeScanStoreEnabled() || ArrayUtils.isEmpty( relationshipTypeIds ) || isEmptyRelationshipTypeStoreScan( cursorTracer );
+            return !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) || ArrayUtils.isEmpty( relationshipTypeIds ) ||
+                    isEmptyRelationshipTypeStoreScan( cursorTracer );
         }
         catch ( Exception e )
         {
