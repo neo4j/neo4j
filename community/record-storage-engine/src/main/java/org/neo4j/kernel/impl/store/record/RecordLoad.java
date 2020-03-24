@@ -28,19 +28,21 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
  *
  * Roughly this is what happens for the different modes:
  * <ul>
- * <li>{@link RecordLoad#CHECK}: Load at least data to determine whether or not it's in use.
+ * <li>{@link RecordLoad#CHECK}: Load at least data to determine whether it's in use or not.
  * If in use then record is loaded into target and returns {@code true},
  * otherwise return {@code false}.</li>
- * <li>{@link RecordLoad#NORMAL}: Load at least data to determine whether or not it's in use.
+ * <li>{@link RecordLoad#NORMAL}: Load at least data to determine whether it's in use or not.
  * if in use then record is loaded into target returns {@code true},
  * otherwise throws {@link InvalidRecordException}.</li>
- * <li>{@link RecordLoad#FORCE}: Loads record data into target regardless of whether or not record in use.
- * Returns whether or not record is in use.
+ * <li>{@link RecordLoad#FORCE}: Loads record data into target regardless of whether record in use or not.
+ * Returns whether record is in use or not.
+ * <li>{@link RecordLoad#FORCE_NORMAL}: always load all record data, even if the record is marked as not in use, but unlike {@link RecordLoad#FORCE} it will
+ * throw decoding and out-of-bounds exceptions. Will not throw InvalidRecordExceptions for records that are not in use.</li>
  *
  */
 public enum RecordLoad
 {
-    NORMAL, CHECK, FORCE;
+    NORMAL, CHECK, FORCE, FORCE_NORMAL;
 
     /**
      * Checks whether or not a record should be fully loaded from {@link PageCursor}, based on inUse status.
@@ -49,7 +51,7 @@ public enum RecordLoad
     {
         // FORCE mode always return true so that record data will always be loaded, even if not in use.
         // The other modes only loads records that are in use.
-        return this == FORCE || inUse;
+        return inUse || this == FORCE_NORMAL || this == FORCE;
     }
 
     /**
@@ -62,7 +64,7 @@ public enum RecordLoad
         {
             throw new InvalidRecordException( record + " not in use" );
         }
-        return this == FORCE || inUse;
+        return shouldLoad( inUse );
     }
 
     /**
@@ -73,7 +75,7 @@ public enum RecordLoad
      */
     public final void clearOrThrowCursorError( PageCursor cursor )
     {
-        if ( this == NORMAL )
+        if ( this == NORMAL || this == FORCE_NORMAL )
         {
             try
             {
@@ -100,6 +102,6 @@ public enum RecordLoad
      */
     public boolean checkForOutOfBounds( PageCursor cursor )
     {
-        return cursor.checkAndClearBoundsFlag() && this == NORMAL;
+        return cursor.checkAndClearBoundsFlag() && ( this == NORMAL || this == FORCE_NORMAL );
     }
 }
