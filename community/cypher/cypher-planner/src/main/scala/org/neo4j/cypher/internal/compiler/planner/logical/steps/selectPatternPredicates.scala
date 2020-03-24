@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.v4_0.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -134,10 +137,10 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
       (plan, expressions + predicate)
     }
 
-    def planSemiApply(predicate: Expression, innerExpression: Option[Expression], tail: List[Expression], source: LogicalPlan): (LogicalPlan, Set[Expression]) = {
-       val (newLhs, newLetExpr) = innerExpression match {
-        case Some(e) => createLetAntiSemiApply(lhs, source, predicate, e, expressions, letExpression, interestingOrder, context)
-        case None => createLetSemiApply(lhs, source, predicate, expressions, letExpression, interestingOrder, context)
+    def planSemiApply(predicate: Expression, innerExpression: Expression, tail: List[Expression], source: LogicalPlan): (LogicalPlan, Set[Expression]) = {
+       val (newLhs, newLetExpr) = predicate match {
+        case Not(_) => createLetAntiSemiApply(lhs, source, innerExpression, predicate, expressions, letExpression, interestingOrder, context)
+        case _ => createLetSemiApply(lhs, source, innerExpression, expressions, letExpression, interestingOrder, context)
       }
       val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr), interestingOrder, context)
       (plan, solvedPredicates ++ Set(predicate) ++ expressions)
@@ -162,19 +165,19 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
       case (p@Exists(patternExpression: PatternExpression)) :: tail =>
         val rhs = rhsPlan(lhs, patternExpression, interestingOrder, context)
-        planSemiApply(patternExpression, None, tail, rhs)
+        planSemiApply(p, patternExpression, tail, rhs)
 
       case (p@Not(Exists(patternExpression: PatternExpression))) :: tail =>
         val rhs = rhsPlan(lhs, patternExpression, interestingOrder, context)
-        planSemiApply(p, Some(patternExpression), tail, rhs)
+        planSemiApply(p, patternExpression, tail, rhs)
 
       case (e@ExistsSubClause(_, _)) :: tail =>
        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
-       planSemiApply(e, None, tail, innerPlan)
+       planSemiApply(e, e, tail, innerPlan)
 
       case (p@Not(e@ExistsSubClause(_, _))) :: tail =>
         val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
-        planSemiApply(p, Some(e), tail, innerPlan)
+        planSemiApply(p, e, tail, innerPlan)
 
       case _ =>
         throw new IllegalArgumentException("There should be at least one pattern expression")
