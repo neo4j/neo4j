@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>neo4j-community</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
 
     <name>Neo4j - Community (Bill of Materials)</name>
     <packaging>pom</packaging>

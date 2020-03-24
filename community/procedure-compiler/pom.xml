@@ -14,7 +14,6 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>procedure-compiler-parent</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Neo4j - Procedure Compiler Parent POM</name>

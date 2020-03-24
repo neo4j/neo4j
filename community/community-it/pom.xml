@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>community-integration-tests</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Neo4j - Community Integration Tests</name>

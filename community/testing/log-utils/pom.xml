@@ -29,7 +29,6 @@
     </parent>
 
     <artifactId>log-test-utils</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

@@ -11,7 +11,6 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-command-line</artifactId>
     <name>Neo4j - Command Line</name>
-    <version>4.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

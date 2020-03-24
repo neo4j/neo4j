@@ -11,7 +11,6 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-expressions-4.0</artifactId>
     <packaging>jar</packaging>
-    <version>4.0.3-SNAPSHOT</version>
     <name>openCypher Expressions</name>
 
     <description>Cypher expressions</description>

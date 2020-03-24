@@ -11,7 +11,6 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-cypher-ir</artifactId>
     <packaging>jar</packaging>
-    <version>4.0.3-SNAPSHOT</version>
     <name>Neo4j - Cypher Intermediate Representation</name>
 
     <description>The intermediate representations, such as the query graph</description>

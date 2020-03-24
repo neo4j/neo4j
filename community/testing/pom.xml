@@ -31,7 +31,6 @@
 
     <name>Neo4j - Testing Utils Parent</name>
     <artifactId>testing-parent</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
