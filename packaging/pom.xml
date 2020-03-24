@@ -12,7 +12,6 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.build</groupId>
     <artifactId>packaging-build</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
 
     <name>Neo4j - Packaging Build</name>
     <packaging>pom</packaging>

@@ -12,7 +12,6 @@
 
     <artifactId>neo4j-exceptions</artifactId>
     <packaging>jar</packaging>
-    <version>4.0.3-SNAPSHOT</version>
     <name>Neo4j - Exceptions</name>
 
     <description>Neo4j exceptions</description>

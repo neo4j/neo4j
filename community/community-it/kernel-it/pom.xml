@@ -10,7 +10,6 @@
 
     <groupId>org.neo4j.community</groupId>
     <artifactId>kernel-it</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
 
     <name>Neo4j - Community Kernel Integration Tests</name>
     <packaging>jar</packaging>
