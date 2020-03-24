@@ -579,6 +579,37 @@ public final class CypherFunctions
         }
     }
 
+    public static AnyValue containerIndexExists( AnyValue container,
+                                           AnyValue index,
+                                           DbAccess dbAccess,
+                                           NodeCursor nodeCursor,
+                                           RelationshipScanCursor relationshipScanCursor,
+                                           PropertyCursor propertyCursor )
+    {
+        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( container instanceof VirtualNodeValue )
+        {
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(),  dbAccess.propertyKey( asString( index ) ),
+                                             nodeCursor, propertyCursor ) ? TRUE : FALSE;
+        }
+        else if ( container instanceof VirtualRelationshipValue )
+        {
+            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(),  dbAccess.propertyKey( asString( index ) ),
+                                             relationshipScanCursor, propertyCursor ) ? TRUE : FALSE;
+        }
+        if ( container instanceof MapValue )
+        {
+            return ((MapValue) container).containsKey(  asString( index ) ) ? TRUE : FALSE;
+        }
+        else
+        {
+            throw new CypherTypeException( format(
+                    "`%s` is not a map. Element access is only possible by performing a collection " +
+                    "lookup by performing a map lookup using a string key (found: %s[%s])",
+                    container, container, index ), null );
+        }
+    }
+
     public static AnyValue head( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
