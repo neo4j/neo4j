@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -344,7 +345,11 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val (reusabilityState, shouldCache) = runtime match {
       case m: AdministrationCommandRuntime =>
         if (m.isApplicableAdministrationCommand(logicalPlanState)) {
-          (FineToReuse, true)
+          val allowQueryCaching = logicalPlanState.maybeLogicalPlan match {
+            case Some(_: SystemProcedureCall) => false
+            case _ => true
+          }
+          (FineToReuse, allowQueryCaching)
         } else {
           logicalPlanState.maybeLogicalPlan match {
             case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => (FineToReuse, false)
