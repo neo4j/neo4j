@@ -286,8 +286,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(_, queryString, params, checkCredentialsExpired) => (_, _) =>
-      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params, checkCredentialsExpired = checkCredentialsExpired)
+    case SystemProcedureCall(_, queryString, _, checkCredentialsExpired) => (_, _) =>
+      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY, checkCredentialsExpired = checkCredentialsExpired)
 
     // Ignore the log command in community
     case LogSystemCommand(source, _) => (context, parameterMapping) =>

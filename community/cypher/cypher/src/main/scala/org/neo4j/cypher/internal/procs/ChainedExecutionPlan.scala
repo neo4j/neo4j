@@ -35,6 +35,7 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -78,6 +79,7 @@ abstract class ChainedExecutionPlan(source: Option[ExecutionPlan]) extends Execu
   protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue, parameterConverter: MapValue => MapValue): MapValue = {
     val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
     updatedSystemParams.foreach {
+      case (_, Values.NO_VALUE) => // placeholders should be replaced
       case (key, _) => if (userParams.containsKey(key)) throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
     }
     val mergedParams = updatedSystemParams.updatedWith(userParams)

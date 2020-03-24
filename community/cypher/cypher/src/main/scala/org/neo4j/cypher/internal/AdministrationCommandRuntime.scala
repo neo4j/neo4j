@@ -207,15 +207,18 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                   suspended: Boolean)(
                                    sourcePlan: Option[ExecutionPlan],
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+    val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
+    val suspendedKey = internalKey("suspended")
     val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
     val credentials = getPasswordExpression(password)
     val mapValueConverter: MapValue => MapValue = p => credentials.mapValueConverter(userNameConverter(p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$${credentials.key}, passwordChangeRequired: $$passwordChangeRequired, suspended: $$suspended})
+      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$${credentials.key},
+         |passwordChangeRequired: $$$passwordChangeRequiredKey, suspended: $$$suspendedKey})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameKey, credentials.key, "passwordChangeRequired", "suspended"),
+        Array(userNameKey, credentials.key, passwordChangeRequiredKey, suspendedKey),
         Array(
           userNameValue,
           credentials.value,
