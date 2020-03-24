@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, IndexOrder, IndexOrderAscending, IndexOrderDescending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
@@ -29,7 +31,12 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
                                                                  edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT],
                                                                  val sizeHint: Int
-                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                               ) extends RuntimeTestSuite[CONTEXT](
+  edition.copyWith(
+    // Choosing a number that will align less well with HashTable sizes
+    GraphDatabaseSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(3),
+    GraphDatabaseSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(3)
+  ), runtime) {
 
   trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
   case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, providedOrderFactory: String => ProvidedOrder, expectedMutation: SeqMutator)
@@ -248,6 +255,104 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       } yield Array(x, zProp)
 
       runtimeResult should beColumns("x", "zProp").withRows(inOrder(expected))
+    }
+
+    // This seems to work since AttachBuffer creates views of size 1.
+    // And the the RHS of MrBuff has always only one complete controller, which
+    // happens to be the next one in ArgumentRowId order.
+    test(s"Cartesian Product on RHS of Apply keeps $orderString order from Apply's LHS") {
+      // This size is specifically chosen to potentially break with Morsel size 3
+      val size = 121
+      index("Honey", "num")
+      val nodes = given {
+        nodePropertyGraph(size, {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+        }, "Honey")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("num", "name")
+        .projection("a.num AS num")
+        .apply()
+        .|.projection("a.name AS name")
+        .|.cartesianProduct()
+        .|.|.argument("a")
+        .|.argument("a")
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      val expected = expectedMutation(nodes.map(node => {
+        val i = node.getProperty("num")
+        Array(i, s"bob${i.asInstanceOf[Int] % 10}")
+      }))
+
+      runtimeResult should beColumns("num", "name").withRows(inOrder(expected))
+    }
+
+    test(s"Hash join on RHS of Apply keeps $orderString order from Apply's LHS") {
+      // This size is specifically chosen to potentially break with Morsel size 3
+      val size = 121
+      index("Honey", "num")
+      val nodes = given {
+        nodePropertyGraph(size, {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+        }, "Honey")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("num", "name")
+        .projection("a.num AS num")
+        .apply()
+        .|.projection("a.name AS name")
+        .|.nodeHashJoin("a")
+        .|.|.argument("a")
+        .|.argument("a")
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      val expected = expectedMutation(nodes.map(node => {
+        val i = node.getProperty("num")
+        Array(i, s"bob${i.asInstanceOf[Int] % 10}")
+      }))
+
+      runtimeResult should beColumns("num", "name").withRows(inOrder(expected))
+    }
+
+    test(s"Optional on RHS of Apply keeps $orderString order from Apply's LHS") {
+      // This size is specifically chosen to potentially break with Morsel size 3
+      val size = 121
+      index("Honey", "num")
+      val nodes = given {
+        nodePropertyGraph(size, {
+          case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
+        }, "Honey")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("num", "name")
+        .projection("a.num AS num")
+        .apply()
+        .|.optional("a")
+        .|.projection("a.name AS name")
+        .|.argument("a")
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      val expected = expectedMutation(nodes.map(node => {
+        val i = node.getProperty("num")
+        Array(i, s"bob${i.asInstanceOf[Int] % 10}")
+      }))
+
+      runtimeResult should beColumns("num", "name").withRows(inOrder(expected))
     }
   }
 }
