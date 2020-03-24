@@ -31,7 +31,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
@@ -72,12 +71,14 @@ class LabelScanStoreIT
 
     private static final int NODE_COUNT = 10_000;
     private static final int LABEL_COUNT = 12;
+    private DefaultPageCacheTracer cacheTracer;
 
     @BeforeEach
     void before()
     {
+        cacheTracer = new DefaultPageCacheTracer();
         store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
-                immediate(), PageCacheTracer.NULL ) );
+                immediate(), cacheTracer ) );
     }
 
     @Test
@@ -93,6 +94,51 @@ class LabelScanStoreIT
             verifyReads( expected );
             randomModifications( expected, NODE_COUNT / 10 );
         }
+    }
+
+    @Test
+    void tracePageCacheAccessOnWrite() throws IOException
+    {
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" );
+        try ( var scanWriter = store.newWriter( cursorTracer ) )
+        {
+            scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+        }
+
+        assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+        assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+    }
+
+    @Test
+    void tracePageAccessOnEmptyCheck() throws IOException
+    {
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageAccessOnEmptyCheck" );
+        store.isEmpty( cursorTracer );
+
+        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+    }
+
+    @Test
+    void tracePageAccessOnAllEntityTokenRange() throws Exception
+    {
+        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageAccessOnAllEntityTokenRange" );
+        try ( var scanWriter = store.newWriter( NULL ) )
+        {
+            scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
+        }
+
+        try ( var tokenRanges = store.allEntityTokenRanges( cursorTracer ) )
+        {
+            tokenRanges.forEach( range -> assertThat( range.tokens( 0 ) ).containsExactly( 0, 1 ) );
+        }
+
+        assertThat( cursorTracer.pins() ).isEqualTo( 3 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 3 );
     }
 
     @Test

@@ -204,8 +204,8 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, PageCacheTracer.NULL );
-        CountsManager countsManager = new CountsManager( pageCache, fileSystem, databaseLayout, PageCacheTracer.NULL );
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer );
+        CountsManager countsManager = new CountsManager( pageCache, fileSystem, databaseLayout, pageCacheTracer );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         life.add( countsManager );
@@ -240,9 +240,9 @@ public class ConsistencyCheckService
             life.start();
 
             LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors,
-                    workCollector, PageCacheTracer.NULL );
+                    workCollector, pageCacheTracer );
             life.add( labelScanStore );
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, PageCacheTracer.NULL );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, pageCacheTracer );
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
@@ -54,6 +55,23 @@ class GapFreeAllEntriesTokenScanReaderTest
 
     @Inject
     private RandomRule random;
+
+    @Test
+    void openCloseSeparateCursorForAllEntriesTokenReader() throws Exception
+    {
+        int[] ranges = array( EMPTY_RANGE, EMPTY_RANGE, NON_EMPTY_RANGE );
+        var cacheTracer = mock( PageCacheTracer.class );
+        var cursorTracer = mock( PageCursorTracer.class );
+        when( cacheTracer.createPageCursorTracer( any( String.class ) ) ).thenReturn( cursorTracer );
+
+        try ( var reader = newGapFreeAllEntriesLabelScanReader( cacheTracer, ranges ) )
+        {
+            assertRanges( reader.iterator(), ranges );
+        }
+
+        verify( cacheTracer ).createPageCursorTracer( any( String.class ) );
+        verify( cursorTracer ).close();
+    }
 
     @Test
     void shouldFillGapInBeginning()
@@ -138,9 +156,20 @@ class GapFreeAllEntriesTokenScanReaderTest
 
     private static GapFreeAllEntriesTokenScanReader newGapFreeAllEntriesLabelScanReader( int... ranges )
     {
+        return newGapFreeAllEntriesLabelScanReader( PageCacheTracer.NULL, ranges );
+    }
+
+    private static GapFreeAllEntriesTokenScanReader newGapFreeAllEntriesLabelScanReader( PageCacheTracer cacheTracer, int... ranges )
+    {
+        var labelScanStore = prepareLabelScanStore( ranges );
+        return new GapFreeAllEntriesTokenScanReader( labelScanStore, RANGE_SIZE * ranges.length, cacheTracer );
+    }
+
+    private static LabelScanStore prepareLabelScanStore( int[] ranges )
+    {
         var labelScanStore = mock( LabelScanStore.class );
         when( labelScanStore.allEntityTokenRanges( any( PageCursorTracer.class ) ) ).thenReturn( ranges( RANGE_SIZE, ranges ) );
-        return new GapFreeAllEntriesTokenScanReader( labelScanStore, RANGE_SIZE * ranges.length, PageCacheTracer.NULL );
+        return labelScanStore;
     }
 
     private static AllEntriesTokenScanReader ranges( int rangeSize, int... ranges )

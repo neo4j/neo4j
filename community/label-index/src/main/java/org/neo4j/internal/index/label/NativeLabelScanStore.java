@@ -30,8 +30,8 @@ import org.neo4j.monitoring.Monitors;
 class NativeLabelScanStore extends NativeTokenScanStore implements LabelScanStore
 {
     NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType, PageCacheTracer cacheTracer )
+            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
+            PageCacheTracer cacheTracer )
     {
         super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer );
     }
