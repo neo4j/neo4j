@@ -325,7 +325,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           case expression: pipes.NestedPipeExpression =>
             self.toCommandPredicate(id, expression)
           case e: internal.expressions.ContainerIndex =>
-            commands.expressions.ContainerIndex(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
+            commands.expressions.ContainerIndexExists(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
           case _: NestedPlanExpression =>
             throw new InternalException("should have been rewritten away")
         }
