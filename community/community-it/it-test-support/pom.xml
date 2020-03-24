@@ -10,7 +10,6 @@
 
     <groupId>org.neo4j.community</groupId>
     <artifactId>it-test-support</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
 
     <name>Neo4j - Community Integration Test Support</name>
     <packaging>jar</packaging>

@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>neo4j</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
 
     <name>Neo4j - Community</name>
     <packaging>jar</packaging>

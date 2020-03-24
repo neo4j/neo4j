@@ -8,7 +8,6 @@
         <relativePath>../..</relativePath>
     </parent>
     <artifactId>neo4j-consistency-check</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
 
     <name>Neo4j - Consistency Checker</name>
     <description>Tool for checking consistency of a Neo4j data store.</description>

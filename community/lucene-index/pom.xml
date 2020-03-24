@@ -8,7 +8,6 @@
         <relativePath>../..</relativePath>
     </parent>
     <artifactId>neo4j-lucene-index</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
 
     <name>Neo4j - Lucene Index</name>
     <description>

@@ -10,7 +10,6 @@
 
     <groupId>org.neo4j.community</groupId>
     <artifactId>record-storage-engine-it</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
 
     <name>Neo4j - Record Storage Engine Integration Tests</name>
     <packaging>jar</packaging>
