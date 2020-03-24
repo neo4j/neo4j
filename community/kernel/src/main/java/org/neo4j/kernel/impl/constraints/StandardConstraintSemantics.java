@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -82,6 +83,13 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     @Override
     public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup )  throws CreateConstraintFailureException
+    {
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public void validateRelationshipPropertyExistenceConstraint( RelationshipTypeIndexCursor allRelationships, RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );
     }

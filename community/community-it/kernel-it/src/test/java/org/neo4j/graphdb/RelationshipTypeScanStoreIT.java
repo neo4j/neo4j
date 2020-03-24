@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,17 +57,23 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension( configurationCallback = "configuration" )
+@ExtendWith( RandomExtension.class )
 class RelationshipTypeScanStoreIT
 {
     private static final RelationshipType REL_TYPE = RelationshipType.withName( "REL_TYPE" );
+    private static final RelationshipType OTHER_REL_TYPE = RelationshipType.withName( "OTHER_REL_TYPE" );
     private static final String PROPERTY = "prop";
     private static final String PROPERTY_VALUE = "value";
     @Inject
@@ -79,6 +86,8 @@ class RelationshipTypeScanStoreIT
     DatabaseLayout databaseLayout;
     @Inject
     StorageEngineFactory storageEngineFactory;
+    @Inject
+    RandomRule random;
 
     @ExtensionCallback
     void configuration( TestDatabaseManagementServiceBuilder builder )
@@ -89,8 +98,7 @@ class RelationshipTypeScanStoreIT
     @Test
     void shouldBePossibleToResolveDependency()
     {
-        getRelationshipTypeScanStore();
-        // Should not throw
+        assertDoesNotThrow( this::getRelationshipTypeScanStore );
     }
 
     @Test
@@ -221,6 +229,40 @@ class RelationshipTypeScanStoreIT
         assertEquals( numberOfRelationships, countRelationshipsInFulltextIndex( indexName ) );
     }
 
+    @Test
+    void shouldCorrectlyValidateRelationshipPropertyExistenceConstraint()
+    {
+        // A single random relationship that violates constraint
+        // together with a set of relevant and irrelevant relationships.
+        try ( Transaction tx = db.beginTx() )
+        {
+            int invalidRelationship = random.nextInt( 100 );
+            for ( int i = 0; i < 100; i++ )
+            {
+                if ( i == invalidRelationship )
+                {
+                    // This relationship doesn't have the demanded property
+                    tx.createNode().createRelationshipTo( tx.createNode(), REL_TYPE );
+                }
+                else
+                {
+                    createRelationship( tx );
+                    createRelationship( tx, OTHER_REL_TYPE );
+                }
+            }
+            tx.commit();
+        }
+
+        assertThrows( ConstraintViolationException.class, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().constraintFor( REL_TYPE ).assertPropertyExists( PROPERTY ).create();
+                tx.commit();
+            }
+        } );
+    }
+
     private ResourceIterator<File> getRelationshipTypeScanStoreFiles()
     {
         RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
@@ -229,7 +271,12 @@ class RelationshipTypeScanStoreIT
 
     private Relationship createRelationship( Transaction tx )
     {
-        Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), REL_TYPE );
+        return createRelationship( tx, REL_TYPE );
+    }
+
+    private Relationship createRelationship( Transaction tx, RelationshipType type )
+    {
+        Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
         relationship.setProperty( PROPERTY, PROPERTY_VALUE );
         return relationship;
     }

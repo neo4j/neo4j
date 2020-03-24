@@ -34,6 +34,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -41,6 +42,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
@@ -1173,8 +1175,19 @@ public class Operations implements Write, SchemaWrite
         ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipCursor );
-        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema, token );
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
+        {
+            try ( RelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor() )
+            {
+                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipsWithType );
+                constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipsWithType, relationshipCursor, propertyCursor, schema, token );
+            }
+        }
+        else
+        {
+            allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipCursor );
+            constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema, token );
+        }
 
         //Create
         ktx.txState().constraintDoAdd( constraint );
