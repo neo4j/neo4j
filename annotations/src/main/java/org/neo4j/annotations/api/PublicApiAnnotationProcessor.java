@@ -148,7 +148,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             StringBuilder sb = new StringBuilder();
             for ( final String element : publicElements )
             {
-                sb.append( element ).append( '\n' );
+                sb.append( element ).append( System.lineSeparator() );
             }
             String newSignature = sb.toString();
 
