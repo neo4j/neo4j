@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
@@ -72,6 +73,15 @@ abstract class ChainedExecutionPlan(source: Option[ExecutionPlan]) extends Execu
       case _ =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     }
+  }
+
+  protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue, parameterConverter: MapValue => MapValue): MapValue = {
+    val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
+    updatedSystemParams.foreach {
+      case (key, _) => if (userParams.containsKey(key)) throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
+    }
+    val mergedParams = updatedSystemParams.updatedWith(userParams)
+    parameterConverter(mergedParams)
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName

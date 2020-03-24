@@ -70,8 +70,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
-      val updatedSystemParams = systemParams.updatedWith(parameterGenerator.apply(tc.transaction(), securityContext))
-      val updatedParams = parameterConverter(updatedSystemParams.updatedWith(params))
+      val updatedParams = safeMergeParameters(systemParams, params, parameterGenerator.apply(tc.transaction(), securityContext), parameterConverter)
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       try {
         tc.kernelTransaction().dataWrite() // assert that we are allowed to write

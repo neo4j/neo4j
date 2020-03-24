@@ -77,7 +77,8 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
- * This runtime takes on queries that require no planning, such as multidatabase administration commands
+ * This runtime takes on queries that work on the system database, such as multidatabase and security administration commands.
+ * The planning requirements for these are much simpler than normal Cypher commands, and as such the runtime stack is also different.
  */
 case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver,
                                                  extraLogicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = CommunityAdministrationCommandRuntime.emptyLogicalToExecutable
@@ -173,11 +174,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
     case SetOwnPassword(newPassword, currentPassword) => (_, _) =>
+      val usernameKey = internalKey("username")
       val newPw = getPasswordExpression(newPassword)
       val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
-      def currentUser(p: MapValue): String = p.get("name").asInstanceOf[TextValue].stringValue()
+      def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
       val query =
-        s"""MATCH (user:User {name: $$name})
+        s"""MATCH (user:User {name: $$$usernameKey})
           |WITH user, user.credentials AS oldCredentials
           |SET user.credentials = $$${newPw.key}
           |SET user.passwordChangeRequired = false
@@ -210,7 +212,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Some(new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password: User does not exist."))
           }),
         checkCredentialsExpired = false,
-        parameterGenerator = (_, securityContext) => VirtualValues.map(Array("name"), Array(Values.utf8Value(securityContext.subject().username()))),
+        parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().username()))),
         parameterConverter = m => newPw.mapValueConverter(currentConverterBytes(m))
       )
 
@@ -292,6 +294,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)
   }
 
+  private val accessibleDbsKey = internalKey("accessibleDbs")
+
   private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, MapValue => MapValue) = {
     val defaultColumn = if (isDefault) "" else ", d.default as default"
     val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault)
@@ -303,8 +307,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
         val combinedConverter: MapValue => MapValue = m => {
           val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
-          val filteredDatabases = m.get("accessibleDbs").asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
-          converter(m.updatedWith("accessibleDbs", Values.stringArray(filteredDatabases:_*)))
+          val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
+          converter(m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
         }
         (s"AND d.name = $$$key", VirtualValues.map(Array(key), Array(value)), combinedConverter)
       // show all databases
@@ -312,7 +316,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     }
     val query = s"""
        |MATCH (d: Database)
-       |WHERE d.name IN $$accessibleDbs $extraFilter
+       |WHERE d.name IN $$$accessibleDbsKey $extraFilter
        |CALL dbms.database.state(d.name) yield status, error, address, role
        |WITH d, status as currentStatus, error, address, role
        |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
@@ -381,7 +385,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
     }
 
-    VirtualValues.map(Array("accessibleDbs"), Array(Values.stringArray(accessibleDatabases: _*)))
+    VirtualValues.map(Array(accessibleDbsKey), Array(Values.stringArray(accessibleDatabases: _*)))
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {

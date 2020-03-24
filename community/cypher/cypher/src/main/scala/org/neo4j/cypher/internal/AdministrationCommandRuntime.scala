@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.string.UTF8
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.TextValue
@@ -64,6 +65,10 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
+  private val internalPrefix: String = "__internal_"
+
+  protected def internalKey(name: String): String = internalPrefix + name
+
   trait PasswordExpression {
     def key: String
     def value: Value
@@ -86,7 +91,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     password match {
       case Left(encodedPassword) =>
         validatePassword(encodedPassword)
-        LiteralPasswordExpression("__internal_credentials", hashPassword(encodedPassword), "__internal_credentials_bytes", Values.byteArray(encodedPassword))
+        LiteralPasswordExpression(internalKey("credentials"), hashPassword(encodedPassword), internalKey("credentials_bytes"), Values.byteArray(encodedPassword))
       case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
         // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
         val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
@@ -105,7 +110,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     password match {
       case Left(encodedPassword) =>
         validatePassword(encodedPassword)
-        ("__current_internal_credentials_bytes", Values.byteArray(encodedPassword), IdentityConverter)
+        (internalKey("current_credentials_bytes"), Values.byteArray(encodedPassword), IdentityConverter)
       case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
         // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
         val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
@@ -151,24 +156,32 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       getValidPasswordParameter(params, p.asInstanceOf[Parameter].name)
   }
 
+  private def runtimeValue(parameter: String, params: MapValue): String = {
+    val value: AnyValue = if (params.containsKey(parameter))
+      params.get(parameter)
+    else
+      params.get(internalKey(parameter))
+    value.asInstanceOf[Value].asObject().toString
+  }
+
   protected def runtimeValue(field: Either[String, AnyRef], params: MapValue): String = field match {
     case Left(u) => u
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
-      params.get(p.asInstanceOf[ParameterFromSlot].name).asInstanceOf[Value].asObject().toString
+      runtimeValue(p.asInstanceOf[ParameterFromSlot].name, params)
     case Right(p) if p.isInstanceOf[Parameter] =>
-      params.get(p.asInstanceOf[Parameter].name).asInstanceOf[Value].asObject().toString
+      runtimeValue(p.asInstanceOf[Parameter].name, params)
   }
 
   protected def getNameFields(key: String, name: Either[String, AnyRef],
-                    prefix: String = "__internal_",
-                    rename: String => String = s => s,
+                    prefix: String = internalPrefix,
                     valueMapper: String => String = s => s): (String, Value, MapValue => MapValue) = name match {
     case Left(u) =>
-      (rename(s"$prefix$key"), Values.utf8Value(valueMapper(u)), IdentityConverter)
+      (s"$prefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameter = p.asInstanceOf[ParameterFromSlot]
       validateStringParameterType(parameter)
+      def rename: String => String = paramName => internalKey(paramName)
       (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
   }
 
