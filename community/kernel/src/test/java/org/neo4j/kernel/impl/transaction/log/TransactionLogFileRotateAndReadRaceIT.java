@@ -70,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
-@Disabled
 class TransactionLogFileRotateAndReadRaceIT
 {
     @Inject
@@ -83,7 +82,6 @@ class TransactionLogFileRotateAndReadRaceIT
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
-    private static final long LIMIT_TIME = SECONDS.toMillis( 5 );
     private static final int LIMIT_ROTATIONS = 100;
     private static final int LIMIT_READS = 1_000;
 
@@ -127,45 +125,49 @@ class TransactionLogFileRotateAndReadRaceIT
         AtomicBoolean end = new AtomicBoolean();
         byte[] dataChunk = new byte[100];
         // one thread constantly writing to and rotating the channel
-        AtomicInteger rotations = new AtomicInteger();
         CountDownLatch startSignal = new CountDownLatch( 1 );
-        long maxEndTime = currentTimeMillis() + LIMIT_TIME;
         Future<Void> writeFuture = t2.execute( ignored ->
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             startSignal.countDown();
+            int rotations = 0;
             while ( !end.get() )
             {
-                writer.put( dataChunk, random.nextInt( 1, dataChunk.length ) );
+                int bytesToWrite = random.nextInt( 1, dataChunk.length );
+                writer.put( dataChunk, bytesToWrite );
                 if ( logFile.rotationNeeded() )
                 {
                     logFile.rotate();
                     // Let's just close the gap to the reader so that it gets closer to the "hot zone"
                     // where the rotation happens.
                     writer.getCurrentPosition( startPosition );
-                    rotations.incrementAndGet();
+                    if ( ++rotations > LIMIT_ROTATIONS )
+                    {
+                        end.set( true );
+                    }
                 }
             }
             return null;
         } );
         assertTrue( startSignal.await( 10, SECONDS ) );
         // one thread reading through the channel
-        int reads = 0;
         try
         {
-            for ( ;
-                reads < LIMIT_READS &&
-                rotations.get() < LIMIT_ROTATIONS; reads++ )
+            int reads = 0;
+            while ( !end.get() )
             {
                 try ( ReadableLogChannel reader = logFile.getReader( startPosition.newPosition() ) )
                 {
                     deplete( reader );
                 }
+                if ( ++reads > LIMIT_READS )
+                {
+                    end.set( true );
+                }
             }
         }
         finally
         {
-            end.set( true );
             writeFuture.get();
         }
 
@@ -177,7 +179,8 @@ class TransactionLogFileRotateAndReadRaceIT
         byte[] dataChunk = new byte[100];
         try
         {
-            while ( true )
+            long maxIterations = ByteUnit.mebiBytes( 1 ) / dataChunk.length; //no need to read more
+            for ( int i = 0; i < maxIterations; i++ )
             {
                 reader.get( dataChunk, dataChunk.length );
             }
