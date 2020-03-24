@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -70,23 +73,23 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
-class RecordRelationshipTraversalCursorTest
+public class RecordRelationshipTraversalCursorTest
 {
-    private static final long NULL = Record.NULL_REFERENCE.longValue();
-    private static final long FIRST_OWNING_NODE = 1;
-    private static final long SECOND_OWNING_NODE = 2;
-    private static final int TYPE1 = 0;
-    private static final int TYPE2 = 1;
-    private static final int TYPE3 = 2;
+    protected static final long NULL = Record.NULL_REFERENCE.longValue();
+    protected static final long FIRST_OWNING_NODE = 1;
+    protected static final long SECOND_OWNING_NODE = 2;
+    protected static final int TYPE1 = 0;
+    protected static final int TYPE2 = 1;
+    protected static final int TYPE3 = 2;
 
     @Inject
-    private PageCache pageCache;
+    protected PageCache pageCache;
     @Inject
-    private FileSystemAbstraction fs;
+    protected FileSystemAbstraction fs;
     @Inject
-    private DatabaseLayout databaseLayout;
+    protected DatabaseLayout databaseLayout;
 
-    private NeoStores neoStores;
+    protected NeoStores neoStores;
 
     private static Stream<Arguments> parameters()
     {
@@ -110,8 +113,13 @@ class RecordRelationshipTraversalCursorTest
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance(), PageCacheTracer.NULL );
+                getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, Sets.immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
+    }
+
+    protected RecordFormats getRecordFormats()
+    {
+        return Standard.LATEST_RECORD_FORMATS;
     }
 
     @AfterEach
@@ -292,7 +300,7 @@ class RecordRelationshipTraversalCursorTest
         assertEquals( count, found );
     }
 
-    private void unUseRecord( long recordId )
+    protected void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
@@ -301,12 +309,12 @@ class RecordRelationshipTraversalCursorTest
         relationshipStore.updateRecord( relationshipRecord, PageCursorTracer.NULL );
     }
 
-    private RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
+    protected RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
     {
         return new RelationshipGroupRecord( id, type, firstIds[0], firstIds[1], firstIds[2], FIRST_OWNING_NODE, next, true );
     }
 
-    private long createRelationshipStructure( boolean dense, RelationshipSpec... relationshipSpecs )
+    protected long createRelationshipStructure( boolean dense, RelationshipSpec... relationshipSpecs )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         if ( !dense )
@@ -355,35 +363,35 @@ class RecordRelationshipTraversalCursorTest
         }
     }
 
-    private RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipSpec relationshipSpec )
+    protected RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipSpec relationshipSpec )
     {
         return new RelationshipRecord( id, true, getFirstNode( relationshipSpec.direction ), getSecondNode( relationshipSpec.direction ), relationshipSpec.type,
                 NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, false, false );
     }
 
-    private long getSecondNode( RelationshipDirection direction )
+    protected long getSecondNode( RelationshipDirection direction )
     {
         return direction == INCOMING || direction == LOOP ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
 
-    private long getFirstNode( RelationshipDirection direction )
+    protected long getFirstNode( RelationshipDirection direction )
     {
         return direction == OUTGOING || direction == LOOP ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
 
-    private RecordRelationshipTraversalCursor getNodeRelationshipCursor()
+    protected RecordRelationshipTraversalCursor getNodeRelationshipCursor()
     {
         return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), PageCursorTracer.NULL );
     }
 
-    private RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )
+    protected RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )
     {
         RelationshipSpec[] specs = new RelationshipSpec[count];
         Arrays.fill( specs, new RelationshipSpec( type, direction ) );
         return specs;
     }
 
-    private static class RelationshipSpec implements Comparable<RelationshipSpec>
+    protected static class RelationshipSpec implements Comparable<RelationshipSpec>
     {
         final int type;
         final RelationshipDirection direction;
