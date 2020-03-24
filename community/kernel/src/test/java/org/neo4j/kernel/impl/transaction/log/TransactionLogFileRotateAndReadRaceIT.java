@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -69,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
+@Disabled
 class TransactionLogFileRotateAndReadRaceIT
 {
     @Inject
