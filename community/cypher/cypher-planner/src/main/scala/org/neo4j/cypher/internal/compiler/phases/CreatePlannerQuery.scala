@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.ast.MultiDatabaseAdministrationCommand
+import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -43,8 +43,8 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
       val plannerQuery: PlannerQuery= toPlannerQuery(query, from.semanticTable())
       LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
-    case ddl: MultiDatabaseAdministrationCommand => throw new DatabaseAdministrationException(
-      s"This is an administration command and it should be executed against the system database: ${ddl.name}")
+    case command: AdministrationCommand => throw new DatabaseAdministrationException(
+      s"This is an administration command and it should be executed against the system database: ${command.name}")
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
