@@ -100,14 +100,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * be different behavior, although the {@code target} record will be marked with the specified
      * {@code id} after participating in this method call.
      * <ul>
-     * <li>{@link RecordLoad#CHECK}: As little data as possible is read to determine whether or not the record
-     *     is in use. If not in use then no more data will be loaded into the target record and
-     *     the the data of the record will be {@link AbstractBaseRecord#clear() cleared}.</li>
+     * <li>{@link RecordLoad#CHECK}: As little data as possible is read to determine whether the record
+     *     is in use or not. If not in use then no more data will be loaded into the target record and
+     *     the data of the record will be {@link AbstractBaseRecord#clear() cleared}.</li>
      * <li>{@link RecordLoad#NORMAL}: Just like {@link RecordLoad#CHECK}, but with the difference that
      *     an {@link InvalidRecordException} will be thrown if the record isn't in use.</li>
      * <li>{@link RecordLoad#FORCE}: The entire contents of the record will be loaded into the target record
      *     regardless if the record is in use or not. This leaves no guarantees about the data in the record
      *     after this method call, except that the id will be the specified {@code id}.
+     * <li>{@link RecordLoad#FORCE_NORMAL}: Similar to {@link RecordLoad#FORCE}, except the sanity checks on
+     *     the record data is always enabled.</li>
      *
      * @param id the id of the record to load.
      * @param target record where data will be loaded into. This record will have its id set to the specified
@@ -307,7 +309,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * cloned if you want to save it for later.
      * @param visitor {@link Visitor} notified about all records.
      * @param cursorTracer underlying page cursor tracer.
-     * @throws Exception on error reading from store.
+     * @throws EXCEPTION on error reading from store.
      */
     <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, PageCursorTracer cursorTracer ) throws EXCEPTION;
 
