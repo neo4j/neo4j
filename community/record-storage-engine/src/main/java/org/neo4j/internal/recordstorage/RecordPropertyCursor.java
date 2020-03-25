@@ -47,7 +47,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
+public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
