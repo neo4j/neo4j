@@ -50,8 +50,6 @@ sealed trait SetOperation {
   def name: String
 
   def needsExclusiveLock: Boolean
-
-  def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SetOperation {
@@ -119,8 +117,6 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
   protected def entityCursor(cursors: ExpressionCursors): CURSOR
 
   protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit
-
-  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
 case class SetNodePropertyOperation(nodeName: String,
@@ -188,11 +184,6 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   }
 
   override def needsExclusiveLock = true
-
-  override def registerOwningPipe(pipe: Pipe): Unit = {
-    entityExpr.registerOwningPipe(pipe)
-    expression.registerOwningPipe(pipe)
-  }
 }
 
 abstract class AbstractSetPropertyFromMapOperation(expression: Expression) extends SetOperation {
@@ -237,7 +228,6 @@ abstract class AbstractSetPropertyFromMapOperation(expression: Expression) exten
       }
     }
   }
-  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
 abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
@@ -335,11 +325,6 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
   }
 
   override def needsExclusiveLock = true
-
-  override def registerOwningPipe(pipe: Pipe): Unit = {
-    entityExpr.registerOwningPipe(pipe)
-    expression.registerOwningPipe(pipe)
-  }
 }
 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
@@ -356,6 +341,4 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
   override def name = "SetLabels"
 
   override def needsExclusiveLock = false
-
-  override def registerOwningPipe(pipe: Pipe): Unit = ()
 }

@@ -23,25 +23,12 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 abstract class Expression extends AstNode[Expression] {
-
-  // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
-  private var _owningPipe: Option[Pipe] = None
-
-  def owningPipe: Pipe = _owningPipe.getOrElse(
-    throw new InternalException("Expressions need to be registered with it's owning Pipe, so the profiling knows where to report db-hits"))
-
-  def registerOwningPipe(pipe: Pipe): Unit = visit {
-    case x:Expression => x._owningPipe = Some(pipe)
-  }
-  // ... TREAD WITH CAUTION
 
   def rewrite(f: Expression => Expression): Expression
 

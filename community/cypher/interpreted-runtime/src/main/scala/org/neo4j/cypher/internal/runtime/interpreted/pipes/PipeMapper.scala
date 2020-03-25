@@ -33,8 +33,6 @@ trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
 
 case class PipeTreeBuilder(pipeMapper: PipeMapper) {
   def build(logicalPlan: LogicalPlan): Pipe = {
-    val pipe = LogicalPlans.map(logicalPlan, pipeMapper)
-    OwningPipeAsserter.assertAllExpressionsHaveAnOwningPipe(pipe)
-    pipe
+    LogicalPlans.map(logicalPlan, pipeMapper)
   }
 }

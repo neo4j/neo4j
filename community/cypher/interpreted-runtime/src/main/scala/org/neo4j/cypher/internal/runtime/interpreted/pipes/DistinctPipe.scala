@@ -31,8 +31,6 @@ import scala.collection.mutable
 case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  groupingColumns.map(_.expression).foreach(_.registerOwningPipe(this))
-
   private val keyNames = groupingColumns.map(_.key)
 
   protected def internalCreateResults(input: Iterator[CypherRow],

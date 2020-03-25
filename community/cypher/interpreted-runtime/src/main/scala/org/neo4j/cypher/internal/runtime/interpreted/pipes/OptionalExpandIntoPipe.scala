@@ -43,8 +43,6 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     case SemanticDirection.BOTH => Direction.BOTH
   }
 
-  predicate.foreach(_.registerOwningPipe(this))
-
   protected def internalCreateResults(input: Iterator[CypherRow],
                                       state: QueryState): Iterator[CypherRow] = {
     val query = state.query

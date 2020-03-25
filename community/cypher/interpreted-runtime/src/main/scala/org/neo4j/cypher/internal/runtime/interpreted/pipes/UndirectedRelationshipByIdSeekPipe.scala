@@ -27,8 +27,6 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
                                              (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  relIdExpr.registerOwningPipe(this)
-
   protected override def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val ctx = state.newExecutionContext(executionContextFactory)
     val relIds = relIdExpr.expressions(ctx, state)

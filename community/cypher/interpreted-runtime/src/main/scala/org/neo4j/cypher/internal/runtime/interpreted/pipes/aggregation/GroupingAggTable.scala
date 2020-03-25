@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
@@ -102,11 +101,6 @@ object GroupingAggTable {
                      aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
       new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, executionContextFactory, operatorId)
-
-    override def registerOwningPipe(pipe: Pipe): Unit = {
-      aggregations.foreach(_.expression.registerOwningPipe(pipe))
-      groupingColumns.foreach(_.expression.registerOwningPipe(pipe))
-    }
   }
 
 }

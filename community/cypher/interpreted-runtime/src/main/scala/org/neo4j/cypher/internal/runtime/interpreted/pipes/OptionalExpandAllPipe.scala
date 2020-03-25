@@ -118,8 +118,6 @@ case class FilteringOptionalExpandAllPipe(source: Pipe,
                                          (val id: Id = Id.INVALID_ID)
   extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
 
-  predicate.registerOwningPipe(this)
-
   override def findMatchIterator(row: CypherRow,
                                  state: QueryState,
                                  relationships: Iterator[RelationshipValue],

@@ -27,8 +27,6 @@ import org.neo4j.values.storable.Values
 case class FilterPipe(source: Pipe, predicate: Expression)
                      (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  predicate.registerOwningPipe(this)
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.filter(ctx => predicate(ctx, state) eq Values.TRUE)
 }

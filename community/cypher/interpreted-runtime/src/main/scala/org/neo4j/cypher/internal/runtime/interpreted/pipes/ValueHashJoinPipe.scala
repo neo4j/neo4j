@@ -31,9 +31,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
                             (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
 
-  lhsExpression.registerOwningPipe(this)
-  rhsExpression.registerOwningPipe(this)
-
   override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
 
     if (input.isEmpty)

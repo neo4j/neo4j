@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.WritableRow
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
@@ -31,12 +30,6 @@ import org.neo4j.values.AnyValue
   */
 trait GroupingExpression {
   type KeyType <: AnyValue
-
-  /**
-    * Registers the upstream pipe for all expressions, used for interacting with interpreted runtime.
-    * @param pipe the upstream pipe to register
-    */
-  def registerOwningPipe(pipe: Pipe): Unit
 
   /**
     * Computes the grouping key, it will either be a single AnyValue or a SequenceValue of AnyValues

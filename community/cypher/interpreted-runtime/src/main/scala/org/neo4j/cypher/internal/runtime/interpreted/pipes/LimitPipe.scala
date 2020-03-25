@@ -33,8 +33,6 @@ case class LimitPipe(source: Pipe, exp: Expression)
                     (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  exp.registerOwningPipe(this)
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val limitNumber = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
     if (limitNumber.isInstanceOf[FloatingPointValue]) {

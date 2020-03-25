@@ -23,12 +23,9 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
@@ -44,20 +41,6 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
   private val relationship1 = newMockedRelationship(1, startNode, endNode1)
   private val query = mock[QueryContext]
   private val queryState = QueryStateHelper.emptyWith(query = query)
-
-  test("should register owning pipe") {
-    // given
-    mockRelationships(relationship1)
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
-
-    val pred = True()
-    // when
-    val pipe = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty, Some(pred))()
-
-    // then
-    pred.owningPipe should equal(pipe)
-  }
 
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {

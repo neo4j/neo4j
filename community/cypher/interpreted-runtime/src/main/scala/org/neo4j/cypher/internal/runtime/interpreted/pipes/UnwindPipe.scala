@@ -32,8 +32,6 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
-  collection.registerOwningPipe(this)
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }

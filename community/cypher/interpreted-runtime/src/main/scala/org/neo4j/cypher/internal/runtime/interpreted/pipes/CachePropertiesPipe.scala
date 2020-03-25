@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class CachePropertiesPipe(source: Pipe, properties: Array[Expression])
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  properties.foreach(_.registerOwningPipe(this))
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     input.map {
       ctx =>

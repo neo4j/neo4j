@@ -38,8 +38,6 @@ case class ShortestPathPipe(source: Pipe,
                            (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  shortestPathExpression.registerOwningPipe(this)
-
   private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
 

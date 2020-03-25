@@ -44,8 +44,6 @@ case class NodeIndexSeekPipe(ident: String,
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  valueExpr.expressions.foreach(_.registerOwningPipe(this))
-
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newExecutionContext(executionContextFactory)

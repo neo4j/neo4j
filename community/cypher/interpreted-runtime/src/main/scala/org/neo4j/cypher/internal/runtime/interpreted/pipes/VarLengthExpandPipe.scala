@@ -61,8 +61,6 @@ case class VarLengthExpandPipe(source: Pipe,
                                filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
-
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
     val stack = new mutable.Stack[(NodeValue, RelationshipContainer)]

@@ -28,8 +28,6 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
                                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  predicate.registerOwningPipe(this)
-
   def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     input.map {
       outerContext =>

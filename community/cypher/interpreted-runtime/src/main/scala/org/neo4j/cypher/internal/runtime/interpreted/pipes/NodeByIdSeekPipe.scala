@@ -31,14 +31,11 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 
 sealed trait SeekArgs {
   def expressions(ctx: ReadableRow, state: QueryState): ListValue
-  def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SeekArgs {
   object empty extends SeekArgs {
     def expressions(ctx: ReadableRow, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
-
-    override def registerOwningPipe(pipe: Pipe){}
   }
 }
 
@@ -47,8 +44,6 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
     expr(ctx, state) match {
       case value => VirtualValues.list(value)
     }
-
-  override def registerOwningPipe(pipe: Pipe): Unit = expr.registerOwningPipe(pipe)
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
@@ -57,14 +52,10 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
       case IsList(values) => values
     }
   }
-
-  override def registerOwningPipe(pipe: Pipe): Unit = coll.registerOwningPipe(pipe)
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val id: Id = Id.INVALID_ID) extends Pipe {
-
-  nodeIdsExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val ctx = state.newExecutionContext(executionContextFactory)

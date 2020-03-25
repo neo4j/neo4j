@@ -34,7 +34,6 @@ import org.neo4j.values.virtual.VirtualValues
 abstract class AggregationPipe(source: Pipe,
                                tableFactory: AggregationTableFactory)
   extends PipeWithSource(source) {
-  tableFactory.registerOwningPipe(this)
 }
 
 object AggregationPipe {
@@ -56,8 +55,6 @@ object AggregationPipe {
    */
   trait AggregationTableFactory {
     def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable
-
-    def registerOwningPipe(pipe: Pipe): Unit
   }
 
   case class AggregatingCol(key: String, expression: AggregationExpression)

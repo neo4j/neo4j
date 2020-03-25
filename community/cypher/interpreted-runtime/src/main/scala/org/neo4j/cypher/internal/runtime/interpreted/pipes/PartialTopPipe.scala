@@ -36,8 +36,6 @@ case class PartialTopNPipe(source: Pipe,
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
-  countExpression.registerOwningPipe(this)
-
   override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
   class TopNReceiver(var remainingLimit: Long) extends OrderedChunkReceiver {

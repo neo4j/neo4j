@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,19 +35,6 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
   private val endNode1 = newMockedNode(2)
   private val relationship1 = newMockedRelationship(1, startNode, endNode1)
   private val query = mock[QueryContext](RETURNS_DEEP_STUBS)
-
-  test("should register owning pipe") {
-    // given
-    val left = newMockedPipe("a",
-      row("a" -> startNode, "b" -> endNode1))
-
-    val pred = True()
-    // when
-    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty, Some(pred))()
-
-    // then
-    pred.owningPipe should equal(pipe)
-  }
 
   private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)
   private def newMockedNode(id: Int) = {

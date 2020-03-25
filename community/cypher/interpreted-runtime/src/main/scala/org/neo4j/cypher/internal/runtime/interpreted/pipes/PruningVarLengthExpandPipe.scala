@@ -32,8 +32,6 @@ import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
-import scala.collection.mutable.ArrayBuffer
-
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
                                       toName: String,
@@ -46,8 +44,6 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   self =>
 
   require(min <= max)
-
-  filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
 
   /**
     * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the

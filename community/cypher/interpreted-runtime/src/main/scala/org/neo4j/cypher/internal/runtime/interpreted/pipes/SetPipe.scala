@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 case class SetPipe(src: Pipe, setOperation: SetOperation)
                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(src) {
-  setOperation.registerOwningPipe(this)
 
   override protected def internalCreateResults(input: Iterator[CypherRow],
                                                state: QueryState): Iterator[CypherRow] = {

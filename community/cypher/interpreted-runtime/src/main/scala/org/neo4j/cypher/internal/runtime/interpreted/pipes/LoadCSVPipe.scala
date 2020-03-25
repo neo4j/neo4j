@@ -24,10 +24,10 @@ import java.net.URL
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.values.AnyValue
@@ -46,8 +46,6 @@ case class LoadCSVPipe(source: Pipe,
                         bufferSize: Int)
                       (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
-
-  urlExpression.registerOwningPipe(this)
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {

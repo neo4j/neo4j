@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.ReadWriteRow
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 trait CommandProjection {
   def isEmpty: Boolean
-  def registerOwningPipe(pipe: Pipe): Unit
   def project(ctx: ReadWriteRow, state: QueryState): Unit
 }

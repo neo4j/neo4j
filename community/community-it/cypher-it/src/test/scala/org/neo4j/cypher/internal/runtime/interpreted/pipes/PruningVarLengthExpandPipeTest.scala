@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -44,17 +43,6 @@ import scala.util.Random
 
 class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = RelationshipTypes(Array.empty[String])
-
-  test("should register owning pipe") {
-    val src = new FakePipe(Iterator.empty)
-    val pred1 = True()
-    val pred2 = True()
-    val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING, pred1, pred2)
-
-    pipeUnderTest.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipeUnderTest))
-    pred1.owningPipe should equal(pipeUnderTest)
-    pred2.owningPipe should equal(pipeUnderTest)
-  }
 
   test("random and compare") {
     // runs DistinctVarExpand and VarExpand side-by-side and checks that the reachable nodes are the same

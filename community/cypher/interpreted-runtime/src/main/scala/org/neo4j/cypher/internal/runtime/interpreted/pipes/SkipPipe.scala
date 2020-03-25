@@ -30,8 +30,6 @@ case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  exp.registerOwningPipe(this)
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val skipNumber = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
     if (skipNumber.isInstanceOf[FloatingPointValue]) {

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValueBuilder
 
@@ -32,7 +33,8 @@ import org.neo4j.values.virtual.ListValueBuilder
  */
 case class NestedPipeExpression(pipe: Pipe,
                                 inner: Expression,
-                                availableExpressionVariables: Seq[ExpressionVariable]) extends Expression {
+                                availableExpressionVariables: Seq[ExpressionVariable],
+                                owningPlanId: Id) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
 
@@ -41,7 +43,7 @@ case class NestedPipeExpression(pipe: Pipe,
       initialContext.set(expVar.name, state.expressionVariables(expVar.offset))
     }
     val innerState = state.withInitialContext(initialContext)
-                          .withDecorator(state.decorator.innerDecorator(owningPipe.id))
+                          .withDecorator(state.decorator.innerDecorator(owningPlanId))
 
     val results = pipe.createResults(innerState)
     val all = ListValueBuilder.newListBuilder()
@@ -51,7 +53,7 @@ case class NestedPipeExpression(pipe: Pipe,
     all.build()
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(NestedPipeExpression(pipe, inner.rewrite(f), availableExpressionVariables))
+  override def rewrite(f: Expression => Expression): Expression = f(NestedPipeExpression(pipe, inner.rewrite(f), availableExpressionVariables, owningPlanId))
 
   override def arguments: Seq[Expression] = Seq(inner)
 

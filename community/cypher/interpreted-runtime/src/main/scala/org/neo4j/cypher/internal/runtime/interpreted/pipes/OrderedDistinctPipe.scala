@@ -35,8 +35,6 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  groupingColumns.map(_.expression).foreach(_.registerOwningPipe(this))
-
   // First the ordered columns, then the unordered ones
   private val keyNames = groupingColumns.sortBy(!_.ordered).map(_.key)
   private val numberOfSortedColumns = groupingColumns.count(_.ordered)
@@ -85,8 +83,6 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
-
-  groupingColumns.map(_.expression).foreach(_.registerOwningPipe(this))
 
   // First the ordered columns, then the unordered ones
   private val keyNames = groupingColumns.map(_.key)

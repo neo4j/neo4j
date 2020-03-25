@@ -22,14 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 import org.neo4j.cypher.internal.runtime.ReadWriteRow
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class InterpretedCommandProjection(expressions: Map[String, Expression]) extends CommandProjection {
 
   override def isEmpty: Boolean = expressions.isEmpty
-
-  override def registerOwningPipe(pipe: Pipe): Unit = expressions.values.foreach(_.registerOwningPipe(pipe))
 
   override def project(ctx: ReadWriteRow, state: QueryState): Unit = expressions.foreach {
     case (name, expression) =>

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedChunkReceiver
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
@@ -86,12 +85,6 @@ object OrderedGroupingAggTable {
                      aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =
       new OrderedGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregations, state, executionContextFactory, operatorId)
-
-    override def registerOwningPipe(pipe: Pipe): Unit = {
-      aggregations.foreach(_.expression.registerOwningPipe(pipe))
-      orderedGroupingColumns.foreach(_.expression.registerOwningPipe(pipe))
-      unorderedGroupingColumns.foreach(_.expression.registerOwningPipe(pipe))
-    }
   }
 }
 

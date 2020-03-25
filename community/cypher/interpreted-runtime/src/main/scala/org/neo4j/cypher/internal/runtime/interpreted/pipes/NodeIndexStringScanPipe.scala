@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.IndexReadSession
@@ -41,8 +41,6 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val indexCachedProperties: Array[CachedProperty] = Array(property.asCachedProperty(ident))
   protected val needsValues = indexPropertyIndices.nonEmpty
-
-  valueExpr.registerOwningPipe(this)
 
   override protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
     val baseContext = state.newExecutionContext(executionContextFactory)

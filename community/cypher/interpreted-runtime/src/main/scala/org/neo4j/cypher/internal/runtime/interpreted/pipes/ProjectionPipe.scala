@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class ProjectionPipe(source: Pipe, projection: CommandProjection)
                          (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  projection.registerOwningPipe(this)
-
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     if (projection.isEmpty)
       input

@@ -113,10 +113,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternCon
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -232,10 +232,12 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           self.toCommandExpression(id, e.init))
 
       case e: internal.expressions.PathExpression => self.toCommandProjectedPath(e)
-      case e: pipes.NestedPipeExpression => commands.expressions
-        .NestedPipeExpression(e.pipe,
+      case e: pipes.NestedPipeExpression =>
+        commands.expressions.NestedPipeExpression(
+          e.pipe,
           self.toCommandExpression(id, e.projection),
-          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of))
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of),
+          id)
 
       case e: internal.expressions.GetDegree => getDegree(id, e, self)
       case e: PrefixSeekRangeWrapper => commands.expressions

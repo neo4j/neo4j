@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
@@ -139,8 +139,6 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
  */
 case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])
                      (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
-  nodes.foreach(_.properties.foreach(_.registerOwningPipe(this)))
-  relationships.foreach(_.properties.foreach(_.registerOwningPipe(this)))
 
   override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(row => {
@@ -181,8 +179,6 @@ case class CreateRelationshipCommand(idName: String,
 case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
                               (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
 
-  data.properties.foreach(_.registerOwningPipe(this))
-
   override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(inRow => {
       val (idName, node) = createNode(inRow, state, data)
@@ -203,7 +199,6 @@ case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
 case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipCommand)
                                       (val id: Id = Id.INVALID_ID)
   extends EntityCreatePipe(src) {
-  data.properties.foreach(_.registerOwningPipe(this))
 
   override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
     input.map(inRow => {
