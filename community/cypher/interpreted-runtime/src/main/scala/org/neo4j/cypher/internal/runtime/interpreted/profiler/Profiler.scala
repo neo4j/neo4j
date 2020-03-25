@@ -51,7 +51,6 @@ class Profiler(databaseInfo: DatabaseInfo,
                stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
-  private var parentPipe: Option[Pipe] = None
   private var planIdStack: List[Id] = Nil
   private var lastObservedStats = PageCacheStats(0, 0)
 
@@ -136,9 +135,6 @@ class Profiler(databaseInfo: DatabaseInfo,
 
     override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = outerProfiler.afterCreateResults(owningPipe, state)
   }
-
-  def registerParentPipe(pipe: Pipe): Unit =
-    parentPipe = Some(pipe)
 }
 
 trait Counter {
