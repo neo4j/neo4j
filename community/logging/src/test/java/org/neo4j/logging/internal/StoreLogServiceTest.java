@@ -171,7 +171,8 @@ class StoreLogServiceTest
             race.addContestants( loggerThreads, () ->
             {
                 ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
-                while ( !end.get() )
+                int messagesAfterEnd = 0;
+                while ( !end.get() || messagesAfterEnd++ < 10 )
                 {
                     long id = nextId.incrementAndGet();
                     String message = String.valueOf( id );
