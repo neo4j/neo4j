@@ -111,11 +111,11 @@
     <scala.version>2.12.10</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <asm.version>7.3.1</asm.version>
-    <metrics.version>4.1.2</metrics.version>
+    <metrics.version>4.1.5</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <jersey.version>2.30</jersey.version>
-    <junit.version>5.6.0</junit.version>
-    <junit.platform.version>1.6.0</junit.platform.version>
+    <jersey.version>2.30.1</jersey.version>
+    <junit.version>5.6.1</junit.version>
+    <junit.platform.version>1.6.1</junit.platform.version>
     <currentYear>2020</currentYear>
     <opencypher.version>1.0.0-M15</opencypher.version>
     <caffeine.version>2.8.1</caffeine.version>
@@ -695,7 +695,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.29</version>
+            <version>8.30</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -973,7 +973,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.5.0</version>
+        <version>1.5.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
@@ -993,12 +993,12 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-nop</artifactId>
-        <version>1.7.25</version>
+        <version>1.7.30</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.25</version>
+        <version>1.7.30</version>
       </dependency>
       <dependency>
         <groupId>io.airlift</groupId>
@@ -1015,7 +1015,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1100,7 +1100,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.2.4</version>
+        <version>3.3.3</version>
         <scope>test</scope>
       </dependency>
 
@@ -1272,7 +1272,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.19</version>
+        <version>1.20</version>
       </dependency>
       <dependency>
         <groupId>com.github.luben</groupId>
