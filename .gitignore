@@ -21,6 +21,7 @@ out
 .shell_history
 .mailmap
 .java-version
+.checkstyle
 Thumbs.db
 /cypher-shell.zip
 packaging/standalone/src/main/distribution/cypher-shell
