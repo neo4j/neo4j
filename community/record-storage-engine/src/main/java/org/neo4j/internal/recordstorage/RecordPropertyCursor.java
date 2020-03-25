@@ -412,7 +412,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        read.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
+        read.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, pageCursor );
     }
 
     private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )

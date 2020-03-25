@@ -377,7 +377,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         {
             //We need to load forcefully here since otherwise we can have inconsistent reads
             //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-            store.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
+            store.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )
