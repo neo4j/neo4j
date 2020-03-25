@@ -146,16 +146,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  protected def runtimeValuePW(field: Either[Array[Byte], AnyRef], params: MapValue): AnyRef = field match {
-    case Left(u) => u
-    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
-      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-      getValidPasswordParameter(params, p.asInstanceOf[ParameterFromSlot].name)
-    case Right(p) if p.isInstanceOf[Parameter] =>
-      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-      getValidPasswordParameter(params, p.asInstanceOf[Parameter].name)
-  }
-
   private def runtimeValue(parameter: String, params: MapValue): String = {
     val value: AnyValue = if (params.containsKey(parameter))
       params.get(parameter)
@@ -172,11 +162,11 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       runtimeValue(p.asInstanceOf[Parameter].name, params)
   }
 
-  protected def getNameFields(key: String, name: Either[String, AnyRef],
-                    prefix: String = internalPrefix,
-                    valueMapper: String => String = s => s): (String, Value, MapValue => MapValue) = name match {
+  protected def getNameFields(key: String,
+                              name: Either[String, AnyRef],
+                              valueMapper: String => String = s => s): (String, Value, MapValue => MapValue) = name match {
     case Left(u) =>
-      (s"$prefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
+      (s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameter = p.asInstanceOf[ParameterFromSlot]
@@ -194,11 +184,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       val newValue = valueMapper(params.get(parameter).asInstanceOf[TextValue].stringValue())
       params.updatedWith(rename(parameter), Values.utf8Value(newValue))
     }
-  }
-
-  protected def makeParameterValue(userName: Either[String, Parameter]): Value = userName match {
-    case Left(s) => Values.utf8Value(s)
-    case Right(_) => Values.NO_VALUE
   }
 
   protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
