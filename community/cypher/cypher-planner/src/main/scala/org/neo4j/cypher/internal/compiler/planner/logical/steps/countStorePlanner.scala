@@ -85,8 +85,12 @@ case object countStorePlanner {
       case _ => None
     }
 
-  private def trySolveNodeAggregation(query: SinglePlannerQuery, columnName: String, variableName: Option[String],
-                                      patternRelationships: Set[PatternRelationship], patternNodes: Set[String], argumentIds: Set[String],
+  private def trySolveNodeAggregation(query: SinglePlannerQuery,
+                                      columnName: String,
+                                      variableName: Option[String],
+                                      patternRelationships: Set[PatternRelationship],
+                                      patternNodes: Set[String],
+                                      argumentIds: Set[String],
                                       selections: Selections,
                                       context: LogicalPlanningContext,
                                       // This function is used when the aggregation needs a specific label to exist,

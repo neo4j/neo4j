@@ -45,6 +45,11 @@ trait OrderCandidate {
   def asc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
 
   def desc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
+
+  def asProvidedOrder: ProvidedOrder = ProvidedOrder(order.map {
+    case Asc(expression, _) => ProvidedOrder.Asc(expression)
+    case Desc(expression, _) => ProvidedOrder.Desc(expression)
+  }, ProvidedOrder.Self)
 }
 
 case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
