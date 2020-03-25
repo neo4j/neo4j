@@ -40,7 +40,8 @@ case class NestedPipeExpression(pipe: Pipe,
     availableExpressionVariables.foreach { expVar =>
       initialContext.set(expVar.name, state.expressionVariables(expVar.offset))
     }
-    val innerState = state.withInitialContext(initialContext).withDecorator(state.decorator.innerDecorator(owningPipe))
+    val innerState = state.withInitialContext(initialContext)
+                          .withDecorator(state.decorator.innerDecorator(owningPipe.id))
 
     val results = pipe.createResults(innerState)
     val all = ListValueBuilder.newListBuilder()

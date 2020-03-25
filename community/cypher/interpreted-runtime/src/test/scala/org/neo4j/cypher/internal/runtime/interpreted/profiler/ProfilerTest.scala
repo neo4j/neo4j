@@ -223,10 +223,10 @@ class ProfilerTest extends CypherFunSuite {
     val ctx1: QueryContext = prepareQueryContext()
     val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
-    val profiled_1 = profiler.decorate(pipe1, state1)
+    val profiled_1 = profiler.decorate(pipe1.id, state1)
     val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
 
-    val profiled1 = profiler.decorate(pipe1, iter1)
+    val profiled1 = profiler.decorate(pipe1.id, iter1)
     profiled1.toList // consume it
     profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
@@ -235,8 +235,8 @@ class ProfilerTest extends CypherFunSuite {
     val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
     val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
 
-    val profiled_2 = profiler.decorate(pipe2, state2)
-    val profiled2 = profiler.decorate(pipe2, iter2)
+    val profiled_2 = profiler.decorate(pipe2.id, state2)
+    val profiled2 = profiler.decorate(pipe2.id, iter2)
     profiled2.toList // consume it
     profiled2.asInstanceOf[ProfilingIterator].count should equal(2)
   }
@@ -248,7 +248,7 @@ class ProfilerTest extends CypherFunSuite {
     val ctx1: QueryContext = prepareQueryContext()
     val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
-    val profiled1 = profiler.decorate(pipe1, state1)
+    val profiled1 = profiler.decorate(pipe1.id, state1)
     profiled1.query.createNode(Array.empty)
     profiled1.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
 
@@ -257,7 +257,7 @@ class ProfilerTest extends CypherFunSuite {
     val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
 
 
-    val profiled2 = profiler.decorate(pipe2, state2)
+    val profiled2 = profiler.decorate(pipe2.id, state2)
     profiled2.query.createNode(Array.empty)
     profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
   }

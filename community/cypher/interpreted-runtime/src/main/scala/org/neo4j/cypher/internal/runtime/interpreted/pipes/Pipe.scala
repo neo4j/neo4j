@@ -37,11 +37,11 @@ trait Pipe {
   self: Pipe =>
 
   def createResults(state: QueryState) : Iterator[CypherRow] = {
-    val decoratedState = state.decorator.decorate(self, state)
+    val decoratedState = state.decorator.decorate(self.id, state)
     decoratedState.setExecutionContextFactory(executionContextFactory)
     val innerResult = internalCreateResults(decoratedState)
-    state.decorator.afterCreateResults(self, decoratedState)
-    state.decorator.decorate(self, innerResult, () => state.initialContext)
+    state.decorator.afterCreateResults(self.id, decoratedState)
+    state.decorator.decorate(self.id, innerResult, () => state.initialContext)
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow]
@@ -65,11 +65,11 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
   override def createResults(state: QueryState): Iterator[CypherRow] = {
     val sourceResult = source.createResults(state)
 
-    val decoratedState = state.decorator.decorate(this, state)
+    val decoratedState = state.decorator.decorate(this.id, state)
     decoratedState.setExecutionContextFactory(executionContextFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
-    state.decorator.afterCreateResults(this, decoratedState)
-    state.decorator.decorate(this, result, sourceResult)
+    state.decorator.afterCreateResults(this.id, decoratedState)
+    state.decorator.decorate(this.id, result, sourceResult)
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] =

@@ -85,37 +85,37 @@ class Profiler(databaseInfo: DatabaseInfo,
   }
 
 
-  def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = {
-    val oldCount = stats.rowMap.get(pipe.id).map(_.count).getOrElse(0L)
+  def decorate(planId: Id, iter: Iterator[CypherRow]): Iterator[CypherRow] = {
+    val oldCount = stats.rowMap.get(planId).map(_.count).getOrElse(0L)
 
     val resultIter =
       new ProfilingIterator(
         iter,
         oldCount,
-        pipe.id,
+        planId,
         if (trackPageCacheStats) updatePageCacheStatistics(_, startAccountingPageCacheStatsFor) else _ => (),
         if (trackPageCacheStats) updatePageCacheStatistics(_, stopAccountingPageCacheStatsFor) else _ => ())
 
-    stats.rowMap(pipe.id) = resultIter
+    stats.rowMap(planId) = resultIter
     resultIter
   }
 
-  def decorate(pipe: Pipe, state: QueryState): QueryState = {
+  def decorate(planId: Id, state: QueryState): QueryState = {
     stats.setMemoryTracker(state.memoryTracker)
-    val decoratedContext = stats.dbHitsMap.getOrElseUpdate(pipe.id, state.query match {
-      case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner, pipe)
-      case _ => new ProfilingPipeQueryContext(state.query, pipe)
+    val decoratedContext = stats.dbHitsMap.getOrElseUpdate(planId, state.query match {
+      case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner)
+      case _ => new ProfilingPipeQueryContext(state.query)
     })
 
     if (trackPageCacheStats) {
-      startAccountingPageCacheStatsFor(decoratedContext.transactionalContext.kernelStatisticProvider, pipe.id)
+      startAccountingPageCacheStatsFor(decoratedContext.transactionalContext.kernelStatisticProvider, planId)
     }
     state.withQueryContext(decoratedContext)
   }
 
-  override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = {
+  override def afterCreateResults(planId: Id, state: QueryState): Unit = {
     if (trackPageCacheStats) {
-      stopAccountingPageCacheStatsFor(state.query.transactionalContext.kernelStatisticProvider, pipe.id)
+      stopAccountingPageCacheStatsFor(state.query.transactionalContext.kernelStatisticProvider, planId)
     }
   }
 
@@ -123,17 +123,17 @@ class Profiler(databaseInfo: DatabaseInfo,
     databaseInfo.edition != Edition.COMMUNITY
   }
 
-  def innerDecorator(owningPipe: Pipe): PipeDecorator = new PipeDecorator {
+  def innerDecorator(outerPlanId: Id): PipeDecorator = new PipeDecorator {
     innerProfiler =>
 
-    def innerDecorator(pipe: Pipe): PipeDecorator = innerProfiler
+    def innerDecorator(planId: Id): PipeDecorator = innerProfiler
 
-    def decorate(pipe: Pipe, state: QueryState): QueryState =
-      outerProfiler.decorate(owningPipe, state)
+    def decorate(planId: Id, state: QueryState): QueryState =
+      outerProfiler.decorate(outerPlanId, state)
 
-    def decorate(pipe: Pipe, iter: Iterator[CypherRow]): Iterator[CypherRow] = iter
+    def decorate(planId: Id, iter: Iterator[CypherRow]): Iterator[CypherRow] = iter
 
-    override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = outerProfiler.afterCreateResults(owningPipe, state)
+    override def afterCreateResults(planId: Id, state: QueryState): Unit = outerProfiler.afterCreateResults(outerPlanId, state)
   }
 }
 
@@ -156,7 +156,7 @@ trait Counter {
   }
 }
 
-final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
+final class ProfilingPipeQueryContext(inner: QueryContext)
   extends DelegatingQueryContext(inner) with Counter {
   self =>
 
