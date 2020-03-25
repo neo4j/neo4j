@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -56,6 +57,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @EphemeralTestDirectoryExtension
+@Disabled
 class BigStoreIT
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
