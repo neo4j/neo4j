@@ -617,7 +617,7 @@ public class TokenScanStoreTest
     }
 
     @Test
-    void toggledRelationshipTypeScanStoreShouldBeOnByFeatureToggle()
+    void toggledRelationshipTypeScanStoreShouldBeOnByConfigSetting()
     {
         Config config = Config.defaults();
         config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );

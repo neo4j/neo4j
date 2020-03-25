@@ -148,27 +148,27 @@ class RecoveryIT
     @Test
     void recoverDatabaseWithNodes() throws Throwable
     {
-            GraphDatabaseService database = createDatabase();
+        GraphDatabaseService database = createDatabase();
 
-            int numberOfNodes = 10;
-            for ( int i = 0; i < numberOfNodes; i++ )
-            {
-                createSingleNode( database );
-            }
+        int numberOfNodes = 10;
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            createSingleNode( database );
+        }
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile();
+
+        recoverDatabase();
+
+        GraphDatabaseService recoveredDatabase = createDatabase();
+        try ( Transaction tx = recoveredDatabase.beginTx() )
+        {
+            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
+        }
+        finally
+        {
             managementService.shutdown();
-            removeLastCheckpointRecordFromLastLogFile();
-
-            recoverDatabase();
-
-            GraphDatabaseService recoveredDatabase = createDatabase();
-            try ( Transaction tx = recoveredDatabase.beginTx() )
-            {
-                assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
-            }
-            finally
-            {
-                managementService.shutdown();
-            }
+        }
     }
 
     @Test
