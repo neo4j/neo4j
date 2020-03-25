@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE_NORMAL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements TransactionMetaDataStore
@@ -614,7 +614,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try
         {
             record.setId( position.id );
-            recordFormat.read( record, cursor, FORCE, RECORD_SIZE, getRecordsPerPage() );
+            recordFormat.read( record, cursor, FORCE_NORMAL, RECORD_SIZE, getRecordsPerPage() );
             if ( record.inUse() )
             {
                 return record.getValue();

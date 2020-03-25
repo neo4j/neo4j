@@ -99,7 +99,7 @@ public class SchemaStorage35
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.FORCE, cursorTracer );
+                    schemaStore.getRecord( id, record, RecordLoad.FORCE_NORMAL, cursorTracer );
                     if ( record.inUse() && record.isStartRecord() )
                     {
                         // It may be that concurrently to our reading there's a transaction dropping the schema rule

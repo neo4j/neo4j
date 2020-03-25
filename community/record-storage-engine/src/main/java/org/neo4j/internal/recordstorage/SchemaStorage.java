@@ -218,7 +218,7 @@ public class SchemaStorage implements SchemaRuleAccess
     public void deleteSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer )
     {
         SchemaRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( rule.getId(), record, RecordLoad.FORCE, cursorTracer );
+        schemaStore.getRecord( rule.getId(), record, RecordLoad.CHECK, cursorTracer );
         if ( record.inUse() )
         {
             long nextProp = record.getNextProp();
@@ -241,7 +241,7 @@ public class SchemaStorage implements SchemaRuleAccess
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
         return LongStream.range( startId, endId )
-                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.FORCE, cursorTracer ) )
+                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.FORCE_NORMAL, cursorTracer ) )
                 .filter( AbstractBaseRecord::inUse )
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorTracer ) );
     }
