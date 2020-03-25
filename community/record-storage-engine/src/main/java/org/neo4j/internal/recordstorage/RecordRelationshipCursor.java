@@ -109,7 +109,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
         // see
         //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
         //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
-        relationshipStore.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
+        relationshipStore.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, pageCursor );
     }
 
     long relationshipHighMark()
