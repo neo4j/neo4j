@@ -44,10 +44,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
 import static java.lang.String.format;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -225,35 +223,31 @@ abstract class GBPTreeITBase<KEY,VALUE>
         }
     }
 
-    // Timeout because test verify no infinite loop
     @Test
-    void shouldHandleDescendingWithEmptyRange()
+    void shouldHandleDescendingWithEmptyRange() throws IOException
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        long[] seeds = new long[]{0, 1, 4};
+        try ( GBPTree<KEY,VALUE> index = createIndex() )
         {
-            long[] seeds = new long[]{0, 1, 4};
-            try ( GBPTree<KEY,VALUE> index = createIndex() )
+            // Write
+            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
-                // Write
-                try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+                for ( long seed : seeds )
                 {
-                    for ( long seed : seeds )
-                    {
-                        KEY key = layout.key( seed );
-                        VALUE value = layout.value( 0 );
-                        writer.put( key, value );
-                    }
+                    KEY key = layout.key( seed );
+                    VALUE value = layout.value( 0 );
+                    writer.put( key, value );
                 }
-
-                KEY from = layout.key( 3 );
-                KEY to = layout.key( 1 );
-                try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
-                {
-                    assertFalse( seek.next() );
-                }
-                index.checkpoint( IOLimiter.UNLIMITED, NULL );
             }
-        } );
+
+            KEY from = layout.key( 3 );
+            KEY to = layout.key( 1 );
+            try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
+            {
+                assertFalse( seek.next() );
+            }
+            index.checkpoint( IOLimiter.UNLIMITED, NULL );
+        }
     }
 
     private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )
