@@ -727,7 +727,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         |  Label_OPERATIONS_Operation: [(n_labels)-[:`OPERATIONS`]->(n_labels_operations:`Operation`)|n_labels_operations{.id, .date, .description, .amount}]}]} ORDER by n.id
         |""".stripMargin
 
-    val plan = new given().getLogicalPlanFor(query)._2
+    val (_, plan, _, _) = new given().getLogicalPlanFor(query)
     plan shouldBe a[Sort]
   }
 }
