@@ -75,7 +75,8 @@
       -XX:-OmitStackTraceInFastThrow
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:+ExitOnOutOfMemoryError
-      -XX:MaxInlineLevel=15 -Djdk.nio.maxCachedBufferSize=262144
+      -XX:MaxInlineLevel=15
+      -Djdk.nio.maxCachedBufferSize=262144
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
