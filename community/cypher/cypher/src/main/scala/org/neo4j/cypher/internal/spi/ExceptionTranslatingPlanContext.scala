@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -31,67 +32,67 @@ import org.neo4j.cypher.internal.planning.ExceptionTranslationSupport
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-    translateException(inner.indexesGetForLabel(labelId))
+    translateException(tokenNameLookup, inner.indexesGetForLabel(labelId))
 
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(inner.indexGetForLabelAndProperties(labelName, propertyKeys))
+    translateException(tokenNameLookup, inner.indexGetForLabelAndProperties(labelName, propertyKeys))
 
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-    translateException(inner.indexExistsForLabelAndProperties(labelName, propertyKey))
+    translateException(tokenNameLookup, inner.indexExistsForLabelAndProperties(labelName, propertyKey))
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-    translateException(inner.uniqueIndexesGetForLabel(labelId))
+    translateException(tokenNameLookup, inner.uniqueIndexesGetForLabel(labelId))
 
   override def statistics: InstrumentedGraphStatistics =
-    translateException(inner.statistics)
+    translateException(tokenNameLookup, inner.statistics)
 
   override def txIdProvider: () => Long = {
-    val innerTxProvider = translateException(inner.txIdProvider)
-    () => translateException(innerTxProvider())
+    val innerTxProvider = translateException(tokenNameLookup, inner.txIdProvider)
+    () => translateException(tokenNameLookup, innerTxProvider())
   }
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
-    translateException(inner.procedureSignature(name))
+    translateException(tokenNameLookup, inner.procedureSignature(name))
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
-    translateException(inner.functionSignature(name))
+    translateException(tokenNameLookup, inner.functionSignature(name))
 
   override def indexExistsForLabel(labelId: Int): Boolean =
-    translateException(inner.indexExistsForLabel(labelId))
+    translateException(tokenNameLookup, inner.indexExistsForLabel(labelId))
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
-    translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))
+    translateException(tokenNameLookup, inner.hasPropertyExistenceConstraint(labelName, propertyKey))
 
   override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] =
-    translateException(inner.getPropertiesWithExistenceConstraint(labelName))
+    translateException(tokenNameLookup, inner.getPropertiesWithExistenceConstraint(labelName))
 
   override def getOptRelTypeId(relType: String): Option[Int] =
-    translateException(inner.getOptRelTypeId(relType))
+    translateException(tokenNameLookup, inner.getOptRelTypeId(relType))
 
   override def getRelTypeName(id: Int): String =
-    translateException(inner.getRelTypeName(id))
+    translateException(tokenNameLookup, inner.getRelTypeName(id))
 
   override def getRelTypeId(relType: String): Int =
-    translateException(inner.getRelTypeId(relType))
+    translateException(tokenNameLookup, inner.getRelTypeId(relType))
 
   override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
-    translateException(inner.getOptPropertyKeyId(propertyKeyName))
+    translateException(tokenNameLookup, inner.getOptPropertyKeyId(propertyKeyName))
 
   override def getLabelName(id: Int): String =
-    translateException(inner.getLabelName(id))
+    translateException(tokenNameLookup, inner.getLabelName(id))
 
   override def getOptLabelId(labelName: String): Option[Int] =
-    translateException(inner.getOptLabelId(labelName))
+    translateException(tokenNameLookup, inner.getOptLabelId(labelName))
 
   override def getPropertyKeyId(propertyKeyName: String): Int =
-    translateException(inner.getPropertyKeyId(propertyKeyName))
+    translateException(tokenNameLookup, inner.getPropertyKeyId(propertyKeyName))
 
   override def getPropertyKeyName(id: Int): String =
-    translateException(inner.getPropertyKeyName(id))
+    translateException(tokenNameLookup, inner.getPropertyKeyName(id))
 
   override def getLabelId(labelName: String): Int =
-    translateException(inner.getLabelId(labelName))
+    translateException(tokenNameLookup, inner.getLabelId(labelName))
 
   override def notificationLogger(): InternalNotificationLogger =
-    translateException(inner.notificationLogger())
+    translateException(tokenNameLookup, inner.notificationLogger())
 }

@@ -21,36 +21,18 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common.TokenNameLookup
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.exceptions
-import org.neo4j.exceptions.ConstraintViolationException
-import org.neo4j.exceptions.CypherExecutionException
-import org.neo4j.exceptions.KernelException
-import org.neo4j.graphdb
-import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
 
+/**
+ * Intended to be used together with [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros]]
+ */
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
 
-  protected def translateException[A](f: => A): A = try {
-    f
-  } catch {
-    case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
+  val tokenNameLookup: TokenNameLookup = new TokenNameLookup {
+    def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+    def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
-      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
-    }), e)
-    case e: graphdb.ConstraintViolationException => throw new ConstraintViolationException(e.getMessage, e)
-    case e: ResourceCloseFailureException => throw new CypherExecutionException(e.getMessage, e)
-    case e: ArithmeticException => throw new exceptions.ArithmeticException(e.getMessage, e)
-  }
-
-  protected def translateIterator[A](iteratorFactory: => Iterator[A]): Iterator[A] = {
-    val iterator = translateException(iteratorFactory)
-    new Iterator[A] {
-      override def hasNext: Boolean = translateException(iterator.hasNext)
-      override def next(): A = translateException(iterator.next())
-    }
+    def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
   }
 }
