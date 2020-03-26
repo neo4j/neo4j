@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.{HasMappableExpressions, InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.{HasMappableExpressions, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Exists, Head}
@@ -58,7 +59,7 @@ object PatternExpressionSolver {
     * The usage pattern is like this:
     *
     * {{{
-    * val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
+    * val solver = PatternExpressionSolver.solverFor(source, context)
     * val rewrittenExpression = solver.solve(someExpressionForANewPlan)
     * val rewrittenSource = solver.rewrittenPlan()
     * // Proceed to plan a new operator using rewrittenExpression instead of someExpressionForANewPlan, and rewrittenSource instead of source
@@ -67,8 +68,7 @@ object PatternExpressionSolver {
     * @param source the LogicalPlan that a new operator will be put on top of.
     */
   def solverFor(source: LogicalPlan,
-                interestingOrder: InterestingOrder,
-                context: LogicalPlanningContext): SolverForInnerPlan = new SolverForInnerPlan(source, interestingOrder, context)
+                context: LogicalPlanningContext): SolverForInnerPlan = new SolverForInnerPlan(source, context)
 
   /**
     * Get a Solver to solve multiple expressions and finally rewrite a planned leaf plan.
@@ -76,7 +76,7 @@ object PatternExpressionSolver {
     * The usage pattern is like this:
     *
     * {{{
-    * val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    * val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     * val rewrittenExpression = solver.solve(someExpressionForANewPlan)
     * val newArguments = solver.newArguments
     * val plan = // plan leaf plan using `argumentIds ++ newArguments`
@@ -86,14 +86,12 @@ object PatternExpressionSolver {
     * @param argumentIds the argument IDs of the leaf plan that is about to be planned
     */
   def solverForLeafPlan(argumentIds: Set[String],
-                        interestingOrder: InterestingOrder,
-                        context: LogicalPlanningContext): SolverForLeafPlan = new SolverForLeafPlan(argumentIds, interestingOrder, context)
+                        context: LogicalPlanningContext): SolverForLeafPlan = new SolverForLeafPlan(argumentIds, context)
 
   abstract class Solver(initialPlan: LogicalPlan,
-                                interestingOrder: InterestingOrder,
                                 context: LogicalPlanningContext) {
-    private val patternExpressionSolver = solvePatternExpressions(initialPlan.availableSymbols, interestingOrder, context)
-    private val patternComprehensionSolver = solvePatternComprehensions(initialPlan.availableSymbols, interestingOrder, context)
+    private val patternExpressionSolver = solvePatternExpressions(initialPlan.availableSymbols, context)
+    private val patternComprehensionSolver = solvePatternComprehensions(initialPlan.availableSymbols, context)
     protected var resultPlan: LogicalPlan = initialPlan
     protected var arguments: mutable.Builder[String, Set[String]] = Set.newBuilder[String]
 
@@ -124,8 +122,8 @@ object PatternExpressionSolver {
 
   }
 
-  class SolverForInnerPlan(source: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext)
-    extends Solver(source, interestingOrder, context) {
+  class SolverForInnerPlan(source: LogicalPlan,  context: LogicalPlanningContext)
+    extends Solver(source, context) {
 
     def rewrittenPlan(): LogicalPlan = {
       val result = this.resultPlan
@@ -134,10 +132,9 @@ object PatternExpressionSolver {
     }
   }
 
-  class SolverForLeafPlan(argumentIds: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext)
+  class SolverForLeafPlan(argumentIds: Set[String],  context: LogicalPlanningContext)
       extends Solver(
         context.logicalPlanProducer.ForPatternExpressionSolver.planArgument(argumentIds, context), // When we have a leaf plan, we start with a single row on the LHS of the RollupApply
-        interestingOrder,
         context){
 
     def newArguments: Set[String] = {
@@ -160,7 +157,6 @@ object PatternExpressionSolver {
   private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
 
   private def solvePatternExpressions(availableSymbols: Set[String],
-                                      interestingOrder: InterestingOrder,
                                       context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
@@ -193,11 +189,10 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
-      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
+      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, context))
   }
 
   private def solvePatternComprehensions(availableSymbols: Set[String],
-                                         interestingOrder: InterestingOrder,
                                          context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
@@ -220,7 +215,7 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
-      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
+      patternExpressionRewriter = patternExpressionRewriter(availableSymbols.empty, context))
   }
 
   private case class RewriteResult(currentPlan: LogicalPlan, currentExpression: Expression, introducedVariables: Set[String])
@@ -316,8 +311,8 @@ object PatternExpressionSolver {
   }
 
   case class ForMappable[T]() {
-    def solve(inner: LogicalPlan, mappable: HasMappableExpressions[T], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (T, LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    def solve(inner: LogicalPlan, mappable: HasMappableExpressions[T],  context: LogicalPlanningContext): (T, LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, context)
       val rewrittenExpression = mappable.mapExpressions(solver.solve(_))
       val rewrittenInner = solver.rewrittenPlan()
       (rewrittenExpression, rewrittenInner)
@@ -325,8 +320,8 @@ object PatternExpressionSolver {
   }
 
   object ForMulti {
-    def solve(inner: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    def solve(inner: LogicalPlan, expressions: Seq[Expression],  context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, context)
       val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
       val rewrittenInner = solver.rewrittenPlan()
       (rewrittenExpressions, rewrittenInner)
@@ -334,8 +329,8 @@ object PatternExpressionSolver {
   }
 
   object ForSingle  {
-    def solve(inner: LogicalPlan, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Expression, LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    def solve(inner: LogicalPlan, expression: Expression,  context: LogicalPlanningContext): (Expression, LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, context)
       val rewrittenExpression = solver.solve(expression)
       val rewrittenInner = solver.rewrittenPlan()
       (rewrittenExpression, rewrittenInner)

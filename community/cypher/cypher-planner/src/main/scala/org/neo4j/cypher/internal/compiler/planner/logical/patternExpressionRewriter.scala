@@ -19,18 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.{IdentityMap, Rewriter, topDown}
+import org.neo4j.cypher.internal.v4_0.util.IdentityMap
+import org.neo4j.cypher.internal.v4_0.util.Rewriter
+import org.neo4j.cypher.internal.v4_0.util.topDown
 
 /*
 Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.
-This is only done for expressions that have not already been unnested
+This is only done for expressions that have not already been unnested.
+
+We don't pass in the interesting order because
+  i) There is no way of expressing order within a pattern comprehension
+  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
  */
-case class patternExpressionRewriter(planArguments: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext) extends Rewriter {
+case class patternExpressionRewriter(planArguments: Set[String], context: LogicalPlanningContext) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = that match {
     case expression: Expression =>
@@ -65,7 +70,7 @@ case class patternExpressionRewriter(planArguments: Set[String], interestingOrde
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, interestingOrder, context)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, context)
             val uniqueNamedExpr = namedExpr.copy()
             val path = EveryPath(namedExpr.pattern.element)
             val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
@@ -86,7 +91,7 @@ case class patternExpressionRewriter(planArguments: Set[String], interestingOrde
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, interestingOrder, context)
+            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, context)
             val uniqueNamedExpr = namedExpr.copy()(expr.position, expr.outerScope)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)
