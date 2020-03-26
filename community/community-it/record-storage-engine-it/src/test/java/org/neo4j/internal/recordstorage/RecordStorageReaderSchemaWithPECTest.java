@@ -42,7 +42,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
 {
     @Override
-    RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
+    protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
     {
         // Basically temporarily allow PEC and node key constraints here, which is usually is only allowed in enterprise edition
         return builder.constraintSemantics( new StandardConstraintRuleAccessor() );

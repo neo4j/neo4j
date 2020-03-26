@@ -63,12 +63,12 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 @ExtendWith( RandomExtension.class )
-class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
+public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
 {
-    private static final int RELATIONSHIPS_COUNT = 20;
+    protected static final int RELATIONSHIPS_COUNT = 20;
 
     @Inject
-    private RandomRule random;
+    protected RandomRule random;
 
     @Override
     protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
@@ -174,7 +174,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( true, true, true );
     }
 
-    private void testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete ) throws Exception
+    protected void testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete ) throws Exception
     {
         int inRelCount = randomRelCount();
         int outRelCount = randomRelCount();
@@ -207,7 +207,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
-    private void testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
+    protected void testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
             boolean modifyOutChain, boolean modifyLoopChain ) throws Exception
     {
         int inRelCount = randomRelCount();
@@ -235,17 +235,17 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
-    private int degreeForDirection( StorageNodeCursor cursor, Direction direction )
+    protected int degreeForDirection( StorageNodeCursor cursor, Direction direction )
     {
         return cursor.degrees( RelationshipSelection.selection( direction ) ).degree( direction );
     }
 
-    private int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
+    protected int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
     {
         return cursor.degrees( RelationshipSelection.selection( relType, direction ) ).degree( relType, direction );
     }
 
-    private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
+    protected void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
             TestRelType... typesToDelete ) throws Exception
     {
         int inRelCount = randomRelCount();
@@ -287,7 +287,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( loopRelCount, degreeForDirectionAndType( cursor, BOTH, relTypeId( LOOP ) ) );
     }
 
-    private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
+    protected void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain,
             boolean modifyOutChain, boolean modifyLoopChain ) throws Exception
     {
         int inRelCount = randomRelCount();
@@ -355,7 +355,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
                 asSet( IN, OUT, LOOP ) );
     }
 
-    private void testRelationshipTypesForDenseNode( LongConsumer nodeChanger, Set<TestRelType> expectedTypes ) throws Exception
+    protected void testRelationshipTypesForDenseNode( LongConsumer nodeChanger, Set<TestRelType> expectedTypes ) throws Exception
     {
         int inRelCount = randomRelCount();
         int outRelCount = randomRelCount();
@@ -369,7 +369,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( expectedTypes, relTypes( cursor ) );
     }
 
-    private Set<TestRelType> relTypes( StorageNodeCursor cursor )
+    protected Set<TestRelType> relTypes( StorageNodeCursor cursor )
     {
         Set<TestRelType> types = new HashSet<>();
         for ( int relType : cursor.relationshipTypes() )
@@ -379,7 +379,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         return types;
     }
 
-    private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete ) throws Exception
+    protected void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete ) throws Exception
     {
         int inRelCount = randomRelCount();
         int outRelCount = randomRelCount();
@@ -426,7 +426,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( expectedDegrees, actualDegrees );
     }
 
-    private void testDegreesForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain, boolean modifyOutChain,
+    protected void testDegreesForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain, boolean modifyOutChain,
             boolean modifyLoopChain ) throws Exception
     {
         int inRelCount = randomRelCount();
@@ -459,7 +459,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         assertEquals( expectedDegrees, actualDegrees );
     }
 
-    private Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
+    protected Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
         Degrees nodeDegrees = nodeCursor.degrees( ALL_RELATIONSHIPS );
@@ -470,7 +470,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         return degrees;
     }
 
-    private StorageNodeCursor newCursor( long nodeId )
+    protected StorageNodeCursor newCursor( long nodeId )
     {
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
         nodeCursor.single( nodeId );
@@ -478,11 +478,11 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         return nodeCursor;
     }
 
-    private void noNodeChange( long nodeId )
+    protected void noNodeChange( long nodeId )
     {
     }
 
-    private void markRandomRelsNotInUse( long nodeId )
+    protected void markRandomRelsNotInUse( long nodeId )
     {
         for ( TestRelType type : TestRelType.values() )
         {
@@ -490,7 +490,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         }
     }
 
-    private void markRandomRelsInGroupNotInUse( long nodeId, TestRelType type )
+    protected void markRandomRelsInGroupNotInUse( long nodeId, TestRelType type )
     {
         NodeRecord node = getNodeRecord( nodeId );
         assertTrue( node.isDense() );
@@ -514,7 +514,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         throw new IllegalStateException( "No relationship group with type: " + type + " found" );
     }
 
-    private void markRandomRelsInChainNotInUse( long relId )
+    protected void markRandomRelsInChainNotInUse( long relId )
     {
         if ( relId != NO_NEXT_RELATIONSHIP.intValue() )
         {
@@ -536,7 +536,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         }
     }
 
-    private void markRelGroupNotInUse( long nodeId, TestRelType... types )
+    protected void markRelGroupNotInUse( long nodeId, TestRelType... types )
     {
         NodeRecord node = getNodeRecord( nodeId );
         assertTrue( node.isDense() );
@@ -559,14 +559,14 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         }
     }
 
-    private int relTypeId( TestRelType type )
+    protected int relTypeId( TestRelType type )
     {
         int id = relationshipTypeId( type );
         assertNotEquals( NO_TOKEN, id );
         return id;
     }
 
-    private long createNode( int inRelCount, int outRelCount, int loopRelCount ) throws Exception
+    protected long createNode( int inRelCount, int outRelCount, int loopRelCount ) throws Exception
     {
         long nodeId = createNode( map() );
         for ( int i = 0; i < inRelCount; i++ )
@@ -584,7 +584,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         return nodeId;
     }
 
-    private TestRelType relTypeForId( int id )
+    protected TestRelType relTypeForId( int id )
     {
         try
         {
@@ -596,42 +596,42 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
         }
     }
 
-    private static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
+    protected static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
     {
         return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
     }
 
-    private NodeRecord getNodeRecord( long id )
+    protected NodeRecord getNodeRecord( long id )
     {
         return getRecord( resolveNeoStores().getNodeStore(), id );
     }
 
-    private RelationshipRecord getRelRecord( long id )
+    protected RelationshipRecord getRelRecord( long id )
     {
         return getRecord( resolveNeoStores().getRelationshipStore(), id );
     }
 
-    private RelationshipGroupRecord getRelGroupRecord( long id )
+    protected RelationshipGroupRecord getRelGroupRecord( long id )
     {
         return getRecord( resolveNeoStores().getRelationshipGroupStore(), id );
     }
 
-    private void update( RelationshipGroupRecord record )
+    protected void update( RelationshipGroupRecord record )
     {
         resolveNeoStores().getRelationshipGroupStore().updateRecord( record, NULL );
     }
 
-    private void update( RelationshipRecord record )
+    protected void update( RelationshipRecord record )
     {
         resolveNeoStores().getRelationshipStore().updateRecord( record, NULL );
     }
 
-    private NeoStores resolveNeoStores()
+    protected NeoStores resolveNeoStores()
     {
         return storageEngine.testAccessNeoStores();
     }
 
-    private int randomRelCount()
+    protected int randomRelCount()
     {
         return RELATIONSHIPS_COUNT + random.nextInt( 20 );
     }
