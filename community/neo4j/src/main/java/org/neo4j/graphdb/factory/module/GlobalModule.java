@@ -145,7 +145,8 @@ public class GlobalModule
 
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
-        fileSystem = globalDependencies.satisfyDependency( createFileSystemAbstraction() );
+        fileSystem = tryResolveOrCreate( FileSystemAbstraction.class, this::createFileSystemAbstraction );
+        globalDependencies.satisfyDependency( fileSystem );
         globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
 
         // Component monitoring
