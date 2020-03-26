@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
@@ -33,16 +34,19 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = expression(row, state) match {
-    case x if x eq NO_VALUE => NO_VALUE
+    case IsNoValue() => NO_VALUE
     case value =>
       val idx = index(row, state)
-      if (idx eq NO_VALUE) NO_VALUE
-      else CypherFunctions.containerIndex(value,
-        idx,
-        state.query,
-        state.cursors.nodeCursor,
-        state.cursors.relationshipScanCursor,
-        state.cursors.propertyCursor)
+      if (idx eq NO_VALUE) {
+        NO_VALUE
+      } else {
+        CypherFunctions.containerIndex(value,
+          idx,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor)
+      }
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))

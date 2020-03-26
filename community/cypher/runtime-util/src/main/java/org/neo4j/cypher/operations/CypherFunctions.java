@@ -586,27 +586,27 @@ public final class CypherFunctions
     }
 
     @CalledFromGeneratedCode
-    public static AnyValue containerIndexExists( AnyValue container,
-                                           AnyValue index,
-                                           DbAccess dbAccess,
-                                           NodeCursor nodeCursor,
-                                           RelationshipScanCursor relationshipScanCursor,
-                                           PropertyCursor propertyCursor )
+    public static boolean containerIndexExists( AnyValue container,
+                                                AnyValue index,
+                                                DbAccess dbAccess,
+                                                NodeCursor nodeCursor,
+                                                RelationshipScanCursor relationshipScanCursor,
+                                                PropertyCursor propertyCursor )
     {
         assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(),  dbAccess.propertyKey( asString( index ) ),
-                                             nodeCursor, propertyCursor ) ? TRUE : FALSE;
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( asString( index ) ),
+                                             nodeCursor, propertyCursor );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
-            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(),  dbAccess.propertyKey( asString( index ) ),
-                                             relationshipScanCursor, propertyCursor ) ? TRUE : FALSE;
+            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(), dbAccess.propertyKey( asString( index ) ),
+                                                     relationshipScanCursor, propertyCursor );
         }
         if ( container instanceof MapValue )
         {
-            return ((MapValue) container).containsKey(  asString( index ) ) ? TRUE : FALSE;
+            return ((MapValue) container).containsKey( asString( index ) );
         }
         else
         {
