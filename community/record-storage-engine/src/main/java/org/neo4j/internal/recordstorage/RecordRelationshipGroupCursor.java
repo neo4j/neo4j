@@ -90,16 +90,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         return true;
     }
 
-    void reset()
-    {
-        if ( open )
-        {
-            open = false;
-            setId( NO_ID );
-            clear();
-        }
-    }
-
     int outgoingCount()
     {
         return count( outgoingRawId() );
