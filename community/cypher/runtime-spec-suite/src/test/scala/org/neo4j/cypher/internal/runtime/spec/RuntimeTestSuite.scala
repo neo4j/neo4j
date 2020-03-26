@@ -200,10 +200,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                  input: InputValues
                                 ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
-  def printQueryProfile(fileName: String, queryProfile: QueryProfile): Unit = {
+  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false): Unit = {
     val pw = new PrintWriter(new File(fileName))
+    val maxAllocatedMemory = queryProfile.maxAllocatedMemory()
+    val logString = s"Max allocated memory: $maxAllocatedMemory"
+    if (logToStdOut) println(logString)
     try {
-      pw.println(s"Max allocated memory: ${queryProfile.maxAllocatedMemory()}")
+      pw.println(logString)
     } finally {
       pw.close()
     }
