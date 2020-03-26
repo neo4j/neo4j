@@ -44,7 +44,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)
+    val result = projection(startPlan, projections, projections, context)
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -59,7 +59,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projectionsToMarkSolved, InterestingOrder.empty, context)
+    val result = projection(startPlan, projections, projectionsToMarkSolved, context)
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -72,7 +72,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)
+    val result = projection(startPlan, projections, projections, context)
 
     // then
     result should equal(startPlan)
@@ -85,7 +85,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)
+    val result = projection(startPlan, projections, projections, context)
 
     // then
     val actualProjections = Map("42" -> literalInt(42))
@@ -99,7 +99,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)
+    val result = projection(startPlan, projections, projections, context)
 
     // then
     result should equal(Projection(startPlan, projections))

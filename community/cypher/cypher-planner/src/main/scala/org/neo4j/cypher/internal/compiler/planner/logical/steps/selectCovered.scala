@@ -33,7 +33,7 @@ case object selectCovered extends CandidateGenerator[LogicalPlan] {
     if (unsolvedPredicates.isEmpty) {
       Seq()
     } else {
-      Seq(context.logicalPlanProducer.planSelection(in, unsolvedPredicates, interestingOrder, context))
+      Seq(context.logicalPlanProducer.planSelection(in, unsolvedPredicates, context))
     }
   }
 }

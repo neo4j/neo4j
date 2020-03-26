@@ -94,12 +94,12 @@ case object PlanUpdates extends UpdatesPlanner {
       case foreach: ForeachPattern =>
         val innerLeaf = context.logicalPlanProducer.planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable, context)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, interestingOrder, foreach.expression)
+        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, foreach.expression)
 
       //CREATE ()
       //CREATE (a)-[:R]->(b)
       //CREATE (), (a)-[:R]->(b), (x)-[:X]->(y)-[:Y]->(z {prop:2})
-      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, interestingOrder, context)
+      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, context)
 
       //MERGE ()
       case p: MergeNodePattern =>
@@ -114,27 +114,27 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET n.prop = 42
       case pattern:SetNodePropertyPattern =>
-        context.logicalPlanProducer.planSetNodeProperty(source, pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
 
       //SET r.prop = 42
       case pattern:SetRelationshipPropertyPattern =>
-        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
 
       //SET x.prop = 42
       case pattern:SetPropertyPattern =>
-        context.logicalPlanProducer.planSetProperty(source, pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetProperty(source, pattern, context)
 
       //SET n += {p1: ..., p2: ...}
       case pattern:SetNodePropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, context)
 
       //SET r += {p1: ..., p2: ...}
       case pattern:SetRelationshipPropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, context)
 
       //SET x += {p1: ..., p2: ...}
       case pattern:SetPropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetPropertiesFromMap(source, pattern,  interestingOrder, context)
+        context.logicalPlanProducer.planSetPropertiesFromMap(source, pattern, context)
 
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)
@@ -144,11 +144,11 @@ case object PlanUpdates extends UpdatesPlanner {
         val delete = p.expression match {
           //DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, interestingOrder, context)
+            context.logicalPlanProducer.planDeleteNode(source, p, context)
 
           //DELETE rel
           case Variable(r) if context.semanticTable.isRelationship(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, interestingOrder, context)
+            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           //DELETE path
           case PathExpression(_) =>
@@ -156,15 +156,15 @@ case object PlanUpdates extends UpdatesPlanner {
 
           //DELETE users[{i}]
           case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollection(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, interestingOrder, context)
+            context.logicalPlanProducer.planDeleteNode(source, p, context)
 
           //DELETE rels[{i}]
           case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollection(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, interestingOrder, context)
+            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           //DELETE expr
           case _ =>
-            context.logicalPlanProducer.planDeleteExpression(source, p, interestingOrder, context)
+            context.logicalPlanProducer.planDeleteExpression(source, p, context)
         }
         delete
     }
@@ -233,10 +233,10 @@ case object PlanUpdates extends UpdatesPlanner {
     //      /     mergeCreatePart
     // condApply
     val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph, context): LogicalPlan) {
-      case (acc, current) => producer.planMergeCreateNode(acc, current, interestingOrder, context)
+      case (acc, current) => producer.planMergeCreateNode(acc, current, context)
     }
     val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {
-      case (acc, current) => producer.planMergeCreateRelationship(acc, current, interestingOrder, context)
+      case (acc, current) => producer.planMergeCreateRelationship(acc, current, context)
     }
 
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {

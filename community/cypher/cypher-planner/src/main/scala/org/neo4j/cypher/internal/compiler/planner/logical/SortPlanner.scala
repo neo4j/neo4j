@@ -79,7 +79,7 @@ object SortPlanner {
     def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean = true): LogicalPlan = {
       val projectionDeps = projections.flatMap(e => e._2.dependencies)
       if (projections.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e.name)))
-        projection(plan, projections, if (updateSolved) projections else Map.empty, interestingOrder, context)
+        projection(plan, projections, if (updateSolved) projections else Map.empty, context)
       else
         plan
     }

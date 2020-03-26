@@ -32,7 +32,6 @@ object projection {
   def apply(in: LogicalPlan,
             projectionsToPlan: Map[String, Expression],
             projectionsToMarkSolved: Map[String, Expression],
-            interestingOrder: InterestingOrder,
             context: LogicalPlanningContext): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
     val solver = PatternExpressionSolver.solverFor(in, context)

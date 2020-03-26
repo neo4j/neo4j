@@ -48,7 +48,7 @@ case object countStorePlanner {
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
-        countStorePlan.map(p => projection(p, groupingKeys, groupingKeys, query.interestingOrder, context))
+        countStorePlan.map(p => projection(p, groupingKeys, groupingKeys, context))
 
       case _ => None
     }

@@ -111,14 +111,14 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
       matchingRelationshipPattern(patternExpression, exp1.from, exp2.to, exp1.types, exp1.dir)) {
 
       val left = if (leftPredicates.nonEmpty)
-        context.logicalPlanProducer.planSelection(exp1, leftPredicates, interestingOrder, context)
+        context.logicalPlanProducer.planSelection(exp1, leftPredicates, context)
       else
         exp1
 
       val argument = context.logicalPlanProducer.planArgumentFrom(left, context)
       val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(SameId(exp2.id))
       val right = if (incomingPredicates.nonEmpty)
-        context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, interestingOrder, context)
+        context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, context)
       else
         newExpand2
 

@@ -140,7 +140,6 @@ object expandSolverStep {
           relationshipPredicate = variablePredicate(tempRelationship, relationshipPredicates),
           solvedPredicates = solvedPredicates,
           mode = mode,
-          interestingOrder = interestingOrder,
           context = context)
     }
   }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object distinct {
-  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, context: LogicalPlanningContext): LogicalPlan = {
 
     val solver = PatternExpressionSolver.solverFor(plan, context)
     val groupingExpressions = distinctQueryProjection.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }

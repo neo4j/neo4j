@@ -39,7 +39,6 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                        hint: Option[UsingIndexHint],
                                        argumentIds: Set[String],
                                        providedOrder: ProvidedOrder,
-                                       interestingOrder: InterestingOrder,
                                        context: LogicalPlanningContext,
                                        onlyExists: Boolean)
                                       (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
@@ -55,7 +54,6 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                           hint,
                                                           argumentIds,
                                                           providedOrder,
-                                                          interestingOrder,
                                                           context)
     } else {
       context.logicalPlanProducer.planNodeIndexSeek(idName,
@@ -67,7 +65,6 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                     hint,
                                                     argumentIds,
                                                     providedOrder,
-                                                    interestingOrder,
                                                     context)
     }
 

@@ -83,7 +83,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
-                              interestingOrder: InterestingOrder,
                               context: LogicalPlanningContext,
                               onlyExists: Boolean)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
@@ -186,7 +185,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, interestingOrder, context, indexedPredicates.head.isExists)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context, indexedPredicates.head.isExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
       .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate

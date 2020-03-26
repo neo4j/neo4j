@@ -301,8 +301,7 @@ object PatternExpressionSolver {
       val innerPlan = innerContext.strategy.plan(qg, InterestingOrder.empty, innerContext)
       val collectionName = FreshIdNameGenerator.name(expr.position)
       val projectedPath = projectionCreator(namedExpr)
-      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath),
-                                      InterestingOrder.empty, innerContext)
+      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), innerContext)
       PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
     }
 

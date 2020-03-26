@@ -67,7 +67,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
             context.logicalPlanProducer.planEmptyProjection(plan, context)
           } else {
-            projection(limited, regularProjection.projections, regularProjection.projections, query.interestingOrder, context)
+            projection(limited, regularProjection.projections, regularProjection.projections, context)
           }
         if (regularProjection.selections.isEmpty) {
           projected
@@ -77,7 +77,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         }
 
       case distinctProjection: DistinctQueryProjection =>
-        val distinctPlan = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
+        val distinctPlan = distinct(selectedPlan, distinctProjection, context)
         val sorted = SortPlanner.ensureSortedPlanWithSolved(distinctPlan, query.interestingOrder, context)
         val limited = skipAndLimit(sorted, query, context)
         if (distinctProjection.selections.isEmpty) {
@@ -88,15 +88,15 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         }
 
       case UnwindProjection(variable, expression) =>
-        val projected = context.logicalPlanProducer.planUnwind(selectedPlan, variable, expression, query.interestingOrder, context)
+        val projected = context.logicalPlanProducer.planUnwind(selectedPlan, variable, expression, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>
-        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, query.interestingOrder, context)
+        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, query.interestingOrder, context)
+        val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case PassthroughAllHorizon() =>
