@@ -28,8 +28,10 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -87,10 +89,12 @@ public class AllStoreHolder extends Read
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final IndexReaderCache indexReaderCache;
     private TokenScanReader labelScanReader;
+    private TokenScanReader relationshipTypeScanReader;
 
     public AllStoreHolder( StorageReader storageReader,
                            KernelTransactionImplementation ktx,
@@ -99,16 +103,19 @@ public class AllStoreHolder extends Read
                            SchemaState schemaState,
                            IndexingService indexingService,
                            LabelScanStore labelScanStore,
+                           RelationshipTypeScanStore relationshipTypeScanStore,
                            IndexStatisticsStore indexStatisticsStore,
                            PageCursorTracer cursorTracer,
-                           Dependencies databaseDependencies )
+                           Dependencies databaseDependencies,
+                           Config config )
     {
-        super( storageReader, cursors, cursorTracer, ktx );
+        super( storageReader, cursors, cursorTracer, ktx, config );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.indexReaderCache = new IndexReaderCache( indexingService );
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
     }
@@ -357,6 +364,16 @@ public class AllStoreHolder extends Read
             labelScanReader = labelScanStore.newReader();
         }
         return labelScanReader;
+    }
+
+    @Override
+    TokenScanReader relationshipTypeScanReader()
+    {
+        if ( relationshipTypeScanReader == null )
+        {
+            relationshipTypeScanReader = relationshipTypeScanStore.newReader();
+        }
+        return relationshipTypeScanReader;
     }
 
     @Override

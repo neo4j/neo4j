@@ -426,6 +426,7 @@ public class Database extends LifecycleAdapter
                     indexingService,
                     databaseSchemaState,
                     labelScanStore,
+                    relationshipTypeScanStore,
                     storageEngine,
                     transactionIdStore,
                     databaseAvailabilityGuard,
@@ -669,7 +670,7 @@ public class Database extends LifecycleAdapter
 
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
-            StorageEngine storageEngine, TransactionIdStore transactionIdStore,
+            RelationshipTypeScanStore relationshipTypeScanStore, StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore, GraphDatabaseFacade facade,
             LeaseService leaseService )
@@ -695,8 +696,8 @@ public class Database extends LifecycleAdapter
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
-                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies, tracers, leaseService ) );
+                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
+                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

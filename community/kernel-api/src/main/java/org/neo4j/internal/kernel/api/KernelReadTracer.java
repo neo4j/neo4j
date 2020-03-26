@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.ReadTracer;
 
 /**
@@ -54,7 +53,12 @@ public interface KernelReadTracer extends ReadTracer
     void onLabelScan( int label );
 
     /**
-     * Called on {@link Read#nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexOrder, boolean, IndexQuery...)}.
+     * Called on {@link Read#relationshipTypeScan(int, RelationshipScanCursor)}
+     */
+    void onRelationshipTypeScan( int type );
+
+    /**
+     * Called on {@link Read#nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, IndexQuery...)}.
      */
     void onIndexSeek();
 

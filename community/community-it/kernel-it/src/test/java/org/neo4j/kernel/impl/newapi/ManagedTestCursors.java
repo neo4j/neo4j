@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -135,6 +136,14 @@ public class ManagedTestCursors implements CursorFactory
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor()
+    {
+        RelationshipTypeIndexCursor n = cursors.allocateRelationshipTypeIndexCursor();
         allCursors.add( n );
         return n;
     }

@@ -43,6 +43,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultRelationshipIndexCursor relationshipIndexCursor;
+    private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
 
     public DefaultPooledCursors( StorageReader storageReader )
     {
@@ -330,6 +331,34 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
         cursor.removeTracer();
         relationshipIndexCursor = cursor;
+    }
+
+    @Override
+    public DefaultRelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor()
+    {
+        if ( relationshipTypeIndexCursor == null )
+        {
+            return trace( new DefaultRelationshipTypeIndexCursor( this::accept ) );
+        }
+
+        try
+        {
+            return relationshipTypeIndexCursor;
+        }
+        finally
+        {
+            relationshipTypeIndexCursor = null;
+        }
+    }
+
+    private void accept( DefaultRelationshipTypeIndexCursor cursor )
+    {
+        if ( relationshipTypeIndexCursor != null )
+        {
+            relationshipTypeIndexCursor.release();
+        }
+        cursor.removeTracer();
+        relationshipTypeIndexCursor = cursor;
     }
 
     public void release()

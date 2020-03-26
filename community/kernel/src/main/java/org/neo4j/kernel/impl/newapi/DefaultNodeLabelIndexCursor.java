@@ -32,8 +32,7 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeLabelIndexCursor
+class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implements NodeLabelIndexCursor
 {
     private Read read;
     private long node;

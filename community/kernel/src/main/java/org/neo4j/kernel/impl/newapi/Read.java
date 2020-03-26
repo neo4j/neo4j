@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScan;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
@@ -38,6 +40,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -83,14 +86,16 @@ abstract class Read implements TxStateHolder,
     protected final DefaultPooledCursors cursors;
     protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
+    private final Config config;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
-            KernelTransactionImplementation ktx )
+            KernelTransactionImplementation ktx, Config config )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
         this.cursorTracer = cursorTracer;
         this.ktx = ktx;
+        this.config = config;
     }
 
     @Override
@@ -452,6 +457,27 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor )
+    {
+        ktx.assertOpen();
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
+        {
+            DefaultRelationshipTypeIndexCursor cursor = (DefaultRelationshipTypeIndexCursor)relationshipTypeIndexCursor;
+            cursor.setRead( this );
+
+            TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
+            TokenScan relationshipTypeScan = relationshipTypeScanReader.entityTokenScan( type, cursorTracer );
+            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.relationshipTypeClient(), cursorTracer );
+
+            cursor.scan( progressor, type );
+        }
+        else
+        {
+            throw new IllegalStateException( "Cannot search relationship type scan store when feature is not enabled." );
+        }
+    }
+
+    @Override
     public void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor )
     {
         ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, selection, this );
@@ -472,6 +498,8 @@ abstract class Read implements TxStateHolder,
     public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract TokenScanReader labelScanReader();
+
+    abstract TokenScanReader relationshipTypeScanReader();
 
     @Override
     public TransactionState txState()

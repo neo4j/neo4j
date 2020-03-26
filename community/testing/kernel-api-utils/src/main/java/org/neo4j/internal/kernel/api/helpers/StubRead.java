@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -178,6 +179,12 @@ public class StubRead implements Read
 
     @Override
     public void relationshipTypeScan( int type, RelationshipScanCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor )
     {
         throw new UnsupportedOperationException();
     }

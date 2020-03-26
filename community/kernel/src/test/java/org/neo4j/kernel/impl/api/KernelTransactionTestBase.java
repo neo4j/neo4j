@@ -35,6 +35,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -178,8 +179,8 @@ class KernelTransactionTestBase
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                new TestDatabaseIdRepository().defaultDatabase(), leaseService, memoryPool );
+                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ),
+                dependencies, new TestDatabaseIdRepository().defaultDatabase(), leaseService, memoryPool );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess

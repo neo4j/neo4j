@@ -62,8 +62,15 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
 
     protected GraphDatabaseService newDb( File storeDir )
     {
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).impermanent().build();
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
+        builder = configure( builder );
+        managementService = builder.impermanent().build();
         return managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        return builder;
     }
 
     @Override

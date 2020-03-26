@@ -56,6 +56,12 @@ public class TestKernelReadTracer implements KernelReadTracer
     }
 
     @Override
+    public void onRelationshipTypeScan( int type )
+    {
+        traceEvents.add( OnRelationshipTypeScan( type ) );
+    }
+
+    @Override
     public void onIndexSeek()
     {
         traceEvents.add( OnIndexSeek() );
@@ -100,6 +106,7 @@ public class TestKernelReadTracer implements KernelReadTracer
         Node,
         AllNodesScan,
         LabelScan,
+        RelationshipTypeScan,
         IndexSeek,
         Relationship,
         Property
@@ -160,6 +167,11 @@ public class TestKernelReadTracer implements KernelReadTracer
     static TraceEvent OnLabelScan( int label )
     {
         return new TraceEvent( TraceEventKind.LabelScan, label );
+    }
+
+    static TraceEvent OnRelationshipTypeScan( int type )
+    {
+        return new TraceEvent( TraceEventKind.RelationshipTypeScan, type );
     }
 
     static TraceEvent OnIndexSeek()

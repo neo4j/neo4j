@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class StubCursorFactory implements CursorFactory
@@ -47,6 +48,7 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<NodeValueIndexCursor> nodeValueIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipIndexCursor> relationshipIndexCursors = new ArrayDeque<>();
+    private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
 
     public StubCursorFactory()
     {
@@ -116,6 +118,12 @@ public class StubCursorFactory implements CursorFactory
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         return poll( relationshipIndexCursors );
+    }
+
+    @Override
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor()
+    {
+        return poll( relationshipTypeIndexCursors );
     }
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )

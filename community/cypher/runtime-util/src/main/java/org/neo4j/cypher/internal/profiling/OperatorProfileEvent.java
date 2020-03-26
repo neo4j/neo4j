@@ -59,6 +59,12 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
     }
 
     @Override
+    public void onRelationshipTypeScan( int type )
+    {
+        dbHit();
+    }
+
+    @Override
     public void onRelationship( long relationshipReference )
     {
         dbHit();

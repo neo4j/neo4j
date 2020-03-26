@@ -26,6 +26,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -93,8 +94,9 @@ public class KernelTransactionFactory
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                        new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING );
+                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
+                        mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES,
+                        MemoryPools.NO_TRACKING );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

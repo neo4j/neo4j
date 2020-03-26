@@ -57,7 +57,23 @@ class IndexReadAsserts
         assertFalse( node.next(), "no more than " + expectedCount + " nodes" );
     }
 
-    static void assertFoundRelationships( RelationshipIndexCursor edge, int edges, MutableLongSet uniqueIds )
+    static void assertRelationships( RelationshipIndexCursor edge, MutableLongSet uniqueIds, long... expected )
+    {
+        uniqueIds.clear();
+        for ( long count : expected )
+        {
+            assertTrue( edge.next(), "at least " + expected.length + " relationships" );
+            assertTrue( uniqueIds.add( edge.relationshipReference() ) );
+        }
+        assertFalse( edge.next(), "no more than " + expected.length + " relationships" );
+        assertEquals( expected.length, uniqueIds.size(), "all relationships are unique" );
+        for ( long expectedRelationship : expected )
+        {
+            assertTrue( uniqueIds.contains( expectedRelationship ), "expected relationship " + expectedRelationship );
+        }
+    }
+
+    static void assertRelationshipCount( RelationshipIndexCursor edge, int edges, MutableLongSet uniqueIds )
     {
         for ( int i = 0; i < edges; i++ )
         {
