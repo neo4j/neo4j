@@ -45,7 +45,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
   private val initialFallbackSortArraySize = Int.MaxValue / 8 // This should not be too big so as to risk out-of-memory on the first allocation
 
   protected override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    val limitNumber = NumericHelper.asNumber(countExpression(state.newExecutionContext(executionContextFactory), state))
+    val limitNumber = NumericHelper.evaluateStaticallyKnownNumber(countExpression, state)
     if (limitNumber.isInstanceOf[FloatingPointValue]) {
       val limit = limitNumber.doubleValue()
       throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")

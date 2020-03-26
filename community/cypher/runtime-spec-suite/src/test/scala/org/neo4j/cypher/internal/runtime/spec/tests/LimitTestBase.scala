@@ -573,6 +573,26 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a1").withRows(singleColumn(expected))
   }
 
+  test("should support limit under semiApply") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "one", "two")
+      .projection("1 AS one", "2 AS two")
+      .semiApply()
+      .|.limit(2)
+      .|.unwind("[5,6,7,8] AS y")
+      .|.argument()
+      .unwind("[1,2,3,4] AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (1 to 4).map(x => Array[Any](x, 1, 2))
+    runtimeResult should beColumns("x", "one", "two").withRows(expected)
+  }
+
   //TODO: This triggers a bug in physical planning while constructing the execution graph
   ignore("should support union + limit under apply") {
     val nodes = given {
