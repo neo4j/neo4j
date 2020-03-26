@@ -55,7 +55,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
-    val solver = PatternExpressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val solver = PatternExpressionSolver.solverFor(source, context)
     val expressions = Map("x" -> patExpr1).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val resultPlan = solver.rewrittenPlan()
 
@@ -87,7 +87,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     mockStrategyWithMultiplePlans(strategy, b1, b2)
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
-    val solver = PatternExpressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val solver = PatternExpressionSolver.solverFor(source, context)
     val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val resultPlan = solver.rewrittenPlan()
 
@@ -113,7 +113,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     val stringToEquals1 = Map("x" -> equals(patExpr1, patExpr2))
-    val solver = PatternExpressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val solver = PatternExpressionSolver.solverFor(source, context)
     val expressions = stringToEquals1.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val resultPlan = solver.rewrittenPlan()
 
@@ -140,7 +140,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     val predicate = equals(patExpr1, patExpr2)
-    val solver = PatternExpressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val solver = PatternExpressionSolver.solverFor(source, context)
     val expression = solver.solve(predicate)
     val resultPlan = solver.rewrittenPlan()
 

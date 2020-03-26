@@ -39,7 +39,7 @@ object aggregation {
             previousInterestingOrder: Option[InterestingOrder],
             context: LogicalPlanningContext): LogicalPlan = {
 
-    val solver = PatternExpressionSolver.solverFor(plan, interestingOrder, context)
+    val solver = PatternExpressionSolver.solverFor(plan, context)
     val groupingExpressions = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val aggregations = aggregation.aggregationExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()

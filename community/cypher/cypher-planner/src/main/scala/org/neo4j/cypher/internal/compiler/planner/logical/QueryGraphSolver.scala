@@ -34,8 +34,8 @@ import org.neo4j.exceptions.InternalException
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
 }
 
 trait PatternExpressionSolving {
@@ -43,28 +43,28 @@ trait PatternExpressionSolving {
   self: QueryGraphSolver =>
 
 
-  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(_.name)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-    val plan = planQueryGraph(qg, namedMap, interestingOrder, context)
+    val plan = planQueryGraph(qg, namedMap, context)
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val queryGraph = asQueryGraph(expr, context.innerVariableNamer)
     val qgArguments = planArguments intersect queryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = queryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, interestingOrder, context)
+    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, context)
     (plan, expr)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], context: LogicalPlanningContext) = {
     val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
-    self.plan(qg, interestingOrder, patternPlanningContext)
+    self.plan(qg, InterestingOrder.empty, patternPlanningContext)
   }
 }
 

@@ -714,4 +714,20 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Sort(_,Seq(Ascending("u.name + b.title"))) => ()
     }
   }
+
+  test("should handle pattern comprehension within map projection followed by ORDER BY") {
+    val query =
+      """
+        |MATCH (n:`Operation`) WITH n RETURN n{.id,
+        | Operation_bankAccount_BankAccount: [(n)<-[:`bankAccount`]-(n_bankAccount:`BankAccount`)|n_bankAccount{.id,
+        |  BankAccount_user_jhi_user: [(n_bankAccount)-[:`user`]->(n_bankAccount_user:`jhi_user`)|n_bankAccount_user{.user_id,
+        |   jhi_user_HAS_AUTHORITY_jhi_authority: [(n_bankAccount_user)-[:`HAS_AUTHORITY`]->(n_bankAccount_user_authorities:`jhi_authority`)|n_bankAccount_user_authorities{.name}]}],
+        |  BankAccount_operations_Operation: [(n_bankAccount)-[:`operations`]->(n_bankAccount_operations:`Operation`)|n_bankAccount_operations{.id}]}],
+        | Operation_LABELS_Label: [(n)-[:`LABELS`]->(n_labels:`Label`)|n_labels{.id,
+        |  Label_OPERATIONS_Operation: [(n_labels)-[:`OPERATIONS`]->(n_labels_operations:`Operation`)|n_labels_operations{.id, .date, .description, .amount}]}]} ORDER by n.id
+        |""".stripMargin
+
+    val plan = new given().getLogicalPlanFor(query)._2
+    plan shouldBe a[Sort]
+  }
 }
