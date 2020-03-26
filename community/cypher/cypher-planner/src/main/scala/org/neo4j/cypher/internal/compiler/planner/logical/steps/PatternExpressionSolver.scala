@@ -215,7 +215,7 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
-      patternExpressionRewriter = patternExpressionRewriter(availableSymbols.empty, context))
+      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, context))
   }
 
   private case class RewriteResult(currentPlan: LogicalPlan, currentExpression: Expression, introducedVariables: Set[String])
