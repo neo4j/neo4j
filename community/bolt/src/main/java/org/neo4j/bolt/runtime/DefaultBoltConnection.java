@@ -204,7 +204,7 @@ public class DefaultBoltConnection implements BoltConnection
                 queue.drainTo( batch, batchCount );
                 // if we expect one message but did not get any (because it was already
                 // processed), silently exit
-                if ( batch.size() == 0 && !exitIfNoJobsAvailable )
+                if ( batch.isEmpty() && !exitIfNoJobsAvailable )
                 {
                     waitForJobs();
                 }
@@ -212,7 +212,7 @@ public class DefaultBoltConnection implements BoltConnection
                 batchCount -= batch.size();
 
                 // execute each job that's in the batch
-                while ( batch.size() > 0 )
+                while ( !batch.isEmpty() )
                 {
                     Job current = batch.remove( 0 );
                     current.perform( machine );

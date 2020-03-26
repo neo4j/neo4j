@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -47,17 +46,17 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     }
 
     @Override
-    public void commit() throws TransactionFailureException
+    public void commit()
     {
-        kernelTransaction.commit();
+        topLevelInternalTransaction.commit();
     }
 
     @Override
-    public void rollback() throws TransactionFailureException
+    public void rollback()
     {
-        if ( kernelTransaction.isOpen() )
+        if ( topLevelInternalTransaction.isOpen() )
         {
-            kernelTransaction.rollback();
+            topLevelInternalTransaction.rollback();
         }
     }
 
