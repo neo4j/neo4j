@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
@@ -33,7 +34,7 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
 
   override def apply(ctx: ExecutionContext,
                      state: QueryState): AnyValue = expression(ctx, state) match {
-    case x if x eq NO_VALUE => NO_VALUE
+    case IsNoValue() => NO_VALUE
     case value =>
       val idx = index(ctx, state)
       if (idx eq NO_VALUE) NO_VALUE
