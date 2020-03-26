@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
-import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.MemoryTracker
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.OperatorMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
-import org.neo4j.exceptions.TransactionOutOfMemoryException
 import org.neo4j.memory.Measurable
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.AnyValue
 
@@ -99,11 +98,10 @@ trait QueryMemoryTracker {
 }
 
 object QueryMemoryTracker {
-  def apply(memoryTracking: MemoryTracking): QueryMemoryTracker = {
+  def apply(memoryTracking: MemoryTracking, transactionMemoryTracker: MemoryTracker): QueryMemoryTracker = {
     memoryTracking match {
       case NO_TRACKING => NoMemoryTracker
-      case MEMORY_TRACKING => new BoundedMemoryTracker(Long.MaxValue)
-      case MEMORY_BOUND(maxAllocatedBytes) => new BoundedMemoryTracker(maxAllocatedBytes)
+      case MEMORY_TRACKING => new BoundedMemoryTracker(transactionMemoryTracker)
     }
   }
 
@@ -144,7 +142,7 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 }
 
 object BoundedMemoryTracker {
-  class MemoryTracker private[BoundedMemoryTracker]() {
+  class OperatorMemoryTracker private[BoundedMemoryTracker]() {
     protected[this] var _allocatedBytes = 0L
     private var _highWaterMark = 0L
 
@@ -164,21 +162,14 @@ object BoundedMemoryTracker {
   }
 }
 
-class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with QueryMemoryTracker {
+class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker) extends QueryMemoryTracker {
   override val isEnabled: Boolean = true
 
-  private val maxMemoryPerOperator = new IntObjectHashMap[MemoryTracker]()
-
-  private def allocateAndCheckThreshold(bytes: Long): Unit = {
-    allocated(bytes)
-    if (allocatedBytes > threshold) {
-      throw new TransactionOutOfMemoryException
-    }
-  }
+  private val maxMemoryPerOperator = new IntObjectHashMap[OperatorMemoryTracker]()
 
   def allocated(bytes: Long, operatorId: Int): Unit = {
-    allocateAndCheckThreshold(bytes)
-    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new MemoryTracker()).allocated(bytes)
+    transactionMemoryTracker.allocateHeap(bytes)
+    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new OperatorMemoryTracker()).allocated(bytes)
   }
 
   override def allocated(value: AnyValue, operatorId: Int): Unit = allocated(value.estimatedHeapUsage(), operatorId)
@@ -186,17 +177,16 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
   override def allocated(instance: Measurable, operatorId: Int): Unit = allocated(instance.estimatedHeapUsage, operatorId)
 
   override def deallocated(bytes: Long, operatorId: Int): Unit = {
-    _allocatedBytes -= bytes
-    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new MemoryTracker()).deallocated(bytes)
+    transactionMemoryTracker.releaseHeap(bytes)
+    maxMemoryPerOperator.getIfAbsentPutWithKey(operatorId, _ => new OperatorMemoryTracker()).deallocated(bytes)
   }
-
-  override def deallocated(bytes: Long): Unit = allocated(-bytes, Id.INVALID_ID.x)
 
   override def deallocated(value: AnyValue, operatorId: Int): Unit = deallocated(value.estimatedHeapUsage(), operatorId)
 
   override def deallocated(instance: Measurable, operatorId: Int): Unit = deallocated(instance.estimatedHeapUsage, operatorId)
 
-  override def totalAllocatedMemory: Long = highWaterMark
+  override def totalAllocatedMemory: Long =
+    transactionMemoryTracker.heapHighWaterMark()
 
   override def maxMemoryOfOperator(operatorId: Int): Long = {
     val maxOrNull = maxMemoryPerOperator.get(operatorId)
@@ -223,7 +213,6 @@ class BoundedMemoryTracker(val threshold: Long) extends MemoryTracker with Query
 sealed trait MemoryTracking
 case object NO_TRACKING extends MemoryTracking
 case object MEMORY_TRACKING extends MemoryTracking
-case class MEMORY_BOUND(maxAllocatedBytes: Long) extends MemoryTracking
 
 /**
   * Controller of memory tracking. Needed to make memory tracking dynamically configurable.

@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A transaction with the graph database.
@@ -401,6 +402,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return page cursor tracer
      */
     PageCursorTracer pageCursorTracer();
+
+    /**
+     * Get the memory tracker for this transaction.
+     * @return
+     */
+    MemoryTracker memoryTracker();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

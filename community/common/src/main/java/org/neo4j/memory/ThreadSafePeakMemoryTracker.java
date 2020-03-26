@@ -58,6 +58,12 @@ public class ThreadSafePeakMemoryTracker implements MemoryTracker
     }
 
     @Override
+    public long heapHighWaterMark()
+    {
+        return 0;
+    }
+
+    @Override
     public void reset()
     {
 

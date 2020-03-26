@@ -47,6 +47,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
@@ -354,6 +358,35 @@ public final class SettingMigrators
             {
                 log.warn( deprecationMessage, settingName, value, settingName, LogQueryLevel.OFF.name() );
                 values.put( settingName, LogQueryLevel.OFF.name() );
+            }
+        }
+    }
+
+    @ServiceProvider
+    public static class DatabaseMemoryMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory );
+            migrateSettingNameChange( values, log, "dbms.tx_state.off_heap.max_cacheable_block_size", tx_state_off_heap_max_cacheable_block_size );
+            migrateSettingNameChange( values, log, "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size );
+
+            // Migrate cypher.query_max_allocations to new setting, if new settings is not configured
+            String maxAllocations = values.remove( "cypher.query_max_allocations" );
+            if ( isNotBlank( maxAllocations ) )
+            {
+                if ( !values.containsKey( memory_transaction_max_size.name() ) )
+                {
+                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s.", memory_transaction_max_size.name() );
+                    values.put( memory_transaction_max_size.name(), maxAllocations );
+                }
+                else
+                {
+                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take " +
+                                    "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
+                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations );
+                }
             }
         }
     }

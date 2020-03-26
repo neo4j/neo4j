@@ -387,19 +387,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query. " +
                   "If enabled, calling `dbms.listQueries` will display the allocated bytes. " +
-                  "If enabled, the maximum allocated bytes of a query can be limited using `cypher.query_max_allocations`. " +
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
             newBuilder( "dbms.track_query_allocation", BOOL, false ).dynamic().build();
-
-    @Description( "The maximum amount of heap memory allocations to for cypher to perform on a single query, in bytes (or kilobytes with the 'k' " +
-                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'. If a query exceeds this limit, it will " +
-                  "be terminated. Determining the heap memory allocations done by a query is a rough estimate and not " +
-                  "an exact measurement. If no memory limit is configured, queries will be allowed to allocate as much heap " +
-                  "memory as needed. This could potentially lead to queries consuming more heap memory than available, " +
-                  "which will kill the Neo4j server." )
-    public static final Setting<Long> query_max_memory =
-            newBuilder( "cypher.query_max_allocations", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).dynamic().build();
 
     @Description( "Enable tracing of pipelined runtime scheduler." )
     @Internal
@@ -545,7 +535,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Threshold for rotation of the debug log." )
     public static final Setting<Long> store_internal_log_rotation_threshold =
-            newBuilder( "dbms.logs.debug.rotation.size", BYTES, ByteUnit.mebiBytes( 20 ) ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
+            newBuilder( "dbms.logs.debug.rotation.size", BYTES, mebiBytes( 20 ) ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Debug log contexts that should output debug level logging" )
     @Internal
@@ -766,7 +756,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. " )
     public static final Setting<Long> logical_log_rotation_threshold =
-            newBuilder( "dbms.tx_log.rotation.size", BYTES, ByteUnit.mebiBytes( 250 ) ).addConstraint( min( kibiBytes( 128 ) ) ).dynamic().build();
+            newBuilder( "dbms.tx_log.rotation.size", BYTES, mebiBytes( 250 ) ).addConstraint( min( kibiBytes( 128 ) ) ).dynamic().build();
 
     @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
     public static final Setting<Boolean> preallocate_logical_logs = newBuilder( "dbms.tx_log.preallocate", BOOL, true ).dynamic().build();
@@ -981,7 +971,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
-    public static final Setting<Long> log_queries_rotation_threshold = newBuilder( "dbms.logs.query.rotation.size", BYTES, ByteUnit.mebiBytes( 20 ) )
+    public static final Setting<Long> log_queries_rotation_threshold = newBuilder( "dbms.logs.query.rotation.size", BYTES, mebiBytes( 20 ) )
             .addConstraint( range( 0L, Long.MAX_VALUE ) )
             .dynamic()
             .build();
@@ -1129,6 +1119,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> routing_ttl =
             newBuilder( "dbms.routing_ttl", DURATION, ofSeconds( 300 ) ).addConstraint( min( ofSeconds( 1 ) ) ).build();
 
+    @Description( "Limit the amount of memory that all of the running transactions can consume, in bytes (or kilobytes with the 'k' " +
+            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
+    public static final Setting<Long> memory_transaction_global_max_size =
+            newBuilder( "dbms.memory.transaction.global_max_size", BYTES, 0L ).build();
+
+    @Description( "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' " +
+            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
+    public static final Setting<Long> memory_transaction_max_size =
+            newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L ).addConstraint( any( min( mebiBytes( 1 ) ), is( 0L) ) ).build();
+
     public enum TransactionStateMemoryAllocation
     {
         ON_HEAP, OFF_HEAP
@@ -1141,19 +1141,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
             "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
     public static final Setting<Long> tx_state_max_off_heap_memory =
-            newBuilder( "dbms.tx_state.max_off_heap_memory", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
+            newBuilder( "dbms.memory.off_heap.max_size", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
 
-    @Description( "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations for transaction state data. " +
-                  "The value must be a power of 2." )
+    @Description( "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations. The value must be a power of 2." )
     public static final Setting<Long> tx_state_off_heap_max_cacheable_block_size =
-            newBuilder( "dbms.tx_state.off_heap.max_cacheable_block_size", BYTES, ByteUnit.kibiBytes( 512 ) )
+            newBuilder( "dbms.memory.off_heap.max_cacheable_block_size", BYTES, ByteUnit.kibiBytes( 512 ) )
                     .addConstraint( min( kibiBytes( 4 ) ) ).addConstraint( POWER_OF_2 ).build();
 
     @Description( "Defines the size of the off-heap memory blocks cache. The cache will contain this number of blocks for each block size " +
             "that is power of two. Thus, maximum amount of memory used by blocks cache can be calculated as " +
-            "2 * dbms.tx_state.off_heap.max_cacheable_block_size * dbms.tx_state.off_heap.block_cache_size" )
+            "2 * dbms.memory.off_heap.max_cacheable_block_size * dbms.memory.off_heap.block_cache_size" )
     public static final Setting<Integer> tx_state_off_heap_block_cache_size =
-            newBuilder( "dbms.tx_state.off_heap.block_cache_size", INT, 128 ).addConstraint( min( 16 ) ).build();
+            newBuilder( "dbms.memory.off_heap.block_cache_size", INT, 128 ).addConstraint( min( 16 ) ).build();
 
     @Description( "Defines whether the dbms may retry reconciling a database to its desired state." )
     public static final Setting<Boolean> reconciler_may_retry = newBuilder( "dbms.reconciler.may_retry", BOOL, false ).build();

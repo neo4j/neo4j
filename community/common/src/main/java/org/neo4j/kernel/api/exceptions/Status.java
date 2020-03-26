@@ -431,7 +431,7 @@ public interface Status
         // transient errors
         TransactionMemoryLimit( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +
-                        "'dbms.tx_state.max_off_heap_memory' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
+                        "'dbms.memory.off_heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
                         "you are using Neo4j Desktop, found through the user interface), and then restart the database." ),
         OutOfMemoryError( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +

@@ -44,6 +44,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
+import static org.neo4j.memory.HeapEstimator.sizeOfHashMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class MapValue extends VirtualValue
@@ -91,12 +92,12 @@ public abstract class MapValue extends VirtualValue
     static final class MapWrappingMapValue extends MapValue
     {
         private final Map<String,AnyValue> map;
-        private final long payloadSize;
+        private final long wrappedHeapSize;
 
         MapWrappingMapValue( Map<String,AnyValue> map, long payloadSize )
         {
             this.map = map;
-            this.payloadSize = payloadSize;
+            this.wrappedHeapSize = sizeOfHashMap( map ) + payloadSize;
         }
 
         @Override
@@ -135,7 +136,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public long estimatedHeapUsage()
         {
-            return MAP_WRAPPING_MAP_VALUE_SHALLOW_SIZE + payloadSize;
+            return MAP_WRAPPING_MAP_VALUE_SHALLOW_SIZE + wrappedHeapSize;
         }
     }
 

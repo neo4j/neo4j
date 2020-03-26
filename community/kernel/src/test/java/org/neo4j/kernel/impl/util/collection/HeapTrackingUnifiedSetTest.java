@@ -25,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,14 +38,14 @@ class HeapTrackingUnifiedSetTest
 {
     private static final long INTEGER_SIZE = shallowSizeOfInstance( Integer.class );
     private MemoryMeter meter = new MemoryMeter();
-    private MemoryTracker globalTracker;
+    private MemoryPool memoryPool;
     private MemoryTracker memoryTracker;
 
     @BeforeEach
     void setUp()
     {
-        globalTracker = new LocalMemoryTracker();
-        memoryTracker = new LocalMemoryTracker( globalTracker );
+        memoryPool = MemoryPools.fromLimit( 0 );
+        memoryTracker = new LocalMemoryTracker( memoryPool );
     }
 
     @Test
@@ -69,14 +71,14 @@ class HeapTrackingUnifiedSetTest
         }
 
         assertExactEstimation( unifiedSet );
-        assertThat( globalTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
+        assertThat( memoryPool.used() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
 
         unifiedSet.close();
         memoryTracker.releaseHeap( totalBytesIntegers );
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
 
         memoryTracker.reset();
-        assertEquals( 0, globalTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryPool.used() );
     }
 
     private void assertExactEstimation( UnifiedSet<?> unifiedSet )

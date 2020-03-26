@@ -17,22 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.exceptions;
+package org.neo4j.memory;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class TransactionOutOfMemoryException extends CypherExecutionException
+public class MemoryGroupTracker implements MemoryPool
 {
-    private static final String ERROR_MSG = "The transaction used more memory than was allowed.";
+    private final MemoryGroup group;
+    private final MemoryPool pool;
 
-    public TransactionOutOfMemoryException()
+    public MemoryGroupTracker( MemoryGroup group, long limit )
     {
-        super( ERROR_MSG );
+        this.group = group;
+        this.pool = MemoryPools.fromLimit( limit );
     }
 
     @Override
-    public Status status()
+    public void reserve( long bytes )
     {
-        return Status.General.TransactionOutOfMemoryError;
+        pool.reserve( bytes );
+    }
+
+    @Override
+    public void release( long bytes )
+    {
+        pool.release( bytes );
+    }
+
+    @Override
+    public long totalSize()
+    {
+        return pool.totalSize();
+    }
+
+    @Override
+    public long used()
+    {
+        return pool.used();
+    }
+
+    @Override
+    public long free()
+    {
+        return pool.free();
     }
 }

@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ValueMapper;
@@ -802,6 +803,12 @@ class QueryExecutionLocksIT
 
         @Override
         public PageCursorTracer pageCursorTracer()
+        {
+            return null;
+        }
+
+        @Override
+        public MemoryTracker memoryTracker()
         {
             return null;
         }

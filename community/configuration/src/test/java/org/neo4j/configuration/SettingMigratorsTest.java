@@ -52,6 +52,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
@@ -229,6 +234,68 @@ class SettingMigratorsTest
             }
             assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages( expectedWarning );
         }
+    }
+
+    @Test
+    void testMemorySettingsRename() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of(
+                "dbms.tx_state.max_off_heap_memory=6g",
+                "dbms.tx_state.off_heap.max_cacheable_block_size=4096",
+                "dbms.tx_state.off_heap.block_cache_size=256") );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                        "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory.name() )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                        "dbms.tx_state.off_heap.max_cacheable_block_size", tx_state_off_heap_max_cacheable_block_size.name() )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                        "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size.name() );
+
+        assertEquals( BYTES.parse( "6g" ), config.get( tx_state_max_off_heap_memory ) );
+        assertEquals( 4096, config.get( tx_state_off_heap_max_cacheable_block_size ) );
+        assertEquals( 256, config.get( tx_state_off_heap_block_cache_size ) );
+    }
+
+    @Test
+    void transactionCypherMaxAllocations() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "cypher.query_max_allocations=6g" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( "The setting cypher.query_max_allocations is removed and replaced by %s.",
+                        memory_transaction_max_size.name() );
+        assertEquals( BYTES.parse( "6g" ), config.get( memory_transaction_max_size ) );
+    }
+
+    @Test
+    void transactionCypherMaxAllocationsConflict() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of(
+                "cypher.query_max_allocations=6g",
+                memory_transaction_max_size.name() + "=7g" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments(
+                        "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take " +
+                                "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
+                        memory_transaction_max_size.name(), memory_transaction_max_size.name(), "6g" );
+        assertEquals( BYTES.parse( "7g" ), config.get( memory_transaction_max_size ) );
     }
 
     @TestFactory

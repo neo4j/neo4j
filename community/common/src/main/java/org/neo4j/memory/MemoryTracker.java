@@ -63,5 +63,10 @@ public interface MemoryTracker
      */
     void releaseHeap( long bytes );
 
+    /**
+     * @return The high water mark, i.e. the maximum observed value, of allocated heap in bytes.
+     */
+    long heapHighWaterMark();
+
     void reset();
 }

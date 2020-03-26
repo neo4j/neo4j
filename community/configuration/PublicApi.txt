@@ -184,6 +184,8 @@ org.neo4j.configuration.GraphDatabaseSettings::logical_logs_location org.neo4j.g
 org.neo4j.configuration.GraphDatabaseSettings::logs_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lucene_searcher_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::max_concurrent_transactions org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::memory_transaction_global_max_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.GraphDatabaseSettings::memory_transaction_max_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::neo4j_home org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_direct_io org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_memory org.neo4j.graphdb.config.Setting<java.lang.String> public static final
@@ -200,7 +202,6 @@ org.neo4j.configuration.GraphDatabaseSettings::procedure_roles org.neo4j.graphdb
 org.neo4j.configuration.GraphDatabaseSettings::procedure_unrestricted org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_whitelist org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
-org.neo4j.configuration.GraphDatabaseSettings::query_max_memory org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_non_indexed_label_warning_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_statistics_divergence_target org.neo4j.graphdb.config.Setting<java.lang.Double> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_statistics_divergence_threshold org.neo4j.graphdb.config.Setting<java.lang.Double> public static final

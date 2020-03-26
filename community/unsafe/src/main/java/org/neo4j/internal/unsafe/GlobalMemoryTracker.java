@@ -76,6 +76,12 @@ public final class GlobalMemoryTracker implements MemoryTracker
     }
 
     @Override
+    public long heapHighWaterMark()
+    {
+        throw new UnsupportedOperationException( "Global memory tracker does not support high water mark." );
+    }
+
+    @Override
     public void reset()
     {
     }

@@ -29,6 +29,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -239,6 +240,24 @@ public final class HeapEstimator
             size += sizeOf( s );
         }
         return size;
+    }
+
+    /**
+     * Returns the estimated size of the provided map (assuming it is a {@link HashMap}).
+     * This only calculates the size of the map structure, the entries are not traversed
+     * and needs to be tracked separately.
+     *
+     * @param map to estimate size of
+     * @return the estimated size of the maps internal structure.
+     */
+    public static long sizeOfHashMap( Map<?,?> map )
+    {
+        final int size = map.size();
+        final int tableSize = HashMapNode.tableSizeFor( size );
+
+        return HASH_MAP_SHALLOW_SIZE +
+                alignObjectSize( (long) ARRAY_HEADER_BYTES + (long) OBJECT_REFERENCE_BYTES * tableSize ) + // backing table
+                HASH_MAP_NODE_SHALLOW_SIZE * size; // table entries
     }
 
     /**
@@ -467,5 +486,23 @@ public final class HeapEstimator
             }
         }
         return alignObjectSize( size );
+    }
+
+    private static final long HASH_MAP_SHALLOW_SIZE = shallowSizeOfInstance( HashMap.class );
+    private static final long HASH_MAP_NODE_SHALLOW_SIZE = shallowSizeOfInstance( HashMapNode.class );
+
+    @SuppressWarnings( "unused" )
+    private static class HashMapNode
+    {
+        int hash;
+        Object key;
+        Object value;
+        Object next;
+
+        static int tableSizeFor( int cap )
+        {
+            int n = -1 >>> Integer.numberOfLeadingZeros( cap - 1 );
+            return (n < 0) ? 1 : (n >= (1 << 30)) ? (1 << 30) : n + 1;
+        }
     }
 }

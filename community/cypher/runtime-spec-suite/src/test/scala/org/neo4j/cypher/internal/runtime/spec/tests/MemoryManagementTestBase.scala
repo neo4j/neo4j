@@ -29,12 +29,13 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
-import org.neo4j.exceptions.TransactionOutOfMemoryException
+import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.memory.HeapMemoryLimitExceeded
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory = 4000L
+  val maxMemory: Long = ByteUnit.mebiBytes(1)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -86,7 +87,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    * @param rowSize the size of a row in Bytes.
    */
   protected def killAfterNRows(rowSize: Long): Long = {
-    MemoryManagementTestBase.maxMemory / rowSize + 10 // An extra of 10 rows to account for mis-estimation and batching
+    ((MemoryManagementTestBase.maxMemory / rowSize) * 1.1).toLong // An extra of 10% rows to account for mis-estimation and batching
   }
 
   sealed trait ValueToEstimate
@@ -150,7 +151,7 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
                                                                           )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.query_max_memory -> Long.box(0L)), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.memory_transaction_max_size -> Long.box(0L)), runtime) with InputStreams[CONTEXT] {
   test("should not kill memory eating query") {
     // given
     val input = finiteInput(10000)
@@ -173,7 +174,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
                                                                   )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
-    GraphDatabaseSettings.query_max_memory -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] with TimeLimitedCypherTest {
+    GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] with TimeLimitedCypherTest {
 
   test("should kill sort query before it runs out of memory") {
     // given
@@ -188,7 +189,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -206,7 +207,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -239,7 +240,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -257,7 +258,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize, 0)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -275,7 +276,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -295,7 +296,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize, nodes.head)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -333,7 +334,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, nodes.head, nodes.head)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -352,7 +353,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(estimatedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -374,7 +375,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteNodeInput(estimatedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -446,7 +447,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -464,7 +465,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -487,7 +488,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     circleGraph(1000)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }
@@ -510,7 +511,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     circleGraph(1000)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }
@@ -550,7 +551,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimatedRowSize)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -567,7 +568,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(java.lang.Double.BYTES, 5) // StdDev stores primitive doubles
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -584,7 +585,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimateSize(E_INT), 5)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -601,7 +602,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimateSize(E_INT), 5)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -619,7 +620,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -636,10 +637,10 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    circleGraph(1000)
+    circleGraph(1500)
 
     // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
+    a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }

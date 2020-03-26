@@ -27,19 +27,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LocalMemoryTrackerParentTest
+class LocalMemoryTrackerWithPoolTest
 {
     private static final long LOCAL_LIMIT = 10;
     private static final long INITIAL_RESERVE = 2;
 
-    private LocalMemoryTracker globalTracker;
+    private MemoryPool memoryPool;
     private LocalMemoryTracker memoryTracker;
 
     @BeforeEach
     void setUp()
     {
-        globalTracker = new LocalMemoryTracker();
-        memoryTracker = new LocalMemoryTracker( globalTracker, LOCAL_LIMIT, INITIAL_RESERVE );
+        memoryPool = MemoryPools.fromLimit( 0 );
+        memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, INITIAL_RESERVE );
     }
 
     @AfterEach
@@ -65,7 +65,7 @@ class LocalMemoryTrackerParentTest
     void reserveFromParentWhenLocalPoolIsEmpty()
     {
         memoryTracker.allocateHeap( INITIAL_RESERVE + 2 );
-        assertThat( globalTracker.estimatedHeapMemory() ).isGreaterThan( INITIAL_RESERVE );
+        assertThat( memoryPool.used() ).isGreaterThan( INITIAL_RESERVE );
     }
 
     @Test
@@ -84,7 +84,7 @@ class LocalMemoryTrackerParentTest
     void largeAdjustments()
     {
         memoryTracker.allocateHeap( LOCAL_LIMIT );
-        assertThat( globalTracker.estimatedHeapMemory() ).isGreaterThanOrEqualTo( LOCAL_LIMIT );
+        assertThat( memoryPool.used() ).isGreaterThanOrEqualTo( LOCAL_LIMIT );
     }
 
     @Test
@@ -95,6 +95,6 @@ class LocalMemoryTrackerParentTest
 
     private void assertReserved( long i )
     {
-        assertEquals( i, globalTracker.estimatedHeapMemory() );
+        assertEquals( i, memoryPool.used() );
     }
 }

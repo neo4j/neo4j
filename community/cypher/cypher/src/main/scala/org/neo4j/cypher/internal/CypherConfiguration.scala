@@ -32,7 +32,6 @@ import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.runtime.MEMORY_BOUND
 import org.neo4j.cypher.internal.runtime.MEMORY_TRACKING
 import org.neo4j.cypher.internal.runtime.MemoryTracking
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
@@ -88,11 +87,11 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
 
   @volatile private var _memoryTracking: MemoryTracking =
     getMemoryTracking(
-      config.get(GraphDatabaseSettings.track_query_allocation),
-      config.get(GraphDatabaseSettings.query_max_memory))
+      config.get(GraphDatabaseSettings.track_query_allocation)
+    )
 
   override def memoryTracking(doProfile: Boolean): MemoryTracking = if (doProfile && _memoryTracking == NO_TRACKING) {
-    getMemoryTracking(trackQueryAllocation = true, config.get(GraphDatabaseSettings.query_max_memory))
+    getMemoryTracking(trackQueryAllocation = true)
   } else {
     _memoryTracking
   }
@@ -100,18 +99,11 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
   config.addListener(GraphDatabaseSettings.track_query_allocation,
     new SettingChangeListener[java.lang.Boolean] {
       override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
-        _memoryTracking = getMemoryTracking(after, config.get(GraphDatabaseSettings.query_max_memory))
+        _memoryTracking = getMemoryTracking(after)
     })
 
-  config.addListener(GraphDatabaseSettings.query_max_memory,
-    new SettingChangeListener[java.lang.Long] {
-      override def accept(before: java.lang.Long, after: java.lang.Long): Unit =
-        _memoryTracking = getMemoryTracking(config.get(GraphDatabaseSettings.track_query_allocation), after)
-    })
-
-  private def getMemoryTracking(trackQueryAllocation: Boolean, queryMaxMemory: Long): MemoryTracking =
-    if (trackQueryAllocation && queryMaxMemory > 0) MEMORY_BOUND(queryMaxMemory)
-    else if (trackQueryAllocation) MEMORY_TRACKING
+  private def getMemoryTracking(trackQueryAllocation: Boolean): MemoryTracking =
+    if (trackQueryAllocation) MEMORY_TRACKING
     else NO_TRACKING
 }
 

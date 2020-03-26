@@ -100,8 +100,8 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -112,12 +112,14 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
@@ -136,6 +138,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
     private static final String TRANSACTION_TAG = "transaction";
+    private static final int INITIAL_RESERVED_BYTES = FeatureToggles.getInteger( KernelTransactionImplementation.class, "initialReservedHeap", 1024 );
 
     private final CollectionsFactory collectionsFactory;
 
@@ -211,7 +214,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            NamedDatabaseId namedDatabaseId, LeaseService leaseService )
+            NamedDatabaseId namedDatabaseId, LeaseService leaseService, MemoryPool transactionMemoryPool )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.eventListeners = eventListeners;
@@ -252,7 +255,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         traceProvider = getTraceProvider( config );
         registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
-        this.memoryTracker = new LocalMemoryTracker( EmptyMemoryTracker.INSTANCE ); // TODO: the parent tacker should be propagated from the global module
+        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, config.get( memory_transaction_max_size ), INITIAL_RESERVED_BYTES );
     }
 
     /**
@@ -395,6 +398,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public PageCursorTracer pageCursorTracer()
     {
         return pageCursorTracer;
+    }
+
+    @Override
+    public MemoryTracker memoryTracker()
+    {
+        return memoryTracker;
     }
 
     private boolean markForTerminationIfPossible( Status reason )

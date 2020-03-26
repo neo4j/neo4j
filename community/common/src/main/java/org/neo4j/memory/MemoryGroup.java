@@ -19,54 +19,11 @@
  */
 package org.neo4j.memory;
 
-public final class EmptyMemoryTracker implements MemoryTracker
+public enum MemoryGroup
 {
-    public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
-
-    private EmptyMemoryTracker()
-    {
-    }
-
-    @Override
-    public void allocateDirect( long bytes )
-    {
-    }
-
-    @Override
-    public void releaseDirect( long bytes )
-    {
-    }
-
-    @Override
-    public void allocateHeap( long bytes )
-    {
-    }
-
-    @Override
-    public void releaseHeap( long bytes )
-    {
-    }
-
-    @Override
-    public long heapHighWaterMark()
-    {
-        return 0;
-    }
-
-    @Override
-    public long usedDirectMemory()
-    {
-        return 0;
-    }
-
-    @Override
-    public long estimatedHeapMemory()
-    {
-        return 0;
-    }
-
-    @Override
-    public void reset()
-    {
-    }
+    TRANSACTION,
+    NETTY,
+    PAGE_CACHE,
+    REPLICATION_BUFFERS,
+    QUERY_CACHE
 }

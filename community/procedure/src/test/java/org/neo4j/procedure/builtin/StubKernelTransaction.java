@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.memory.MemoryTracker;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -327,6 +328,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public PageCursorTracer pageCursorTracer()
+    {
+        return null;
+    }
+
+    @Override
+    public MemoryTracker memoryTracker()
     {
         return null;
     }
