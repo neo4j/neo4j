@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -87,6 +88,24 @@ class CachingExpandIntoTest
     }
 
     @Test
+    void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID(), 0 );
+        NodeCursor cursor = mockCursor();
+
+        // When
+        findConnections( expandInto, cursor, 42, 43 );
+        findConnections( expandInto, cursor, 42, 43 );
+        findConnections( expandInto, cursor, 42, 43 );
+        findConnections( expandInto, cursor, 42, 43 );
+        findConnections( expandInto, cursor, 42, 43 );
+
+        // Then, only call 5 times for 42 and 5 times for 43
+        verify( cursor, times( 10 ) ).degrees( any( RelationshipSelection.class ) );
+    }
+
+    @Test
     void shouldNotRecomputeAnythingIfSameNodesAndTypes()
     {
         // Given
@@ -99,6 +118,21 @@ class CachingExpandIntoTest
 
         // Then
         verifyNoInteractions( cursor );
+    }
+
+    @Test
+    void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID(), 0 );
+        findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
+        NodeCursor cursor = mockCursor();
+
+        // When
+        findConnections( expandInto, cursor, 42, 43, 100, 101 );
+
+        // Then
+        verify( cursor, atLeastOnce() ).next();
     }
 
     @SuppressWarnings( "StatementWithEmptyBody" )

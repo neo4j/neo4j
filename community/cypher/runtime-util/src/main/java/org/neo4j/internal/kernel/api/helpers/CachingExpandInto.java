@@ -80,10 +80,15 @@ public class CachingExpandInto
 
     public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )
     {
+        this( read, direction, memoryTracker, operatorId, DEFAULT_CAPACITY );
+    }
+
+    public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId, int capacity )
+    {
         this.read = read;
         this.direction = direction;
-        this.relationshipCache = new RelationshipCache( memoryTracker, operatorId );
-        this.degreeCache = new NodeDegreeCache( memoryTracker, operatorId );
+        this.relationshipCache = new RelationshipCache( capacity, memoryTracker, operatorId );
+        this.degreeCache = new NodeDegreeCache( capacity, memoryTracker, operatorId );
     }
 
     /**
@@ -529,7 +534,8 @@ public class CachingExpandInto
 
         public int getIfAbsentPut( long node, IntFunction0 update )
         {
-            if ( degreeCache.size() > capacity )
+            //cache is full, but must check if node has already been cached
+            if ( degreeCache.size() >= capacity )
             {
                 if ( degreeCache.containsKey( node ) )
                 {
@@ -559,7 +565,6 @@ public class CachingExpandInto
 
     static class RelationshipCache
     {
-
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
         private final int capacity;
         private final QueryMemoryTracker memoryTracker;

@@ -506,4 +506,3 @@ class CachingExpandIntoTest
         return node;
     }
 }
-
