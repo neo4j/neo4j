@@ -99,8 +99,13 @@ public class SchemaStorage35
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.FORCE_NORMAL, cursorTracer );
-                    if ( record.inUse() && record.isStartRecord() )
+                    schemaStore.getRecord( id, record, RecordLoad.CHECK, cursorTracer );
+                    if ( !record.inUse() )
+                    {
+                        continue;
+                    }
+                    schemaStore.getRecord( id, record, RecordLoad.NORMAL, cursorTracer );
+                    if ( record.isStartRecord() )
                     {
                         // It may be that concurrently to our reading there's a transaction dropping the schema rule
                         // that we're reading and that rule may have spanned multiple dynamic records.
