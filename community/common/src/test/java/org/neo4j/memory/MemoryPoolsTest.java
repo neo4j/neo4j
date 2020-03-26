@@ -19,24 +19,32 @@
  */
 package org.neo4j.memory;
 
-public enum MemoryGroup
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.MemoryGroup.QUERY_CACHE;
+import static org.neo4j.memory.MemoryGroup.TRANSACTION;
+
+class MemoryPoolsTest
 {
-    TRANSACTION( "Transaction" ),
-    NETTY( "Netty" ),
-    PAGE_CACHE( "Page Cache" ),
-    REPLICATION_BUFFERS( "Replication Buffers" ),
-    QUERY_CACHE( "Query Cache" ),
-    NO_TRACKING( "No Tracking" );
 
-    private final String name;
-
-    MemoryGroup( String name )
+    @Test
+    void createdPoolRegisteredInListOfPools()
     {
-        this.name = name;
+        var pools = new MemoryPools();
+        var pool1 = pools.pool( QUERY_CACHE, "test", 2 );
+        var pool2 = pools.pool( TRANSACTION, "test", 2 );
+        assertThat( pools.getPools() ).contains( pool1, pool2 );
     }
 
-    public String getName()
+    @Test
+    void poolIsDeregisteredOnClose()
     {
-        return name;
+        var pools = new MemoryPools();
+        var pool = pools.pool( TRANSACTION, "test", 2 );
+
+        assertThat( pools.getPools() ).contains( pool );
+        pool.close();
+        assertThat( pools.getPools() ).isEmpty();
     }
 }

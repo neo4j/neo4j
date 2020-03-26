@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
@@ -172,7 +173,7 @@ class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-        var memoryPool = MemoryPools.fromLimit( KibiByte.toBytes( 2 ) );
+        var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, "test", KibiByte.toBytes( 2 ) );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),

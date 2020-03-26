@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -36,14 +37,14 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 class HeapTrackingLongObjectHashMapTest
 {
     private static final long INTEGER_SIZE = shallowSizeOfInstance( Integer.class );
-    private MemoryMeter meter = new MemoryMeter();
+    private final MemoryMeter meter = new MemoryMeter();
     private MemoryPool memoryPool;
     private MemoryTracker memoryTracker;
 
     @BeforeEach
     void setUp()
     {
-        memoryPool = MemoryPools.fromLimit( 0 );
+        memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, "test", 0L );
         memoryTracker = new LocalMemoryTracker( memoryPool );
     }
 

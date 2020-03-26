@@ -19,12 +19,30 @@
  */
 package org.neo4j.memory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public final class MemoryPools
 {
     public static final MemoryPool NO_TRACKING = new NoTrackingMemoryPool();
+    private final List<NamedMemoryPool> pools = new CopyOnWriteArrayList<>();
 
-    private MemoryPools()
+    public NamedMemoryPool pool( MemoryGroup group, String name, long limit )
     {
+        var pool = new MemoryGroupTracker( this, group, name, limit );
+        pools.add( pool );
+        return pool;
+    }
+
+    public void releasePool( NamedMemoryPool pool )
+    {
+        pools.remove( pool );
+    }
+
+    public List<NamedMemoryPool> getPools()
+    {
+        return new ArrayList<>( pools );
     }
 
     /**
@@ -33,7 +51,7 @@ public final class MemoryPools
      * @param limit of the pool, passing 0 will result in an unbounded pool
      * @return a new memory pool with the specified limit
      */
-    public static MemoryPool fromLimit( long limit )
+    static MemoryPool fromLimit( long limit )
     {
         if ( limit == 0 )
         {
@@ -42,8 +60,22 @@ public final class MemoryPools
         return new MemoryPoolImpl.BoundedMemoryPool( limit );
     }
 
-    private static class NoTrackingMemoryPool implements MemoryPool
+    private static class NoTrackingMemoryPool implements NamedMemoryPool
     {
+        private static final String NO_TRACKING_POOL_NAME = "No tracking";
+
+        @Override
+        public MemoryGroup group()
+        {
+            return MemoryGroup.NO_TRACKING;
+        }
+
+        @Override
+        public String name()
+        {
+            return NO_TRACKING_POOL_NAME;
+        }
+
         @Override
         public void reserve( long bytes )
         {
@@ -70,6 +102,12 @@ public final class MemoryPools
         public long free()
         {
             return Long.MAX_VALUE;
+        }
+
+        @Override
+        public void close()
+        {
+
         }
     }
 }

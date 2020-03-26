@@ -192,6 +192,10 @@ public interface ProcedureITBase
         ArrayList<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
         result.addAll( List.of(
                 // enterprise only functions
+                proc( "dbms.listPools",
+                        "() :: (name :: STRING?, group :: STRING?, used :: STRING?, free :: STRING?, totalSize :: STRING?)",
+                        "List all memory pools currently registered at this instance that are visible to the user.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.listTransactions",
                         "() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?," +
                                 " clientAddress :: STRING?, requestUri :: STRING?, currentQueryId :: STRING?, currentQuery :: STRING?, " +

@@ -68,7 +68,7 @@ public class LocalMemoryTracker implements MemoryTracker
     private long allocatedBytesDirect;
 
     /**
-     * The heap high water mark, i.e. the maximum observed alloced heap bytes
+     * The heap high water mark, i.e. the maximum observed allocated heap bytes
      */
     private long heapHighWaterMark;
 

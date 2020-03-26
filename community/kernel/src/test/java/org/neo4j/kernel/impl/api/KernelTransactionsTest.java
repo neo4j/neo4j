@@ -79,6 +79,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -695,7 +696,7 @@ class KernelTransactionsTest
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
-                mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES );
+                mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES, new MemoryPools() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -753,7 +754,7 @@ class KernelTransactionsTest
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
-                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES );
+                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES, new MemoryPools() );
         }
 
         @Override

@@ -78,6 +78,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
@@ -126,6 +127,7 @@ public class GlobalModule
     private final StorageEngineFactory storageEngineFactory;
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
+    private final MemoryPools memoryPools;
 
     public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
     {
@@ -167,6 +169,9 @@ public class GlobalModule
 
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+
+        memoryPools = new MemoryPools();
+        globalDependencies.satisfyDependency( memoryPools );
 
         globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
 
@@ -523,5 +528,10 @@ public class GlobalModule
     FileLockerService getFileLockerService()
     {
         return fileLockerService;
+    }
+
+    public MemoryPools getMemoryPools()
+    {
+        return memoryPools;
     }
 }

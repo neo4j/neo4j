@@ -19,15 +19,31 @@
  */
 package org.neo4j.memory;
 
-public class MemoryGroupTracker implements MemoryPool
+public class MemoryGroupTracker implements NamedMemoryPool
 {
+    private final MemoryPools pools;
     private final MemoryGroup group;
+    private final String name;
     private final MemoryPool pool;
 
-    public MemoryGroupTracker( MemoryGroup group, long limit )
+    MemoryGroupTracker( MemoryPools pools, MemoryGroup group, String name, long limit )
     {
+        this.pools = pools;
         this.group = group;
+        this.name = name;
         this.pool = MemoryPools.fromLimit( limit );
+    }
+
+    @Override
+    public MemoryGroup group()
+    {
+        return group;
+    }
+
+    @Override
+    public String name()
+    {
+        return name;
     }
 
     @Override
@@ -58,5 +74,11 @@ public class MemoryGroupTracker implements MemoryPool
     public long free()
     {
         return pool.free();
+    }
+
+    @Override
+    public void close()
+    {
+        pools.releasePool( this );
     }
 }

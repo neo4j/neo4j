@@ -19,24 +19,20 @@
  */
 package org.neo4j.memory;
 
-public enum MemoryGroup
+public interface NamedMemoryPool extends MemoryPool, AutoCloseable
 {
-    TRANSACTION( "Transaction" ),
-    NETTY( "Netty" ),
-    PAGE_CACHE( "Page Cache" ),
-    REPLICATION_BUFFERS( "Replication Buffers" ),
-    QUERY_CACHE( "Query Cache" ),
-    NO_TRACKING( "No Tracking" );
+    /**
+     * Memory pool group
+     */
+    MemoryGroup group();
 
-    private final String name;
+    /**
+     * Memory pool name
+     */
+    String name();
 
-    MemoryGroup( String name )
-    {
-        this.name = name;
-    }
-
-    public String getName()
-    {
-        return name;
-    }
+    /**
+     * Close and de-registed specific memory pool
+     */
+    void close();
 }

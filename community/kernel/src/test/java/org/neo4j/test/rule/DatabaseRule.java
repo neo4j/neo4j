@@ -83,6 +83,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -173,7 +174,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler, NULL ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
-                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT ) );
+                storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT, new MemoryPools() ) );
         return database;
     }
 
@@ -210,6 +211,7 @@ public class DatabaseRule extends ExternalResource
         private final Config config;
         private final LeaseService leaseService;
         private final DatabaseStartupController startupController;
+        private final MemoryPools memoryPools;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final DatabaseLogService logService;
@@ -252,13 +254,14 @@ public class DatabaseRule extends ExternalResource
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
-                FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController )
+                FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController, MemoryPools memoryPools )
         {
             this.namedDatabaseId = namedDatabaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
             this.leaseService = leaseService;
             this.startupController = startupController;
+            this.memoryPools = memoryPools;
             this.databaseConfig = new DatabaseConfig( config, namedDatabaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), logService );
@@ -527,6 +530,12 @@ public class DatabaseRule extends ExternalResource
         public DatabaseStartupController getStartupController()
         {
             return startupController;
+        }
+
+        @Override
+        public MemoryPools getMemoryPools()
+        {
+            return memoryPools;
         }
     }
 

@@ -405,7 +405,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     /**
      * Get the memory tracker for this transaction.
-     * @return
+     * @return underlying transaction memory tracker
      */
     MemoryTracker memoryTracker();
 

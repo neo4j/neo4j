@@ -64,8 +64,9 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryGroup;
-import org.neo4j.memory.MemoryGroupTracker;
 import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -137,7 +138,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
-    private final MemoryPool transactionMemoryPool;
+    private final NamedMemoryPool transactionMemoryPool;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -154,7 +155,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
-            Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService )
+            Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService, MemoryPools memoryPools )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -186,7 +187,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.factory = new KernelTransactionImplementationFactory( allTransactions, tracers );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
-        this.transactionMemoryPool = new MemoryGroupTracker( MemoryGroup.TRANSACTION, config.get( memory_transaction_global_max_size ) );
+        this.transactionMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, namedDatabaseId.name() + " transactions pool",
+                config.get( memory_transaction_global_max_size ) );
         doBlockNewTransactions();
     }
 
@@ -297,6 +299,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     @Override
     public void shutdown()
     {
+        transactionMemoryPool.close();
         disposeAll();
     }
 
@@ -404,6 +407,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             this.transactions.add( tx );
             return tx;
         }
+    }
+
+    public MemoryPool getTransactionMemoryPool()
+    {
+        return transactionMemoryPool;
     }
 
     private static class GlobalKernelTransactionPool extends LinkedQueuePool<KernelTransactionImplementation>

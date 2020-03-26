@@ -145,6 +145,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
@@ -238,6 +239,7 @@ public class Database extends LifecycleAdapter
     private final FileLockerService fileLockerService;
     private final KernelTransactionFactory kernelTransactionFactory;
     private final DatabaseStartupController startupController;
+    private final MemoryPools memoryPools;
 
     public Database( DatabaseCreationContext context )
     {
@@ -247,6 +249,7 @@ public class Database extends LifecycleAdapter
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
+        this.memoryPools = context.getMemoryPools();
         this.databaseLogService = context.getDatabaseLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.internalLogProvider = context.getDatabaseLogService().getInternalLogProvider();
@@ -697,7 +700,7 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
-                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService ) );
+                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService, memoryPools ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 
