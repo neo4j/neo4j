@@ -17,35 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class NestedPlanCollectExpression(
-                                        override val plan: LogicalPlan,
-                                        projection: Expression
-                                      )(val position: InputPosition) extends NestedPlanExpression
+case class NestedPipeCollectExpression(pipe: Pipe,
+                                       projection: Expression,
+                                       availableExpressionVariables: Seq[ExpressionVariable])
+                                      (val position: InputPosition) extends Expression {
 
-case class NestedPlanExistsExpression(
-                                       override val plan: LogicalPlan
-                                     )(val position: InputPosition) extends NestedPlanExpression
-
-abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
-
-  def plan: LogicalPlan
-
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
-
-  override def asCanonicalStringVal: String = {
-    val name = getClass.getSimpleName
-    val planDescription = plan.flatten.map(_.getClass.getSimpleName).mkString("-")
-    s"$name($planDescription)"
-  }
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
-
-

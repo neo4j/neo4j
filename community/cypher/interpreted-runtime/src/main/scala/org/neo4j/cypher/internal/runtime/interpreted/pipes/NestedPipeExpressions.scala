@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -33,11 +34,15 @@ object NestedPipeExpressions {
 
     val buildPipeExpressions: Rewriter = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
-        case expr@NestedPlanExpression(patternPlan, expression) =>
+        case expr@NestedPlanExistsExpression(patternPlan) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
           val pipe = pipeBuilder.build(patternPlan)
-          val result = NestedPipeExpression(pipe, expression, availableForPlan)(expr.position)
-          result
+          NestedPipeExistsExpression(pipe, availableForPlan)(expr.position)
+
+        case expr@NestedPlanCollectExpression(patternPlan, expression) =>
+          val availableForPlan = availableExpressionVariables(patternPlan.id)
+          val pipe = pipeBuilder.build(patternPlan)
+          NestedPipeCollectExpression(pipe, expression, availableForPlan)(expr.position)
       })
 
       override def apply(that: AnyRef): AnyRef = instance.apply(that)

@@ -66,6 +66,8 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -109,7 +111,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     plan match {
       case Projection(_, expressions) =>
         expressions("clowns") match {
-          case ListComprehension(ExtractScope(_, Some(FunctionInvocation(_, _, _, Seq(NestedPlanExpression(nestedPlan, _)))), _), _) =>
+          case ListComprehension(ExtractScope(_, Some(NestedPlanExistsExpression(nestedPlan)), _), _) =>
             nestedPlan should equal(
               Selection(
                 ands(hasLabels("  NODE116", "ComedyClub")),
@@ -766,7 +768,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-        DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanExpression(_, _))))
+        DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _))))
       ) => ()
     }
   }
@@ -781,7 +783,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-        DeleteRelationship(_, ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanExpression(_, _))))
+        DeleteRelationship(_, ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _))))
       ) => ()
     }
   }
@@ -797,7 +799,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case EmptyResult(
         Apply(_,
-          DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanExpression(_, _))))
+          DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanCollectExpression(_, _))))
       )))) => ()
     }
   }

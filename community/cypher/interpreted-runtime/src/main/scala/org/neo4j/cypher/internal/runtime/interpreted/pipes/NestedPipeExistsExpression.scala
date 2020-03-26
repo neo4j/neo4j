@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class NestedPipeExpression(pipe: Pipe,
-                                projection: Expression,
-                                availableExpressionVariables: Seq[ExpressionVariable])
-                               (val position: InputPosition) extends Expression {
+case class NestedPipeExistsExpression(pipe: Pipe,
+                                      availableExpressionVariables: Seq[ExpressionVariable])
+                                     (val position: InputPosition) extends Expression {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

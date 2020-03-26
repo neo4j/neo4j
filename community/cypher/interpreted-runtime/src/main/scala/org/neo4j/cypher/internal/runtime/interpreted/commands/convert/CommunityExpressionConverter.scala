@@ -232,10 +232,15 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           self.toCommandExpression(id, e.init))
 
       case e: internal.expressions.PathExpression => self.toCommandProjectedPath(e)
-      case e: pipes.NestedPipeExpression =>
+      case e: pipes.NestedPipeCollectExpression =>
         commands.expressions.NestedPipeExpression(
           e.pipe,
           self.toCommandExpression(id, e.projection),
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of),
+          id)
+      case e: pipes.NestedPipeExistsExpression =>
+        commands.expressions.NestedPipeExistsExpression(
+          e.pipe,
           e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of),
           id)
 
@@ -324,7 +329,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
             commands.predicates.CachedRelationshipPropertyExists(self.toCommandExpression(id, property))
           case expression: internal.expressions.PatternExpression =>
             self.toCommandPredicate(id, expression)
-          case expression: pipes.NestedPipeExpression =>
+          case expression: pipes.NestedPipeCollectExpression =>
             self.toCommandPredicate(id, expression)
           case e: internal.expressions.ContainerIndex =>
             commands.expressions.ContainerIndexExists(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
