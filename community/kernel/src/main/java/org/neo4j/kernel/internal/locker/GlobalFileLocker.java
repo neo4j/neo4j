@@ -53,7 +53,7 @@ class GlobalFileLocker extends Locker
     }
 
     @Override
-    public void checkLock() throws FileLockException
+    public void checkLock()
     {
         super.checkLock();
         lockedFiles.add( lockFile() );

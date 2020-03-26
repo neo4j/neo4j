@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.NodePropertyAccessor;

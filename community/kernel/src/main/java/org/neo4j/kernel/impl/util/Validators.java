@@ -31,7 +31,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 
-public class Validators
+public final class Validators
 {
     public static final Validator<File> REGEX_FILE_EXISTS = file ->
     {

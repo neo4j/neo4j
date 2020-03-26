@@ -89,7 +89,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private void initializeArray( GenericKey key, int length )
+    private static void initializeArray( GenericKey key, int length )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         // plain long1 for number type
@@ -150,7 +150,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         putArray( cursor, state, numberArrayElementWriter( state ) );
     }
 
-    private ArrayElementWriter numberArrayElementWriter( GenericKey key )
+    private static ArrayElementWriter numberArrayElementWriter( GenericKey key )
     {
         switch ( (int) key.long1 )
         {
@@ -219,7 +219,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private ArrayElementReader numberArrayElementReader( GenericKey key )
+    private static ArrayElementReader numberArrayElementReader( GenericKey key )
     {
         switch ( (int) key.long1 )
         {

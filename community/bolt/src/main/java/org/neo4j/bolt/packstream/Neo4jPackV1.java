@@ -276,23 +276,21 @@ public class Neo4jPackV1 implements Neo4jPack
             packListHeader( size );
             if ( size > 0 )
             {
+                RelationshipValue edge = relationships[0];
+                for ( long id : relationshipIndexes.keys() )
                 {
-                    RelationshipValue edge = relationships[0];
-                    for ( long id : relationshipIndexes.keys() )
+                    int i = 1;
+                    while ( edge.id() != id )
                     {
-                        int i = 1;
-                        while ( edge.id() != id )
-                        {
-                            edge = relationships[i++];
-                        }
-                        //Note that we are not doing relationship.writeTo(this) here since the serialization protocol
-                        //requires these to be _unbound relationships_, thus relationships without any start node nor
-                        // end node.
-                        packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
-                        pack( edge.id() );
-                        edge.type().writeTo( this );
-                        edge.properties().writeTo( this );
+                        edge = relationships[i++];
                     }
+                    //Note that we are not doing relationship.writeTo(this) here since the serialization protocol
+                    //requires these to be _unbound relationships_, thus relationships without any start node nor
+                    // end node.
+                    packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
+                    pack( edge.id() );
+                    edge.type().writeTo( this );
+                    edge.properties().writeTo( this );
                 }
             }
         }
@@ -467,13 +465,9 @@ public class Neo4jPackV1 implements Neo4jPack
                 unpackNull();
                 return Values.NO_VALUE;
             case LIST:
-            {
                 return unpackList();
-            }
             case MAP:
-            {
                 return unpackMap();
-            }
             case STRUCT:
             {
                 long size = unpackStructHeader();

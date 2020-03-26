@@ -50,10 +50,10 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
     private static final String PROFILE = "profile";
     private static final String PLAN = "plan";
     private static final String NOTIFICATIONS = "notifications";
-    private final TextValue READ_ONLY = Values.utf8Value( new byte[]{'r'} );
-    private final TextValue READ_WRITE = Values.utf8Value( new byte[]{'r', 'w'} );
-    private final TextValue WRITE = Values.utf8Value( new byte[]{'w'} );
-    private final TextValue SCHEMA_WRITE = Values.utf8Value( new byte[]{'s'} );
+    private static final TextValue READ_ONLY = Values.utf8Value( new byte[]{'r'} );
+    private static final TextValue READ_WRITE = Values.utf8Value( new byte[]{'r', 'w'} );
+    private static final TextValue WRITE = Values.utf8Value( new byte[]{'w'} );
+    private static final TextValue SCHEMA_WRITE = Values.utf8Value( new byte[]{'s'} );
 
     private final QueryExecution queryExecution;
     private final String[] fieldNames;

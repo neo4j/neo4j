@@ -250,7 +250,7 @@ public class FulltextIndexReader implements IndexReader
             // The StatsCollector aggregates index statistics across all our partitions.
             // Weights created based on these statistics will produce scores that are comparable across partitions.
             StatsCollector statsCollector = new StatsCollector( searches );
-            List<ValuesIterator> results = new ArrayList<>();
+            List<ValuesIterator> results = new ArrayList<>( searches.size() );
 
             for ( PreparedSearch search : searches )
             {

@@ -138,7 +138,7 @@ public class SimpleBitSet extends StampedLock
         return checkPoint;
     }
 
-    private int findNewLength( int idx, int len )
+    private static int findNewLength( int idx, int len )
     {
         while ( len <= idx )
         {

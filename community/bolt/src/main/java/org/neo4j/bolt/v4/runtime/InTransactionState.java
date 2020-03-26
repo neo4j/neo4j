@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
@@ -28,7 +29,6 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
@@ -88,7 +88,7 @@ public class InTransactionState extends AbstractStreamingState
         return this;
     }
 
-    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws Exception
+    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException
     {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         Bookmark bookmark = statementProcessor.commitTransaction();
@@ -96,7 +96,7 @@ public class InTransactionState extends AbstractStreamingState
         return readyState;
     }
 
-    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws Exception
+    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException
     {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         statementProcessor.rollbackTransaction();

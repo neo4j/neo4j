@@ -93,7 +93,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     }
 
     @Override
-    public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
+    public IndexProvider lookup( String providerDescriptorName )
     {
         assertInit();
         IndexProvider provider = indexProvidersByName.get( providerDescriptorName );

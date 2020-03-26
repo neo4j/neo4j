@@ -24,17 +24,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
+import static java.lang.Boolean.TRUE;
+
 /**
  * Class to alter behavior and configuration of {@link PageCache} instances opened in this rule.
  */
 public final class PageCacheConfig
 {
-    protected Boolean inconsistentReads;
-    protected Integer pageSize;
-    protected AtomicBoolean nextReadIsInconsistent;
-    protected PageCacheTracer tracer;
-    protected boolean accessChecks;
-    protected String memory;
+    Boolean inconsistentReads;
+    Integer pageSize;
+    AtomicBoolean nextReadIsInconsistent;
+    PageCacheTracer tracer;
+    boolean accessChecks;
+    String memory;
 
     /**
      * @return new {@link PageCacheConfig} instance.
@@ -74,7 +76,7 @@ public final class PageCacheConfig
     public PageCacheConfig withInconsistentReads( AtomicBoolean nextReadIsInconsistent )
     {
         this.nextReadIsInconsistent = nextReadIsInconsistent;
-        this.inconsistentReads = true;
+        this.inconsistentReads = TRUE;
         return this;
     }
 

@@ -30,7 +30,7 @@ public class AuthorizationViolationException extends RuntimeException implements
 {
     public static final String PERMISSION_DENIED = "Permission denied.";
 
-    private Status statusCode = Status.Security.Forbidden;
+    private final Status statusCode;
 
     public AuthorizationViolationException( String msg, Status statusCode )
     {
@@ -41,11 +41,13 @@ public class AuthorizationViolationException extends RuntimeException implements
     public AuthorizationViolationException( String msg )
     {
         super( msg );
+        statusCode = Status.Security.Forbidden;
     }
 
     public AuthorizationViolationException( String msg, Throwable cause )
     {
         super( msg, cause );
+        statusCode = Status.Security.Forbidden;
     }
 
     /** The Neo4j status code associated with this exception type. */

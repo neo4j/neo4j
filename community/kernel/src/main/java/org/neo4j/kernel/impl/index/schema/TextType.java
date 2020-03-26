@@ -176,15 +176,15 @@ class TextType extends Type
     {
         // For performance reasons cannot be redirected to writeString, due to byte[] reuse
         short rawLength = cursor.getShort();
-        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
         short bytesLength = (short) (rawLength & ~CHAR_TYPE_LENGTH_MARKER);
-        if ( bytesLength < 0 || bytesLength > maxSize )
+        if ( bytesLength > maxSize )
         {
             setCursorException( cursor, "non-valid bytes length for text, " + bytesLength );
             return false;
         }
 
         // Remember this fact, i.e. set the flag in this state
+        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
         setCharType( into, isCharType );
         setBytesLength( into, bytesLength );
         cursor.getBytes( into.byteArray, 0, bytesLength );

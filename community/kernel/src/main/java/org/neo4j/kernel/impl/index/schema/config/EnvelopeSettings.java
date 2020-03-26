@@ -28,8 +28,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class EnvelopeSettings
 {
-    private static final double DEFAULT_MIN_EXTENT = -1000000;
-    private static final double DEFAULT_MAX_EXTENT = 1000000;
+    private static final double DEFAULT_MIN_EXTENT = -1_000_000;
+    private static final double DEFAULT_MAX_EXTENT = 1_000_000;
     private static final double DEFAULT_MIN_LATITUDE = -90;
     private static final double DEFAULT_MAX_LATITUDE = 90;
     private static final double DEFAULT_MIN_LONGITUDE = -180;

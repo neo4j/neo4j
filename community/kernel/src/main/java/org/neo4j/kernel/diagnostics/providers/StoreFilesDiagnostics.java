@@ -113,7 +113,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         return total;
     }
 
-    private String getFileModificationDate( File file )
+    private static String getFileModificationDate( File file )
     {
         ZonedDateTime modifiedDate = Instant.ofEpochMilli( file.lastModified() )
                 .atZone( ZoneId.systemDefault() )

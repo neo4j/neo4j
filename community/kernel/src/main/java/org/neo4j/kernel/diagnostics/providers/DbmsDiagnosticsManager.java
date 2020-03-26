@@ -20,7 +20,6 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Collection;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -30,7 +29,6 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;

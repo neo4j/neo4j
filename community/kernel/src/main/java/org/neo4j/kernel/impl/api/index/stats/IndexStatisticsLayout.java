@@ -30,7 +30,7 @@ public class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,Ind
 {
     public IndexStatisticsLayout()
     {
-        super( true, 556677, 0, 2 );
+        super( true, 556_677, 0, 2 );
     }
 
     @Override

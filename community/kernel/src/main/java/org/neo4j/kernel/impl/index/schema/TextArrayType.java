@@ -107,12 +107,12 @@ class TextArrayType extends AbstractArrayType<String>
     boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         short rawLength = cursor.getShort();
-        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
         short length = (short) (rawLength & ~CHAR_TYPE_LENGTH_MARKER);
         if ( !setArrayLengthWhenReading( into, cursor, length ) )
         {
             return false;
         }
+        boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
         into.beginArray( into.arrayLength, isCharType ? ValueWriter.ArrayType.CHAR : ValueWriter.ArrayType.STRING );
         for ( int i = 0; i < into.arrayLength; i++ )
         {

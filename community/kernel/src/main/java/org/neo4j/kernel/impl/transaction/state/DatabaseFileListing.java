@@ -70,11 +70,6 @@ public class DatabaseFileListing
         return new StoreFileListingBuilder();
     }
 
-    public SchemaAndIndexingFileIndexListing getIndexFileListing()
-    {
-        return fileIndexListing;
-    }
-
     public void registerStoreFileProvider( StoreFileProvider provider )
     {
         additionalProviders.add( provider );
@@ -110,8 +105,8 @@ public class DatabaseFileListing
 
     private void gatherLogFiles( Collection<StoreFileMetadata> files )
     {
-        File[] logFiles = this.logFiles.logFiles();
-        for ( File logFile : logFiles )
+        File[] list = this.logFiles.logFiles();
+        for ( File logFile : list )
         {
             files.add( logFileMapper.apply( logFile ) );
         }

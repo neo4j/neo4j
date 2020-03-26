@@ -122,7 +122,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     @Override
     public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
     {
-        if ( tryOpenCall( "force" ) )
+        if ( tryOpenCall() )
         {
             try
             {
@@ -210,7 +210,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
     }
 
-    private boolean tryOpenCall( String name )
+    private boolean tryOpenCall()
     {
         // do not open call unless we are in STARTED
         if ( State.STARTED == state.get() )

@@ -125,7 +125,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     private class TxStateDataVisitor implements RelationshipVisitor<RuntimeException>
     {
         @Override
-        public void visit( long relationshipId, int typeId, long sourceNodeReference, long targetNodeReference ) throws RuntimeException
+        public void visit( long relationshipId, int typeId, long sourceNodeReference, long targetNodeReference )
         {
             currentAddedInTx = relationshipId;
             txStateTypeId = typeId;

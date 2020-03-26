@@ -382,7 +382,7 @@ public final class ValueUtils
         }
         if ( object instanceof Integer )
         {
-            return Values.longValue( (long) object );
+            return Values.longValue( (int) object );
         }
 
         throw new IllegalArgumentException(

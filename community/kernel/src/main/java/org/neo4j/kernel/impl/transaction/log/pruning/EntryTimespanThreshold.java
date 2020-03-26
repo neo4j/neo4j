@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -68,6 +69,6 @@ public final class EntryTimespanThreshold implements Threshold
     @Override
     public String toString()
     {
-        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + " " + timeUnit.name().toLowerCase();
+        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + " " + timeUnit.name().toLowerCase( Locale.ROOT );
     }
 }

@@ -19,19 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.NumberAwareStringComparator;
 
 public class Converters
@@ -40,32 +34,9 @@ public class Converters
     {
     }
 
-    public static <T> Function<String,T> mandatory()
-    {
-        return key ->
-        {
-            throw new IllegalArgumentException( "Missing argument '" + key + "'" );
-        };
-    }
-
     public static <T> Function<String,T> optional()
     {
         return from -> null;
-    }
-
-    public static Function<String,File> toFile()
-    {
-        return File::new;
-    }
-
-    public static Function<String, Path> toPath()
-    {
-        return Paths::get;
-    }
-
-    public static Function<String, String> identity()
-    {
-        return s -> s;
     }
 
     private static final Comparator<File> BY_FILE_NAME = Comparator.comparing( File::getName );
@@ -84,8 +55,7 @@ public class Converters
         };
     }
 
-    public static Function<String,File[]> toFiles( final String delimiter,
-            final Function<String,File[]> eachFileConverter )
+    public static Function<String,File[]> toFiles( final String delimiter, final Function<String,File[]> eachFileConverter )
     {
         return from ->
         {
@@ -102,19 +72,5 @@ public class Converters
             }
             return files.toArray( new File[0] );
         };
-    }
-
-    static SocketAddress toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
-    {
-        String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );
-        // port 0 only makes sense for a listen address, not advertised address
-        // it is thus safe to treat port 0 as missing port when converting the given host and port into an advertised address
-        int port = hostnamePort.getPort() != 0 ? hostnamePort.getPort() : defaultPort;
-        return new SocketAddress( hostname, port );
-    }
-
-    private static String removeIpV6Brackets( String hostname )
-    {
-        return StringUtils.remove( StringUtils.remove( hostname, '[' ), ']' );
     }
 }

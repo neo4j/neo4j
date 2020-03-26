@@ -70,7 +70,7 @@ public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachin
         return new BoltResultHandleV3( statement, params, boltQueryExecutor );
     }
 
-    private void checkBookmarks( List<Bookmark> bookmarks )
+    private static void checkBookmarks( List<Bookmark> bookmarks )
     {
         if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
         {

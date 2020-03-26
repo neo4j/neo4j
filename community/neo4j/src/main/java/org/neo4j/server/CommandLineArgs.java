@@ -28,6 +28,7 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.impl.util.Converters;
 
+import static java.lang.Boolean.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.helpers.collection.Pair.pair;
 
@@ -104,6 +105,6 @@ public class CommandLineArgs
 
     public boolean version()
     {
-        return args.getBoolean( VERSION_ARG, false );
+        return args.getBoolean( VERSION_ARG, FALSE );
     }
 }

@@ -156,7 +156,7 @@ enum IndexMigration
             };
 
     private static final Pattern CRS_FILE_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
-    private static final String spatialDirectoryName = "spatial-1.0";
+    private static final String SPATIAL_DIRECTORY_NAME = "spatial-1.0";
 
     final String providerKey;
     final String providerVersion;
@@ -247,7 +247,7 @@ enum IndexMigration
 
     private static File getSpatialSubDirectory( long indexId, File baseProviderDir )
     {
-        return path( baseProviderDir, String.valueOf( indexId ), spatialDirectoryName );
+        return path( baseProviderDir, String.valueOf( indexId ), SPATIAL_DIRECTORY_NAME );
     }
 
     public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, File spatialDirectory )

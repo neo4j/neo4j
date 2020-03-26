@@ -110,14 +110,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     private volatile JobHandle handle;
     private volatile boolean stopped;
     private volatile boolean checkPointing;
-    private final BooleanSupplier checkPointingCondition = new BooleanSupplier()
-    {
-        @Override
-        public boolean getAsBoolean()
-        {
-            return !checkPointing;
-        }
-    };
+    private final BooleanSupplier checkPointingCondition = () -> !checkPointing;
 
     public CheckPointScheduler( CheckPointer checkPointer, IOLimiter ioLimiter, JobScheduler scheduler, long recurringPeriodMillis,
             Health health )

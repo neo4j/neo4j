@@ -23,13 +23,13 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.v3.runtime.TransactionStateMachineSPIProviderV3;
-import org.neo4j.bolt.v4.runtime.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.bolt.v3.runtime.TransactionStateMachineSPIProviderV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.runtime.TransactionStateMachineSPIProviderV4;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.internal.LogService;
@@ -40,7 +40,6 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final LogService logging;
     private final Authentication authentication;
-    private final Config config;
     private final SystemNanoClock clock;
     private final String defaultDatabaseName;
 
@@ -50,7 +49,6 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.logging = logging;
         this.authentication = authentication;
-        this.config = config;
         this.clock = clock;
         this.defaultDatabaseName = config.get( GraphDatabaseSettings.default_database );
     }

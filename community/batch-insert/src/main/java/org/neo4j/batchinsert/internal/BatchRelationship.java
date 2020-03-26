@@ -43,17 +43,17 @@ public final class BatchRelationship
 
     public long getId()
     {
-        return id; // & 0xFFFFFFFFL;
+        return id;
     }
 
     public long getStartNode()
     {
-        return startNodeId; // & 0xFFFFFFFFL;
+        return startNodeId;
     }
 
     public long getEndNode()
     {
-        return endNodeId; // & 0xFFFFFFFFL;
+        return endNodeId;
     }
 
     public RelationshipType getType()

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.HexString;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.security.Credential.credentialSeparator;
+import static org.neo4j.kernel.impl.security.Credential.CREDENTIAL_SEPARATOR;
 
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.
@@ -79,7 +79,7 @@ public class UserSerialization extends FileRepositorySerializer<User>
 
     private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
-        String[] split = part.split( credentialSeparator, -1 );
+        String[] split = part.split( CREDENTIAL_SEPARATOR, -1 );
         if ( split.length == 4 )
         {
             return SystemGraphCredential.deserialize( part, new SecureHasher() );

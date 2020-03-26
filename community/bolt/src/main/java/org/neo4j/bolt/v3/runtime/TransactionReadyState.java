@@ -20,8 +20,8 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
@@ -87,7 +87,7 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
         return streamingState;
     }
 
-    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws Exception
+    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException
     {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         Bookmark bookmark = statementProcessor.commitTransaction();
@@ -95,7 +95,7 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
         return readyState;
     }
 
-    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws Exception
+    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException
     {
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         statementProcessor.rollbackTransaction();

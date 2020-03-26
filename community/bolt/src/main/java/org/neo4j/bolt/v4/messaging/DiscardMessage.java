@@ -25,21 +25,16 @@ import org.neo4j.values.virtual.MapValue;
 public class DiscardMessage extends AbstractStreamingMessage
 {
     public static final byte SIGNATURE = 0x2F;
+    private static final String NAME = "DISCARD";
 
-    public DiscardMessage( MapValue meta ) throws BoltIOException
+    DiscardMessage( MapValue meta ) throws BoltIOException
     {
-        super( meta );
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState()
-    {
-        return false;
+        super( meta, NAME );
     }
 
     @Override
     String name()
     {
-        return "DISCARD";
+        return NAME;
     }
 }

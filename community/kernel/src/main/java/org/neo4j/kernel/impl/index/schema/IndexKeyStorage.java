@@ -35,7 +35,6 @@ class IndexKeyStorage<KEY extends NativeIndexKey<KEY>> extends SimpleEntryStorag
     private final Layout<KEY,?> layout;
 
     IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout )
-            throws IOException
     {
         super( fs, file, byteBufferFactory, blockSize );
         this.layout = layout;

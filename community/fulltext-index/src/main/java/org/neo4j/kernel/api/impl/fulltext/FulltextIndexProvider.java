@@ -103,12 +103,13 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         defaultAnalyzerName = config.get( FulltextSettings.fulltext_default_analyzer );
         defaultEventuallyConsistentSetting = config.get( FulltextSettings.eventually_consistent );
         indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextSettings.eventually_consistent_index_update_queue_max_length ) );
-        indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
+        indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, directoryStructure() );
     }
 
-    private IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
+    private static IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            IndexDirectoryStructure structure )
     {
-        return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
+        return new IndexStorageFactory( directoryFactory, fileSystem, structure );
     }
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException

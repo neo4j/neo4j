@@ -21,8 +21,8 @@ package org.neo4j.bolt.v3.messaging.encoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.logging.Log;
@@ -46,7 +46,7 @@ public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMess
         encodeFailure( message, packer );
     }
 
-    private void encodeFailure( FailureMessage message, Neo4jPack.Packer packer ) throws IOException
+    private static void encodeFailure( FailureMessage message, Neo4jPack.Packer packer ) throws IOException
     {
         packer.packStructHeader( 1, message.signature() );
         packer.packMapHeader( 2 );

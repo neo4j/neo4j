@@ -57,7 +57,7 @@ public class IndexSamplingControllerFactory
     {
         OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider, cacheTracer );
         LongPredicate samplingUpdatePredicate = createSamplingPredicate();
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler );
         RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,

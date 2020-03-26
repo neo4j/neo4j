@@ -23,11 +23,15 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-public class ResourceIds
+public final class ResourceIds
 {
     // The hash code function we use for index entries and schema names, since Neo4j 4.0.
     private static final HashFunction HASH_40 = HashFunction.incrementalXXH64();
     private static final long HASH_40_INIT = HASH_40.initialise( 0x0123456789abcdefL );
+
+    private ResourceIds()
+    {
+    }
 
     /**
      * Produces a 64-bit hashcode for locking index entries.

@@ -44,6 +44,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.ThrowingAction.executeAll;
 
@@ -153,8 +154,8 @@ public class NettyServer extends LifecycleAdapter
         return new ServerBootstrap()
                 .group( eventLoopGroup )
                 .channel( configurationProvider.getChannelClass() )
-                .option( ChannelOption.SO_REUSEADDR, true )
-                .childOption( ChannelOption.SO_KEEPALIVE, true )
+                .option( ChannelOption.SO_REUSEADDR, TRUE )
+                .childOption( ChannelOption.SO_KEEPALIVE, TRUE )
                 .childHandler( protocolInitializer.channelInitializer() );
     }
 

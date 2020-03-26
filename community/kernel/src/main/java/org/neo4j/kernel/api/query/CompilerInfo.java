@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.query;
 
 import java.util.List;
+import java.util.Locale;
 import javax.annotation.Nonnull;
 
 public class CompilerInfo
@@ -37,7 +38,7 @@ public class CompilerInfo
 
     public String planner()
     {
-        return planner.toLowerCase();
+        return planner.toLowerCase( Locale.ROOT );
     }
 
     public String runtime()

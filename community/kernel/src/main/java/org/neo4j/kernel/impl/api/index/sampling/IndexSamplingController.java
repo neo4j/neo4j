@@ -161,7 +161,7 @@ public class IndexSamplingController
         }
     }
 
-    private void waitForAsyncIndexSamples( List<IndexSamplingJobHandle> asyncSamplingJobs )
+    private static void waitForAsyncIndexSamples( List<IndexSamplingJobHandle> asyncSamplingJobs )
     {
         for ( IndexSamplingJobHandle asyncSamplingJob : asyncSamplingJobs )
         {

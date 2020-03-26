@@ -90,7 +90,7 @@ public class LegacyCredential implements Credential
     {
         String encodedSalt = HexString.encodeHexString( this.salt() );
         String encodedPassword = HexString.encodeHexString( this.passwordHash() );
-        return String.join( credentialSeparator, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt );
+        return String.join( CREDENTIAL_SEPARATOR, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
     /**

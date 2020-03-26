@@ -81,7 +81,7 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     @Override
     public StandardExpander reverse()
     {
-        Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<>();
+        Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<>( orderedTypes.size() );
         for ( Pair<RelationshipType,Direction> pair : orderedTypes )
         {
             newTypes.add( Pair.of( pair.first(), pair.other().reverse() ) );

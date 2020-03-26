@@ -28,7 +28,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -46,7 +45,6 @@ class IndexSamplingJobTrackerTest
     private static final long indexId11 = 0;
     private static final long indexId12 = 1;
     private static final long indexId22 = 2;
-    private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
     private final JobScheduler jobScheduler = createInitialisedScheduler();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -61,7 +59,7 @@ class IndexSamplingJobTrackerTest
     void shouldNotRunASampleJobWhichIsAlreadyRunning()
     {
         // given
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
 
         // when
@@ -99,7 +97,7 @@ class IndexSamplingJobTrackerTest
     {
         // Given
         JobScheduler scheduler = mock( JobScheduler.class );
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler );
         jobTracker.stopAndAwaitAllJobs();
 
         // When
@@ -113,7 +111,7 @@ class IndexSamplingJobTrackerTest
     void shouldStopAndWaitForAllJobsToFinish() throws Exception
     {
         // Given
-        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler );
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 

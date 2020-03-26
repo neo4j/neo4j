@@ -165,7 +165,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
     }
 
-    private void publishAsCommitted( TransactionToApply batch )
+    private static void publishAsCommitted( TransactionToApply batch )
     {
         while ( batch != null )
         {
@@ -302,7 +302,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
     }
 
-    private void unparkAll( ThreadLink links )
+    private static void unparkAll( ThreadLink links )
     {
         do
         {

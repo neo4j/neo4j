@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Locale;
+
 public enum PrivilegeAction
 {
     // Database actions
@@ -298,14 +300,14 @@ public enum PrivilegeAction
     @Override
     public String toString()
     {
-        return super.toString().toLowerCase();
+        return super.toString().toLowerCase( Locale.ROOT );
     }
 
     public static PrivilegeAction from( String name )
     {
         try
         {
-            return PrivilegeAction.valueOf( name.toUpperCase() );
+            return PrivilegeAction.valueOf( name.toUpperCase( Locale.ROOT ) );
         }
         catch ( IllegalArgumentException e )
         {

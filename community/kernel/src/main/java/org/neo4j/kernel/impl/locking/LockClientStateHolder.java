@@ -170,12 +170,12 @@ public final class LockClientStateHolder
         return getStatus( clientState ) == STOPPED;
     }
 
-    private int getStatus( int clientState )
+    private static int getStatus( int clientState )
     {
         return clientState & STATE_BIT_MASK;
     }
 
-    private int getActiveClients( int clientState )
+    private static int getActiveClients( int clientState )
     {
         return clientState & ~STATE_BIT_MASK;
     }

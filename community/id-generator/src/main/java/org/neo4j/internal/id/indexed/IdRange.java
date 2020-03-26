@@ -53,7 +53,7 @@ class IdRange
     static final int BITSET_SIZE = Long.SIZE;
 
     private long generation;
-    private transient boolean addition;
+    private boolean addition;
     private final long[][] bitSets;
     private final int numOfLongs;
 
@@ -77,7 +77,7 @@ class IdRange
         return IdState.USED;
     }
 
-    private long bitMask( int bitIndex )
+    private static long bitMask( int bitIndex )
     {
         return 1L << bitIndex;
     }
@@ -202,9 +202,9 @@ class IdRange
         return builder.toString();
     }
 
-    private void appendBitSet( StringBuilder builder, long[] bitSet, String name )
+    private static void appendBitSet( StringBuilder builder, long[] bitSet, String name )
     {
-        builder.append( format( "%n" ) ).append( name ).append( ":" );
+        builder.append( format( "%n" ) ).append( name ).append( ':' );
         String delimiter = "";
         for ( int i = bitSet.length - 1; i >= 0; i-- )
         {

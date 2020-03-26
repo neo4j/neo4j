@@ -47,7 +47,7 @@ public interface CheckPointThresholdPolicy extends NamedService
      *
      * @throws NoSuchElementException if the policy was not found.
      */
-    static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
+    static CheckPointThresholdPolicy loadPolicy( String policyName )
     {
         return Services.loadOrFail( CheckPointThresholdPolicy.class, policyName );
     }

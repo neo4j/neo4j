@@ -122,7 +122,7 @@ public class IndexCreatorImpl implements IndexCreator
         actions.assertInOpenTransaction();
     }
 
-    private Collection<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
+    private static Collection<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
     {
         Collection<String> ret = new ArrayList<>( propertyKeys );
         ret.add( propertyKey );

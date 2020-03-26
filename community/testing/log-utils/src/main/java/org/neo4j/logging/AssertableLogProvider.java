@@ -119,7 +119,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         {
             StringBuilder builder = new StringBuilder( "LogCall{" );
             builder.append( context );
-            builder.append( " " );
+            builder.append( ' ' );
             builder.append( level );
             builder.append( ", message=" );
             if ( message != null )
@@ -133,7 +133,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             builder.append( ", arguments=" );
             if ( arguments != null )
             {
-                builder.append( "[" );
+                builder.append( '[' );
                 boolean first = true;
                 for ( Object arg : arguments )
                 {
@@ -144,7 +144,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
                     first = false;
                     builder.append( escapeJava( "" + arg ) );
                 }
-                builder.append( "]" );
+                builder.append( ']' );
             }
             else
             {
@@ -159,7 +159,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             {
                 builder.append( "null" );
             }
-            builder.append( "}" );
+            builder.append( '}' );
             return builder.toString();
         }
 
@@ -300,10 +300,10 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
     public String serialize()
     {
-        return serialize( logCalls.iterator(), LogCall::toLogLikeString );
+        return serialize0( logCalls.iterator(), LogCall::toLogLikeString );
     }
 
-    private static String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )
+    private static String serialize0( Iterator<LogCall> events, Function<LogCall,String> serializer )
     {
         StringBuilder sb = new StringBuilder();
         while ( events.hasNext() )

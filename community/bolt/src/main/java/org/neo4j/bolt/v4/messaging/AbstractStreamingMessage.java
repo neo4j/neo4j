@@ -44,14 +44,14 @@ public abstract class AbstractStreamingMessage implements RequestMessage
     private final long n;
     private final int statementId;
 
-    public AbstractStreamingMessage( MapValue meta ) throws BoltIOException
+    public AbstractStreamingMessage( MapValue meta, String name ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
-        this.n = parseN( meta );
+        this.n = parseN( meta, name );
         this.statementId = parseStatementId( meta );
     }
 
-    private long parseN( MapValue meta ) throws BoltIOException
+    private static long parseN( MapValue meta, String name ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( STREAM_LIMIT_KEY );
         if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
@@ -60,13 +60,13 @@ public abstract class AbstractStreamingMessage implements RequestMessage
             if ( size != STREAM_LIMIT_UNLIMITED && size < STREAM_LIMIT_MINIMAL )
             {
                 throw new BoltIOException( Status.Request.Invalid,
-                        format( "Expecting %s size to be at least %s, but got: %s", name(), STREAM_LIMIT_MINIMAL, n ) );
+                        format( "Expecting %s size to be at least %s, but got: %s", name, STREAM_LIMIT_MINIMAL, size ) );
             }
             return size;
         }
         else
         {
-            throw new BoltIOException( Status.Request.Invalid, format( "Expecting %s size n to be a Long value, but got: %s", name(), anyValue ) );
+            throw new BoltIOException( Status.Request.Invalid, format( "Expecting %s size n to be a Long value, but got: %s", name, anyValue ) );
         }
     }
 

@@ -112,7 +112,7 @@ class InstanceSelector<T>
      */
     <R,E extends Exception> List<R> transform( ThrowingFunction<T,R,E> converter ) throws E
     {
-        List<R> result = new ArrayList<>();
+        List<R> result = new ArrayList<>( IndexSlot.values().length );
         for ( IndexSlot slot : IndexSlot.values() )
         {
             result.add( converter.apply( select( slot ) ) );

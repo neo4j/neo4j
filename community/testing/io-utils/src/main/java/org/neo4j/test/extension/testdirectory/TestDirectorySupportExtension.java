@@ -37,6 +37,7 @@ import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefullFieldExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
@@ -141,7 +142,7 @@ public class TestDirectorySupportExtension extends StatefullFieldExtension<TestD
     public void handleTestExecutionException( ExtensionContext context, Throwable throwable ) throws Throwable
     {
         var store = getTestDirectoryStore( context );
-        store.put( FAILURE_MARKER, true );
+        store.put( FAILURE_MARKER, TRUE );
         throw throwable;
     }
 

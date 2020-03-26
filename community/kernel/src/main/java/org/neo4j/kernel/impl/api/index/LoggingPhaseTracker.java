@@ -137,7 +137,7 @@ public class LoggingPhaseTracker implements PhaseTracker
         return joiner.toString();
     }
 
-    private void reportToJoiner( StringJoiner joiner, Counter counter )
+    private static void reportToJoiner( StringJoiner joiner, Counter counter )
     {
         if ( counter.nbrOfReports > 0 )
         {

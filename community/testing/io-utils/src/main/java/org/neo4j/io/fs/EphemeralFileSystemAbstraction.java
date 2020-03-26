@@ -332,8 +332,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         else
         {
-            File[] files = listFiles( fileName );
-            return files != null && files.length == 0 && directories.remove( fileName );
+            File[] fileList = listFiles( fileName );
+            return fileList != null && fileList.length == 0 && directories.remove( fileName );
         }
     }
 
@@ -406,10 +406,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         List<String> directoryPathItems = splitPath( directory );
         Set<File> found = new HashSet<>();
-        Iterator<File> files = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
-        while ( files.hasNext() )
+        Iterator<File> filesAndFolders = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
+        while ( filesAndFolders.hasNext() )
         {
-            File file = files.next();
+            File file = filesAndFolders.next();
             List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {

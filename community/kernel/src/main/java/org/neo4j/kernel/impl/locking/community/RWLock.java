@@ -708,12 +708,7 @@ public class RWLock
     private TxLockElement getOrCreateLockElement( Object tx )
     {
         assertTransaction( tx );
-        TxLockElement tle = txLockElementMap.get( tx );
-        if ( tle == null )
-        {
-            txLockElementMap.put( tx, tle = new TxLockElement( tx ) );
-        }
-        return tle;
+        return txLockElementMap.computeIfAbsent( tx, TxLockElement::new );
     }
 
     private void assertNotExpired( long timeBoundary )

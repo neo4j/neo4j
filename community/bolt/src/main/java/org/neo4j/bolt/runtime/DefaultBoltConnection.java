@@ -210,7 +210,7 @@ public class DefaultBoltConnection implements BoltConnection
                     queue.drainTo( batch, batchCount );
                     // if we expect one message but did not get any (because it was already
                     // processed), silently exit
-                    if ( batch.size() == 0 && !exitIfNoJobsAvailable )
+                    if ( batch.isEmpty() && !exitIfNoJobsAvailable )
                     {
                         // loop until we get a new job, if we cannot then validate
                         // transaction to check for termination condition. We'll
@@ -233,7 +233,7 @@ public class DefaultBoltConnection implements BoltConnection
                     notifyDrained( batch );
 
                     // execute each job that's in the batch
-                    while ( batch.size() > 0 )
+                    while ( !batch.isEmpty() )
                     {
                         Job current = batch.remove( 0 );
 
@@ -248,7 +248,7 @@ public class DefaultBoltConnection implements BoltConnection
                 }
 
                 // we processed all pending messages, let's flush underlying channel
-                if ( queue.size() == 0 )
+                if ( queue.isEmpty() )
                 {
                     output.flush();
                 }
@@ -256,10 +256,7 @@ public class DefaultBoltConnection implements BoltConnection
             while ( loop );
 
             // assert only if we'll stay alive
-            if ( !willClose() )
-            {
-                assert !machine.hasOpenStatement();
-            }
+            assert willClose() || !machine.hasOpenStatement();
         }
         catch ( BoltConnectionAuthFatality ex )
         {
@@ -416,7 +413,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private void notifyDrained( List<Job> jobs )
     {
-        if ( queueMonitor != null && jobs.size() > 0 )
+        if ( queueMonitor != null && !jobs.isEmpty() )
         {
             queueMonitor.drained( this, jobs );
         }

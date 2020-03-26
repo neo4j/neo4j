@@ -125,10 +125,10 @@ public class BoltChannel implements TrackedNetworkConnection
     @Override
     public void close()
     {
-        Channel rawChannel = rawChannel();
-        if ( rawChannel.isOpen() )
+        Channel channel = rawChannel();
+        if ( channel.isOpen() )
         {
-            rawChannel.close().syncUninterruptibly();
+            channel.close().syncUninterruptibly();
         }
     }
 

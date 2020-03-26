@@ -247,7 +247,7 @@ public class CommunityLockClient implements Locks.Client
         }
     }
 
-    private boolean reEnter( LongObjectMap<LockResource> localLocks, long resourceId )
+    private static boolean reEnter( LongObjectMap<LockResource> localLocks, long resourceId )
     {
         LockResource resource = localLocks.get( resourceId );
         if ( resource != null )
@@ -403,10 +403,7 @@ public class CommunityLockClient implements Locks.Client
         return ( typeId, exclusive ) ->
         {
             ResourceType resourceType = ResourceTypes.fromId( typeId );
-            exclusive.forEachKeyValue( ( resourceId, lock ) ->
-            {
-                locks.add( activeLock.create( resourceType, resourceId ) );
-            } );
+            exclusive.forEachKeyValue( ( resourceId, lock ) -> locks.add( activeLock.create( resourceType, resourceId ) ) );
         };
     }
 

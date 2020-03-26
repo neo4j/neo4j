@@ -34,7 +34,7 @@ public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
 
     public IdRangeLayout( int idsPerEntry )
     {
-        super( true, 3735929054L + idsPerEntry, 1, 2 );
+        super( true, 3_735_929_054L + idsPerEntry, 1, 2 );
         requirePowerOfTwo( idsPerEntry );
         this.longsPerEntry = ((idsPerEntry - 1) / (IdRange.BITSET_SIZE)) + 1;
     }

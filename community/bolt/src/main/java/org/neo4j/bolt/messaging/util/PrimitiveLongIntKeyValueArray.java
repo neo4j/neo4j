@@ -21,6 +21,8 @@ package org.neo4j.bolt.messaging.util;
 
 import java.util.Arrays;
 
+import static java.lang.System.arraycopy;
+
 /**
  * This collection class implements a minimal map-like interface
  * for an ordered, primitive-based key-value array. The array both
@@ -28,23 +30,23 @@ import java.util.Arrays;
  */
 public class PrimitiveLongIntKeyValueArray
 {
-    public static final int DEFAULT_INITIAL_CAPACITY = 100;
-    public static final double DEFAULT_GROWTH_FACTOR = 0.2;
+    static final int DEFAULT_INITIAL_CAPACITY = 100;
+    private static final double DEFAULT_GROWTH_FACTOR = 1.2;
 
-    private long[] naturalKeys = new long[DEFAULT_INITIAL_CAPACITY];
-    private int[] naturalValues = new int[DEFAULT_INITIAL_CAPACITY];
-    private long[] sortedKeys = new long[DEFAULT_INITIAL_CAPACITY];
-    private int[] sortedValues = new int[DEFAULT_INITIAL_CAPACITY];
+    private long[] naturalKeys;
+    private int[] naturalValues;
+    private long[] sortedKeys;
+    private int[] sortedValues;
     private double growthFactor;
     private int size;
 
-    public PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
+    private PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
     {
         if ( initialCapacity <= 0 )
         {
             throw new IllegalArgumentException( "Illegal initial capacity: " + initialCapacity );
         }
-        if ( growthFactor <= 0 )
+        if ( growthFactor <= 1 )
         {
             throw new IllegalArgumentException( "Illegal growth factor: " + growthFactor );
         }
@@ -60,7 +62,7 @@ public class PrimitiveLongIntKeyValueArray
         this( initialCapacity, DEFAULT_GROWTH_FACTOR );
     }
 
-    public PrimitiveLongIntKeyValueArray()
+    PrimitiveLongIntKeyValueArray()
     {
         this( DEFAULT_INITIAL_CAPACITY, DEFAULT_GROWTH_FACTOR );
     }
@@ -76,22 +78,12 @@ public class PrimitiveLongIntKeyValueArray
     }
 
     /**
-     * The proportion by which this array will automatically grow when full.
-     *
-     * @return the growth factor
-     */
-    public double growthFactor()
-    {
-        return growthFactor;
-    }
-
-    /**
      * Ensure the array has at least the capacity requested. The
      * capacity will only ever increase or stay the same.
      *
      * @param newCapacity the new capacity requirement
      */
-    public void ensureCapacity( int newCapacity )
+    void ensureCapacity( int newCapacity )
     {
         int capacity = naturalKeys.length;
         if ( newCapacity > capacity )
@@ -100,13 +92,10 @@ public class PrimitiveLongIntKeyValueArray
             int[] newNaturalValues = new int[newCapacity];
             long[] newSortedKeys = new long[newCapacity];
             int[] newSortedValues = new int[newCapacity];
-            for ( int i = 0; i < capacity; i++ )
-            {
-                newNaturalKeys[i] = naturalKeys[i];
-                newNaturalValues[i] = naturalValues[i];
-                newSortedKeys[i] = sortedKeys[i];
-                newSortedValues[i] = sortedValues[i];
-            }
+            arraycopy( naturalKeys, 0, newNaturalKeys, 0, capacity );
+            arraycopy( naturalValues, 0, newNaturalValues, 0, capacity );
+            arraycopy( sortedKeys, 0, newSortedKeys, 0, capacity );
+            arraycopy( sortedValues, 0, newSortedValues, 0, capacity );
             naturalKeys = newNaturalKeys;
             naturalValues = newNaturalValues;
             sortedKeys = newSortedKeys;

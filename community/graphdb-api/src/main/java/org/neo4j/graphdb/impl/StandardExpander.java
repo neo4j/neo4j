@@ -210,9 +210,9 @@ public abstract class StandardExpander implements PathExpander
             if ( direction != Direction.BOTH )
             {
                 result.append( direction );
-                result.append( ":" );
+                result.append( ':' );
             }
-            result.append( "*" );
+            result.append( '*' );
         }
 
         @Override
@@ -350,10 +350,10 @@ public abstract class StandardExpander implements PathExpander
         {
             // FIXME: not really correct
             result.append( defaultExclusion );
-            result.append( "*" );
+            result.append( '*' );
             for ( Map.Entry<String, Exclusion> entry : exclusion.entrySet() )
             {
-                result.append( "," );
+                result.append( ',' );
                 result.append( entry.getValue() );
                 result.append( entry.getKey() );
             }

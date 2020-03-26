@@ -63,7 +63,7 @@ public class Locker implements Closeable
      *
      * @throws FileLockException if lock could not be acquired
      */
-    public void checkLock() throws FileLockException
+    public void checkLock()
     {
         if ( haveLockAlready() )
         {

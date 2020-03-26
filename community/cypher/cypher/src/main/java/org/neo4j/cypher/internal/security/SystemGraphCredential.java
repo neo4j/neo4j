@@ -100,12 +100,12 @@ public class SystemGraphCredential implements Credential
         String iterations = Integer.toString( credential.hashedCredentials.getIterations() );
         String encodedSalt = credential.hashedCredentials.getSalt().toHex();
         String encodedPassword = credential.hashedCredentials.toHex();
-        return String.join( credentialSeparator, algorithm, encodedPassword, encodedSalt, iterations );
+        return String.join( CREDENTIAL_SEPARATOR, algorithm, encodedPassword, encodedSalt, iterations );
     }
 
     public static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException
     {
-        String[] split = part.split( credentialSeparator, -1 );
+        String[] split = part.split( CREDENTIAL_SEPARATOR, -1 );
         if ( split.length < 3 || split.length > 4 )
         {
             throw new FormatException( "wrong number of credential fields" );

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -167,7 +168,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     {
         var tmpFile = File.createTempFile( prefix, suffix, null );
         tmpFile.deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( tmpFile ) )
+        try ( PrintWriter out = new PrintWriter( tmpFile, StandardCharsets.UTF_8 ) )
         {
             out.println( contents);
         }

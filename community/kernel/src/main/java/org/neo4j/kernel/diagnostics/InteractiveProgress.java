@@ -20,7 +20,6 @@
 package org.neo4j.kernel.diagnostics;
 
 import java.io.PrintStream;
-import java.util.Collections;
 
 /**
  * Tracks progress in an interactive way, relies on the fact that the {@code PrintStream} echoes to a terminal that can

@@ -110,14 +110,10 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
                 switch ( update.updateMode() )
                 {
                 case ADDED:
+                case CHANGED:
                     long nodeId = update.getEntityId();
                     luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
                             LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, propertyNames, update.values() ) );
-
-                case CHANGED:
-                    long nodeId1 = update.getEntityId();
-                    luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId1 ),
-                            LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId1, propertyNames, update.values() ) );
                     break;
                 case REMOVED:
                     luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );

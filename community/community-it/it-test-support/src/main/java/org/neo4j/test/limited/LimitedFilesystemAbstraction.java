@@ -28,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Set;
@@ -74,7 +75,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ) );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), StandardCharsets.UTF_8 );
     }
 
     @Override

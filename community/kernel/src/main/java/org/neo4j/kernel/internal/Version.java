@@ -28,7 +28,6 @@ public class Version
 {
     private static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
     private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID, Version.class.getPackage().getImplementationVersion() );
-    private static final String VENDOR = "Neo Technology";
 
     private final String artifactId;
     private final String title;
@@ -103,7 +102,7 @@ public class Version
     /**
      * This reads out the user friendly part of the version, for public display.
      */
-    private String parseReleaseVersion( String fullVersion )
+    private static String parseReleaseVersion( String fullVersion )
     {
         // Generally, a version we extract from the jar manifest will look like:
         //   1.2.3-M01,abcdef-dirty
@@ -123,6 +122,6 @@ public class Version
         }
 
         // If we don't recognize the version pattern, do the safe thing and keep it in full
-        return version;
+        return fullVersion;
     }
 }

@@ -88,7 +88,7 @@ final class ThreadPool
         return submit( asCallable( job ) );
     }
 
-    private Callable<?> asCallable( Runnable job )
+    private static Callable<?> asCallable( Runnable job )
     {
         return () -> {
             job.run();

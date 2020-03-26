@@ -23,10 +23,10 @@ import java.io.File;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -62,7 +62,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         return internalCreate( pageCache, databaseDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
-    protected abstract Class loggingClass();
+    protected abstract Class<?> loggingClass();
 
     public abstract IndexProviderDescriptor descriptor();
 

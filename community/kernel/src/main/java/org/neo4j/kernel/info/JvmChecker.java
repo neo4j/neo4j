@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.info;
 
-import java.util.stream.Stream;
 import java.lang.management.MemoryUsage;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
@@ -90,8 +91,8 @@ public class JvmChecker
 
     private static boolean missingOption( List<String> jvmArguments, String option )
     {
-        String normalizedOption = option.toUpperCase();
-        return jvmArguments.stream().noneMatch( o -> o.toUpperCase().startsWith( normalizedOption ) );
+        String normalizedOption = option.toUpperCase( Locale.ROOT );
+        return jvmArguments.stream().noneMatch( o -> o.toUpperCase( Locale.ROOT ).startsWith( normalizedOption ) );
     }
 
     boolean serializationFilterIsAvailable()

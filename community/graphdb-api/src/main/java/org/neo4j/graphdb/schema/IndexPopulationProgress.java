@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import java.util.Locale;
+
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -57,6 +59,6 @@ public class IndexPopulationProgress
     @Override
     public String toString()
     {
-        return String.format( "%1.1f%%", getCompletedPercentage() );
+        return String.format( Locale.ROOT, "%1.1f%%", getCompletedPercentage() );
     }
 }

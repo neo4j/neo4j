@@ -43,7 +43,7 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     }
 
     @Override
-    protected Class loggingClass()
+    protected Class<?> loggingClass()
     {
         return GenericNativeIndexProvider.class;
     }

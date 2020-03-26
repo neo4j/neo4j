@@ -51,8 +51,8 @@ import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtensi
 
 public class DbmsSupportController
 {
-    private static final String DBMS = "service";
-    private static final String CONTROLLER = "controller";
+    private static final String DBMS_KEY = "service";
+    private static final String CONTROLLER_KEY = "controller";
     private static final ExtensionContext.Namespace DBMS_NAMESPACE = ExtensionContext.Namespace.create( "org", "neo4j", "dbms" );
     private static final String TEST_DIRECTORY_EXTENSION_KEY = "testDirectoryExtension";
 
@@ -65,17 +65,17 @@ public class DbmsSupportController
     {
         this.context = context;
         this.testInstances = context.getRequiredTestInstances();
-        getStore( context ).put( CONTROLLER, this );
+        getStore( context ).put( CONTROLLER_KEY, this );
     }
 
     public static DbmsSupportController get( ExtensionContext context )
     {
-        return getStore( context ).get( CONTROLLER, DbmsSupportController.class );
+        return getStore( context ).get( CONTROLLER_KEY, DbmsSupportController.class );
     }
 
     public static DbmsSupportController remove( ExtensionContext context )
     {
-        return getStore( context ).remove( CONTROLLER, DbmsSupportController.class );
+        return getStore( context ).remove( CONTROLLER_KEY, DbmsSupportController.class );
     }
 
     public final void startDbms() throws Exception
@@ -173,7 +173,7 @@ public class DbmsSupportController
         builder = callback.apply( builder );
         dbms = builder.build();
         ExtensionContext.Store store = getStore( context );
-        store.put( DBMS, dbms );
+        store.put( DBMS_KEY, dbms );
         return dbms;
     }
 
@@ -193,8 +193,8 @@ public class DbmsSupportController
 
     public void shutdown()
     {
-        DatabaseManagementService dbms = getStore( context ).remove( DBMS, DatabaseManagementService.class );
-        dbms.shutdown();
+        var databaseManagementService = getStore( context ).remove( DBMS_KEY, DatabaseManagementService.class );
+        databaseManagementService.shutdown();
     }
 
     public DbmsController asDbmsController()

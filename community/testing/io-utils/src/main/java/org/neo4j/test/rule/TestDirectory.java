@@ -77,7 +77,7 @@ public class TestDirectory extends ExternalResource
     private File testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
-    private File testDirectory;
+    private File directory;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {
@@ -162,7 +162,7 @@ public class TestDirectory extends ExternalResource
         {
             throw new IllegalStateException( "Not initialized" );
         }
-        return testDirectory;
+        return directory;
     }
 
     public File homeDir( String homeDirName )
@@ -172,7 +172,7 @@ public class TestDirectory extends ExternalResource
 
     public boolean isInitialised()
     {
-        return testDirectory != null;
+        return directory != null;
     }
 
     public File directory( String name, String... path )
@@ -202,7 +202,7 @@ public class TestDirectory extends ExternalResource
     @Override
     public String toString()
     {
-        String testDirectoryName = testDirectory == null ? "<uninitialized>" : testDirectory.toString();
+        String testDirectoryName = directory == null ? "<uninitialized>" : directory.toString();
         return format( "%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName );
     }
 
@@ -217,9 +217,9 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
-                fileSystem.deleteRecursively( testDirectory );
+                fileSystem.deleteRecursively( directory );
             }
-            testDirectory = null;
+            directory = null;
         }
         finally
         {
@@ -237,7 +237,7 @@ public class TestDirectory extends ExternalResource
         {
             test = "static";
         }
-        testDirectory = prepareDirectoryForTest( test );
+        directory = prepareDirectoryForTest( test );
 
     }
 

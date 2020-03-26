@@ -43,45 +43,41 @@ public class LockManagerImpl
      */
     private long lockAcquisitionTimeoutMillis;
 
-    public LockManagerImpl( RagManager ragManager, Config config, Clock clock )
+    LockManagerImpl( RagManager ragManager, Config config, Clock clock )
     {
         this.ragManager = ragManager;
         this.clock = clock;
         this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toMillis();
     }
 
-    public boolean getReadLock( LockTracer tracer, LockResource resource, Object tx )
-            throws DeadlockDetectedException, IllegalResourceException
+    boolean getReadLock( LockTracer tracer, LockResource resource, Object tx )
+            throws DeadlockDetectedException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tracer, tx ) );
     }
 
-    public boolean tryReadLock( LockResource resource, Object tx )
-            throws IllegalResourceException
+    boolean tryReadLock( LockResource resource, Object tx )
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
-    public boolean getWriteLock( LockTracer tracer, LockResource resource, Object tx )
-            throws DeadlockDetectedException, IllegalResourceException
+    boolean getWriteLock( LockTracer tracer, LockResource resource, Object tx )
+            throws DeadlockDetectedException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tracer, tx ) );
     }
 
-    public boolean tryWriteLock( LockResource resource, Object tx )
-            throws IllegalResourceException
+    boolean tryWriteLock( LockResource resource, Object tx )
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
     }
 
-    public void releaseReadLock( Object resource, Object tx )
-            throws LockNotFoundException, IllegalResourceException
+    void releaseReadLock( Object resource, Object tx )
     {
         getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
     }
 
-    public void releaseWriteLock( Object resource, Object tx )
-            throws LockNotFoundException, IllegalResourceException
+    void releaseWriteLock( Object resource, Object tx )
     {
         getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
     }
@@ -125,7 +121,7 @@ public class LockManagerImpl
         }
     }
 
-    private void assertValidArguments( Object resource, Object tx )
+    private static void assertValidArguments( Object resource, Object tx )
     {
         if ( resource == null || tx == null )
         {

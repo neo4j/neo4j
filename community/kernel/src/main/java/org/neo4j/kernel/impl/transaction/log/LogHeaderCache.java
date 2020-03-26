@@ -24,25 +24,25 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 public class LogHeaderCache
 {
-    private final LruCache<Long,LogHeader> logHeaderCache;
+    private final LruCache<Long,LogHeader> cache;
 
     public LogHeaderCache( int headerCacheSize )
     {
-        this.logHeaderCache = new LruCache<>( "Log header cache", headerCacheSize );
+        this.cache = new LruCache<>( "Log header cache", headerCacheSize );
     }
 
     public void clear()
     {
-        logHeaderCache.clear();
+        cache.clear();
     }
 
     public void putHeader( long logVersion, LogHeader logHeader )
     {
-        logHeaderCache.put( logVersion, logHeader );
+        cache.put( logVersion, logHeader );
     }
 
     public LogHeader getLogHeader( long logVersion )
     {
-        return logHeaderCache.get( logVersion );
+        return cache.get( logVersion );
     }
 }

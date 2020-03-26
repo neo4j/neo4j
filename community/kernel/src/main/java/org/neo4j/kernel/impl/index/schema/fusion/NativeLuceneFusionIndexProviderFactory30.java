@@ -54,7 +54,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @Override
-    protected Class loggingClass()
+    protected Class<?> loggingClass()
     {
         return FusionIndexProvider.class;
     }

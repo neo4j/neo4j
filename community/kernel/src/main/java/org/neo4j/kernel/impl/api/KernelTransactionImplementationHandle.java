@@ -44,7 +44,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private static final String USER_TRANSACTION_NAME_SEPARATOR = "-transaction-";
 
     private final long txReuseCount;
-    private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
     private final long startTimeNanos;
@@ -63,7 +62,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
     {
         this.txReuseCount = tx.getReuseCount();
-        this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();

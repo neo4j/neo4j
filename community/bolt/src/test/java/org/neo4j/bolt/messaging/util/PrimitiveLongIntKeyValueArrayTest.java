@@ -120,4 +120,14 @@ class PrimitiveLongIntKeyValueArrayTest
         assertThat( map.size() ).isEqualTo( 7 );
         assertThat( map.keys() ).isEqualTo( new long[]{1, 2, 3, 8, 7, 6, 5} );
     }
+
+    @Test
+    void testGrowth()
+    {
+        PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray( 10 );
+        for ( int i = 0; i < 100; i++ )
+        {
+            map.putIfAbsent( i, i );
+        }
+    }
 }

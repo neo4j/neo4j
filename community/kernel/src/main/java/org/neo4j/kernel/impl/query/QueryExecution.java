@@ -57,6 +57,7 @@ public interface QueryExecution extends QuerySubscription
      * @return <code>true</code> if results should be consumed via a visitor, otherwise <code>false</code>
      * @deprecated will be removed once the compiled runtime is removed.
      */
+    @Deprecated
     boolean isVisitable();
 
     /**
@@ -67,6 +68,7 @@ public interface QueryExecution extends QuerySubscription
      * @param <VisitationException> the exception type declared by the visitor
      * @deprecated will be removed once the compiled runtime is removed.
      */
+    @Deprecated
     <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
             throws VisitationException;
 }

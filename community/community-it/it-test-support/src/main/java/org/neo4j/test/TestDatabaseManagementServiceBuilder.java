@@ -43,9 +43,10 @@ import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
+
+import static java.lang.Boolean.FALSE;
 
 /**
  * Test factory for graph databases.
@@ -67,13 +68,11 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public TestDatabaseManagementServiceBuilder()
     {
         super( null );
-        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
     public TestDatabaseManagementServiceBuilder( File homeDirectory )
     {
         super( homeDirectory );
-        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
     public TestDatabaseManagementServiceBuilder( Neo4jLayout layout )
@@ -81,7 +80,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         super( layout.homeDirectory() );
         setConfig( GraphDatabaseSettings.databases_root_path, layout.databasesDirectory().toPath() );
         setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() );
-        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
     public TestDatabaseManagementServiceBuilder( DatabaseLayout layout )
@@ -119,7 +117,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .fromConfig( config )
                 .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
-                .setDefault( BoltConnector.enabled, false )
+                .setDefault( BoltConnector.enabled, FALSE )
                 .build();
     }
 

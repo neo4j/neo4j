@@ -25,21 +25,16 @@ import org.neo4j.values.virtual.MapValue;
 public class PullMessage extends AbstractStreamingMessage
 {
     public static final byte SIGNATURE = 0x3F;
+    private static final String NAME = "PULL";
 
     public PullMessage( MapValue meta ) throws BoltIOException
     {
-        super( meta );
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState()
-    {
-        return false;
+        super( meta, NAME );
     }
 
     @Override
     String name()
     {
-        return "PULL";
+        return NAME;
     }
 }

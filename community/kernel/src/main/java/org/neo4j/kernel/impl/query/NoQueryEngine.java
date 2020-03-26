@@ -59,7 +59,7 @@ enum NoQueryEngine implements QueryExecutionEngine
         throw noQueryEngine();
     }
 
-    private RuntimeException noQueryEngine()
+    private static RuntimeException noQueryEngine()
     {
         return new UnsupportedOperationException( "No query engine installed." );
     }

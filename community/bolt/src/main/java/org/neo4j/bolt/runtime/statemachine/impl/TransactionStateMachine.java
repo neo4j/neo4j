@@ -154,14 +154,11 @@ public class TransactionStateMachine implements StatementProcessor
         {
             Optional<Status> statusOpt = tx.getReasonIfTerminated();
 
-            if ( statusOpt.isPresent() )
+            if ( statusOpt.isPresent() && statusOpt.get().code().classification().rollbackTransaction() )
             {
-                if ( statusOpt.get().code().classification().rollbackTransaction() )
-                {
-                    Status pendingTerminationNotice = statusOpt.get();
-                    reset();
-                    return pendingTerminationNotice;
-                }
+                Status pendingTerminationNotice = statusOpt.get();
+                reset();
+                return pendingTerminationNotice;
             }
         }
         return null;
@@ -423,7 +420,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        private void terminateActiveStatements( MutableTransactionState ctx )
+        private static void terminateActiveStatements( MutableTransactionState ctx )
         {
             RuntimeException error = null;
 
@@ -463,7 +460,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        private void closeActiveStatements( MutableTransactionState ctx, boolean success )
+        private static void closeActiveStatements( MutableTransactionState ctx, boolean success )
         {
             RuntimeException error = null;
 

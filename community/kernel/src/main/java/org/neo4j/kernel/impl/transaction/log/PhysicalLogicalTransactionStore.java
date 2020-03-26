@@ -143,6 +143,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                         commitChecksum = commit.getChecksum();
                         return false;
                     }
+                    break;
                 default: // just skip commands
                     break;
                 }

@@ -78,9 +78,6 @@ public interface ActiveLock
         }
 
         @Override
-        public abstract String mode();
-
-        @Override
         public ResourceType resourceType()
         {
             return resourceType;

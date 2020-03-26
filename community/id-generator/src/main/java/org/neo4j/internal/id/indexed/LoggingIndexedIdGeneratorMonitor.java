@@ -349,7 +349,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     public static void main( String[] args ) throws IOException
     {
         Args arguments = Args.withFlags( ARG_TOFILE ).parse( args );
-        if ( arguments.orphans().size() == 0 )
+        if ( arguments.orphans().isEmpty() )
         {
             System.err.println( "Please supply base name of log file" );
             return;

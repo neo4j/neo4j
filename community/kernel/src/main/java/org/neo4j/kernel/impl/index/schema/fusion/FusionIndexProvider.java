@@ -78,12 +78,11 @@ public class FusionIndexProvider extends IndexProvider
         this.slotSelector = slotSelector;
         this.providers = new InstanceSelector<>();
         this.fs = fs;
-        fillProvidersSelector( genericProvider, luceneProvider );
+        fillProvidersSelector( providers, genericProvider, luceneProvider );
         slotSelector.validateSatisfied( providers );
     }
 
-    private void fillProvidersSelector( IndexProvider genericProvider,
-            IndexProvider luceneProvider )
+    private static void fillProvidersSelector( InstanceSelector<IndexProvider> providers, IndexProvider genericProvider, IndexProvider luceneProvider )
     {
         providers.put( GENERIC, genericProvider );
         providers.put( LUCENE, luceneProvider );

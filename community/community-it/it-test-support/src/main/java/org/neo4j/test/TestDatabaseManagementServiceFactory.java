@@ -41,6 +41,8 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.lang.Boolean.TRUE;
+
 public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory
 {
     private final boolean impermanent;
@@ -64,7 +66,7 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         config.setIfNotSet( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO );
         if ( impermanent )
         {
-            config.set( GraphDatabaseSettings.ephemeral_lucene, true );
+            config.set( GraphDatabaseSettings.ephemeral_lucene, TRUE );
             config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
             return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.databaseInfo );
         }

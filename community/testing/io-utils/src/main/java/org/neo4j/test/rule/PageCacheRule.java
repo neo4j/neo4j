@@ -43,6 +43,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.lang.Boolean.TRUE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public class PageCacheRule extends ExternalResource
@@ -50,7 +51,7 @@ public class PageCacheRule extends ExternalResource
     protected JobScheduler jobScheduler;
     protected SystemNanoClock clock;
     protected PageCache pageCache;
-    final PageCacheConfig baseConfig;
+    private final PageCacheConfig baseConfig;
 
     public PageCacheRule()
     {
@@ -132,7 +133,7 @@ public class PageCacheRule extends ExternalResource
 
     protected void pageCachePostConstruct( PageCacheConfig overriddenConfig )
     {
-        if ( selectConfig( baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, true ) )
+        if ( selectConfig( baseConfig.inconsistentReads, overriddenConfig.inconsistentReads, TRUE ) )
         {
             AtomicBoolean controller = selectConfig( baseConfig.nextReadIsInconsistent,
                     overriddenConfig.nextReadIsInconsistent, null );

@@ -298,7 +298,7 @@ abstract class TxStateTest
         SchemaDescriptor schema = indexOn_1_1.schema();
         int[] labels = schema.getEntityTokenIds();
         assertEquals( schema.entityType(), EntityType.NODE );
-        assertEquals( labels.length, 1 );
+        assertEquals( 1, labels.length );
         assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( labels[0] ).getAdded() );
     }
 
@@ -1073,8 +1073,8 @@ abstract class TxStateTest
                 SchemaDescriptor schema = descriptor.schema();
                 int[] labelIds = schema.getEntityTokenIds();
                 int[] propertyKeyIds = schema.getPropertyIds();
-                assertEquals( labelIds.length, 1 );
-                assertEquals( propertyKeyIds.length, 1 );
+                assertEquals( 1, labelIds.length );
+                assertEquals( 1, propertyKeyIds.length );
                 for ( Pair<Long,T> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();

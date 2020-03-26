@@ -78,10 +78,10 @@ import static org.neo4j.util.Preconditions.checkState;
 public class StoreUpgrader
 {
     private static final String STORE_UPGRADE_TAG = "storeUpgrade";
-    private final Pattern MIGRATION_LEFTOVERS_PATTERN = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
+    private static final Pattern MIGRATION_LEFTOVERS_PATTERN = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
 
     private final StoreVersionCheck storeVersionCheck;
     private final MigrationProgressMonitor progressMonitor;

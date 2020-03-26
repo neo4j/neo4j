@@ -89,13 +89,13 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeNodeReference( long nodeId ) throws RuntimeException
+    public void writeNodeReference( long nodeId )
     {
         throw new UnsupportedOperationException( "Cannot write a raw node reference" );
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray ignore, MapValue properties )
     {
         if ( nodeId >= 0 )
         {
@@ -110,14 +110,13 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeRelationshipReference( long relId ) throws RuntimeException
+    public void writeRelationshipReference( long relId )
     {
         throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
     }
 
     @Override
     public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
-            throws RuntimeException
     {
         if ( relId >= 0 )
         {
@@ -132,33 +131,33 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void beginMap( int size ) throws RuntimeException
+    public void beginMap( int size )
     {
         stack.push( new MapWriter( size ) );
     }
 
     @Override
-    public void endMap() throws RuntimeException
+    public void endMap()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void beginList( int size ) throws RuntimeException
+    public void beginList( int size )
     {
         stack.push( new ListWriter( size ) );
     }
 
     @Override
-    public void endList() throws RuntimeException
+    public void endList()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
         assert nodes.length > 0;
@@ -310,80 +309,80 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeNull() throws RuntimeException
+    public void writeNull()
     {
         writeValue( null );
     }
 
     @Override
-    public void writeBoolean( boolean value ) throws RuntimeException
+    public void writeBoolean( boolean value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( byte value ) throws RuntimeException
+    public void writeInteger( byte value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( short value ) throws RuntimeException
+    public void writeInteger( short value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( int value ) throws RuntimeException
+    public void writeInteger( int value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( long value ) throws RuntimeException
+    public void writeInteger( long value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeFloatingPoint( float value ) throws RuntimeException
+    public void writeFloatingPoint( float value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeFloatingPoint( double value ) throws RuntimeException
+    public void writeFloatingPoint( double value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( String value ) throws RuntimeException
+    public void writeString( String value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( char value ) throws RuntimeException
+    public void writeString( char value )
     {
         writeValue( value );
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
+    public void beginArray( int size, ArrayType arrayType )
     {
         stack.push( new ArrayWriter( size, arrayType ) );
     }
 
     @Override
-    public void endArray() throws RuntimeException
+    public void endArray()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writeByteArray( byte[] value ) throws RuntimeException
+    public void writeByteArray( byte[] value )
     {
         writeValue( value );
     }
@@ -395,31 +394,31 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeDate( LocalDate localDate ) throws RuntimeException
+    public void writeDate( LocalDate localDate )
     {
         writeValue( localDate );
     }
 
     @Override
-    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    public void writeLocalTime( LocalTime localTime )
     {
         writeValue( localTime );
     }
 
     @Override
-    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    public void writeTime( OffsetTime offsetTime )
     {
         writeValue( offsetTime );
     }
 
     @Override
-    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    public void writeLocalDateTime( LocalDateTime localDateTime )
     {
         writeValue( localDateTime );
     }
 
     @Override
-    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    public void writeDateTime( ZonedDateTime zonedDateTime )
     {
         writeValue( zonedDateTime );
     }

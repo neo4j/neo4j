@@ -200,7 +200,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         }
     }
 
-    private boolean executeBatch( BoltConnection connection )
+    private static boolean executeBatch( BoltConnection connection )
     {
         Thread currentThread = Thread.currentThread();
         String originalName = currentThread.getName();

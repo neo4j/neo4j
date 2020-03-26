@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -71,7 +72,7 @@ public interface PopulationProgress
             @Override
             public String toString()
             {
-                return format( "[%d/%d:%f]", completed, total, getProgress() );
+                return format( Locale.ROOT, "[%d/%d:%f]", completed, total, getProgress() );
             }
         };
     }

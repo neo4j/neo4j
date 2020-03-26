@@ -39,16 +39,7 @@ public interface CompilationPhaseTracer
         void close();
     }
 
-    CompilationPhaseTracer NO_TRACING = new CompilationPhaseTracer()
-    {
-        @Override
-        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-        {
-            return NONE_PHASE;
-        }
-    };
+    CompilationPhaseEvent NONE_PHASE = () -> {};
 
-    CompilationPhaseEvent NONE_PHASE = () ->
-    {
-    };
+    CompilationPhaseTracer NO_TRACING = phase -> NONE_PHASE;
 }
