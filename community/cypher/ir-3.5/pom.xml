@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-ir-3.5</artifactId>
   <packaging>jar</packaging>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
   <name>Neo4j - Cypher Intermediate Representation</name>
 
   <description>The intermediate representations, such as the query graph</description>

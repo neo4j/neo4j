@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <name>Neo4j - Community Build</name>
   <packaging>pom</packaging>

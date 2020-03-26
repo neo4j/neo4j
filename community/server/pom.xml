@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
   <name>Neo4j - Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
 
     <relativePath>../..</relativePath>
   </parent>
@@ -15,7 +15,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them

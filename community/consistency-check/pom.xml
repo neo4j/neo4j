@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <artifactId>neo4j-consistency-check</artifactId>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <name>Neo4j - Consistency Checker</name>
   <description>Tool for checking consistency of a Neo4j data store.</description>

@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>3.5.17-SNAPSHOT</version>
+        <version>3.5.18-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>community-integration-tests</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Neo4j - Community Integration Tests</name>

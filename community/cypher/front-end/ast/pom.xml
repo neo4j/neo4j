@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j-front-end-parent-3.5</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-ast-3.5</artifactId>
   <packaging>jar</packaging>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
   <name>openCypher AST for the Cypher Query Language</name>
 
   <description>Abstract Syntax Tree and semantic analysis for the Cypher query language</description>

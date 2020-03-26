@@ -6,12 +6,12 @@
   <parent>
       <groupId>org.neo4j</groupId>
       <artifactId>parent</artifactId>
-      <version>3.5.17-SNAPSHOT</version>
+      <version>3.5.18-SNAPSHOT</version>
       <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-fulltext-index</artifactId>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <name>Neo4j - Fulltext index</name>
   <description>Fulltext index for neo4j</description>

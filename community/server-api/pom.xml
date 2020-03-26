@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>server-api</artifactId>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Server API</name>

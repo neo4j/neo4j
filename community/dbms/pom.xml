@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-dbms</artifactId>
   <name>Neo4j - Database Management System</name>
-  <version>3.5.17-SNAPSHOT</version>
+  <version>3.5.18-SNAPSHOT</version>
 
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>

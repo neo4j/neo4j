@@ -6,12 +6,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>community-integration-tests</artifactId>
-        <version>3.5.17-SNAPSHOT</version>
+        <version>3.5.18-SNAPSHOT</version>
     </parent>
 
     <groupId>org.neo4j.community</groupId>
     <artifactId>consistency-it</artifactId>
-    <version>3.5.17-SNAPSHOT</version>
+    <version>3.5.18-SNAPSHOT</version>
 
     <name>Neo4j - Community Consistency Checker Integration Tests</name>
     <packaging>jar</packaging>
