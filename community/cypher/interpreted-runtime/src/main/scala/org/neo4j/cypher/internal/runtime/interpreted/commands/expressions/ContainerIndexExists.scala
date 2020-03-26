@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -32,25 +32,25 @@ case class ContainerIndexExists(expression: Expression, index: Expression) exten
 
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
-  override def isMatch(m: ExecutionContext,
-                       state: QueryState): Option[Boolean] = expression(m, state) match {
-        case IsNoValue() => None
-        case value =>
-          val idx = index(m, state)
-          if (idx eq NO_VALUE) {
-            None
-          } else {
-            Some(
-              containerIndexExists(
-                value,
-                idx,
-                state.query,
-                state.cursors.nodeCursor,
-                state.cursors.relationshipScanCursor,
-                state.cursors.propertyCursor
-              )
-            )
-          }
+  override def isMatch(row: ReadableRow,
+                       state: QueryState): Option[Boolean] = expression(row, state) match {
+    case IsNoValue() => None
+    case value =>
+      val idx = index(row, state)
+      if (idx eq NO_VALUE) {
+        None
+      } else {
+        Some(
+          containerIndexExists(
+            value,
+            idx,
+            state.query,
+            state.cursors.nodeCursor,
+            state.cursors.relationshipScanCursor,
+            state.cursors.propertyCursor
+          )
+        )
+      }
   }
 
   override def containsIsNull: Boolean = false
