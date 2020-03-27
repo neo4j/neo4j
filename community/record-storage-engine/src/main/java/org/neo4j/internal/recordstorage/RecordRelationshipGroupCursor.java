@@ -115,7 +115,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         {
             edgePage = relationshipStore.openPageCursorForReading( reference, cursorTracer );
         }
-        relationshipStore.getRecordByCursor( reference, edge, RecordLoad.FORCE, edgePage );
+        relationshipStore.getRecordByCursor( reference, edge, RecordLoad.FORCE_NORMAL, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
         {
             return (int) edge.getFirstPrevRel();
@@ -195,6 +195,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         // We need to load forcefully here since otherwise we cannot traverse over groups
         // records which have been concurrently deleted (flagged as inUse = false).
         // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        groupStore.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
+        groupStore.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, page );
     }
 }
