@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
+
+import java.io.IOException;
 
 /**
  * An index searcher implementation delegates to the given {@link StatsCollector} for computing its term and collection statistics.
@@ -42,7 +43,7 @@ class StatsCachingIndexSearcher extends IndexSearcher
     }
 
     @Override
-    public TermStatistics termStatistics( Term term, TermStates context )
+    public TermStatistics termStatistics( Term term, int docFreq, long totalTermFreq ) throws IOException
     {
         return collector.termStatistics( term );
     }

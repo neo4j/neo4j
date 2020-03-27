@@ -103,7 +103,7 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
-    <lucene.version>8.2.0</lucene.version>
+    <lucene.version>8.5.0</lucene.version>
     <bouncycastle.version>1.64</bouncycastle.version>
     <jetty.version>9.4.26.v20200117</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
