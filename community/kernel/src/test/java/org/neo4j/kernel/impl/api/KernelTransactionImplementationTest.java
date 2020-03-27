@@ -690,6 +690,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     void reportTransactionStatistics()
     {
         KernelTransactionImplementation transaction = newTransaction( 100 );
+        transaction.memoryTracker().allocateHeap( 13 );
+        transaction.memoryTracker().allocateDirect( 14 );
         KernelTransactionImplementation.Statistics statistics =
             new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ),
                 new AtomicReference<>( new ThreadBasedAllocation() ) );
@@ -697,16 +699,22 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         statistics.init( 2, tracer );
 
         assertEquals( 2, statistics.cpuTimeMillis() );
+        assertEquals( 13, statistics.estimatedHeapMemory() );
+        assertEquals( 14, statistics.usedDirectMemory() );
         assertEquals( 2, statistics.heapAllocatedBytes() );
         assertEquals( 1, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 4, statistics.totalTransactionPageCacheHits() );
         statistics.addWaitingTime( 1 );
         assertEquals( 1, statistics.getWaitingTimeNanos( 0 ) );
 
+        transaction.memoryTracker().releaseDirect( 14 );
         statistics.reset();
+        transaction.memoryTracker().reset();
 
         statistics.init( 4, tracer );
         assertEquals( 4, statistics.cpuTimeMillis() );
+        assertEquals( 0, statistics.estimatedHeapMemory() );
+        assertEquals( 0, statistics.usedDirectMemory() );
         assertEquals( 4, statistics.heapAllocatedBytes() );
         assertEquals( 2, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 6, statistics.totalTransactionPageCacheHits() );

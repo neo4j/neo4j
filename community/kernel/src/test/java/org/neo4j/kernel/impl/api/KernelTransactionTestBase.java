@@ -87,6 +87,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
@@ -170,6 +171,7 @@ class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
+        var memoryPool = MemoryPools.fromLimit( KibiByte.toBytes( 2 ) );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
@@ -177,7 +179,7 @@ class KernelTransactionTestBase
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                new TestDatabaseIdRepository().defaultDatabase(), leaseService, MemoryPools.NO_TRACKING );
+                new TestDatabaseIdRepository().defaultDatabase(), leaseService, memoryPool );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess

@@ -1176,6 +1176,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         /**
+         * @return estimated amount of used heap memory
+         */
+        long estimatedHeapMemory()
+        {
+            return transaction.memoryTracker().estimatedHeapMemory();
+        }
+
+        /**
+         * @return amount of off heap memory
+         */
+        long usedDirectMemory()
+        {
+            return transaction.memoryTracker().usedDirectMemory();
+        }
+
+        /**
          * Returns amount of direct memory allocated by current transaction.
          *
          * @return amount of direct memory allocated by the thread in bytes.
