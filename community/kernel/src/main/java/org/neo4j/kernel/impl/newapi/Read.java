@@ -460,7 +460,7 @@ abstract class Read implements TxStateHolder,
     public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor )
     {
         ktx.assertOpen();
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
+        if ( relationshipTypeScanStoreEnabled() )
         {
             DefaultRelationshipTypeIndexCursor cursor = (DefaultRelationshipTypeIndexCursor)relationshipTypeIndexCursor;
             cursor.setRead( this );
@@ -615,6 +615,11 @@ abstract class Read implements TxStateHolder,
     void acquireSharedLock( ResourceType resource, long resourceId )
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
+    }
+
+    boolean relationshipTypeScanStoreEnabled()
+    {
+        return config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
     }
 
     private void acquireExclusiveLock( ResourceTypes types, long... ids )

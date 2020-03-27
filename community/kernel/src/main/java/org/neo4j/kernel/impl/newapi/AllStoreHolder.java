@@ -31,9 +31,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanReader;
-import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -266,27 +266,52 @@ public class AllStoreHolder extends Read
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId, cursorTracer );
         }
-        else
+        else if ( relationshipTypeScanStoreEnabled() )
         {
             long count = 0;
+            try ( DefaultRelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor();
+                  DefaultRelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( cursorTracer );
+                  DefaultNodeCursor sourceNode = cursors.allocateNodeCursor( cursorTracer );
+                  DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorTracer ) )
+            {
+                this.relationshipTypeScan( typeId, relationshipsWithType );
+                while ( relationshipsWithType.next() )
+                {
+                    relationshipsWithType.relationship( relationship );
+                    count += countRelationshipsWithEndLabels( relationship, sourceNode, targetNode, startLabelId, endLabelId );
+                }
+            }
+            return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
+        }
+        else
+        {
+            long count;
             try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorTracer );
                     DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor( cursorTracer );
                     DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
             {
                 this.relationshipTypeScan( typeId, rels );
-                while ( rels.next() )
-                {
-                    rels.source( sourceNode );
-                    rels.target( targetNode );
-                    if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
-                           targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
-                    {
-                        count++;
-                    }
-                }
+                count = countRelationshipsWithEndLabels( rels, sourceNode, targetNode, startLabelId, endLabelId );
             }
             return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
         }
+    }
+
+    private static long countRelationshipsWithEndLabels( DefaultRelationshipScanCursor relationship, DefaultNodeCursor sourceNode, DefaultNodeCursor targetNode,
+            int startLabelId, int endLabelId )
+    {
+        long internalCount = 0;
+        while ( relationship.next() )
+        {
+            relationship.source( sourceNode );
+            relationship.target( targetNode );
+            if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
+                    targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
+            {
+                internalCount++;
+            }
+        }
+        return internalCount;
     }
 
     private long countsForRelationshipInTxState( int startLabelId, int typeId, int endLabelId )
