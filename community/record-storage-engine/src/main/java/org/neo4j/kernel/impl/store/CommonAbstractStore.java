@@ -68,6 +68,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -330,6 +331,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return pagedFile.getLastPageId();
     }
 
+    /**
+     * Read raw record data. Should <strong>ONLY</strong> be used in tests or tools.
+     */
     public byte[] getRawRecordData( long id, PageCursorTracer cursorTracer ) throws IOException
     {
         byte[] data = new byte[recordSize];
@@ -347,7 +351,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     cursor.getBytes( data );
                 }
                 while ( cursor.shouldRetry() );
-                checkForDecodingErrors( cursor, id, CHECK );
+                checkForDecodingErrors( cursor, id, FORCE ); // Clear errors from the cursor.
             }
         }
         return data;

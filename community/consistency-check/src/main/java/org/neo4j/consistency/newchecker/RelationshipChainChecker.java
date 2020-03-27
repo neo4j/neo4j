@@ -30,10 +30,8 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.time.Stopwatch;
 
@@ -126,7 +124,7 @@ class RelationshipChainChecker implements Checker
                 {
                     for ( int i = 0; i < recordsPerPage && id >= 0 && id < highId; i++, id = direction.nextId( id ) )
                     {
-                        relationshipStore.getRecordByCursor( id, relationship, RecordLoad.CHECK, cursor );
+                        relationshipStore.getRecordByCursor( id, relationship, FORCE, cursor );
                         localProgress.add( 1 );
                         if ( relationship.inUse() )
                         {

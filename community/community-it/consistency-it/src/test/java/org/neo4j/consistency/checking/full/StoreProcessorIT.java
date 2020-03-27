@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -64,7 +65,7 @@ class StoreProcessorIT
         nodeStore.setHighestPossibleIdInUse( 2 );
 
         // when
-        processor.applyFiltered( nodeStore, PageCacheTracer.NULL );
+        processor.applyFiltered( nodeStore, ProgressListener.NONE, PageCacheTracer.NULL );
 
         // then
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ), any( PageCursorTracer.class ) );
@@ -97,7 +98,7 @@ class StoreProcessorIT
         nodeStore.setHighestPossibleIdInUse( 4 );
 
         // when
-        processor.applyFiltered( nodeStore, PageCacheTracer.NULL );
+        processor.applyFiltered( nodeStore, ProgressListener.NONE, PageCacheTracer.NULL );
 
         // then
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ), any( PageCursorTracer.class ) );

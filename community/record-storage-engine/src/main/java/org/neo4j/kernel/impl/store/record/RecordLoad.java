@@ -45,7 +45,7 @@ public enum RecordLoad
     NORMAL, CHECK, FORCE, FORCE_NORMAL;
 
     /**
-     * Checks whether or not a record should be fully loaded from {@link PageCursor}, based on inUse status.
+     * Checks whether a record should be fully loaded from {@link PageCursor}, based on inUse status.
      */
     public final boolean shouldLoad( boolean inUse )
     {
@@ -75,7 +75,7 @@ public enum RecordLoad
      */
     public final void clearOrThrowCursorError( PageCursor cursor )
     {
-        if ( this == NORMAL || this == FORCE_NORMAL )
+        if ( this != FORCE )
         {
             try
             {
@@ -88,8 +88,8 @@ public enum RecordLoad
         }
         else
         {
-            // The CHECK and FORCE modes do not bother with reporting decoding errors...
-            // ... but they must still clear them, since the page cursor may be reused to read other records
+            // The FORCE mode does not bother with reporting decoding errors...
+            // ... but it must still clear them, since the page cursor may be reused to read other records
             cursor.clearCursorException();
         }
     }
@@ -102,6 +102,6 @@ public enum RecordLoad
      */
     public boolean checkForOutOfBounds( PageCursor cursor )
     {
-        return cursor.checkAndClearBoundsFlag() && ( this == NORMAL || this == FORCE_NORMAL );
+        return cursor.checkAndClearBoundsFlag() && this != FORCE;
     }
 }

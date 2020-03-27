@@ -201,13 +201,6 @@ public class StoreAccess
         return store;
     }
 
-    @SuppressWarnings( "unchecked" )
-    protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store, PageCacheTracer pageCacheTracer )
-            throws FAILURE
-    {
-        processor.applyFiltered( store, pageCacheTracer );
-    }
-
     public synchronized void close()
     {
         if ( closeable )

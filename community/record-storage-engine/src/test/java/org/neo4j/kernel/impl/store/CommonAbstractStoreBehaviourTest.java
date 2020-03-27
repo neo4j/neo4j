@@ -180,10 +180,9 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode()
+    void getRecordMustThrowOnPageOverflowWithCheckLoadMode()
     {
-        prepareStoreForOutOfBoundsAccess();
-        store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL ) );
     }
 
     @Test
@@ -206,10 +205,9 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode()
+    void getRecordMustThrowOnCursorErrorWithCheckLoadMode()
     {
-        prepareStoreForCursorError();
-        store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL );
+        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL ) );
     }
 
     @Test

@@ -527,12 +527,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
                 RelationshipGroupRecord record, PageCursorTracer cursorTracer ) throws FAILURE;
 
-        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, PageCacheTracer pageCacheTracer,
-                Predicate<? super R>... filters ) throws FAILURE
-        {
-            apply( store, ProgressListener.NONE, pageCacheTracer, filters );
-        }
-
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
                 ProgressListener progressListener, PageCacheTracer pageCacheTracer,
                 Predicate<? super R>... filters ) throws FAILURE

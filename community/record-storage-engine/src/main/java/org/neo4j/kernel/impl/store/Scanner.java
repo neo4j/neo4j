@@ -84,7 +84,8 @@ public class Scanner
         {
             while ( ids.hasNext() )
             {
-                store.getRecordByCursor( ids.next(), record, RecordLoad.CHECK, cursor );
+                // Use RecordLoad.FORCE because this code path is only used by the consistency checker.
+                store.getRecordByCursor( ids.next(), record, RecordLoad.FORCE, cursor );
                 if ( record.inUse() )
                 {
                     if ( passesFilters( record ) )
