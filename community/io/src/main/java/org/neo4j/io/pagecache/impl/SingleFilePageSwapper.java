@@ -266,24 +266,29 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long filePageId, long bufferAddress ) throws IOException
     {
-        long fileOffset = pageIdToPosition( filePageId );
-        try
+        try ( Retry retry = new Retry() )
         {
-            if ( fileOffset < getCurrentFileSize() )
+            do
             {
-                return swapIn( bufferAddress, fileOffset );
+                try
+                {
+                    long fileOffset = pageIdToPosition( filePageId );
+                    if ( fileOffset < getCurrentFileSize() )
+                    {
+                        return swapIn( bufferAddress, fileOffset );
+                    }
+
+                    clear( bufferAddress, filePageSize );
+                    return 0;
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
             }
-            else
-            {
-                clear( bufferAddress, filePageSize );
-            }
+            while ( retry.shouldRetry() );
         }
-        catch ( ClosedChannelException e )
-        {
-            tryReopen( e );
-            throw new IOException( "IO failed due to interruption", e );
-        }
-        return 0;
+        return -1;
     }
 
     @Override
@@ -293,11 +298,27 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             return 0;
         }
-        if ( hasPositionLock )
+
+        try ( Retry retry = new Retry() )
         {
-            return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+            do
+            {
+                try
+                {
+                    if ( hasPositionLock )
+                    {
+                        return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+                    }
+                    return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
+            }
+            while ( retry.shouldRetry() );
         }
-        return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+        return -1;
     }
 
     private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
@@ -335,26 +356,18 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private long lockPositionReadVector( long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
-        try
+        long toRead = filePageSize * (long) srcs.length;
+        long read;
+        long readTotal = 0;
+        synchronized ( channel.getPositionLock() )
         {
-            long toRead = filePageSize * (long) srcs.length;
-            long read;
-            long readTotal = 0;
-            synchronized ( channel.getPositionLock() )
+            setPositionUnderLock( fileOffset );
+            do
             {
-                setPositionUnderLock( fileOffset );
-                do
-                {
-                    read = channel.read( srcs );
-                }
-                while ( read != -1 && (readTotal += read) < toRead );
-                return readTotal;
+                read = channel.read( srcs );
             }
-        }
-        catch ( ClosedChannelException e )
-        {
-            tryReopen( e );
-            throw new IOException( "IO failed due to interruption", e );
+            while ( read != -1 && (readTotal += read) < toRead );
+            return readTotal;
         }
     }
 
@@ -374,15 +387,23 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
-        try
+
+        try ( Retry retry = new Retry() )
         {
-            return swapOut( bufferAddress, fileOffset );
+            do
+            {
+                try
+                {
+                    return swapOut( bufferAddress, fileOffset );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
+            }
+            while ( retry.shouldRetry() );
         }
-        catch ( ClosedChannelException e )
-        {
-            tryReopen( e );
-            throw new IOException( "IO failed due to interruption", e );
-        }
+        return -1;
     }
 
     @Override
@@ -392,11 +413,27 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             return 0;
         }
-        if ( hasPositionLock )
+
+        try ( Retry retry = new Retry() )
         {
-            return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+            do
+            {
+                try
+                {
+                    if ( hasPositionLock )
+                    {
+                        return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+                    }
+                    return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
+            }
+            while ( retry.shouldRetry() );
         }
-        return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+        return -1;
     }
 
     private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
@@ -588,14 +625,20 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void force() throws IOException
     {
-        try
+        try ( Retry retry = new Retry() )
         {
-            channel.force( false );
-        }
-        catch ( ClosedChannelException e )
-        {
-            tryReopen( e );
-            throw new IOException( "IO failed due to interruption", e );
+            do
+            {
+                try
+                {
+                    channel.force( false );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
+            }
+            while ( retry.shouldRetry() );
         }
     }
 
@@ -616,14 +659,20 @@ public class SingleFilePageSwapper implements PageSwapper
     public void truncate() throws IOException
     {
         setCurrentFileSize( 0 );
-        try
+        try ( Retry retry = new Retry() )
         {
-            channel.truncate( 0 );
-        }
-        catch ( ClosedChannelException e )
-        {
-            tryReopen( e );
-            throw new IOException( "IO failed due to interruption", e );
+            do
+            {
+                try
+                {
+                    channel.truncate( 0 );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    retry.caught( e );
+                }
+            }
+            while ( retry.shouldRetry() );
         }
     }
 
@@ -654,5 +703,52 @@ public class SingleFilePageSwapper implements PageSwapper
                 "filePageSize=" + filePageSize +
                 ", file=" + file +
                 '}';
+    }
+
+    private class Retry implements AutoCloseable
+    {
+        private static final int RETRIES_ON_INTERRUPTION = 10;
+        private int retries = RETRIES_ON_INTERRUPTION;
+        private ClosedChannelException caughtException;
+        private ClosedChannelException initialException;
+        private boolean wasInterrupted;
+
+        boolean shouldRetry() throws ClosedChannelException
+        {
+            if ( caughtException != null && --retries >= 0 ) // we failed and have more retries to do
+            {
+                wasInterrupted |= Thread.interrupted();
+                tryReopen( caughtException );
+                caughtException = null;
+                return true;
+            }
+            return false;
+        }
+
+        void caught( ClosedChannelException exception )
+        {
+            caughtException = exception;
+            if ( initialException == null )
+            {
+                initialException = caughtException;
+            }
+        }
+
+        @Override
+        public void close() throws ClosedChannelException
+        {
+            if ( wasInterrupted )
+            {
+                //restore interruption flag
+                Thread.currentThread().interrupt();
+            }
+            if ( caughtException != null )
+            {
+                //this means we failed on our last retry
+                initialException.addSuppressed( caughtException );
+                throw initialException;
+            }
+
+        }
     }
 }

@@ -86,7 +86,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     {
         file = new File( "file" ).getCanonicalFile();
         ephemeralFileSystem = new EphemeralFileSystemAbstraction();
-        ephemeralFileSystem.setInterruptible( false );
         fileSystem = new DefaultFileSystemAbstraction();
         threadRegistryFactory = new ThreadRegistryFactory();
         operationExecutor = Executors.newSingleThreadExecutor( threadRegistryFactory );

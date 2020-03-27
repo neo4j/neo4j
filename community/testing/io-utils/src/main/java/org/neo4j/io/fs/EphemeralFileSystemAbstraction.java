@@ -94,7 +94,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private final Set<File> directories = ConcurrentHashMap.newKeySet();
     private final Map<File,EphemeralFileData> files;
-    private volatile boolean interruptible = true;
 
     public EphemeralFileSystemAbstraction()
     {
@@ -106,11 +105,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         this.clock = clock;
         this.files = new ConcurrentHashMap<>();
         initCurrentWorkingDirectory();
-    }
-
-    public void setInterruptible( boolean interruptible )
-    {
-        this.interruptible = interruptible;
     }
 
     private void initCurrentWorkingDirectory()
@@ -249,7 +243,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( key, clock ) );
-        return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ), interruptible ) );
+        return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
 
     @Override
@@ -476,7 +470,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         EphemeralFileData data = files.get( canonicalFile( fileName ) );
         if ( data != null )
         {
-            return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ), interruptible ) );
+            return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
         }
         return write( fileName );
     }
@@ -705,15 +699,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     private static class EphemeralFileChannel extends FileChannel implements Positionable
     {
         final FileStillOpenException openedAt;
-        private final boolean interrutible;
         private final EphemeralFileData data;
         private long position;
 
-        EphemeralFileChannel( EphemeralFileData data, FileStillOpenException opened, boolean interrutible )
+        EphemeralFileChannel( EphemeralFileData data, FileStillOpenException opened )
         {
             this.data = data;
             this.openedAt = opened;
-            this.interrutible = interrutible;
             data.open( this );
         }
 
@@ -729,8 +721,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             {
                 throw new ClosedChannelException();
             }
-
-            if ( interrutible && Thread.currentThread().isInterrupted() )
+            if ( Thread.currentThread().isInterrupted() )
             {
                 close();
                 throw new ClosedByInterruptException();
