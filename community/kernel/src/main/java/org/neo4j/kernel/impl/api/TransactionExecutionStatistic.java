@@ -30,7 +30,6 @@ public class TransactionExecutionStatistic
     private final Long heapAllocatedBytes;
     private final Long directAllocatedBytes;
     private final Long estimatedUsedHeapMemory;
-    private final Long usedDirectMemory;
     private final Long cpuTimeMillis;
     private final long waitTimeMillis;
     private final long elapsedTimeMillis;
@@ -43,7 +42,6 @@ public class TransactionExecutionStatistic
         heapAllocatedBytes = null;
         directAllocatedBytes = null;
         estimatedUsedHeapMemory = null;
-        usedDirectMemory = null;
         cpuTimeMillis = null;
         waitTimeMillis = -1;
         elapsedTimeMillis = -1;
@@ -59,9 +57,8 @@ public class TransactionExecutionStatistic
         KernelTransactionImplementation.Statistics statistics = tx.getStatistics();
         this.waitTimeMillis = NANOSECONDS.toMillis( statistics.getWaitingTimeNanos( nowNanos ) );
         this.heapAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
-        this.directAllocatedBytes = nullIfNegative( statistics.directAllocatedBytes() );
+        this.directAllocatedBytes = nullIfNegative( statistics.usedDirectMemory() );
         this.estimatedUsedHeapMemory = nullIfNegative( statistics.estimatedHeapMemory() );
-        this.usedDirectMemory = nullIfNegative( statistics.usedDirectMemory() );
         this.cpuTimeMillis = nullIfNegative( statistics.cpuTimeMillis() );
         this.pageFaults = statistics.totalTransactionPageCacheFaults();
         this.pageHits = statistics.totalTransactionPageCacheHits();
@@ -72,11 +69,6 @@ public class TransactionExecutionStatistic
     public Long getEstimatedUsedHeapMemory()
     {
         return estimatedUsedHeapMemory;
-    }
-
-    public Long getUsedDirectMemory()
-    {
-        return usedDirectMemory;
     }
 
     public Long getHeapAllocatedBytes()

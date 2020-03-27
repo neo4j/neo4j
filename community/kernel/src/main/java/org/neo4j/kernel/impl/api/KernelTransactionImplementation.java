@@ -1192,16 +1192,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         /**
-         * Returns amount of direct memory allocated by current transaction.
-         *
-         * @return amount of direct memory allocated by the thread in bytes.
-         */
-        long directAllocatedBytes()
-        {
-            return transaction.memoryTracker.usedDirectMemory();
-        }
-
-        /**
          * Return CPU time used by current transaction in milliseconds
          * @return the current CPU time used by the transaction, in milliseconds.
          */
