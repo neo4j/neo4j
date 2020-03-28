@@ -23,6 +23,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
+
+import scala.util.Random
 
 class RowsMatcherTest extends CypherFunSuite with TestName  {
 
@@ -138,6 +142,42 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
           | - Int(9900)
           | + Int(999999)
           |""".stripMargin))
+  }
+
+  test("listInAnyOrder basic") {
+    val random = new Random()
+
+    val elements = (0 until 100).map(i => Values.intValue(i))
+    val ordered = VirtualValues.list(elements.toArray:_*)
+    val shuffled = VirtualValues.list(random.shuffle(elements).toArray:_*)
+
+    val got = IndexedSeq(Array[AnyValue](ordered))
+    val expected = IndexedSeq(Array[AnyValue](shuffled))
+
+    EqualInAnyOrder(got).matchesRaw(Array("x"), expected) should be(false)
+    EqualInAnyOrder(got, listInAnyOrder = true).matchesRaw(Array("x"), expected) should be(true)
+  }
+
+  test("listInAnyOrder nested") {
+    val random = new Random()
+    def nestedLists(shuffle: Boolean): ListValue = {
+      val outerElements =
+        (0 until 100).map(_ => {
+          val rawElements = (0 until 10).map(j => Values.intValue(j))
+          val elements = if (shuffle) random.shuffle(rawElements) else rawElements
+          VirtualValues.list(elements.toArray:_*)
+        })
+      VirtualValues.list(outerElements.toArray:_*)
+    }
+
+    val ordered = nestedLists(shuffle = false)
+    val shuffled = nestedLists(shuffle = true)
+
+    val got = IndexedSeq(Array[AnyValue](ordered))
+    val expected = IndexedSeq(Array[AnyValue](shuffled))
+
+    EqualInAnyOrder(got).matchesRaw(Array("x"), expected) should be(false)
+    EqualInAnyOrder(got, listInAnyOrder = true).matchesRaw(Array("x"), expected) should be(true)
   }
 
   test("GroupBy") {

@@ -23,8 +23,24 @@ import java.util.Objects
 
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
+import org.neo4j.values.SequenceValue
+import org.neo4j.values.ValueMapper
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.DateTimeValue
+import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.LocalDateTimeValue
+import org.neo4j.values.storable.LocalTimeValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.Matcher
 
@@ -93,9 +109,24 @@ object NoRowsMatcher extends RowsMatcher {
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
-abstract class EqualRowsMatcher extends RowsMatcher {
-  protected def matchSorted(expRows: IndexedSeq[ListValue],
-                            gotRows: IndexedSeq[ListValue]): RowMatchResult = {
+abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
+  protected def matchSorted(expRowsRaw: IndexedSeq[ListValue],
+                            gotRowsRaw: IndexedSeq[ListValue]): RowMatchResult = {
+
+    def mapRow(mapper: ValueMapper[AnyValue])(row: ListValue): ListValue = {
+      val array = new Array[AnyValue](row.length())
+      for (i <- 0 until row.length()) {
+        array(i) = row.value(i).map(mapper)
+      }
+      VirtualValues.list(array:_*)
+    }
+
+    val (expRows, gotRows) =
+      if (listInAnyOrder) {
+        (expRowsRaw.map(mapRow(SortListValueMapper)), gotRowsRaw.map(mapRow(SortListValueMapper)))
+      } else
+        (expRowsRaw, gotRowsRaw)
+
     var expI = 0
     var gotI = 0
     val diffString = new RowDiffStringBuilder()
@@ -147,7 +178,7 @@ abstract class EqualRowsMatcher extends RowsMatcher {
   }
 }
 
-case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends EqualRowsMatcher {
+case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false) extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in any order"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
     val sortedExpected = expected.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING)
@@ -159,7 +190,7 @@ case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends EqualR
     Rows.pretty(rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
 }
 
-case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends EqualRowsMatcher {
+case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false) extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in order"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
     val sortedExpected = expected.map(row => VirtualValues.list(row:_*))
@@ -367,4 +398,30 @@ class RowDiffStringBuilder {
   }
 
   def result: String = sb.result()
+}
+
+object SortListValueMapper extends ValueMapper[AnyValue] {
+  override def mapPath(value: PathValue): AnyValue = value
+  override def mapNode(value: VirtualNodeValue): AnyValue = value
+  override def mapRelationship(value: VirtualRelationshipValue): AnyValue = value
+  override def mapMap(value: MapValue): AnyValue = value
+  override def mapNoValue(): AnyValue = Values.NO_VALUE
+  override def mapSequence(seq: SequenceValue): AnyValue = {
+    val array = new Array[AnyValue](seq.length())
+    for (i <- 0 until seq.length()) {
+      array(i) = seq.value(i).map(this)
+    }
+    java.util.Arrays.sort(array, AnyValues.COMPARATOR)
+    VirtualValues.list(array:_*)
+  }
+  override def mapText(value: TextValue): AnyValue = value
+  override def mapBoolean(value: BooleanValue): AnyValue = value
+  override def mapNumber(value: NumberValue): AnyValue = value
+  override def mapDateTime(value: DateTimeValue): AnyValue = value
+  override def mapLocalDateTime(value: LocalDateTimeValue): AnyValue = value
+  override def mapDate(value: DateValue): AnyValue = value
+  override def mapTime(value: TimeValue): AnyValue = value
+  override def mapLocalTime(value: LocalTimeValue): AnyValue = value
+  override def mapDuration(value: DurationValue): AnyValue = value
+  override def mapPoint(value: PointValue): AnyValue = value
 }

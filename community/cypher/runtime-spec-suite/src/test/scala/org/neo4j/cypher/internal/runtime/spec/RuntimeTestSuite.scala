@@ -235,7 +235,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
 
-    def withRows(rows: Iterable[Array[_]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
+    def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher = withRows(inAnyOrder(rows, listInAnyOrder))
     def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
 
     def withRows(rowsMatcher: RowsMatcher): RuntimeResultMatcher = {
@@ -267,29 +267,29 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     seq
   }
 
-  def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
+  def inOrder(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
-    EqualInOrder(anyValues)
+    EqualInOrder(anyValues, listInAnyOrder)
   }
 
-  def inAnyOrder(rows: Iterable[Array[_]]): RowsMatcher = {
+  def inAnyOrder(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
-    EqualInAnyOrder(anyValues)
+    EqualInAnyOrder(anyValues, listInAnyOrder)
   }
 
-  def singleColumn(values: Iterable[Any]): RowsMatcher = {
+  def singleColumn(values: Iterable[Any], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = values.map(x => Array(ValueUtils.asAnyValue(x))).toIndexedSeq
-    EqualInAnyOrder(anyValues)
+    EqualInAnyOrder(anyValues, listInAnyOrder)
   }
 
-  def singleColumnInOrder(values: Iterable[Any]): RowsMatcher = {
+  def singleColumnInOrder(values: Iterable[Any], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = values.map(x => Array(ValueUtils.asAnyValue(x))).toIndexedSeq
-    EqualInOrder(anyValues)
+    EqualInOrder(anyValues, listInAnyOrder)
   }
 
   def singleRow(values: Any*): RowsMatcher = {
     val anyValues = Array(values.toArray.map(ValueUtils.asAnyValue))
-    EqualInAnyOrder(anyValues)
+    EqualInAnyOrder(anyValues, listInAnyOrder = false)
   }
 
   def rowCount(value: Int): RowsMatcher = {

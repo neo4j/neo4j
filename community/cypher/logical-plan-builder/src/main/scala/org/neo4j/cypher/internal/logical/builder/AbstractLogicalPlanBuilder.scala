@@ -88,6 +88,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -133,6 +134,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -576,11 +578,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val propId = resolver.getPropertyKeyId(property)
     val planBuilder = (idGen: IdGen) => {
       val labelToken = LabelToken(labelName, LabelId(label))
-      val propToken = PropertyKeyToken(PropertyKeyName(property)(InputPosition.NONE), PropertyKeyId(propId))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
       val indexedProperty = IndexedProperty(propToken, getValue)
       val e =
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
-          PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(InputPosition.NONE))
+          PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(NONE))
       val plan = NodeIndexSeek(node,
                                labelToken,
                                Seq(indexedProperty),
@@ -707,6 +709,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def errorPlan(e: Exception): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => ErrorPlan(lp, e)(_)))
+  }
+
+  def nestedPlanExpressionProjection(resultList: String, resultPart: String): IMPL = {
+    val inner = Parser.parseExpression(resultPart)
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExpression(rhs, inner)(NONE)))(_)))
   }
 
   // SHIP IP

@@ -639,7 +639,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
    * This is done via reflection.
    */
   test("all the tests exist") {
-    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent")
+    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExpressionProjection")
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers
