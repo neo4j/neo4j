@@ -280,7 +280,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
-        this.transactionEvent = transactionTracer.beginTransaction();
+        this.transactionEvent = transactionTracer.beginTransaction( pageCursorTracer );
         assert transactionEvent != null : "transactionEvent was null!";
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;

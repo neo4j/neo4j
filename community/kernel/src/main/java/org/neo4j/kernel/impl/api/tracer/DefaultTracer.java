@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -56,7 +57,7 @@ public class DefaultTracer implements DatabaseTracer
     }
 
     @Override
-    public TransactionEvent beginTransaction()
+    public TransactionEvent beginTransaction( PageCursorTracer cursorTracer )
     {
         return transactionEvent;
     }

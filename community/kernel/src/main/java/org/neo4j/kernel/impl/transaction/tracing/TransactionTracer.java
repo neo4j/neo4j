@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.stats.TransactionLogCounters;
 
 /**
@@ -37,7 +38,7 @@ public interface TransactionTracer extends TransactionLogCounters
     {
 
         @Override
-        public TransactionEvent beginTransaction()
+        public TransactionEvent beginTransaction( PageCursorTracer cursorTracer )
         {
             return TransactionEvent.NULL;
         }
@@ -70,6 +71,7 @@ public interface TransactionTracer extends TransactionLogCounters
     /**
      * A transaction starts.
      * @return An event that represents the transaction.
+     * @param cursorTracer page cursor tracer that used by transaction
      */
-    TransactionEvent beginTransaction();
+    TransactionEvent beginTransaction( PageCursorTracer cursorTracer );
 }
