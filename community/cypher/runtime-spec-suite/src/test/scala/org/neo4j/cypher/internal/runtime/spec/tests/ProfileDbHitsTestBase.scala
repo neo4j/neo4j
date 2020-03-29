@@ -502,3 +502,26 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
   }
 }
+
+trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile dbHits of nested plan expression") {
+    val size = Math.sqrt(sizeHint).toInt
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "list")
+      .nestedPlanCollectExpressionProjection("list", "b")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (size * size) or be (size * (size + 1))) // projection w. nested plan expression
+  }
+}
