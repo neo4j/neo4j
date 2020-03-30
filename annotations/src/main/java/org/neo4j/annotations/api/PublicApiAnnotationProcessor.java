@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -200,14 +201,40 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                     newSignature = newSignature.replace( "\r\n", "\n" );
                     if ( !oldSignature.equals( newSignature ) )
                     {
+                        StringBuilder diff = diff( oldSignaturePath );
                         error( format( "Public API signature mismatch. The generated signature, %s, does not match the old signature in %s.%n" +
-                                "Specify `-Doverwrite` to maven to replace it.", path, oldSignaturePath ) );
+                                "Specify `-Doverwrite` to maven to replace it. Changed public elements, compared to the committed PublicApi.txt:%n%s%n",
+                                path, oldSignaturePath, diff ) );
                     }
                 }
                 else
                 {
                     info( "Public API signature matches. " + oldSignaturePath );
                 }
+            }
+        }
+    }
+
+    private StringBuilder diff( Path oldSignaturePath ) throws IOException
+    {
+        Set<String> oldLines = new HashSet<>();
+        try ( Stream<String> lines = Files.lines( oldSignaturePath, UTF_8 ) )
+        {
+            lines.forEach( oldLines::add );
+        }
+        StringBuilder diff = new StringBuilder();
+        diffSide( diff, oldLines, publicElements, '-' );
+        diffSide( diff, publicElements, oldLines, '+' );
+        return diff;
+    }
+
+    private void diffSide( StringBuilder diff, Set<String> left, Set<String> right, char diffSign )
+    {
+        for ( String oldPublicElement : left )
+        {
+            if ( !right.contains( oldPublicElement ) )
+            {
+                diff.append( diffSign ).append( oldPublicElement ).append( format( "%n" ) );
             }
         }
     }
