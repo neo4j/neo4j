@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
-import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -41,6 +39,8 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -75,20 +75,20 @@ public class CachingExpandInto
     @Deprecated
     public CachingExpandInto( Read read, Direction direction )
     {
-        this( read, direction, QueryMemoryTracker.NO_MEMORY_TRACKER(), Id.INVALID_ID() );
+        this( read, direction, EmptyMemoryTracker.INSTANCE );
     }
 
-    public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId )
+    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker )
     {
-        this( read, direction, memoryTracker, operatorId, DEFAULT_CAPACITY );
+        this( read, direction, memoryTracker, DEFAULT_CAPACITY );
     }
 
-    public CachingExpandInto( Read read, Direction direction, QueryMemoryTracker memoryTracker, int operatorId, int capacity )
+    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
     {
         this.read = read;
         this.direction = direction;
-        this.relationshipCache = new RelationshipCache( capacity, memoryTracker, operatorId );
-        this.degreeCache = new NodeDegreeCache( capacity, memoryTracker, operatorId );
+        this.relationshipCache = new RelationshipCache( capacity, memoryTracker );
+        this.degreeCache = new NodeDegreeCache( capacity, memoryTracker );
     }
 
     /**
@@ -516,20 +516,18 @@ public class CachingExpandInto
     static class NodeDegreeCache
     {
         private final int capacity;
-        private final QueryMemoryTracker memoryTracker;
-        private final int operatorId;
+        private final MemoryTracker memoryTracker;
         private MutableLongIntMap degreeCache = new LongIntHashMap();
 
-        NodeDegreeCache( QueryMemoryTracker memoryTracker, int operatorId )
+        NodeDegreeCache( MemoryTracker memoryTracker )
         {
-            this( DEFAULT_CAPACITY, memoryTracker, operatorId );
+            this( DEFAULT_CAPACITY, memoryTracker );
         }
 
-        NodeDegreeCache( int capacity, QueryMemoryTracker memoryTracker, int operatorId )
+        NodeDegreeCache( int capacity, MemoryTracker memoryTracker )
         {
             this.capacity = capacity;
             this.memoryTracker = memoryTracker;
-            this.operatorId = operatorId;
         }
 
         public int getIfAbsentPut( long node, IntFunction0 update )
@@ -556,7 +554,7 @@ public class CachingExpandInto
                 {
                     int value = update.getAsInt();
                     degreeCache.put( node, value );
-                    memoryTracker.allocated( Long.BYTES + Integer.BYTES, operatorId );
+                    memoryTracker.allocateHeap( Long.BYTES + Integer.BYTES );
                     return value;
                 }
             }
@@ -567,19 +565,17 @@ public class CachingExpandInto
     {
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
         private final int capacity;
-        private final QueryMemoryTracker memoryTracker;
-        private final int operatorId;
+        private final MemoryTracker memoryTracker;
 
-        RelationshipCache( QueryMemoryTracker memoryTracker, int operatorId )
+        RelationshipCache( MemoryTracker memoryTracker )
         {
-            this( DEFAULT_CAPACITY, memoryTracker, operatorId );
+            this( DEFAULT_CAPACITY, memoryTracker );
         }
 
-        RelationshipCache( int capacity, QueryMemoryTracker memoryTracker, int operatorId )
+        RelationshipCache( int capacity, MemoryTracker memoryTracker )
         {
             this.capacity = capacity;
             this.memoryTracker = memoryTracker;
-            this.operatorId = operatorId;
         }
 
         public void add( long start, long end, Direction direction, List<Relationship> relationships )
@@ -587,10 +583,8 @@ public class CachingExpandInto
             if ( map.size() < capacity )
             {
                 map.put( key( start, end, direction ), relationships );
-                //two longs for the key
-                memoryTracker.allocated( 2 * Long.BYTES, operatorId );
-                //relationship.size * RELATIONSHIP_SIZE for the value
-                memoryTracker.allocated( relationships.size() * RELATIONSHIP_SIZE, operatorId );
+                memoryTracker.allocateHeap( 2 * Long.BYTES + //two longs for the key
+                        relationships.size() * RELATIONSHIP_SIZE ); //relationship.size * RELATIONSHIP_SIZE for the value
             }
         }
 

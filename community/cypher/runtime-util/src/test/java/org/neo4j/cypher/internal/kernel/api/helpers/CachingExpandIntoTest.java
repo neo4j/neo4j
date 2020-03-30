@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -35,8 +36,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.cypher.internal.runtime.QueryMemoryTracker.NO_MEMORY_TRACKER;
-import static org.neo4j.cypher.internal.util.attribution.Id.INVALID_ID;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
 class CachingExpandIntoTest
@@ -45,7 +44,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOfStartAndEndNode()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID() );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -59,7 +58,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID() );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -73,7 +72,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOfStartAndEndNodeOnlyOnce()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID() );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
         NodeCursor cursor = mockCursor();
 
         // When, calling multiple times with different types
@@ -89,7 +88,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID(), 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE, 0 );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -107,7 +106,7 @@ class CachingExpandIntoTest
     void shouldNotRecomputeAnythingIfSameNodesAndTypes()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID() );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 
@@ -122,7 +121,7 @@ class CachingExpandIntoTest
     void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, NO_MEMORY_TRACKER(), INVALID_ID(), 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE, 0 );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 

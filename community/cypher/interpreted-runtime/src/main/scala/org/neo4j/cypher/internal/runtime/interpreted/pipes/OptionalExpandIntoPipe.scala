@@ -46,7 +46,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
   protected def internalCreateResults(input: Iterator[CypherRow],
                                       state: QueryState): Iterator[CypherRow] = {
     val query = state.query
-    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTracker, id.x)
+    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTracker.memoryTrackerForOperator(id.x))
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)

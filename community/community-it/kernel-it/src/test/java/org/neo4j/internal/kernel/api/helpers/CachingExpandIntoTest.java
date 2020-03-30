@@ -25,8 +25,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.runtime.QueryMemoryTracker;
-import org.neo4j.cypher.internal.util.attribution.Id;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -40,6 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -61,8 +61,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 @DbmsExtension( configurationCallback = "config" )
 class CachingExpandIntoTest
 {
-    private static final QueryMemoryTracker MEMORY_TRACKER = QueryMemoryTracker.NO_MEMORY_TRACKER();
-    private static final int INVALID_ID = Id.INVALID_ID();
+    private static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
+
     @Inject
     private Kernel kernel;
 
@@ -225,7 +225,7 @@ class CachingExpandIntoTest
               RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
         {
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, traversalCursor, start, null, end ) ) ).isEqualTo(
                     immutable.of( r1, r2 ) );
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, traversalCursor, end, null, start ) ) ).isEqualTo(
@@ -264,7 +264,7 @@ class CachingExpandIntoTest
         {
 
             int[] types = {t1, t3};
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
 
             assertThat( toSet( expandInto.connectingRelationships( nodeCursor, traversalCursor, start, types, end ) ) ).isEqualTo(
                     immutable.of( r1 ) );
@@ -311,7 +311,7 @@ class CachingExpandIntoTest
 
             int[] types = {t2, t3};
             CachingExpandInto expandInto =
-                    new CachingExpandInto( tx.dataRead(), INCOMING, MEMORY_TRACKER, INVALID_ID );
+                    new CachingExpandInto( tx.dataRead(), INCOMING, MEMORY_TRACKER );
 
             //Find r3 first time
             RelationshipTraversalCursor cursor = expandInto.connectingRelationships( nodes, traversal, start, types, end );
@@ -394,7 +394,7 @@ class CachingExpandIntoTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() ) )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
 
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
@@ -435,7 +435,7 @@ class CachingExpandIntoTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor( tx.pageCursorTracer() ) )
             {
-                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER, INVALID_ID );
+                CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
                 read.singleNode( node, nodes );
                 assertThat( nodes.next() ).isEqualTo( true );
                 assertThat( nodes.supportsFastDegreeLookup() ).isEqualTo( true );
@@ -464,7 +464,7 @@ class CachingExpandIntoTest
         {
             int[] typeIds = types.length == 0 ? null : stream( types ).mapToInt( tx.tokenRead()::relationshipType ).toArray( );
 
-            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction, MEMORY_TRACKER, INVALID_ID );
+            CachingExpandInto expandInto = new CachingExpandInto( tx.dataRead(), direction, MEMORY_TRACKER );
             return toSet( expandInto.connectingRelationships(
                     nodeCursor,
                     traversalCursor,

@@ -41,7 +41,7 @@ trait Attribute[KEY, VALUE] {
   }
 
   def isDefinedAt(id: Id): Boolean = {
-    array.size > id.x && array(id.x).hasValue
+    array.size > id.x && id.x >= 0 && array(id.x).hasValue
   }
 
   def getOrElse(id: Id, other: => VALUE): VALUE = {
