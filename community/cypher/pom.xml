@@ -44,7 +44,6 @@
                 <module>cypher-logical-plans</module>
                 <module>front-end</module>
                 <module>runtime-util</module>
-                <module>cypher-macros</module>
                 <module>interpreted-runtime</module>
                 <module>acceptance-spec-suite</module>
                 <module>compatibility-spec-suite</module>
