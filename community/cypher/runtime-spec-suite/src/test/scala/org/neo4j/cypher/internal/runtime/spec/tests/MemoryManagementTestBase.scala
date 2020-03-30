@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.exceptions.TransactionOutOfMemoryException
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.virtual.VirtualValues
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
@@ -36,44 +39,48 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   /**
+    * Infinite iterator.
+    *
+   * @param rowSize the size of a row in Bytes
+   * @param data    optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`.
+   *                If empty, the iterator returns integer values.
+   */
+  protected def infiniteInput(rowSize: Long, data: Option[Long => Array[Any]] = None): InputDataStream = {
+      iteratorInput(iterate(data, None, nodeInput = false, rowSize))
+  }
+
+  /**
+    * Infinite iterator.
+    *
+    * @param rowSize the size of a row in Bytes
+    * @param data    optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`.
+   *                If empty, the iterator returns node values.
+    */
+  protected def infiniteNodeInput(rowSize: Long, data: Option[Long => Array[Any]] = None): InputDataStream = {
+    iteratorInput(iterate(data, None, nodeInput = true, rowSize))
+  }
+
+  /**
    * Finite iterator.
    *
-   * @param limit the iterator will be exhausted after the given amount of rows
+   * @param limit   the iterator will be exhausted after the given amount of rows
    * @param rowSize the size of a row in Bytes
-   * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
+   * @param data    optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`..
+   *                If empty, the iterator returns integer values.
    */
-  protected def finiteInput(limit: Int, rowSize: Long, data: Any*): InputDataStream = {
-    iteratorInput(iterate(data.toArray, Some(limit), nodeInput = false, rowSize))
-  }
-
-  /**
-    * Infinite iterator.
-    *
-    * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
-    */
-  protected def infiniteInput(rowSize: Long, data: Any*): InputDataStream = {
-    iteratorInput(iterate(data.toArray, None, nodeInput = false, rowSize))
-  }
-
-  /**
-    * Infinite iterator.
-    *
-    * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns node values.
-    */
-  protected def infiniteNodeInput(rowSize: Long, data: Any*): InputDataStream = {
-    iteratorInput(iterate(data.toArray, None, nodeInput = true, rowSize))
+  protected def finiteInputWithRowSize(limit: Int, rowSize: Long, data: Option[Long => Array[Any]] = None): InputDataStream = {
+    iteratorInput(iterate(data, Some(limit), nodeInput = false, rowSize))
   }
 
   /**
     * Finite iterator.
     *
     * @param limit the iterator will be exhausted after the given amount of rows
-    * @param data  an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
+    * @param data  optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`..
+   *              If empty, the iterator returns integer values.
     */
-  protected def finiteInput(limit: Int, data: Any*): InputDataStream = {
-    iteratorInput(iterate(data.toArray, Some(limit), nodeInput = false, -1))
+  protected def finiteInput(limit: Int, data: Option[Long => Array[Any]] = None): InputDataStream = {
+    iteratorInput(iterate(data, Some(limit), nodeInput = false, -1))
   }
 
   /**
@@ -89,6 +96,10 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   case object E_INT extends ValueToEstimate
   // a single int column used in DISTINCT
   case object E_INT_IN_DISTINCT extends ValueToEstimate
+  // two int column used in DISTINCT
+  case object E_INT_INT_IN_DISTINCT extends ValueToEstimate
+  // two node column used in DISTINCT
+  case object E_NODE_NODE_IN_DISTINCT extends ValueToEstimate
   // a single node column, which can be stored in a long-slot in slotted
   case object E_NODE_PRIMITIVE extends ValueToEstimate
   // a single node column, which cannot be stored in a long-slot in slotted
@@ -101,8 +112,11 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     data match {
       case E_INT => ValueUtils.of(0).estimatedHeapUsage()
       case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
-      case E_NODE_PRIMITIVE => 64  // Size of a NodeValue
-      case E_NODE_VALUE => 64  // Size of a NodeValue
+      case E_INT_INT_IN_DISTINCT =>
+        ValueUtils.of(java.util.Arrays.asList(0, 0)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_NODE_NODE_IN_DISTINCT => VirtualValues.list(VirtualValues.node(0), VirtualValues.node(0)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_NODE_PRIMITIVE => VirtualValues.node(0).estimatedHeapUsage()
+      case E_NODE_VALUE => VirtualValues.node(0).estimatedHeapUsage()
     }
   }
 
@@ -115,7 +129,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     *                  If false, and data is empty, the iterator returns integer values.
     * @param rowSize   the size of a row in the operator under test. This value determines when to fail the test if the query is not killed soon enough.
     */
-  protected def iterate(data: Array[Any],
+  protected def iterate(data: Option[Long => Array[Any]],
                         limit: Option[Int],
                         nodeInput: Boolean,
                         rowSize: Long): Iterator[Array[Any]] = new Iterator[Array[Any]] {
@@ -128,12 +142,17 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
       if (limit.isEmpty && i > killThreshold) {
         fail("The query was not killed even though it consumed too much memory.")
       }
-      if (data.isEmpty) {
-        // Make sure that if you ever call this in parallel, you cannot just create nodes here and need to redesign the test.
-        val value = if (nodeInput) runtimeTestSupport.tx.createNode() else i
-        Array(value)
-      } else {
-        data
+      data match {
+        case None =>
+          // Make sure that if you ever call this in parallel, you cannot just create nodes here and need to redesign the test.
+          val value = if (nodeInput) {
+            runtimeTestSupport.tx.createNode()
+          } else {
+            i
+          }
+          Array(value)
+        case Some(func) =>
+          func(i)
       }
     }
   }
@@ -249,7 +268,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT, Some(0))
-    val input = infiniteInput(expectedRowSize, 0)
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(0)))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -287,7 +306,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, nodes.head)
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -307,7 +326,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = finiteInput(1, expectedRowSize, nodes.head)
+    val input = finiteInputWithRowSize(1, expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
@@ -325,7 +344,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val (nodes, _) = circleGraph(1)
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, nodes.head, nodes.head)
+    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, Some(_ => Array(nodes.head, nodes.head)))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -384,7 +403,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = finiteInput(1000000, expectedRowSize)
+    val input = finiteInput(1000000, Some(_ => Array(expectedRowSize)))
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
@@ -403,7 +422,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // when
     // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
     val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
-    val input = finiteInput(100000, expectedRowSize)
+    val input = finiteInput(100000, Some(_ => Array(expectedRowSize)))
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
@@ -422,7 +441,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // when
     // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
     val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
-    val input = finiteInput(1, expectedRowSize)
+    val input = finiteInput(1, Some(_ => Array(expectedRowSize)))
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
@@ -513,7 +532,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(java.lang.Double.BYTES, 5) // StdDev stores primitive doubles
+    val input = infiniteInput(java.lang.Double.BYTES, Some(_ => Array(5))) // StdDev stores primitive doubles
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -530,7 +549,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(estimateSize(E_INT), 5)
+    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -547,7 +566,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(estimateSize(E_INT), 5)
+    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -635,6 +654,23 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
       consume(execute(logicalQuery, runtime))
+    }
+  }
+
+  test("should kill ordered distinct query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .orderedDistinct(Seq(varFor("x")), "x AS x", "y AS y")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
     }
   }
 }

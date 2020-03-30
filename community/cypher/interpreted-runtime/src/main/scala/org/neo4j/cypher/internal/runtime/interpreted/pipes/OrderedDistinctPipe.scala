@@ -61,9 +61,14 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 
       if (currentOrderedGroupingValue == null || currentOrderedGroupingValue != orderedGroupingValue) {
         currentOrderedGroupingValue = orderedGroupingValue
+        seen.foreach(state.memoryTracker.deallocated)
         seen = mutable.Set[AnyValue]()
       }
-      seen.add(groupingValue)
+      val added = seen.add(groupingValue)
+      if (added) {
+        state.memoryTracker.allocated(groupingValue)
+      }
+      added
     }
   }
 
