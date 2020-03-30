@@ -36,13 +36,13 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
  * otherwise throws {@link InvalidRecordException}.</li>
  * <li>{@link RecordLoad#FORCE}: Loads record data into target regardless of whether record in use or not.
  * Returns whether record is in use or not.
- * <li>{@link RecordLoad#FORCE_NORMAL}: always load all record data, even if the record is marked as not in use, but unlike {@link RecordLoad#FORCE} it will
+ * <li>{@link RecordLoad#ALWAYS}: always load all record data, even if the record is marked as not in use, but unlike {@link RecordLoad#FORCE} it will
  * throw decoding and out-of-bounds exceptions. Will not throw InvalidRecordExceptions for records that are not in use.</li>
  *
  */
 public enum RecordLoad
 {
-    NORMAL, CHECK, FORCE, FORCE_NORMAL;
+    NORMAL, CHECK, FORCE, ALWAYS;
 
     /**
      * Checks whether a record should be fully loaded from {@link PageCursor}, based on inUse status.
@@ -51,7 +51,7 @@ public enum RecordLoad
     {
         // FORCE mode always return true so that record data will always be loaded, even if not in use.
         // The other modes only loads records that are in use.
-        return inUse || this == FORCE_NORMAL || this == FORCE;
+        return inUse || this == ALWAYS || this == FORCE;
     }
 
     /**

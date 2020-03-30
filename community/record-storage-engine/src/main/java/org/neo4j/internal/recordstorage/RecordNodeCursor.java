@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.AllNodeScan;
@@ -55,7 +56,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private boolean batched;
     private RecordRelationshipGroupCursor groupCursor;
     private RecordRelationshipTraversalCursor relationshipCursor;
-    private RecordLoad loadMode;
+    private RecordLoadOverride loadMode;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
     {
@@ -64,7 +65,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         this.cursorTracer = cursorTracer;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
-        this.loadMode = RecordLoad.CHECK;
+        this.loadMode = RecordLoadOverride.none();
     }
 
     @Override
@@ -215,7 +216,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
             }
             groupCursor.init( entityReference(), getNextRel(), true );
             while ( groupCursor.next() )
@@ -263,7 +264,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
             }
             groupCursor.init( entityReference(), getNextRel(), isDense() );
             while ( groupCursor.next() )
@@ -286,7 +287,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public void setForceLoad()
     {
-        this.loadMode = RecordLoad.FORCE;
+        this.loadMode = RecordLoadOverride.FORCE;
+        if ( groupCursor != null )
+        {
+            groupCursor.loadMode = RecordLoadOverride.FORCE;
+        }
     }
 
     @Override
@@ -365,7 +370,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         next = NO_ID;
         setId( NO_ID );
         clear();
-        this.loadMode = RecordLoad.CHECK;
+        this.loadMode = RecordLoadOverride.none();
+        if ( groupCursor != null )
+        {
+            groupCursor.loadMode = RecordLoadOverride.none();
+        }
     }
 
     private boolean isSingle()
@@ -427,11 +436,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
-        read.getRecordByCursor( reference, record, loadMode, pageCursor );
+        read.getRecordByCursor( reference, record, loadMode.orElse( RecordLoad.CHECK ), pageCursor );
     }
 
     private void nodeAdvance( NodeRecord record, PageCursor pageCursor )
     {
-        read.nextRecordByCursor( record, loadMode, pageCursor );
+        read.nextRecordByCursor( record, loadMode.orElse( RecordLoad.CHECK ), pageCursor );
     }
 }

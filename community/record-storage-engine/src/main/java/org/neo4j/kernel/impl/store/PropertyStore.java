@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.Bits;
@@ -58,8 +59,6 @@ import org.neo4j.values.utils.TemporalValueWriterAdapter;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE_NORMAL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -352,18 +351,18 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return arrayStore.openPageCursorForReading( reference, cursorTracer );
     }
 
-    public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page, boolean force )
+    public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page, RecordLoad loadMode )
     {
-        return readDynamic( stringStore, reference, buffer, page, force );
+        return readDynamic( stringStore, reference, buffer, page, loadMode );
     }
 
-    public ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page, boolean force )
+    public ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page, RecordLoad loadMode )
     {
-        return readDynamic( arrayStore, reference, buffer, page, force );
+        return readDynamic( arrayStore, reference, buffer, page, loadMode );
     }
 
     private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer,
-            PageCursor page, boolean force )
+            PageCursor page, RecordLoad loadMode )
     {
         if ( buffer == null )
         {
@@ -378,7 +377,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         {
             //We need to load forcefully here since otherwise we can have inconsistent reads
             //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-            store.getRecordByCursor( reference, record, force ? FORCE : FORCE_NORMAL, page );
+            store.getRecordByCursor( reference, record, loadMode, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )

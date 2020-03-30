@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.TemporalType;
+import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -46,8 +47,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE_NORMAL;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 
 public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
@@ -63,13 +63,14 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private boolean open;
-    private boolean forceLoadMode;
+    private RecordLoadOverride loadMode;
 
     RecordPropertyCursor( PropertyStore read, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.read = read;
         this.cursorTracer = cursorTracer;
+        loadMode = RecordLoadOverride.none();
     }
 
     @Override
@@ -166,7 +167,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if ( open )
         {
             open = false;
-            forceLoadMode = false;
+            loadMode = RecordLoadOverride.none();
             clear();
         }
     }
@@ -174,7 +175,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     @Override
     public void setForceLoad()
     {
-        this.forceLoadMode = true;
+        this.loadMode = RecordLoadOverride.FORCE;
     }
 
     @Override
@@ -422,12 +423,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        read.getRecordByCursor( reference, record, forceLoadMode ? FORCE : FORCE_NORMAL, pageCursor );
+        read.getRecordByCursor( reference, record, loadMode.orElse( ALWAYS ), pageCursor );
     }
 
     private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page, forceLoadMode );
+        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page, loadMode.orElse( ALWAYS ) );
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
         buffer.get( bytes );
@@ -436,7 +437,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page, forceLoadMode );
+        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page, loadMode.orElse( ALWAYS ) );
         buffer.flip();
         return PropertyStore.readArrayFromBuffer( buffer );
     }

@@ -28,7 +28,6 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static java.lang.Math.min;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
@@ -227,6 +226,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.nextRecordByCursor( record, forceLoadMode ? FORCE : CHECK, pageCursor );
+        relationshipStore.nextRecordByCursor( record, loadMode.orElse( CHECK ), pageCursor );
     }
 }

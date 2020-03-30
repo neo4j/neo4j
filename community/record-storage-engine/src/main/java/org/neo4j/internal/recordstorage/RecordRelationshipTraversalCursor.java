@@ -55,7 +55,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
     {
         super( relationshipStore, cursorTracer );
-        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer );
+        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
     }
 
     void init( RecordNodeCursor nodeCursor, RelationshipSelection selection )
@@ -322,9 +322,17 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
+    public void setForceLoad()
+    {
+        super.setForceLoad();
+        group.loadMode = loadMode;
+    }
+
+    @Override
     protected void resetState()
     {
         super.resetState();
+        group.loadMode = loadMode;
         setId( next = NO_ID );
         groupState = GroupState.NONE;
         selection = null;

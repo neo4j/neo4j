@@ -852,7 +852,8 @@ public class DetectRandomSabotageIT
             T record = store.newRecord();
             do
             {
-                store.getRecord( random.nextLong( highId ), record, RecordLoad.CHECK, NULL );
+                // Load with FORCE to ignore not-in-use and decoding errors at this stage.
+                store.getRecord( random.nextLong( highId ), record, RecordLoad.FORCE, NULL );
             }
             while ( !filter.test( record ) );
             return record;

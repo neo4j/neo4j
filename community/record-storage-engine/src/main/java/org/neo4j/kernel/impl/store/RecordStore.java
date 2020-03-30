@@ -108,7 +108,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * <li>{@link RecordLoad#FORCE}: The entire contents of the record will be loaded into the target record
      *     regardless if the record is in use or not. This leaves no guarantees about the data in the record
      *     after this method call, except that the id will be the specified {@code id}.
-     * <li>{@link RecordLoad#FORCE_NORMAL}: Similar to {@link RecordLoad#FORCE}, except the sanity checks on
+     * <li>{@link RecordLoad#ALWAYS}: Similar to {@link RecordLoad#FORCE}, except the sanity checks on
      *     the record data is always enabled.</li>
      *
      * @param id the id of the record to load.
