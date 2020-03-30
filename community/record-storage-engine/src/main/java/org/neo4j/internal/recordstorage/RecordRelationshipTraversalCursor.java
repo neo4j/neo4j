@@ -321,8 +321,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         this.tracer = null;
     }
 
-    private void resetState()
+    @Override
+    protected void resetState()
     {
+        super.resetState();
         setId( next = NO_ID );
         groupState = GroupState.NONE;
         selection = null;

@@ -22,15 +22,19 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE_NORMAL;
+
 abstract class RecordRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>, StorageRelationshipCursor
 {
     final RelationshipStore relationshipStore;
+    boolean forceLoadMode;
     private final PageCursorTracer cursorTracer;
 
     RecordRelationshipCursor( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
@@ -90,6 +94,11 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
         initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 
+    protected void resetState()
+    {
+        forceLoadMode = false;
+    }
+
     PageCursor relationshipPage( long reference )
     {
         return relationshipStore.openPageCursorForReading( reference, cursorTracer );
@@ -98,7 +107,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+        relationshipStore.getRecordByCursor( reference, record, forceLoadMode ? FORCE : CHECK, pageCursor );
     }
 
     void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
@@ -109,12 +118,18 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
         // see
         //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
         //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
-        relationshipStore.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, pageCursor );
+        relationshipStore.getRecordByCursor( reference, record, forceLoadMode ? FORCE : FORCE_NORMAL, pageCursor );
     }
 
     long relationshipHighMark()
     {
         return relationshipStore.getHighestPossibleIdInUse( cursorTracer );
+    }
+
+    @Override
+    public void setForceLoad()
+    {
+        forceLoadMode = true;
     }
 
     @Override

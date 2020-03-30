@@ -22,12 +22,13 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static java.lang.Math.min;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
@@ -122,6 +123,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         highMark = min( stop, max );
         return true;
     }
+
     @Override
     public boolean next()
     {
@@ -186,8 +188,10 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         }
     }
 
-    private void resetState()
+    @Override
+    protected void resetState()
     {
+        super.resetState();
         setId( next = NO_ID );
     }
 
@@ -223,6 +227,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
+        relationshipStore.nextRecordByCursor( record, forceLoadMode ? FORCE : CHECK, pageCursor );
     }
 }

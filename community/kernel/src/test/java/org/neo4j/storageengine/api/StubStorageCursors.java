@@ -547,6 +547,11 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public void setForceLoad()
+        {
+        }
+
+        @Override
         public void close()
         {
             reset();
@@ -656,6 +661,11 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public void setForceLoad()
+        {
+        }
+
+        @Override
         public void close()
         {
             reset();
@@ -710,6 +720,11 @@ public class StubStorageCursors implements StorageReader
 
         @Override
         public void reset()
+        {
+        }
+
+        @Override
+        public void setForceLoad()
         {
         }
 

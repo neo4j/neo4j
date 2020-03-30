@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.TemporalType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
@@ -47,6 +46,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE_NORMAL;
+
 public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
@@ -61,6 +63,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private boolean open;
+    private boolean forceLoadMode;
 
     RecordPropertyCursor( PropertyStore read, PageCursorTracer cursorTracer )
     {
@@ -163,8 +166,15 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if ( open )
         {
             open = false;
+            forceLoadMode = false;
             clear();
         }
+    }
+
+    @Override
+    public void setForceLoad()
+    {
+        this.forceLoadMode = true;
     }
 
     @Override
@@ -412,12 +422,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        read.getRecordByCursor( reference, record, RecordLoad.FORCE_NORMAL, pageCursor );
+        read.getRecordByCursor( reference, record, forceLoadMode ? FORCE : FORCE_NORMAL, pageCursor );
     }
 
     private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page );
+        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page, forceLoadMode );
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
         buffer.get( bytes );
@@ -426,7 +436,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page );
+        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page, forceLoadMode );
         buffer.flip();
         return PropertyStore.readArrayFromBuffer( buffer );
     }

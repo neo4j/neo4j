@@ -55,6 +55,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private boolean batched;
     private RecordRelationshipGroupCursor groupCursor;
     private RecordRelationshipTraversalCursor relationshipCursor;
+    private RecordLoad loadMode;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
     {
@@ -63,6 +64,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         this.cursorTracer = cursorTracer;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
+        this.loadMode = RecordLoad.CHECK;
     }
 
     @Override
@@ -282,6 +284,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
+    public void setForceLoad()
+    {
+        this.loadMode = RecordLoad.FORCE;
+    }
+
+    @Override
     public long propertiesReference()
     {
         return getNextProp();
@@ -357,6 +365,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         next = NO_ID;
         setId( NO_ID );
         clear();
+        this.loadMode = RecordLoad.CHECK;
     }
 
     private boolean isSingle()
@@ -418,11 +427,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
-        read.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+        read.getRecordByCursor( reference, record, loadMode, pageCursor );
     }
 
     private void nodeAdvance( NodeRecord record, PageCursor pageCursor )
     {
-        read.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
+        read.nextRecordByCursor( record, loadMode, pageCursor );
     }
 }

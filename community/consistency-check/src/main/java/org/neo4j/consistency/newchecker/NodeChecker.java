@@ -138,6 +138,7 @@ class NodeChecker implements Checker
             {
                 localProgress.add( 1 );
                 nodeCursor.single( nodeId );
+                nodeCursor.setForceLoad();
                 if ( !nodeCursor.next() )
                 {
                     continue;

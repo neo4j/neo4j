@@ -118,6 +118,7 @@ class RelationshipChecker implements Checker
             {
                 localProgress.add( 1 );
                 relationshipCursor.single( relationshipId );
+                relationshipCursor.setForceLoad();
                 if ( !relationshipCursor.next() )
                 {
                     continue;

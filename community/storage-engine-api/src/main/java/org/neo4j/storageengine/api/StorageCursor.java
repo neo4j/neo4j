@@ -46,6 +46,14 @@ public interface StorageCursor extends AutoCloseable
     }
 
     /**
+     * Force loading of the data and ignore errors, even when the datums are unavailable (like not-in-use records) or cannot be properly loaded or decoded.
+     * This must ONLY be used by the consistency checker.
+     * This method must be called <em>after</em> any cursor initializing call, such as {@code scan}, {@code single}, or {@code init},
+     * and <em>before</em> any call to {@link #next()}. A call to {@link #reset()} will undo this call.
+     */
+    void setForceLoad();
+
+    /**
      * Closes and releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
      */
     @Override
