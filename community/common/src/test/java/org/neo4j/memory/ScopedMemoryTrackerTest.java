@@ -31,34 +31,34 @@ class ScopedMemoryTrackerTest
     @Test
     void delegatesToParent()
     {
-        scopedMemoryTracker.allocateDirect( 10 );
-        scopedMemoryTracker.releaseDirect( 2 );
+        scopedMemoryTracker.allocateNative( 10 );
+        scopedMemoryTracker.releaseNative( 2 );
         scopedMemoryTracker.allocateHeap( 12 );
         scopedMemoryTracker.releaseHeap( 1 );
 
-        assertEquals( 8, memoryTracker.usedDirectMemory() );
+        assertEquals( 8, memoryTracker.usedNativeMemory() );
         assertEquals( 11, memoryTracker.estimatedHeapMemory() );
     }
 
     @Test
     void dontReleaseParentsResources()
     {
-        memoryTracker.allocateDirect( 1 );
+        memoryTracker.allocateNative( 1 );
         memoryTracker.allocateHeap( 3 );
 
-        scopedMemoryTracker.allocateDirect( 10 );
-        scopedMemoryTracker.releaseDirect( 2 );
+        scopedMemoryTracker.allocateNative( 10 );
+        scopedMemoryTracker.releaseNative( 2 );
         scopedMemoryTracker.allocateHeap( 12 );
         scopedMemoryTracker.releaseHeap( 1 );
 
-        assertEquals( 9, memoryTracker.usedDirectMemory() );
-        assertEquals( 8, scopedMemoryTracker.usedDirectMemory() );
+        assertEquals( 9, memoryTracker.usedNativeMemory() );
+        assertEquals( 8, scopedMemoryTracker.usedNativeMemory() );
         assertEquals( 14, memoryTracker.estimatedHeapMemory() );
         assertEquals( 11, scopedMemoryTracker.estimatedHeapMemory() );
 
         scopedMemoryTracker.close();
 
-        assertEquals( 1, memoryTracker.usedDirectMemory() );
+        assertEquals( 1, memoryTracker.usedNativeMemory() );
         assertEquals( 3, memoryTracker.estimatedHeapMemory() );
     }
 }

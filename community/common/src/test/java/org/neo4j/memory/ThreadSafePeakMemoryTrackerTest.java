@@ -44,13 +44,13 @@ class ThreadSafePeakMemoryTrackerTest
             {
                 for ( int i = 1; i < 100; i++ )
                 {
-                    tracker.allocateDirect( i );
-                    assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
+                    tracker.allocateNative( i );
+                    assertThat( tracker.usedNativeMemory() ).isGreaterThan( 0L );
                 }
                 for ( int i = 1; i < 100; i++ )
                 {
-                    assertThat( tracker.usedDirectMemory() ).isGreaterThan( 0L );
-                    tracker.releaseDirect( i );
+                    assertThat( tracker.usedNativeMemory() ).isGreaterThan( 0L );
+                    tracker.releaseNative( i );
                 }
             } );
         }
@@ -60,7 +60,7 @@ class ThreadSafePeakMemoryTrackerTest
         executorService.awaitTermination( 10, TimeUnit.MINUTES );
 
         // then
-        assertEquals( 0, tracker.usedDirectMemory() );
+        assertEquals( 0, tracker.usedNativeMemory() );
     }
 
     @Test
@@ -83,19 +83,19 @@ class ThreadSafePeakMemoryTrackerTest
         for ( int i = 0; i < threads; i++ )
         {
             int id = i;
-            executorService.submit( () -> tracker.allocateDirect( allocations[id] ) );
+            executorService.submit( () -> tracker.allocateNative( allocations[id] ) );
         }
         executorService.shutdown();
         executorService.awaitTermination( 10, TimeUnit.MINUTES );
 
         long peakAfterAllocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::releaseDirect );
+        LongStream.of( allocations ).forEach( tracker::releaseNative );
         long peakAfterDeallocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::allocateDirect );
-        tracker.allocateDirect( 10 ); // <-- 10 more than previous peak
+        LongStream.of( allocations ).forEach( tracker::allocateNative );
+        tracker.allocateNative( 10 ); // <-- 10 more than previous peak
         long peakAfterHigherReallocation = tracker.peakMemoryUsage();
-        LongStream.of( allocations ).forEach( tracker::releaseDirect );
-        tracker.releaseDirect( 10 );
+        LongStream.of( allocations ).forEach( tracker::releaseNative );
+        tracker.releaseNative( 10 );
         long peakAfterFinalDeallocation = tracker.peakMemoryUsage();
 
         // then

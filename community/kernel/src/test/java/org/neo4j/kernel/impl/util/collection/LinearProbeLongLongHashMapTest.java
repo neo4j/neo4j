@@ -95,7 +95,7 @@ class LinearProbeLongLongHashMapTest
     void tearDown()
     {
         map.close();
-        assertEquals( 0, memoryTracker.usedDirectMemory(), "Leaking memory" );
+        assertEquals( 0, memoryTracker.usedNativeMemory(), "Leaking memory" );
         blockAllocator.release();
     }
 

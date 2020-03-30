@@ -31,10 +31,29 @@ class MemoryPoolImplTest
     void unboundedShouldBeUnbounded()
     {
         MemoryPool memoryPool = new MemoryPoolImpl.UnboundedMemoryPool();
-        memoryPool.reserve( Long.MAX_VALUE - 1 );
+        memoryPool.reserveHeap( Long.MAX_VALUE - 1 );
         assertEquals( 1, memoryPool.free() );
-        memoryPool.release( Long.MAX_VALUE - 2 );
-        assertEquals( 1, memoryPool.used() );
+        memoryPool.releaseHeap( Long.MAX_VALUE - 2 );
+        assertEquals( 1, memoryPool.usedHeap() );
+    }
+
+    @Test
+    void trackHeapAndNativeMemory()
+    {
+        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 1000 );
+        memoryPool.reserveHeap( 10 );
+
+        assertEquals( 0, memoryPool.usedNative() );
+        assertEquals( 10, memoryPool.usedHeap() );
+        assertEquals( 10, memoryPool.totalUsed() );
+        assertEquals( 990, memoryPool.free() );
+
+        memoryPool.reserveNative( 200 );
+
+        assertEquals( 200, memoryPool.usedNative() );
+        assertEquals( 10, memoryPool.usedHeap() );
+        assertEquals( 210, memoryPool.totalUsed() );
+        assertEquals( 790, memoryPool.free() );
     }
 
     @Test
@@ -45,19 +64,19 @@ class MemoryPoolImplTest
         MemoryPool memoryPool = new MemoryPoolImpl.BoundedMemoryPool( limit );
         assertState( limit, limit, 0, memoryPool );
 
-        memoryPool.reserve( halfLimit );
+        memoryPool.reserveHeap( halfLimit );
         assertState( limit, halfLimit, halfLimit, memoryPool );
 
-        memoryPool.reserve( halfLimit );
+        memoryPool.reserveHeap( halfLimit );
         assertState( limit, 0, limit, memoryPool );
 
-        HeapMemoryLimitExceeded heapMemoryLimitExceeded = assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserve( 1 ) );
+        HeapMemoryLimitExceeded heapMemoryLimitExceeded = assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 1 ) );
         assertThat( heapMemoryLimitExceeded.getMessage() ).contains( "The allocation of 1 would use more than the limit " + limit );
 
-        memoryPool.release( halfLimit );
+        memoryPool.releaseHeap( halfLimit );
         assertState( limit, halfLimit, halfLimit, memoryPool );
 
-        memoryPool.reserve( 1 );
+        memoryPool.reserveHeap( 1 );
         assertState( limit, halfLimit - 1, halfLimit + 1, memoryPool );
     }
 
@@ -66,6 +85,6 @@ class MemoryPoolImplTest
     {
         assertEquals( available, memoryPool.totalSize() );
         assertEquals( free, memoryPool.free() );
-        assertEquals( used, memoryPool.used() );
+        assertEquals( used, memoryPool.usedHeap() );
     }
 }

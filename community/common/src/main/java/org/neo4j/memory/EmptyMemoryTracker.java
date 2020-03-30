@@ -28,12 +28,12 @@ public final class EmptyMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public void allocateDirect( long bytes )
+    public void allocateNative( long bytes )
     {
     }
 
     @Override
-    public void releaseDirect( long bytes )
+    public void releaseNative( long bytes )
     {
     }
 
@@ -54,7 +54,7 @@ public final class EmptyMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public long usedDirectMemory()
+    public long usedNativeMemory()
     {
         return 0;
     }

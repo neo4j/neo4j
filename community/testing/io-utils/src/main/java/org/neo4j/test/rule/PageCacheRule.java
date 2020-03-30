@@ -44,6 +44,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.Boolean.TRUE;
+import static org.neo4j.io.ByteUnit.parse;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public class PageCacheRule extends ExternalResource
@@ -102,7 +103,7 @@ public class PageCacheRule extends ExternalResource
         PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
 
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
-        MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
+        MemoryAllocator mman = MemoryAllocator.createAllocator( parse( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) ),
                 new LocalMemoryTracker() );
         initializeJobScheduler();
         if ( clock == null )

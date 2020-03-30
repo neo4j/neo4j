@@ -83,7 +83,7 @@ class MutableLinearProbeLongHashSetTest
     void afterEach()
     {
         set.close();
-        assertEquals( 0, memoryTracker.usedDirectMemory(), "Leaking memory" );
+        assertEquals( 0, memoryTracker.usedNativeMemory(), "Leaking memory" );
         blockAllocator.release();
     }
 
@@ -223,17 +223,17 @@ class MutableLinearProbeLongHashSetTest
         final MemoryTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
         final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( blockAllocator ), memoryTrackerSpy );
 
-        verify( memoryTrackerSpy ).allocateDirect( anyLong() );
+        verify( memoryTrackerSpy ).allocateNative( anyLong() );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
             set2.add( 100 + i );
         }
-        verify( memoryTrackerSpy ).releaseDirect( anyLong() );
-        verify( memoryTrackerSpy, times( 2 ) ).allocateDirect( anyLong() );
+        verify( memoryTrackerSpy ).releaseNative( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).allocateNative( anyLong() );
 
         set2.close();
-        verify( memoryTrackerSpy, times( 2 ) ).releaseDirect( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).releaseNative( anyLong() );
     }
 
     @Test
@@ -242,7 +242,7 @@ class MutableLinearProbeLongHashSetTest
         final MemoryTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
         final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( blockAllocator ), memoryTrackerSpy );
 
-        verify( memoryTrackerSpy ).allocateDirect( anyLong() );
+        verify( memoryTrackerSpy ).allocateNative( anyLong() );
 
         set2.addAll( 100, 200, 300 );
         set2.freeze();
@@ -250,7 +250,7 @@ class MutableLinearProbeLongHashSetTest
         set2.freeze();
         set2.clear();
         set2.close();
-        verify( memoryTrackerSpy, times( 3 ) ).releaseDirect( anyLong() );
+        verify( memoryTrackerSpy, times( 3 ) ).releaseNative( anyLong() );
     }
 
     @Test

@@ -40,7 +40,7 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
             JobScheduler jobScheduler )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
-        allocator = MemoryAllocator.createAllocator( String.valueOf( memory ), new LocalMemoryTracker() );
+        allocator = MemoryAllocator.createAllocator( memory, new LocalMemoryTracker() );
         return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock() );
     }
 

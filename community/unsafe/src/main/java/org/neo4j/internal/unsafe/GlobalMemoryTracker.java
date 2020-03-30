@@ -32,7 +32,7 @@ public final class GlobalMemoryTracker implements MemoryTracker
 {
     public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
 
-    private final LongAdder allocatedBytesDirect = new LongAdder();
+    private final LongAdder allocatedBytesNative = new LongAdder();
     private final LongAdder allocatedBytesHeap = new LongAdder();
 
     private GlobalMemoryTracker()
@@ -40,9 +40,9 @@ public final class GlobalMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public long usedDirectMemory()
+    public long usedNativeMemory()
     {
-        return allocatedBytesDirect.sum();
+        return allocatedBytesNative.sum();
     }
 
     @Override
@@ -52,15 +52,15 @@ public final class GlobalMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public void allocateDirect( long bytes )
+    public void allocateNative( long bytes )
     {
-        allocatedBytesDirect.add( bytes );
+        allocatedBytesNative.add( bytes );
     }
 
     @Override
-    public void releaseDirect( long bytes )
+    public void releaseNative( long bytes )
     {
-        allocatedBytesDirect.add( -bytes );
+        allocatedBytesNative.add( -bytes );
     }
 
     @Override

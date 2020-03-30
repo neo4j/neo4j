@@ -179,10 +179,10 @@ class IndexKeyStorageTest
         try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator( allocationTracker );
               IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory ) )
         {
-            assertEquals( 0, allocationTracker.usedDirectMemory(), "Expected to not have any buffers allocated yet" );
+            assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
             assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
             keyStorage.add( randomKey( 1 ) );
-            assertEquals( BLOCK_SIZE, allocationTracker.usedDirectMemory(), "Expected to have exactly one buffer allocated by now" );
+            assertEquals( BLOCK_SIZE, allocationTracker.usedNativeMemory(), "Expected to have exactly one buffer allocated by now" );
             assertTrue( fs.fileExists( file ), "Expected file to be created by now" );
         }
         assertFalse( fs.fileExists( file ), "Expected file to be deleted on close" );

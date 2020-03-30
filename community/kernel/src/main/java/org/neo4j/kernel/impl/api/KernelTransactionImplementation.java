@@ -1192,11 +1192,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         /**
-         * @return amount of off heap memory
+         * @return amount of native memory
          */
-        long usedDirectMemory()
+        long usedNativeMemory()
         {
-            return transaction.memoryTracker().usedDirectMemory();
+            return transaction.memoryTracker().usedNativeMemory();
         }
 
         /**

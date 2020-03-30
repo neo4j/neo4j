@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.mem;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -27,9 +26,9 @@ import org.neo4j.memory.MemoryTracker;
  */
 public interface MemoryAllocator
 {
-    static MemoryAllocator createAllocator( String expectedMemory, MemoryTracker memoryTracker )
+    static MemoryAllocator createAllocator( long expectedMemory, MemoryTracker memoryTracker )
     {
-        return new GrabAllocator( ByteUnit.parse( expectedMemory ), memoryTracker );
+        return new GrabAllocator( expectedMemory, memoryTracker );
     }
 
     /**

@@ -77,13 +77,25 @@ public final class MemoryPools
         }
 
         @Override
-        public void reserve( long bytes )
+        public void reserveHeap( long bytes )
         {
         }
 
         @Override
-        public void release( long bytes )
+        public void reserveNative( long bytes )
         {
+
+        }
+
+        @Override
+        public void releaseHeap( long bytes )
+        {
+        }
+
+        @Override
+        public void releaseNative( long bytes )
+        {
+
         }
 
         @Override
@@ -93,7 +105,19 @@ public final class MemoryPools
         }
 
         @Override
-        public long used()
+        public long usedHeap()
+        {
+            return 0;
+        }
+
+        @Override
+        public long usedNative()
+        {
+            return 0;
+        }
+
+        @Override
+        public long totalUsed()
         {
             return 0;
         }

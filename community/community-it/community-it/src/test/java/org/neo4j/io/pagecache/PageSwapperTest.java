@@ -55,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.ByteUnit.KibiByte;
 
 @TestDirectoryExtension
 public abstract class PageSwapperTest
@@ -70,7 +71,7 @@ public abstract class PageSwapperTest
     private static final int cachePageSize = 32;
     private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
-    private final MemoryAllocator mman = MemoryAllocator.createAllocator( "32 KiB", new LocalMemoryTracker() );
+    private final MemoryAllocator mman = MemoryAllocator.createAllocator( KibiByte.toBytes( 32 ), new LocalMemoryTracker() );
 
     protected abstract PageSwapperFactory swapperFactory( FileSystemAbstraction fileSystem );
 

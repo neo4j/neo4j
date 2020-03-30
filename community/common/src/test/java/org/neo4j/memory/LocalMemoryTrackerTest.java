@@ -29,24 +29,24 @@ class LocalMemoryTrackerTest
     void trackDirectMemoryAllocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocateDirect( 10 );
-        memoryTracker.allocateDirect( 20 );
-        memoryTracker.allocateDirect( 40 );
-        assertEquals( 70, memoryTracker.usedDirectMemory());
+        memoryTracker.allocateNative( 10 );
+        memoryTracker.allocateNative( 20 );
+        memoryTracker.allocateNative( 40 );
+        assertEquals( 70, memoryTracker.usedNativeMemory());
     }
 
     @Test
     void trackDirectMemoryDeallocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        memoryTracker.allocateDirect( 100 );
-        assertEquals( 100, memoryTracker.usedDirectMemory() );
+        memoryTracker.allocateNative( 100 );
+        assertEquals( 100, memoryTracker.usedNativeMemory() );
 
-        memoryTracker.releaseDirect( 20 );
-        assertEquals( 80, memoryTracker.usedDirectMemory() );
+        memoryTracker.releaseNative( 20 );
+        assertEquals( 80, memoryTracker.usedNativeMemory() );
 
-        memoryTracker.releaseDirect( 40 );
-        assertEquals( 40, memoryTracker.usedDirectMemory() );
+        memoryTracker.releaseNative( 40 );
+        assertEquals( 40, memoryTracker.usedNativeMemory() );
     }
 
     @Test

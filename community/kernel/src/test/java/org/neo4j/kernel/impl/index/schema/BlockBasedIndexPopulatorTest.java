@@ -320,7 +320,7 @@ class BlockBasedIndexPopulatorTest
             int nextId = updates.size();
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
-            long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
+            long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
             populator.scanCompleted( nullInstance, jobScheduler, NULL );
             externalUpdates( populator, nextId, nextId + 10 );
 
@@ -328,11 +328,11 @@ class BlockBasedIndexPopulatorTest
             assertTrue( memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
                     "expected some memory to have been temporarily allocated in scanCompleted" );
             populator.close( true, NULL );
-            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedDirectMemory(), "expected all allocated memory to have been freed on close" );
+            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedNativeMemory(), "expected all allocated memory to have been freed on close" );
             closed = true;
 
             bufferFactory.close();
-            assertEquals( 0, memoryTracker.usedDirectMemory() );
+            assertEquals( 0, memoryTracker.usedNativeMemory() );
         }
         finally
         {
@@ -359,7 +359,7 @@ class BlockBasedIndexPopulatorTest
             int nextId = updates.size();
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
-            long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
+            long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
             populator.scanCompleted( nullInstance, jobScheduler, NULL );
             externalUpdates( populator, nextId, nextId + 10 );
 
@@ -368,10 +368,10 @@ class BlockBasedIndexPopulatorTest
                     "expected some memory to have been temporarily allocated in scanCompleted" );
             populator.drop();
             closed = true;
-            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedDirectMemory(), "expected all allocated memory to have been freed on drop" );
+            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedNativeMemory(), "expected all allocated memory to have been freed on drop" );
 
             bufferFactory.close();
-            assertEquals( 0, memoryTracker.usedDirectMemory() );
+            assertEquals( 0, memoryTracker.usedNativeMemory() );
         }
         finally
         {

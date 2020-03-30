@@ -187,7 +187,7 @@ public class GlobalModule
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -373,11 +373,11 @@ public class GlobalModule
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
-            SystemNanoClock clock )
+            SystemNanoClock clock, MemoryPools memoryPools )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock );
+                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )

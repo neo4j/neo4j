@@ -95,15 +95,17 @@ public class LocalMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public void allocateDirect( long bytes )
+    public void allocateNative( long bytes )
     {
         this.allocatedBytesDirect += bytes;
+        this.memoryGroupPool.reserveNative( bytes );
     }
 
     @Override
-    public void releaseDirect( long bytes )
+    public void releaseNative( long bytes )
     {
         this.allocatedBytesDirect -= bytes;
+        this.memoryGroupPool.releaseNative( bytes );
     }
 
     @Override
@@ -151,7 +153,7 @@ public class LocalMemoryTracker implements MemoryTracker
      * @return number of used bytes.
      */
     @Override
-    public long usedDirectMemory()
+    public long usedNativeMemory()
     {
         return allocatedBytesDirect;
     }
@@ -166,7 +168,7 @@ public class LocalMemoryTracker implements MemoryTracker
     public void reset()
     {
         checkState( allocatedBytesDirect == 0, "Potential direct memory leak" );
-        memoryGroupPool.release( localHeapPool );
+        memoryGroupPool.releaseHeap( localHeapPool );
         localHeapPool = 0;
         allocatedBytesHeap = 0;
         heapHighWaterMark = 0;
@@ -185,7 +187,7 @@ public class LocalMemoryTracker implements MemoryTracker
      */
     private void reserveHeap( long size )
     {
-        memoryGroupPool.reserve( size );
+        memoryGroupPool.reserveHeap( size );
         localHeapPool += size;
     }
 

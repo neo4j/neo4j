@@ -49,7 +49,7 @@ class TestMemoryAllocator implements MemoryAllocator
         MemoryImpl( ByteBuffer buf, MemoryTracker memoryTracker )
         {
             this.buf = buf;
-            memoryTracker.allocateDirect( buf.capacity() );
+            memoryTracker.allocateNative( buf.capacity() );
         }
 
         @Override
@@ -79,7 +79,7 @@ class TestMemoryAllocator implements MemoryAllocator
         @Override
         public void free( MemoryTracker memoryTracker )
         {
-            memoryTracker.releaseDirect( buf.capacity() );
+            memoryTracker.releaseNative( buf.capacity() );
         }
 
         @Override

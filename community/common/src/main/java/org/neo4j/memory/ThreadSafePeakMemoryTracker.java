@@ -32,7 +32,7 @@ public class ThreadSafePeakMemoryTracker implements MemoryTracker
     private final LongAccumulator peak = new LongAccumulator( Long::max, 0 );
 
     @Override
-    public void allocateDirect( long bytes )
+    public void allocateNative( long bytes )
     {
         // Update allocated
         long total = allocated.addAndGet( bytes );
@@ -40,7 +40,7 @@ public class ThreadSafePeakMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public void releaseDirect( long bytes )
+    public void releaseNative( long bytes )
     {
         allocated.addAndGet( -bytes );
     }
@@ -70,7 +70,7 @@ public class ThreadSafePeakMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public long usedDirectMemory()
+    public long usedNativeMemory()
     {
         return allocated.get();
     }

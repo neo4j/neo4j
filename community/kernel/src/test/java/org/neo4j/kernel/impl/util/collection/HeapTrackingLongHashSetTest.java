@@ -67,13 +67,13 @@ class HeapTrackingLongHashSetTest
         }
 
         assertExactEstimation( longHashSet );
-        assertThat( memoryPool.used() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
+        assertThat( memoryPool.usedHeap() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
 
         longHashSet.close();
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
 
         memoryTracker.reset();
-        assertEquals( 0, memoryPool.used() );
+        assertEquals( 0, memoryPool.usedHeap() );
     }
 
     private void assertExactEstimation( LongHashSet longHashSet )

@@ -71,6 +71,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -302,7 +303,7 @@ class BatchingNeoStoresTest
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
               PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
-                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock() ).getOrCreatePageCache();
+                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
               Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction

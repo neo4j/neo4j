@@ -25,9 +25,9 @@ package org.neo4j.memory;
 public interface MemoryTracker extends AutoCloseable
 {
     /**
-     * @return number of bytes of direct memory that are used
+     * @return number of bytes of native memory that are used
      */
-    long usedDirectMemory();
+    long usedNativeMemory();
 
     /**
      * @return estimated number of retained heap in bytes
@@ -35,18 +35,18 @@ public interface MemoryTracker extends AutoCloseable
     long estimatedHeapMemory();
 
     /**
-     * Record allocation of bytes in direct memory.
+     * Record allocation of bytes in native memory.
      *
      * @param bytes number of allocated bytes.
      */
-    void allocateDirect( long bytes );
+    void allocateNative( long bytes );
 
     /**
-     * Record de-allocation of bytes in direct memory.
+     * Record de-allocation of bytes in native memory.
      *
      * @param bytes number of released bytes.
      */
-    void releaseDirect( long bytes );
+    void releaseNative( long bytes );
 
     /**
      * Record an allocation of heap memory.

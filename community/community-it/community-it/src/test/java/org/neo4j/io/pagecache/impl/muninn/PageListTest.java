@@ -59,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.io.ByteUnit.MebiByte;
 
 @RunWith( Parameterized.class )
 public class PageListTest
@@ -83,7 +84,7 @@ public class PageListTest
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = MemoryAllocator.createAllocator( "1 MiB", EmptyMemoryTracker.INSTANCE );
+        mman = MemoryAllocator.createAllocator( MebiByte.toBytes( 1 ), EmptyMemoryTracker.INSTANCE );
     }
 
     @AfterClass

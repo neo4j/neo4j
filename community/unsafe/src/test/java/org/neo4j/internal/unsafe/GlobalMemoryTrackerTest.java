@@ -29,29 +29,29 @@ class GlobalMemoryTrackerTest
     @Test
     void trackMemoryAllocations()
     {
-        long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocateDirect( 10 );
-        GlobalMemoryTracker.INSTANCE.allocateDirect( 20 );
-        GlobalMemoryTracker.INSTANCE.allocateDirect( 40 );
+        long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedNativeMemory();
+        GlobalMemoryTracker.INSTANCE.allocateNative( 10 );
+        GlobalMemoryTracker.INSTANCE.allocateNative( 20 );
+        GlobalMemoryTracker.INSTANCE.allocateNative( 40 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 70L );
     }
 
     @Test
     void trackMemoryDeallocations()
     {
-        long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocateDirect( 100 );
+        long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedNativeMemory();
+        GlobalMemoryTracker.INSTANCE.allocateNative( 100 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 100L );
 
-        GlobalMemoryTracker.INSTANCE.releaseDirect( 20 );
+        GlobalMemoryTracker.INSTANCE.releaseNative( 20 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 80L );
 
-        GlobalMemoryTracker.INSTANCE.releaseDirect( 40 );
+        GlobalMemoryTracker.INSTANCE.releaseNative( 40 );
         assertThat( currentlyUsedMemory( initialUsedMemory ) ).isGreaterThanOrEqualTo( 40L );
     }
 
     private static long currentlyUsedMemory( long initialUsedMemory )
     {
-        return GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory;
+        return GlobalMemoryTracker.INSTANCE.usedNativeMemory() - initialUsedMemory;
     }
 }

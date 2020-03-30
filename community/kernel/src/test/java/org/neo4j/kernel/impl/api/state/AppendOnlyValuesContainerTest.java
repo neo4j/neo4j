@@ -101,7 +101,7 @@ class AppendOnlyValuesContainerTest
     void afterEach()
     {
         container.close();
-        assertEquals( 0, memoryTracker.usedDirectMemory(), "Got memory leak" );
+        assertEquals( 0, memoryTracker.usedNativeMemory(), "Got memory leak" );
         blockAllocator.release();
     }
 

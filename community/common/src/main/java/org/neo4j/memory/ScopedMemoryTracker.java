@@ -27,7 +27,7 @@ package org.neo4j.memory;
 public class ScopedMemoryTracker implements MemoryTracker
 {
     private final MemoryTracker delegate;
-    private long trackedDirect;
+    private long trackedNative;
     private long trackedHeap;
 
     public ScopedMemoryTracker( MemoryTracker delegate )
@@ -36,9 +36,9 @@ public class ScopedMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public long usedDirectMemory()
+    public long usedNativeMemory()
     {
-        return trackedDirect;
+        return trackedNative;
     }
 
     @Override
@@ -48,17 +48,17 @@ public class ScopedMemoryTracker implements MemoryTracker
     }
 
     @Override
-    public void allocateDirect( long bytes )
+    public void allocateNative( long bytes )
     {
-        delegate.allocateDirect( bytes );
-        trackedDirect += bytes;
+        delegate.allocateNative( bytes );
+        trackedNative += bytes;
     }
 
     @Override
-    public void releaseDirect( long bytes )
+    public void releaseNative( long bytes )
     {
-        delegate.releaseDirect( bytes );
-        trackedDirect -= bytes;
+        delegate.releaseNative( bytes );
+        trackedNative -= bytes;
     }
 
     @Override
@@ -84,9 +84,9 @@ public class ScopedMemoryTracker implements MemoryTracker
     @Override
     public void reset()
     {
-        delegate.releaseDirect( trackedDirect );
+        delegate.releaseNative( trackedNative );
         delegate.releaseHeap( trackedHeap );
-        trackedDirect = 0;
+        trackedNative = 0;
         trackedHeap = 0;
     }
 }

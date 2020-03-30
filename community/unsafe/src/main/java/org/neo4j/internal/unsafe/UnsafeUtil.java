@@ -483,11 +483,11 @@ public final class UnsafeUtil
         final long pointer = Native.malloc( bytes );
         if ( pointer == 0 )
         {
-            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedDirectMemory() );
+            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedNativeMemory() );
         }
 
         addAllocatedPointer( pointer, bytes );
-        GlobalMemoryTracker.INSTANCE.allocateDirect( bytes );
+        GlobalMemoryTracker.INSTANCE.allocateNative( bytes );
         if ( DIRTY_MEMORY )
         {
             setMemory( pointer, bytes, (byte) 0xA5 );
@@ -506,7 +506,7 @@ public final class UnsafeUtil
     {
         assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         final long pointer = allocateMemory( bytes );
-        allocationTracker.allocateDirect( bytes );
+        allocationTracker.allocateNative( bytes );
         return pointer;
     }
 
@@ -517,7 +517,7 @@ public final class UnsafeUtil
     {
         assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         free( pointer, bytes );
-        allocationTracker.releaseDirect( bytes );
+        allocationTracker.releaseNative( bytes );
     }
 
     /**
@@ -527,7 +527,7 @@ public final class UnsafeUtil
     {
         checkFree( pointer );
         Native.free( pointer );
-        GlobalMemoryTracker.INSTANCE.releaseDirect( bytes );
+        GlobalMemoryTracker.INSTANCE.releaseNative( bytes );
     }
 
     private static void addAllocatedPointer( long pointer, long sizeInBytes )

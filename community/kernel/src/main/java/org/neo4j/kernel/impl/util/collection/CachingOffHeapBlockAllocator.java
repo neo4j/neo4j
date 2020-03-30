@@ -94,7 +94,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         }
         else
         {
-            tracker.allocateDirect( block.size );
+            tracker.allocateNative( block.size );
         }
         return block;
     }
@@ -123,7 +123,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             return;
         }
 
-        tracker.releaseDirect( block.size );
+        tracker.releaseNative( block.size );
     }
 
     @Override

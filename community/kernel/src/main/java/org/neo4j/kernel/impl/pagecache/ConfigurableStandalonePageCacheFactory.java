@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -48,12 +49,12 @@ public final class ConfigurableStandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, pageCacheTracer, Config.defaults(), EMPTY, jobScheduler );
+        return createPageCache( fileSystem, pageCacheTracer, Config.defaults(), EMPTY, jobScheduler, new MemoryPools() );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler );
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools() );
     }
 
     /**
@@ -66,13 +67,14 @@ public final class ConfigurableStandalonePageCacheFactory
      * @return created page cache instance
      */
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Config config,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, MemoryPools memoryPools )
     {
         config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, "8M" );
         ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler, Clocks.nanoClock() );
+                fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler,
+                Clocks.nanoClock(), memoryPools );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

@@ -122,7 +122,7 @@ abstract class TxStateTest
     void after()
     {
         collectionsFactory.release();
-        assertEquals( 0L, memoryTracker.usedDirectMemory(), "Seems like native memory is leaking" );
+        assertEquals( 0L, memoryTracker.usedNativeMemory(), "Seems like native memory is leaking" );
     }
 
     @Test

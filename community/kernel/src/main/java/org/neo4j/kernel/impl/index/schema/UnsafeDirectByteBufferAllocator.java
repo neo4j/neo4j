@@ -53,7 +53,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         {
             var byteBuffer = ByteBuffers.allocateDirect( bufferSize );
             allocations.add( byteBuffer );
-            memoryTracker.allocateDirect( bufferSize );
+            memoryTracker.allocateNative( bufferSize );
             return byteBuffer;
         }
         catch ( NativeMemoryAllocationRefusedError allocationRefusedError )
@@ -71,7 +71,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         {
             allocations.forEach( buffer -> {
                 int capacity = buffer.capacity();
-                memoryTracker.releaseDirect( capacity );
+                memoryTracker.releaseNative( capacity );
                 ByteBuffers.releaseBuffer( buffer );
             } );
             closed = true;

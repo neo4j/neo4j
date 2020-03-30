@@ -74,14 +74,14 @@ class HeapTrackingLongObjectHashMapTest
 
         assertExactEstimation( longObjectHashMap );
         assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThan( emptySize );
-        assertThat( memoryPool.used() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
+        assertThat( memoryPool.usedHeap() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
 
         longObjectHashMap.close();
         memoryTracker.releaseHeap( totalBytesIntegers );
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
 
         memoryTracker.reset();
-        assertEquals( 0, memoryPool.used() );
+        assertEquals( 0, memoryPool.usedHeap() );
     }
 
     private void assertExactEstimation( HeapTrackingLongObjectHashMap<?> longObjectHashMap )

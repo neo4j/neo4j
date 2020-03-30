@@ -71,6 +71,7 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -154,7 +155,7 @@ public class ConsistencyCheckService
         var pageCacheTracer = PageCacheTracer.NULL;
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
+                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try

@@ -29,24 +29,43 @@ import static org.neo4j.util.Preconditions.requirePositive;
  */
 abstract class MemoryPoolImpl implements MemoryPool
 {
-    final AtomicLong usedBytes = new AtomicLong();
+    final AtomicLong usedHeapBytes = new AtomicLong();
+    final AtomicLong usedNativeBytes = new AtomicLong();
 
     @Override
-    public long used()
+    public long usedHeap()
     {
-        return usedBytes.get();
+        return usedHeapBytes.get();
+    }
+
+    @Override
+    public long usedNative()
+    {
+        return usedNativeBytes.get();
+    }
+
+    @Override
+    public long totalUsed()
+    {
+        return usedHeap() + usedNative();
     }
 
     @Override
     public long free()
     {
-        return totalSize() - used();
+        return totalSize() - totalUsed();
     }
 
     @Override
-    public void release( long bytes )
+    public void releaseHeap( long bytes )
     {
-        usedBytes.addAndGet( -bytes );
+        usedHeapBytes.addAndGet( -bytes );
+    }
+
+    @Override
+    public void releaseNative( long bytes )
+    {
+        usedNativeBytes.addAndGet( -bytes );
     }
 
     static class BoundedMemoryPool extends MemoryPoolImpl
@@ -59,20 +78,15 @@ abstract class MemoryPoolImpl implements MemoryPool
         }
 
         @Override
-        public void reserve( long bytes )
+        public void reserveHeap( long bytes )
         {
-            long usedMemoryBefore;
-            long usedMemoryAfter;
-            do
-            {
-                usedMemoryBefore = usedBytes.get();
-                usedMemoryAfter = usedMemoryBefore + bytes;
-                if ( usedMemoryAfter > maxMemory )
-                {
-                    throw new HeapMemoryLimitExceeded( bytes, maxMemory, usedMemoryBefore );
-                }
-            }
-            while ( !usedBytes.weakCompareAndSetVolatile( usedMemoryBefore, usedMemoryAfter ) );
+            reserveMemory( usedHeapBytes, bytes );
+        }
+
+        @Override
+        public void reserveNative( long bytes )
+        {
+            reserveMemory( usedNativeBytes, bytes );
         }
 
         @Override
@@ -80,14 +94,36 @@ abstract class MemoryPoolImpl implements MemoryPool
         {
             return maxMemory;
         }
+
+        private void reserveMemory( AtomicLong counter, long bytes )
+        {
+            long usedMemoryBefore;
+            do
+            {
+                usedMemoryBefore = counter.get();
+                long totalUsedMemory = totalUsed();
+                long totalUsedMemoryAfter = totalUsedMemory + bytes;
+                if ( totalUsedMemoryAfter > maxMemory )
+                {
+                    throw new HeapMemoryLimitExceeded( bytes, maxMemory, totalUsedMemory );
+                }
+            }
+            while ( !counter.weakCompareAndSetVolatile( usedMemoryBefore, usedMemoryBefore + bytes ) );
+        }
     }
 
     static class UnboundedMemoryPool extends MemoryPoolImpl
     {
         @Override
-        public void reserve( long bytes )
+        public void reserveHeap( long bytes )
         {
-            usedBytes.addAndGet( bytes );
+            usedHeapBytes.addAndGet( bytes );
+        }
+
+        @Override
+        public void reserveNative( long bytes )
+        {
+            usedNativeBytes.addAndGet( bytes );
         }
 
         @Override

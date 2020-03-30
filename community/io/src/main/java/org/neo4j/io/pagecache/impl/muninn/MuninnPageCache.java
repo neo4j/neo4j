@@ -224,7 +224,7 @@ public class MuninnPageCache implements PageCache
     {
         this( swapperFactory,
                 // Cast to long prevents overflow:
-                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ), EmptyMemoryTracker.INSTANCE ),
+                MemoryAllocator.createAllocator( memoryRequiredForPages( maxPages ), EmptyMemoryTracker.INSTANCE ),
                 PAGE_SIZE,
                 pageCacheTracer, versionContextSupplier,
                 jobScheduler,

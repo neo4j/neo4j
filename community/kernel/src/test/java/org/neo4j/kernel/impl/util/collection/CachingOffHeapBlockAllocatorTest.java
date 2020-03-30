@@ -52,7 +52,7 @@ class CachingOffHeapBlockAllocatorTest
     void afterEach()
     {
         allocator.release();
-        assertEquals( 0, memoryTracker.usedDirectMemory(), "Native memory is leaking" );
+        assertEquals( 0, memoryTracker.usedNativeMemory(), "Native memory is leaking" );
     }
 
     @Test
@@ -77,16 +77,16 @@ class CachingOffHeapBlockAllocatorTest
         final MemoryBlock block1 = allocator.allocate( 128, memoryTracker );
         assertEquals( 128, block1.size );
         assertEquals( 128, block1.size );
-        assertEquals( block1.size, memoryTracker.usedDirectMemory() );
+        assertEquals( block1.size, memoryTracker.usedNativeMemory() );
 
         final MemoryBlock block2 = allocator.allocate( 256, memoryTracker );
         assertEquals( 256, block2.size );
         assertEquals( 256, block2.size );
-        assertEquals( block1.size + block2.size, memoryTracker.usedDirectMemory() );
+        assertEquals( block1.size + block2.size, memoryTracker.usedNativeMemory() );
 
         allocator.free( block1, memoryTracker );
         allocator.free( block2, memoryTracker );
-        assertEquals( 0, memoryTracker.usedDirectMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
     @ParameterizedTest
@@ -102,7 +102,7 @@ class CachingOffHeapBlockAllocatorTest
         verify( allocator, times( 2 ) ).allocateNew( eq( bytes ), any() );
         verify( allocator ).doFree( eq( block1 ), any() );
         verify( allocator ).doFree( eq( block2 ), any() );
-        assertEquals( 0, memoryTracker.usedDirectMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
     @ParameterizedTest
@@ -117,7 +117,7 @@ class CachingOffHeapBlockAllocatorTest
 
         verify( allocator ).allocateNew( eq( bytes ), any() );
         verify( allocator, never() ).doFree( any(), any() );
-        assertEquals( 0, memoryTracker.usedDirectMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
     @Test
@@ -134,13 +134,13 @@ class CachingOffHeapBlockAllocatorTest
 
         verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 64L ), any() );
         verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 128L ), any() );
-        assertEquals( (CACHE_SIZE + EXTRA) * (64 + 128), memoryTracker.usedDirectMemory() );
+        assertEquals( (CACHE_SIZE + EXTRA) * (64 + 128), memoryTracker.usedNativeMemory() );
 
         blocks64.forEach( it -> allocator.free( it, memoryTracker ) );
-        assertEquals( (CACHE_SIZE + EXTRA) * 128, memoryTracker.usedDirectMemory() );
+        assertEquals( (CACHE_SIZE + EXTRA) * 128, memoryTracker.usedNativeMemory() );
 
         blocks128.forEach( it -> allocator.free( it, memoryTracker ) );
-        assertEquals( 0, memoryTracker.usedDirectMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
 
         verify( allocator, times( EXTRA * 2 ) ).doFree( any(), any() );
     }

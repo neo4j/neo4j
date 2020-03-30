@@ -23,7 +23,7 @@ package org.neo4j.memory;
  * A pool of memory that consumers can reserve memory from.
  * <p>
  * You can also query the usage of it, with the contract that
- * {@code pool.used() + pool.free() == pool.totalSize()}
+ * {@code pool.totalUsed() + pool.free() == pool.totalSize()}
  *
  * @implNote There is no obligations for the implementation to verify
  *   that you don't release memory you don't own. It's up to the caller
@@ -37,14 +37,29 @@ public interface MemoryPool
      * @param bytes number of bytes to reserve
      * @throws HeapMemoryLimitExceeded if the are not enough free memory to fulfill the reservation
      */
-    void reserve( long bytes );
+    void reserveHeap( long bytes );
 
     /**
-     * Give back previously reserved memory. This will never throw.
+     * Grab a chunk of native memory. This method might throw if there is no available memory.
+     *
+     * @param bytes number of bytes to reserve
+     * @throws HeapMemoryLimitExceeded if the are not enough free memory to fulfill the reservation
+     */
+    void reserveNative( long bytes );
+
+    /**
+     * Give back previously reserved heap memory. This will never throw.
      *
      * @param bytes number of bytes to give back
      */
-    void release( long bytes );
+    void releaseHeap( long bytes );
+
+    /**
+     * Give back previously reserved native memory. This will never throw.
+     *
+     * @param bytes number of bytes to give back
+     */
+    void releaseNative( long bytes );
 
     /**
      * Returns the total size of this pool in bytes.
@@ -54,11 +69,25 @@ public interface MemoryPool
     long totalSize();
 
     /**
-     * Returns the number of reserved bytes.
+     * Returns the number of reserved heap bytes.
      *
      * @return the number or reserved bytes.
      */
-    long used();
+    long usedHeap();
+
+    /**
+     * Returns the number of reserved native bytes.
+     *
+     * @return the number or reserved bytes.
+     */
+    long usedNative();
+
+    /**
+     * Returns the number of total heap and native bytes.
+     *
+     * @return the total number or reserved bytes.
+     */
+    long totalUsed();
 
     /**
      * Returns the number of bytes that can still be reserved from this pool.

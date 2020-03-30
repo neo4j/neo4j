@@ -94,6 +94,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
@@ -469,9 +470,9 @@ class DatabaseRecoveryIT
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock() ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
                         pageCache1, fs1, logProvider, PageCacheTracer.NULL ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),

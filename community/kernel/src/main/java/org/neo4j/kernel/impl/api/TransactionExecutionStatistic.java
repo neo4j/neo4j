@@ -28,7 +28,7 @@ public class TransactionExecutionStatistic
     public static final TransactionExecutionStatistic NOT_AVAILABLE = new TransactionExecutionStatistic();
 
     private final Long heapAllocatedBytes;
-    private final Long directAllocatedBytes;
+    private final Long nativeAllocatedBytes;
     private final Long estimatedUsedHeapMemory;
     private final Long cpuTimeMillis;
     private final long waitTimeMillis;
@@ -40,7 +40,7 @@ public class TransactionExecutionStatistic
     private TransactionExecutionStatistic()
     {
         heapAllocatedBytes = null;
-        directAllocatedBytes = null;
+        nativeAllocatedBytes = null;
         estimatedUsedHeapMemory = null;
         cpuTimeMillis = null;
         waitTimeMillis = -1;
@@ -57,7 +57,7 @@ public class TransactionExecutionStatistic
         KernelTransactionImplementation.Statistics statistics = tx.getStatistics();
         this.waitTimeMillis = NANOSECONDS.toMillis( statistics.getWaitingTimeNanos( nowNanos ) );
         this.heapAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
-        this.directAllocatedBytes = nullIfNegative( statistics.usedDirectMemory() );
+        this.nativeAllocatedBytes = nullIfNegative( statistics.usedNativeMemory() );
         this.estimatedUsedHeapMemory = nullIfNegative( statistics.estimatedHeapMemory() );
         this.cpuTimeMillis = nullIfNegative( statistics.cpuTimeMillis() );
         this.pageFaults = statistics.totalTransactionPageCacheFaults();
@@ -76,9 +76,9 @@ public class TransactionExecutionStatistic
         return heapAllocatedBytes;
     }
 
-    public Long getDirectAllocatedBytes()
+    public Long getNativeAllocatedBytes()
     {
-        return directAllocatedBytes;
+        return nativeAllocatedBytes;
     }
 
     public Long getCpuTimeMillis()

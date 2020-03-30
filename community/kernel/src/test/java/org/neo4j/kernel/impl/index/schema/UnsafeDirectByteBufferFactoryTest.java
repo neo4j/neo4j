@@ -40,7 +40,7 @@ class UnsafeDirectByteBufferFactoryTest
             factory.allocate( bufferSize );
 
             // then
-            assertEquals( bufferSize, tracker.usedDirectMemory() );
+            assertEquals( bufferSize, tracker.usedNativeMemory() );
         }
     }
 
@@ -56,7 +56,7 @@ class UnsafeDirectByteBufferFactoryTest
         }
 
         // then
-        assertEquals( 0, tracker.usedDirectMemory() );
+        assertEquals( 0, tracker.usedNativeMemory() );
     }
 
     @Test
@@ -71,9 +71,9 @@ class UnsafeDirectByteBufferFactoryTest
         factory.close();
 
         // then
-        assertEquals( 0, tracker.usedDirectMemory() );
+        assertEquals( 0, tracker.usedNativeMemory() );
         factory.close();
-        assertEquals( 0, tracker.usedDirectMemory() );
+        assertEquals( 0, tracker.usedNativeMemory() );
     }
 
     @Test

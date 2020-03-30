@@ -47,15 +47,27 @@ public class MemoryGroupTracker implements NamedMemoryPool
     }
 
     @Override
-    public void reserve( long bytes )
+    public void reserveHeap( long bytes )
     {
-        pool.reserve( bytes );
+        pool.reserveHeap( bytes );
     }
 
     @Override
-    public void release( long bytes )
+    public void reserveNative( long bytes )
     {
-        pool.release( bytes );
+        pool.reserveNative( bytes );
+    }
+
+    @Override
+    public void releaseHeap( long bytes )
+    {
+        pool.releaseHeap( bytes );
+    }
+
+    @Override
+    public void releaseNative( long bytes )
+    {
+        pool.releaseNative( bytes );
     }
 
     @Override
@@ -65,9 +77,21 @@ public class MemoryGroupTracker implements NamedMemoryPool
     }
 
     @Override
-    public long used()
+    public long usedHeap()
     {
-        return pool.used();
+        return pool.usedHeap();
+    }
+
+    @Override
+    public long usedNative()
+    {
+        return pool.usedNative();
+    }
+
+    @Override
+    public long totalUsed()
+    {
+        return pool.totalUsed();
     }
 
     @Override
