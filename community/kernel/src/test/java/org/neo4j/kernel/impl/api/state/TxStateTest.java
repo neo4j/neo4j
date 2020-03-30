@@ -203,6 +203,84 @@ abstract class TxStateTest
     }
 
     @Test
+    void shouldGetAddedRelationshipsByType()
+    {
+        // GIVEN
+        state.relationshipDoCreate( 1, 1, 1, 1 );
+        state.relationshipDoCreate( 2, 1, 1, 1 );
+        state.relationshipDoCreate( 3, 2, 1, 1 );
+
+        // WHEN
+        LongSet addedRelationshipsWithType = state.relationshipsWithTypeChanged( 1 ).getAdded();
+
+        // THEN
+        assertEquals( newSetWith( 1, 2 ), addedRelationshipsWithType );
+    }
+
+    @Test
+    void shouldGetRemovedRelationshipsByType()
+    {
+        // GIVEN
+        state.relationshipDoDelete( 1, 1, 1, 1 );
+        state.relationshipDoDelete( 2, 1, 1, 1 );
+        state.relationshipDoDelete( 3, 2, 1, 1 );
+
+        // WHEN
+        LongSet removedRelationshipsWithType = state.relationshipsWithTypeChanged( 1 ).getRemoved();
+
+        // THEN
+        assertEquals( newSetWith( 1, 2 ), removedRelationshipsWithType );
+    }
+
+    @Test
+    void removeAddedRelationshipTypeShouldRemoveFromAdded()
+    {
+        // GIVEN
+        state.relationshipDoCreate( 1, 1, 1, 1 );
+        state.relationshipDoCreate( 2, 1, 1, 1 );
+        state.relationshipDoCreate( 3, 2, 1, 1 );
+
+        // WHEN
+        state.relationshipDoDelete( 2, 1, 1, 1 );
+        LongSet addedRelationshipsWithType = state.relationshipsWithTypeChanged( 1 ).getAdded();
+
+        // THEN
+        assertEquals( newSetWith( 1 ), addedRelationshipsWithType );
+    }
+
+    @Test
+    void addRemovedRelationshipTypeShouldRemoveFromRemoved()
+    {
+        // GIVEN
+        state.relationshipDoDelete( 1, 1, 1, 1 );
+        state.relationshipDoDelete( 2, 1, 1, 1 );
+        state.relationshipDoDelete( 3, 2, 1, 1 );
+
+        // WHEN
+        state.relationshipDoCreate( 2, 1, 1, 1 );
+        LongSet removedRelationshipsWithType = state.relationshipsWithTypeChanged( 1 ).getRemoved();
+
+        // THEN
+        assertEquals( newSetWith( 1 ), removedRelationshipsWithType );
+    }
+
+    @Test
+    void removeRelationshipAddedInThisTxShouldRemoveFromTypeChanges()
+    {
+        // GIVEN
+        state.relationshipDoCreate( 1, 1, 1, 1 );
+        state.relationshipDoCreate( 2, 1, 1, 1 );
+        state.relationshipDoCreate( 3, 2, 1, 1 );
+
+        // WHEN
+        state.relationshipDoDeleteAddedInThisTx( 2 );
+        LongSet addedRelationshipsWithType = state.relationshipsWithTypeChanged( 1 ).getAdded();
+
+        // THEN
+        assertEquals( newSetWith( 1 ), addedRelationshipsWithType );
+    }
+
+    @Test
     void shouldComputeIndexUpdatesOnUninitializedTxState()
     {
         // WHEN
@@ -949,6 +1027,18 @@ abstract class TxStateTest
     void getOrCreateLabelStateNodeDiffSets_useCollectionsFactory()
     {
         final MutableLongDiffSets diffSets = state.getOrCreateLabelStateNodeDiffSets(1);
+
+        diffSets.add( 1 );
+        diffSets.remove( 2 );
+
+        verify( collectionsFactory, times( 2 ) ).newLongSet( memoryTracker );
+        verifyNoMoreInteractions( collectionsFactory );
+    }
+
+    @Test
+    void getOrCreateTypeStateRelationshipDiffSets_useCollectionsFactory()
+    {
+        final MutableLongDiffSets diffSets = state.getOrCreateTypeStateRelationshipDiffSets(1);
 
         diffSets.add( 1 );
         diffSets.remove( 2 );

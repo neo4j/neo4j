@@ -58,6 +58,14 @@ public interface ReadableTransactionState
     LongDiffSets addedAndRemovedNodes();
 
     /**
+     * Returns all relationships that, in this tx, have had the type changed.
+     * This always happens as a result of creating or deleting a relationship.
+     *
+     * @param type The relationship type that has changed.
+     */
+    LongDiffSets relationshipsWithTypeChanged( int type );
+
+    /**
      * Returns rels that have been added and removed in this tx.
      */
     LongDiffSets addedAndRemovedRelationships();

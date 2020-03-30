@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityTokenClient;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
@@ -165,9 +164,8 @@ public class DefaultRelationshipTypeIndexCursor extends IndexCursor<IndexProgres
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
         {
-            LongDiffSets changes = read.txState().addedAndRemovedRelationships();
-            added = changes.getAdded().freeze().longIterator();
-            removed = changes.getRemoved().freeze();
+            added = read.txState().relationshipsWithTypeChanged( type ).getAdded().freeze().longIterator();
+            removed = read.txState().addedAndRemovedRelationships().getRemoved().freeze();
         }
         this.type = type;
         if ( tracer != null )

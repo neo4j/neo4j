@@ -82,6 +82,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private MutableLongObjectMap<MutableLongDiffSets> labelStatesMap;
     private MutableLongObjectMap<NodeStateImpl> nodeStatesMap;
+    private MutableLongObjectMap<MutableLongDiffSets> relationshipTypeStatesMap;
     private MutableLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
     private MutableLongObjectMap<TokenState> createdLabelTokens;
@@ -232,6 +233,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeDiffSets == null ? LongDiffSets.EMPTY : nodeDiffSets;
     }
 
+    @VisibleForTesting
+    MutableLongDiffSets getOrCreateTypeStateRelationshipDiffSets( int relationshipType )
+    {
+        if ( relationshipTypeStatesMap == null )
+        {
+            relationshipTypeStatesMap = HeapTrackingCollections.newLongObjectMap( memoryTracker );
+        }
+        return relationshipTypeStatesMap
+                .getIfAbsentPut( relationshipType, () -> HeapTrackingCollections.newMutableLongDiffSets( collectionsFactory, memoryTracker ) );
+    }
+
     @Override
     public LongDiffSets nodeStateLabelDiffSets( long nodeId )
     {
@@ -308,6 +320,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
+        getOrCreateTypeStateRelationshipDiffSets( relationshipTypeId ).add( id );
 
         dataChanged();
     }
@@ -341,6 +354,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 removed.clear();
             }
         }
+        getOrCreateTypeStateRelationshipDiffSets( type ).remove( id );
 
         dataChanged();
     }
@@ -561,6 +575,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = HeapTrackingCollections.newRemovalsCountingDiffSets( collectionsFactory, memoryTracker );
         }
         return nodes;
+    }
+
+    @Override
+    public LongDiffSets relationshipsWithTypeChanged( int type )
+    {
+        if ( relationshipTypeStatesMap == null )
+        {
+            return LongDiffSets.EMPTY;
+        }
+        MutableLongDiffSets relationshipDiffSets = relationshipTypeStatesMap.get( type );
+        return relationshipDiffSets == null ? LongDiffSets.EMPTY : relationshipDiffSets;
     }
 
     @Override
