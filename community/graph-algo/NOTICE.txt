@@ -30,6 +30,7 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
   Lucene QueryParsers
 
 Eclipse Distribution License - v 1.0

@@ -7,6 +7,7 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
   Lucene QueryParsers
 ------------------------------------------------------------------------------
 

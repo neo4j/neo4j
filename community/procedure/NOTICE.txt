@@ -31,6 +31,7 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
   Lucene QueryParsers
   parboiled-core
   parboiled-scala
