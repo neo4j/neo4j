@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -45,7 +46,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of distinct") {
@@ -61,7 +62,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of collect aggregation") {
@@ -77,7 +78,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of grouping aggregation - one large group") {
@@ -93,7 +94,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of grouping aggregation - many groups") {
@@ -109,7 +110,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of node hash join") {
@@ -125,7 +126,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 4, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 4, 1)
   }
 
   test("should profile memory of multi-column node hash join") {
@@ -144,7 +145,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 5, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
   }
 
   test("should profile memory of top n, where n < Int.MaxValue") {
@@ -160,7 +161,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of top n, where n > Int.MaxValue") {
@@ -176,12 +177,12 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   //noinspection SameParameterValue
-  protected def assertOnMemory(logicalQuery: LogicalQuery, numOperators: Int, allocatingOperators: Int*): Unit = {
-    val runtimeResult = profile(logicalQuery, runtime)
+  protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
+    val runtimeResult = profile(logicalQuery, runtime, input.stream())
     consume(runtimeResult)
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -217,7 +218,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of stdDev aggregation") {
@@ -234,7 +235,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of percentileDisc aggregation") {
@@ -251,7 +252,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of percentileCont aggregation") {
@@ -268,7 +269,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of distinct aggregation") {
@@ -285,7 +286,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
 
     // then
-    assertOnMemory(logicalQuery, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
   test("should profile memory of expand(into)") {
@@ -303,6 +304,21 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // then
-    assertOnMemory(logicalQuery, 5, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
   }
+
+  test("should profile memory of ordered distinct") {
+    val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+  }
+
 }
