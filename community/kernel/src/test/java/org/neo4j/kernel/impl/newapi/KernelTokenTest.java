@@ -32,9 +32,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.token.api.TokenNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

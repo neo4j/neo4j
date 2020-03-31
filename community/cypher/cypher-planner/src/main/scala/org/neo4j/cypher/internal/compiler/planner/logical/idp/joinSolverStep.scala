@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.joinSolverStep.VERBOSE
 import org.neo4j.cypher.internal.ir.PatternRelationship

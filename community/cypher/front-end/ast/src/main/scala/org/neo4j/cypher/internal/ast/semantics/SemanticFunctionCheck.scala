@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFunctionCheck.possibleTypes
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression

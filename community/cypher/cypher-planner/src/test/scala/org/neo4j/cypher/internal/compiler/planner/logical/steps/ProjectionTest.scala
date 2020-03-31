@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

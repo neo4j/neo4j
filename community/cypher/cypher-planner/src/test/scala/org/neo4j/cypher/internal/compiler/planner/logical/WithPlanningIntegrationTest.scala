@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SimplePatternLength

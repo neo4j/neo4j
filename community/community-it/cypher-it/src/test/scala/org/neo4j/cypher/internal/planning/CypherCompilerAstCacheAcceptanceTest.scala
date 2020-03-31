@@ -46,9 +46,9 @@ import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_1
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_1
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL

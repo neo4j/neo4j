@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.test_helpers
 
-import org.neo4j.cypher.internal.compiler.test_helpers.testRandomizer.setSeed
-
 import scala.util.Random
 
 case object testRandomizer extends Random {

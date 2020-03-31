@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.frontend.phases.rewriting.TestContext.mock
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.CypherExceptionFactory

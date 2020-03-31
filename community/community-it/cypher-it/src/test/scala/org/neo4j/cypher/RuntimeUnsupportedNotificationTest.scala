@@ -28,8 +28,6 @@ import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 
-import scala.language.reflectiveCalls
-
 class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
 
   test("Should say when an enterprise runtime is not supported on community") {

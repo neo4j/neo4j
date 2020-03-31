@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply

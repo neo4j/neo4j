@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                         runtime: CypherRuntime[CONTEXT]

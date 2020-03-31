@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.StatementHelper.fail
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature

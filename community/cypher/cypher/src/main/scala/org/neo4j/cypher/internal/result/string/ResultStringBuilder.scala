@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.result.string
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
@@ -55,7 +54,7 @@ object ResultStringBuilder {
     new ResultStringBuilder(columns, NoTransactionSupport)
 
   /**
-   * Create [[ResultStringBuilder]] which uses a [[QueryTransactionalContext]] to annotate if
+   * Create [[ResultStringBuilder]] which uses a [[org.neo4j.cypher.internal.runtime.QueryTransactionalContext]] to annotate if
    * entities have been deleted in this transaction.
    *
    * @param columns the result columns

@@ -37,10 +37,9 @@ import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.RelationshipReference
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-
-import scala.concurrent.ExecutionContext.global
 
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {

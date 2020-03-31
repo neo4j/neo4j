@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends {
