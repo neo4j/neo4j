@@ -519,4 +519,19 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("c").withRows(Seq(Array(inputRows.size)))
   }
+
+  test("single row rhs, aggregation on top") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("s")
+      .aggregation(Seq.empty, Seq("count(*) AS s"))
+      .antiSemiApply()
+      .|.argument()
+      .argument()
+      .build()
+
+    // then
+    val result = execute(logicalQuery, runtime)
+    result should beColumns("s").withSingleRow(0)
+  }
 }
