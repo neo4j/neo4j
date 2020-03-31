@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -109,8 +108,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, indexSession.reader );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
         indexSession.reader.query( this, withFullPrecision, constraints, cursorTracer, query );
     }
 
@@ -129,38 +127,6 @@ abstract class Read implements TxStateHolder,
         client.setRead( this );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
         reader.query( this, withFullPrecision, constraints, cursorTracer, query );
-    }
-
-    private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode, IndexDescriptor index )
-    {
-        SchemaDescriptor schema = index.schema();
-        int[] propertyIds = schema.getPropertyIds();
-
-        boolean allowsForAllLabels = true;
-        for ( int prop : propertyIds )
-        {
-            allowsForAllLabels &= accessMode.allowsReadPropertyAllLabels( prop ) && accessMode.allowsTraverseAllLabels();
-        }
-
-        if ( schema.entityType().equals( EntityType.NODE ) && !allowsForAllLabels )
-        {
-            for ( int prop : propertyIds )
-            {
-                for ( int label : schema.getEntityTokenIds() )
-                {
-                    if ( !accessMode.allowsTraverseAllNodesWithLabel( label ) || accessMode.disallowsReadPropertyForSomeLabel( prop ) ||
-                            !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
-                    {
-                        // We need to filter the index result if the property is not allowed on some label
-                        // since the nodes in the index might have both an allowed and a disallowed label for the property
-                        return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor( cursorTracer ), this, accessMode );
-                    }
-                }
-            }
-        }
-
-        // everything in this index is whitelisted
-        return cursor;
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
@@ -273,8 +239,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
-        IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference );
-        indexSession.reader.query( this, withSecurity, constraints, cursorTracer, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, cursorImpl, constraints, cursorTracer, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

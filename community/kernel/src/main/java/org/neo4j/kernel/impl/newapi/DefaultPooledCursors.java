@@ -41,6 +41,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultPropertyCursor propertyCursor;
     private FullAccessPropertyCursor fullAccessPropertyCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
+    private FullAccessNodeValueIndexCursor fullAccessNodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultNodeLabelIndexCursor fullAccessNodeLabelIndexCursor;
     private DefaultRelationshipIndexCursor relationshipIndexCursor;
@@ -279,6 +280,34 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
+    public FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
+    {
+        if ( fullAccessNodeValueIndexCursor == null )
+        {
+            return trace( new FullAccessNodeValueIndexCursor( this::acceptFullAccess ) );
+        }
+
+        try
+        {
+            return fullAccessNodeValueIndexCursor;
+        }
+        finally
+        {
+            fullAccessNodeValueIndexCursor = null;
+        }
+    }
+
+    private void acceptFullAccess( DefaultNodeValueIndexCursor cursor )
+    {
+        if ( fullAccessNodeValueIndexCursor != null )
+        {
+            fullAccessNodeValueIndexCursor.release();
+        }
+        cursor.removeTracer();
+        fullAccessNodeValueIndexCursor = (FullAccessNodeValueIndexCursor) cursor;
+    }
+
+    @Override
     public DefaultNodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
         if ( nodeLabelIndexCursor == null )
@@ -430,6 +459,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeValueIndexCursor.release();
             nodeValueIndexCursor = null;
+        }
+        if ( fullAccessNodeValueIndexCursor != null )
+        {
+            fullAccessNodeValueIndexCursor.release();
+            fullAccessNodeValueIndexCursor = null;
         }
         if ( nodeLabelIndexCursor != null )
         {

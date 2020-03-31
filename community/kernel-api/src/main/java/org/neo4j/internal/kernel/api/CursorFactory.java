@@ -51,6 +51,8 @@ public interface CursorFactory
 
     NodeValueIndexCursor allocateNodeValueIndexCursor();
 
+    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor();
+
     NodeLabelIndexCursor allocateNodeLabelIndexCursor();
 
     NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor();
