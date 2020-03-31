@@ -34,6 +34,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class ReadTestSupport implements KernelAPIReadTestSupport
 {
@@ -47,13 +48,20 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     }
 
     @Override
-    public void setup( File storeDir, Consumer<GraphDatabaseService> create )
+    public void setup( File storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate )
     {
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
         databaseManagementServiceBuilder.setConfig( settings );
         managementService = databaseManagementServiceBuilder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService sysDb = managementService.database( SYSTEM_DATABASE_NAME );
         create.accept( db );
+        sysCreate.accept( sysDb );
+    }
+
+    protected DatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+    {
+        return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
     }
 
     @Override
