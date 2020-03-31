@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
@@ -93,8 +94,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          evaluator = null,
                                          innerVariableNamer = innerVariableNamer,
                                          params )
-    CompilationPhases.parsing(sequencer, context.innerVariableNamer, compatibilityMode, parameterTypeMapping = context.getParameterValueTypeMapping)
-      .transform(startState, context)
+    CompilationPhases.parsing(ParsingConfig(
+      sequencer, context.innerVariableNamer, compatibilityMode, parameterTypeMapping = context.getParameterValueTypeMapping
+    )).transform(startState, context)
   }
 
 }

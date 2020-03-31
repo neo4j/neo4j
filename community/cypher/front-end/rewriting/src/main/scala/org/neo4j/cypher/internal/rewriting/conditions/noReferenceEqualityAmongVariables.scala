@@ -24,7 +24,8 @@ case object noReferenceEqualityAmongVariables extends Condition {
   def apply(that: Any): Seq[String] = {
     val ids = collectNodesOfType[Variable].apply(that).map(Ref[Variable])
     ids.groupBy(x => x).collect {
-      case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
+      case (id, others) if others.size > 1 =>
+        s"The instance ${id.value} is used ${others.size} times"
     }.toIndexedSeq
   }
 

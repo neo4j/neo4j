@@ -70,7 +70,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
  */
 case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends InputQuery {
 
-  override lazy val description: String = FullyParsedQuery.prettify(this)
+  override lazy val description: String = state.queryText
 
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 

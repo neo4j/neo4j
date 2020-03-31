@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
@@ -127,7 +128,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    parsing(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty) andThen
+    parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty)) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads)
   }

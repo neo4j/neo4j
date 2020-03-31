@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -83,10 +84,10 @@ import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 
 case class ExpressionStringifier(
-  extender: Expression => String = failingExtender,
-  alwaysParens: Boolean = false,
-  alwaysBacktick: Boolean = false,
-  preferSingleQuotes: Boolean = false
+  extension: ExpressionStringifier.Extension,
+  alwaysParens: Boolean,
+  alwaysBacktick: Boolean,
+  preferSingleQuotes: Boolean
 ) {
 
   val patterns = PatternStringifier(this)
@@ -102,11 +103,13 @@ case class ExpressionStringifier(
 
   private def inner(outer: Expression)(inner: Expression): String = {
     val str = stringify(inner)
+
     def parens = (binding(outer), binding(inner)) match {
-      case (_, Syntactic) => false
-      case (Syntactic, _) => false
+      case (_, Syntactic)                 => false
+      case (Syntactic, _)                 => false
       case (Precedence(o), Precedence(i)) => i >= o
     }
+
     if (alwaysParens || parens) "(" + str + ")"
     else str
   }
@@ -281,8 +284,11 @@ case class ExpressionStringifier(
         val i = inner(ast)(r)
         s"-$i"
 
+      case CoerceTo(expr, typ) =>
+        apply(expr)
+
       case _ =>
-        extender(ast)
+        extension(this)(ast)
     }
   }
 
@@ -359,6 +365,7 @@ case class ExpressionStringifier(
 
   def backtick(txt: String): String = {
     def escaped = txt.replaceAll("`", "``")
+
     if (alwaysBacktick)
       s"`$escaped`"
     else {
@@ -386,6 +393,23 @@ case class ExpressionStringifier(
 }
 
 object ExpressionStringifier {
+
+  def apply(
+    extender: Expression => String = failingExtender,
+    alwaysParens: Boolean = false,
+    alwaysBacktick: Boolean = false,
+    preferSingleQuotes: Boolean = false
+  ): ExpressionStringifier = ExpressionStringifier(Extension.simple(extender), alwaysParens, alwaysBacktick, preferSingleQuotes)
+
+  trait Extension {
+    def apply(ctx: ExpressionStringifier)(expression: Expression): String
+  }
+
+  object Extension {
+    def simple(func: Expression => String): Extension = new Extension {
+      def apply(ctx: ExpressionStringifier)(expression: Expression): String = func(expression)
+    }
+  }
 
   val failingExtender: Expression => String =
     e => throw new IllegalStateException(s"failed to pretty print $e")

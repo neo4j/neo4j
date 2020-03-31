@@ -26,6 +26,7 @@ import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -45,7 +46,7 @@ class InputQueryTest extends CypherFunSuite {
       0)
 
   private def parser =
-    CompilationPhases.parsing(RewriterStepSequencer.newPlain, new GeneratingNamer)
+    CompilationPhases.parsing(ParsingConfig(RewriterStepSequencer.newPlain, new GeneratingNamer))
 
   private def toPreParsedQuery(queryString: String) =
     preParser.preParseQuery(queryString)

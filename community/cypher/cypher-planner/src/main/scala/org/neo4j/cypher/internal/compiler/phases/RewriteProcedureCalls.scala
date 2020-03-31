@@ -98,7 +98,9 @@ trait RewriteProcedureCalls {
         distinct = false,
         returnItems = ReturnItems(
           includeExisting = false,
-          items = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
+          items = newResolved.callResults.map(item => AliasedReturnItem(
+            item.variable.copyId,
+            item.variable.copyId)(resolved.position))
         )(resolved.position),
         None, None, None
       )(resolved.position)
@@ -129,7 +131,7 @@ case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver) extend
 
   override def process(from: BaseState, context: BaseContext): BaseState = process(from, resolver)
 
-  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+  override def postConditions: Set[Condition] = Set()
 
   override def resolveProcedure(resolver: ProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause =
     Try(super.resolveProcedure(resolver, unresolved)).getOrElse(unresolved)

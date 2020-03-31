@@ -151,11 +151,14 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
-case class Prettifier(expr: ExpressionStringifier) {
+case class Prettifier(
+  expr: ExpressionStringifier,
+  extension: Prettifier.ClausePrettifier = Prettifier.EmptyExtension
+) {
 
   private val NL = System.lineSeparator()
 
-  private val base = QueryPrettifier()
+  private val base = IndentingQueryPrettifier()
 
   def asString(statement: Statement): String = statement match {
     case q: Query =>
@@ -392,10 +395,9 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"CATALOG DROP VIEW $graphName"
   }
 
-  private case class QueryPrettifier(indentLevel: Int = 0) {
-    def indented(): QueryPrettifier = copy(indentLevel + 1)
-
-    private val INDENT = "  " * indentLevel
+  private case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
+    def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)
+    val INDENT: String = "  " * indentLevel
 
     private def asNewLine(l: String) = NL + l
 
@@ -430,7 +432,9 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
     }
 
-    private def dispatch(clause: Clause) = clause match {
+    def asString(clause: Clause): String = dispatch(clause)
+
+    private def dispatch(clause: Clause): String = clause match {
       case u: UseGraph       => asString(u)
       case f: FromGraph      => asString(f)
       case e: Return         => asString(e)
@@ -447,8 +451,13 @@ case class Prettifier(expr: ExpressionStringifier) {
       case l: LoadCSV        => asString(l)
       case f: Foreach        => asString(f)
       case s: Start          => asString(s)
-      case _                 => clause.asCanonicalStringVal // TODO
+      case c =>
+        val ext = extension.asString(this)
+        ext.applyOrElse(c, fallback)
     }
+
+    private def fallback(clause: Clause): String =
+      clause.asCanonicalStringVal
 
     def asString(u: UseGraph): String =
       s"${INDENT}USE ${expr(u.expression)}"
@@ -636,6 +645,19 @@ case class Prettifier(expr: ExpressionStringifier) {
 }
 
 object Prettifier {
+
+  trait QueryPrettifier {
+    def INDENT: String
+    def asString(clause: Clause): String
+  }
+
+  trait ClausePrettifier {
+    def asString(ctx: QueryPrettifier): PartialFunction[Clause, String]
+  }
+
+  object EmptyExtension extends ClausePrettifier {
+    def asString(ctx: QueryPrettifier): PartialFunction[Clause, String] = PartialFunction.empty
+  }
 
   def extractScope(scope: ShowPrivilegeScope): String = {
     scope match {

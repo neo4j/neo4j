@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.Cypher9Comparability
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
@@ -48,11 +49,13 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Additions
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
@@ -63,17 +66,28 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {
 
+  val defaultSemanticFeatures = Seq(
+    Cypher9Comparability,
+    MultipleDatabases,
+    CorrelatedSubQueries,
+  )
+
+  case class ParsingConfig(
+    sequencer: String => RewriterStepSequencer,
+    innerVariableNamer: InnerVariableNamer,
+    compatibilityMode: CypherCompatibilityVersion = Compatibility4_1,
+    literalExtraction: LiteralExtraction = IfNoParameter,
+    parameterTypeMapping: Map[String, CypherType] = Map.empty,
+    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+  )
+
   // Phase 1
-  def parsing(sequencer: String => RewriterStepSequencer,
-              innerVariableNamer: InnerVariableNamer,
-              compatibilityMode: CypherCompatibilityVersion = Compatibility4_1,
-              literalExtraction: LiteralExtraction = IfNoParameter,
-              parameterTypeMapping: Map[String, CypherType] = Map.empty
-             ): Transformer[BaseContext, BaseState, BaseState] = {
-    def compatibilityCheck(compatibilityMode: CypherCompatibilityVersion, base: Transformer[BaseContext, BaseState, BaseState]): Transformer[BaseContext, BaseState, BaseState] =
-      compatibilityMode match {
+  def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+    val parse = Parsing.adds(BaseContains[Statement])
+    val parseAndCompatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
+      config.compatibilityMode match {
         case Compatibility3_5 =>
-          base andThen
+          parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_0) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
@@ -81,21 +95,30 @@ object CompilationPhases {
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
         case Compatibility4_0 =>
-          base andThen
+          parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
-        case Compatibility4_1 => base
+        case Compatibility4_1 =>
+          parse
       }
 
-    val base = Parsing.adds(BaseContains[Statement])
-
-    compatibilityCheck(compatibilityMode, base) andThen
+    parseAndCompatibilityCheck andThen
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
-      SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer, parameterTypeMapping = parameterTypeMapping)
+      parsingFinal(config)
+
   }
+
+  def parsingFinal(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState]) andThen
+      AstRewriting(config.sequencer, config.literalExtraction, innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping)
+
+  // Phase 2 (Fabric alternative)
+  def prepareForFabric(resolver: ProcedureSignatureResolver, config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
+    TryRewriteProcedureCalls(resolver) andThen
+      ObfuscationMetadataCollection andThen
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
 
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
@@ -105,19 +128,23 @@ object CompilationPhases {
       ObfuscationMetadataCollection
 
   // Phase 3
-  def planPipeLine(sequencer: String => RewriterStepSequencer, pushdownPropertyReads: Boolean = true): Transformer[PlannerContext, BaseState, LogicalPlanState] =
+  def planPipeLine(
+    sequencer: String => RewriterStepSequencer,
+    pushdownPropertyReads: Boolean = true,
+    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+  ): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-        SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
+        SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
           Namespacer andThen
           isolateAggregation andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
+          SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
           Namespacer andThen
           transitiveClosure andThen
           rewriteEqualityToInPredicate andThen
           CNFNormalizer andThen
           LateAstRewriting andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases, CorrelatedSubQueries) andThen
+          SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
           ResolveTokens andThen
           CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
           OptionalMatchRemover andThen
