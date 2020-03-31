@@ -1150,7 +1150,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
             constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor() );
@@ -1167,7 +1167,7 @@ public class Operations implements Write, SchemaWrite
         ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
             constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema );

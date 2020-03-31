@@ -46,6 +46,7 @@ public class StubCursorFactory implements CursorFactory
     private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
     private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
     private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
+    private Queue<NodeLabelIndexCursor> fullNodeLabelIndexCursors = new LinkedList<>();
     private Queue<RelationshipIndexCursor> relationshipIndexCursors = new LinkedList<>();
 
     public StubCursorFactory()
@@ -116,6 +117,12 @@ public class StubCursorFactory implements CursorFactory
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
         return poll( nodeLabelIndexCursors );
+    }
+
+    @Override
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
+    {
+        return poll( fullNodeLabelIndexCursors );
     }
 
     @Override
