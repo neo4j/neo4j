@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
-import java.lang.reflect.Method
-
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
@@ -29,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
@@ -39,20 +38,17 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
 
   override def propertyKey: PropertyKeyName = prop.propertyKey
 
-  override def dup(children: Seq[AnyRef]): this.type = {
-    val constructor = Rewritable.copyConstructor(this)
-    val args = children.toVector
-
-    require(allRewritten(children, constructor, args), s"Unexpected rewrite children $children")
-
-
-    val ctorArgs = args :+ prop // Add the original Property expression
-    val duped = constructor.invoke(this, ctorArgs: _*)
-    duped.asInstanceOf[this.type]
-  }
-
-  private def allRewritten(children: scala.Seq[AnyRef], constructor: Method, args: Vector[AnyRef]): Boolean = {
-    val params = constructor.getParameterTypes
-    params.length == args.length + 1 && classOf[LogicalProperty].isAssignableFrom(params.last)
-  }
+  override def dup(children: Seq[AnyRef]): this.type =
+    if (children.iterator eqElements this.children)
+      this
+    else {
+      val constructor = Rewritable.copyConstructor(this)
+      val params = constructor.getParameterTypes
+      val args = children.toVector
+      val hasExtraParam = params.length == args.length + 1
+      val lastParamIsProperty = classOf[LogicalProperty].isAssignableFrom(params.last)
+      val ctorArgs = if (hasExtraParam && lastParamIsProperty) args :+ prop else args
+      val duped = constructor.invoke(this, ctorArgs: _*)
+      duped.asInstanceOf[this.type]
+    }
 }
