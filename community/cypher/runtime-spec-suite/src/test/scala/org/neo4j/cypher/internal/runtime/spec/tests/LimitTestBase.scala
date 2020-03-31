@@ -972,11 +972,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     runtimeResult should beColumns("a1").withRows(singleColumn(aNodes))
   }
-}
-
-// Supported by all non-parallel runtimes
-trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
-  self: LimitTestBase[CONTEXT] =>
 
   test("should support limit under apply, with multiple input-rows per argument with random connections") {
     val nodeConnections = given {
@@ -1063,10 +1058,8 @@ trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.flatMap(List.fill(rhsLimit)(_)).take(topLimit)
-
     withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
-      runtimeResult should beColumns("a").withRows(singleColumn(expected))
+      runtimeResult should beColumns("a").withRows(rowCount(topLimit))
     }
   }
 
@@ -1096,10 +1089,8 @@ trait NonParallelLimitTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.flatMap(List.fill(rhsLimit)(_)).take(topLimit)
-
     withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
-      runtimeResult should beColumns("a").withRows(singleColumn(expected))
+      runtimeResult should beColumns("a").withRows(rowCount(topLimit))
     }
   }
 }
