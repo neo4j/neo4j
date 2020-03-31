@@ -70,6 +70,11 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  */
 public class PublicApiAnnotationProcessor extends AbstractProcessor
 {
+    /**
+     * This should be enabled from the build system
+     */
+    static final String VERIFY_TOGGLE = "enablePublicApiSignatureCheck";
+
     private final Set<String> publicElements = new TreeSet<>();
     private final Set<String> validatedDeclaredTypes = new HashSet<>();
     private final List<String> scope = new ArrayList<>();
@@ -143,6 +148,12 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
 
     private void generateSignature() throws IOException
     {
+        // only verify on request
+        if ( !Boolean.getBoolean( VERIFY_TOGGLE ) )
+        {
+            return;
+        }
+
         if ( !publicElements.isEmpty() )
         {
             StringBuilder sb = new StringBuilder();
