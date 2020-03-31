@@ -25,9 +25,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScan;
 import org.neo4j.internal.index.label.TokenScanReader;
-import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -42,7 +40,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -304,88 +301,8 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        IndexProgressor indexProgressor;
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( accessMode.allowsTraverseAllNodesWithLabel( label ) )
-        {
-            // all nodes will be allowed
-            TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-            indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer );
-        }
-        else if ( accessMode.disallowsTraverseLabel( label ) )
-        {
-            // no nodes of this label will be allowed
-            indexProgressor = IndexProgressor.EMPTY;
-        }
-        else
-        {
-            // some nodes of this label might be blocked. we need to filter
-            TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-            indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ), cursorTracer );
-        }
-        // TODO: When we have a blacklisted label, perhaps we should not consider labels added within the current transaction
-        indexCursor.scan( indexProgressor, label );
-    }
-
-    IndexProgressor.EntityTokenClient filteringNodeLabelClient( IndexProgressor.EntityTokenClient inner, AccessMode accessMode )
-    {
-        return new FilteringEntityTokenClient( inner, accessMode );
-    }
-
-    private class FilteringEntityTokenClient extends DefaultCloseListenable implements IndexProgressor.EntityTokenClient, AutoCloseablePlus
-    {
-        private FullAccessNodeCursor node;
-        private final IndexProgressor.EntityTokenClient inner;
-        private final AccessMode accessMode;
-
-        private FilteringEntityTokenClient( IndexProgressor.EntityTokenClient inner, AccessMode accessMode )
-        {
-            this.inner = inner;
-            this.accessMode = accessMode;
-            this.node = Read.this.cursors.allocateFullAccessNodeCursor( cursorTracer );
-        }
-
-        @Override
-        public boolean acceptEntity( long reference, TokenSet tokens )
-        {
-            if ( tokens == null )
-            {
-                node.single( reference, Read.this );
-                if ( !node.next() )
-                {
-                    return false;
-                }
-                tokens = node.labelsIgnoringTxStateSetRemove();
-            }
-            return inner.acceptEntity( reference, tokens ) && accessMode.allowsTraverseNode( tokens.all() );
-        }
-
-        @Override
-        public void close()
-        {
-            closeInternal();
-            var listener = closeListener;
-            if ( listener != null )
-            {
-                listener.onClosed( this );
-            }
-        }
-
-        @Override
-        public void closeInternal()
-        {
-            if ( !isClosed() )
-            {
-                node.close();
-                node = null;
-            }
-        }
-
-        @Override
-        public boolean isClosed()
-        {
-            return node == null;
-        }
+        TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
+        indexCursor.scan( labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer ), label );
     }
 
     @Override

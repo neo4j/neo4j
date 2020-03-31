@@ -133,6 +133,14 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
+    {
+        NodeLabelIndexCursor n = cursors.allocateFullAccessNodeLabelIndexCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor();

@@ -25,6 +25,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityTokenClient;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -41,6 +42,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     private LongSet removed;
 
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
+    private AccessMode accessMode;
 
     DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
     {
@@ -74,7 +76,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     {
         return ( reference, labels ) ->
         {
-            if ( isRemoved( reference ) )
+            if ( isRemoved( reference ) || !allowed( reference, labels ) )
             {
                 return false;
             }
@@ -86,6 +88,23 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
                 return true;
             }
         };
+    }
+
+    protected boolean allowed( long reference, TokenSet labels )
+    {
+        if ( labels == null )
+        {
+            try ( NodeCursor node = read.cursors.allocateNodeCursor() )
+            {
+                read.singleNode( reference, node );
+                return node.next();
+            }
+        }
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+        return accessMode.allowsTraverseNode( labels.all() );
     }
 
     @Override
