@@ -127,8 +127,7 @@ abstract class Read implements TxStateHolder,
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         IndexReader reader = indexReader( index, false );
         client.setRead( this );
-        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
         reader.query( this, withFullPrecision, constraints, cursorTracer, query );
     }
 
@@ -155,22 +154,6 @@ abstract class Read implements TxStateHolder,
                         // We need to filter the index result if the property is not allowed on some label
                         // since the nodes in the index might have both an allowed and a disallowed label for the property
                         return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor( cursorTracer ), this, accessMode );
-                    }
-                }
-            }
-        }
-
-        if ( schema.entityType().equals( EntityType.RELATIONSHIP ) )
-        {
-            for ( int prop : propertyIds )
-            {
-                for ( int relType : schema.getEntityTokenIds() )
-                {
-                    if ( !accessMode.allowsTraverseAllLabels() || !accessMode.allowsTraverseRelType( relType ) ||
-                            !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
-                    {
-                        return new RelationshipSecurityFilter( propertyIds, cursor, cursors.allocateRelationshipScanCursor( cursorTracer ),
-                                this, accessMode );
                     }
                 }
             }
