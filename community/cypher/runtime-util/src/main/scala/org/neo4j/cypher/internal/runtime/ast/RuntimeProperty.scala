@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.runtime.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalProperty, PropertyKeyName}
-import org.neo4j.cypher.internal.v4_0.util.AssertionUtils.ifAssertionsEnabled
+import org.neo4j.cypher.internal.v4_0.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewritable}
-import org.neo4j.exceptions.InternalException
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
@@ -34,19 +33,17 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
 
   override def propertyKey: PropertyKeyName = prop.propertyKey
 
-  override def dup(children: Seq[AnyRef]): this.type = {
-    val constructor = Rewritable.copyConstructor(this)
-    val args = children.toVector
-
-    ifAssertionsEnabled {
+  override def dup(children: Seq[AnyRef]): this.type =
+    if (children.iterator eqElements this.children)
+      this
+    else {
+      val constructor = Rewritable.copyConstructor(this)
       val params = constructor.getParameterTypes
-      val ok = params.length == args.length + 1 && classOf[LogicalProperty].isAssignableFrom(params.last)
-      if (!ok)
-        throw new InternalException(s"Unexpected rewrite children $children")
+      val args = children.toVector
+      val hasExtraParam = params.length == args.length + 1
+      val lastParamIsProperty = classOf[LogicalProperty].isAssignableFrom(params.last)
+      val ctorArgs = if (hasExtraParam && lastParamIsProperty) args :+ prop else args
+      val duped = constructor.invoke(this, ctorArgs: _*)
+      duped.asInstanceOf[this.type]
     }
-
-    val ctorArgs = args :+ prop // Add the original Property expression
-    val duped = constructor.invoke(this, ctorArgs: _*)
-    duped.asInstanceOf[this.type]
-  }
 }
