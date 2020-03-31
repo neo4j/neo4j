@@ -176,7 +176,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     /**
-     * If the current user is allowed to traverse all labels used in this index and read the queried properties no matter what label
+     * If the current user is allowed to traverse all labels used in this index and read the properties no matter what label
      * the node has, we can skip checking on every node we get back.
      */
     private boolean setupSecurity( IndexDescriptor descriptor )
@@ -185,15 +185,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             accessMode = read.ktx.securityContext().mode();
         }
-
-        if ( stream( query ).anyMatch( q -> q.type() == IndexQuery.IndexQueryType.fulltextSearch ) )
-        {
-            propertyIds = descriptor.schema().getPropertyIds();
-        }
-        else
-        {
-            propertyIds = stream( query ).mapToInt( IndexQuery::propertyKeyId ).toArray();
-        }
+        propertyIds = descriptor.schema().getPropertyIds();
 
         for ( int label : descriptor.schema().getEntityTokenIds() )
         {

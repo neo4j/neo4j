@@ -127,7 +127,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     }
 
     /**
-     * If the current user is allowed to traverse all relationships  nodes and read the queried properties no matter what label
+     * If the current user is allowed to traverse all relationships  nodes and read the properties no matter what label
      * the node has, we can skip checking on every node we get back.
      */
     private boolean setupSecurity( IndexDescriptor descriptor, IndexQuery[] query )
@@ -136,16 +136,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
         {
             accessMode = read.ktx.securityContext().mode();
         }
-
-        if ( stream( query ).anyMatch( q -> q.type() == IndexQuery.IndexQueryType.fulltextSearch ) )
-        {
-            // because there is a fulltext query here we don't know which properties are being used, thus require read access on all properties in the index
-            propertyIds = descriptor.schema().getPropertyIds();
-        }
-        else
-        {
-            propertyIds = stream( query ).mapToInt( IndexQuery::propertyKeyId ).toArray();
-        }
+        propertyIds = descriptor.schema().getPropertyIds();
 
         for ( int relType : descriptor.schema().getEntityTokenIds() )
         {
