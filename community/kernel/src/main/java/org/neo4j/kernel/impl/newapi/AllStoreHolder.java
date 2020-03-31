@@ -357,7 +357,26 @@ public class AllStoreHolder extends Read
                 return true;
             }
         }
-        return storageReader.relationshipExists( reference, cursorTracer );
+        AccessMode mode = ktx.securityContext().mode();
+        boolean existsInRelStore = storageReader.relationshipExists( reference, cursorTracer );
+
+        if ( mode.allowsTraverseAllRelTypes() )
+        {
+            return existsInRelStore;
+        }
+        else if ( !existsInRelStore )
+        {
+            return false;
+        }
+        else
+        {
+            // DefaultNodeCursor already contains traversal checks within next()
+            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorTracer ) )
+            {
+                ktx.dataRead().singleRelationship( reference, rels );
+                return rels.next();
+            }
+        }
     }
 
     @Override

@@ -42,6 +42,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private LongIterator addedRelationships;
     private long originNodeReference;
     private RelationshipSelection selection;
+    private AccessMode mode;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
             PageCursorTracer cursorTracer )
@@ -145,8 +146,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
-            AccessMode mode = read.ktx.securityContext().mode();
-            if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
+            if ( !skip && allowed() )
             {
                 return true;
             }
@@ -166,6 +166,15 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     {
         storeCursor.removeTracer();
         super.removeTracer();
+    }
+
+    private boolean allowed()
+    {
+        if ( mode == null )
+        {
+            mode = read.ktx.securityContext().mode();
+        }
+        return mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode );
     }
 
     private boolean allowedToSeeEndNode( AccessMode mode )
