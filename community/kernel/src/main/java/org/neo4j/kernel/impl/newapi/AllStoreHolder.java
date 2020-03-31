@@ -714,17 +714,13 @@ public class AllStoreHolder extends Read
     @Override
     public long nodesGetCount( )
     {
-        ktx.assertOpen();
-        long base = storageReader.nodesGetCount( cursorTracer );
-        return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedNodes().delta() : base;
+        return countsForNode( TokenRead.ANY_LABEL );
     }
 
     @Override
     public long relationshipsGetCount( )
     {
-        ktx.assertOpen();
-        long base = storageReader.relationshipsGetCount();
-        return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedRelationships().delta() : base;
+        return countsForRelationship( TokenRead.ANY_LABEL, TokenRead.ANY_RELATIONSHIP_TYPE, TokenRead.ANY_LABEL );
     }
 
     @Override
