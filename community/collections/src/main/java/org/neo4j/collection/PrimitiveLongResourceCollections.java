@@ -54,7 +54,7 @@ public class PrimitiveLongResourceCollections
 
     public static PrimitiveLongResourceIterator concat( Iterable<PrimitiveLongResourceIterator> primitiveLongResourceIterators )
     {
-        return new PrimitiveLongConcatingResourceIterator( primitiveLongResourceIterators );
+        return new PrimitiveLongConcatenatingResourceIterator( primitiveLongResourceIterators );
     }
 
     public abstract static class AbstractPrimitiveLongBaseResourceIterator extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
@@ -78,13 +78,13 @@ public class PrimitiveLongResourceCollections
         }
     }
 
-    private static final class PrimitiveLongConcatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcatingIterator
+    private static final class PrimitiveLongConcatenatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcaternatingIterator
             implements PrimitiveLongResourceIterator
     {
         private final Iterable<PrimitiveLongResourceIterator> iterators;
         private volatile boolean closed;
 
-        private PrimitiveLongConcatingResourceIterator( Iterable<PrimitiveLongResourceIterator> iterators )
+        private PrimitiveLongConcatenatingResourceIterator( Iterable<PrimitiveLongResourceIterator> iterators )
         {
             super( iterators.iterator() );
             this.iterators = iterators;

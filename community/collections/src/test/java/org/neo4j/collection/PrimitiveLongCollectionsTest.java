@@ -48,6 +48,16 @@ import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 class PrimitiveLongCollectionsTest
 {
     @Test
+    void singleIterator()
+    {
+        LongIterator iterator = PrimitiveLongCollections.single( 42 );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 42, iterator.next() );
+        assertFalse( iterator.hasNext() );
+        assertThrows( NoSuchElementException.class, iterator::next );
+    }
+
+    @Test
     void arrayOfItemsAsIterator()
     {
         // GIVEN

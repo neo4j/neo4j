@@ -24,15 +24,15 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
@@ -47,7 +47,8 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 class DefaultNodeCursor extends TraceableCursor implements NodeCursor
 {
     Read read;
-    HasChanges hasChanges = HasChanges.MAYBE;
+    boolean checkHasChanges;
+    boolean hasChanges;
     private LongIterator addedNodes;
     StorageNodeCursor storeCursor;
     private long currentAddedInTx;
@@ -68,7 +69,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         this.read = read;
         this.single = NO_ID;
         this.currentAddedInTx = NO_ID;
-        this.hasChanges = HasChanges.MAYBE;
+        this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         if ( tracer != null )
         {
@@ -81,7 +82,8 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         this.read = read;
         this.single = NO_ID;
         this.currentAddedInTx = NO_ID;
-        this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
+        this.checkHasChanges = false;
+        this.hasChanges = hasChanges;
         this.addedNodes = addedNodes;
         boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
         return addedNodes.hasNext() || scanBatch;
@@ -93,7 +95,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         this.read = read;
         this.single = reference;
         this.currentAddedInTx = NO_ID;
-        this.hasChanges = HasChanges.MAYBE;
+        this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
@@ -325,7 +327,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         if ( !isClosed() )
         {
             read = null;
-            hasChanges = HasChanges.MAYBE;
+            checkHasChanges = true;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.reset();
             accessMode = null;
@@ -346,34 +348,27 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
      */
     boolean hasChanges()
     {
-        switch ( hasChanges )
+        if ( checkHasChanges )
         {
-        case MAYBE:
-            boolean changes = read.hasTxStateWithChanges();
-            if ( changes )
+            computeHasChanges();
+        }
+        return hasChanges;
+    }
+
+    private void computeHasChanges()
+    {
+        checkHasChanges = false;
+        if ( hasChanges = read.hasTxStateWithChanges() )
+        {
+            if ( single != NO_ID )
             {
-                if ( single != NO_ID )
-                {
-                    addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
-                                 LongSets.immutable.of( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
-                }
-                else
-                {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAdded().freeze().longIterator();
-                }
-                hasChanges = HasChanges.YES;
+                addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
+                             PrimitiveLongCollections.single( single ) : ImmutableEmptyLongIterator.INSTANCE;
             }
             else
             {
-                hasChanges = HasChanges.NO;
+                addedNodes = read.txState().addedAndRemovedNodes().getAdded().freeze().longIterator();
             }
-            return changes;
-        case YES:
-            return true;
-        case NO:
-            return false;
-        default:
-            throw new IllegalStateException( "Style guide, why are you making me do this" );
         }
     }
 
