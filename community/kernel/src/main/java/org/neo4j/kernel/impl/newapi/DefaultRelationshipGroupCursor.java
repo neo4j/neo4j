@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -50,6 +51,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     private IntIterator txTypeIterator;
     private int currentTypeAddedInTx = ANY_RELATIONSHIP_TYPE;
     private boolean nodeIsDense;
+    private AccessMode accessMode;
 
     DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
     {
@@ -91,7 +93,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
             hasCheckedTxState = true;
         }
 
-        if ( !storeCursor.next() )
+        if ( !innerNext() )
         {
             //We have now run out of groups from the store, however there may still
             //be new types that was added in the transaction that we haven't visited yet.
@@ -112,6 +114,22 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
             tracer.onRelationshipGroup( type() );
         }
         return true;
+    }
+
+    private boolean innerNext()
+    {
+        while ( storeCursor.next() )
+        {
+            if ( accessMode == null )
+            {
+                accessMode = read.ktx.securityContext().mode();
+            }
+            if ( accessMode.allowsTraverseRelType( storeCursor.type() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean nextFromTxState()
@@ -188,6 +206,10 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     public int outgoingCount()
     {
         int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.outgoingCount();
+        if ( count != 0 && !allowsTraverseAll() )
+        {
+            return traverseCountOutgoing();
+        }
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
                        .augmentDegree( RelationshipDirection.OUTGOING, count, type() ) : count;
@@ -197,6 +219,10 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     public int incomingCount()
     {
         int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.incomingCount();
+        if ( count != 0 && !allowsTraverseAll() )
+        {
+            return traverseCountIncoming();
+        }
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
                        .augmentDegree( RelationshipDirection.INCOMING, count, type() ) : count;
@@ -206,10 +232,70 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     public int loopCount()
     {
         int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.loopCount();
+        if ( count != 0 && !allowsTraverseAll() )
+        {
+            return traverseCountLoop();
+        }
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
                        .augmentDegree( RelationshipDirection.LOOP, count, type() ) : count;
+    }
 
+    private boolean allowsTraverseAll()
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+        return accessMode.allowsTraverseAllLabels() && accessMode.allowsTraverseAllRelTypes();
+    }
+
+    private int traverseCountOutgoing()
+    {
+        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        {
+            int count = 0;
+            outgoing( traversal );
+            while ( traversal.next() )
+            {
+                if ( traversal.sourceNodeReference() == storeCursor.getOwningNode() )
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+    }
+
+    private int traverseCountIncoming()
+    {
+        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        {
+            int count = 0;
+            incoming( traversal );
+            while ( traversal.next() )
+            {
+                if ( traversal.targetNodeReference() == storeCursor.getOwningNode() )
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+    }
+
+    private int traverseCountLoop()
+    {
+        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        {
+            int count = 0;
+            loops( traversal );
+            while ( traversal.next() )
+            {
+                count++;
+            }
+            return count;
+        }
     }
 
     @Override

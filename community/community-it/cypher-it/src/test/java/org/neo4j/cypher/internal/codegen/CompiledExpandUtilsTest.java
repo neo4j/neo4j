@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -65,8 +64,6 @@ class CompiledExpandUtilsTest
         return resolver.resolveDependency( Kernel.class ).beginTransaction( implicit, LoginContext.AUTH_DISABLED );
     }
 
-    private AccessMode.Static fullMode = AccessMode.Static.FULL;
-
     @Test
     void shouldComputeDegreeWithoutType() throws Exception
     {
@@ -97,9 +94,9 @@ class CompiledExpandUtilsTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
-                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
-                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, BOTH ), equalTo( 4 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH ), equalTo( 4 ) );
             }
         }
     }
@@ -134,17 +131,17 @@ class CompiledExpandUtilsTest
             CursorFactory cursors = tx.cursors();
             try ( NodeCursor nodes = cursors.allocateNodeCursor() )
             {
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
 
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
-                assertThat( nodeGetDegreeIfDense( read, fullMode, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
             }
         }
     }

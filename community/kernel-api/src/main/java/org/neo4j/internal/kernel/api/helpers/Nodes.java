@@ -23,7 +23,6 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 
 /**
  * Helper methods for working with nodes
@@ -42,12 +41,11 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
-     * @param mode the security rules for read access
      * @return the number of outgoing - including loops - relationships from the node
      */
-    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, AccessMode mode )
+    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseAllRelTypes() )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
@@ -85,12 +83,11 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
-     * @param mode the security rules for read access
      * @return the number of incoming - including loops - relationships from the node
      */
-    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors, AccessMode mode )
+    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseAllRelTypes() )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
@@ -126,12 +123,11 @@ public final class Nodes
      *
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
-     * @param mode the security rules for read access
      * @return the number of relationships from the node
      */
-    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors, AccessMode mode )
+    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseAllRelTypes() )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
@@ -167,12 +163,11 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
-     * @param mode the security rules for read access
      * @return the number of outgoing - including loops - relationships from the node with the given type
      */
-    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, int type, AccessMode mode )
+    public static int countOutgoing( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseRelType( type ) )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
@@ -213,12 +208,11 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
-     * @param mode the security rules for read access
      * @return the number of incoming - including loops - relationships from the node with the given type
      */
-    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors, int type, AccessMode mode )
+    public static int countIncoming( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseRelType( type ) )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
@@ -258,12 +252,11 @@ public final class Nodes
      * @param nodeCursor a cursor positioned at the node whose relationships we're counting
      * @param cursors a factory for cursors
      * @param type the type of the relationship we're counting
-     * @param mode the security rules for read access
      * @return the number relationships from the node with the given type
      */
-    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors, int type, AccessMode mode )
+    public static int countAll( NodeCursor nodeCursor, CursorFactory cursors, int type )
     {
-        if ( nodeCursor.isDense() && mode.allowsTraverseAllLabels() && mode.allowsTraverseRelType( type ) )
+        if ( nodeCursor.isDense() )
         {
             try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
             {
