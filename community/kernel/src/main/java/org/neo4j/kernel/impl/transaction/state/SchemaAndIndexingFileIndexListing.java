@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -37,11 +38,14 @@ public class SchemaAndIndexingFileIndexListing
     private static final Function<File,StoreFileMetadata> toStoreFileMetadata = file -> new StoreFileMetadata( file, 1 );
 
     private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final IndexingService indexingService;
 
-    SchemaAndIndexingFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService )
+    SchemaAndIndexingFileIndexListing( LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
+            IndexingService indexingService )
     {
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.indexingService = indexingService;
     }
 
@@ -62,6 +66,15 @@ public class SchemaAndIndexingFileIndexListing
     Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
+        getSnapshotFilesMetadata( snapshot, targetFiles );
+        // Intentionally don't close the snapshot here, return it for closing by the consumer of
+        // the targetFiles list.
+        return snapshot;
+    }
+
+    Resource gatherRelationshipTypeScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
+    {
+        ResourceIterator<File> snapshot = relationshipTypeScanStore.snapshotStoreFiles();
         getSnapshotFilesMetadata( snapshot, targetFiles );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.

@@ -709,7 +709,8 @@ public class Database extends LifecycleAdapter
         life.add( kernel );
 
         final DatabaseFileListing fileListing =
-                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine, idGeneratorFactory );
+                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, relationshipTypeScanStore, indexingService, storageEngine,
+                        idGeneratorFactory );
         databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );

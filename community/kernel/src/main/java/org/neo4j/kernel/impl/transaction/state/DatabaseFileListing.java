@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -54,14 +55,15 @@ public class DatabaseFileListing
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
-            LabelScanStore labelScanStore, IndexingService indexingService, StorageEngine storageEngine,
+            LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore, IndexingService indexingService,
+            StorageEngine storageEngine,
             IdGeneratorFactory idGeneratorFactory )
     {
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.fileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
+        this.fileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, relationshipTypeScanStore, indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
@@ -117,6 +119,7 @@ public class DatabaseFileListing
         private boolean excludeLogFiles;
         private boolean excludeNeoStoreFiles;
         private boolean excludeLabelScanStoreFiles;
+        private boolean excludeRelationshipTypeScanStoreFiles;
         private boolean excludeSchemaIndexStoreFiles;
         private boolean excludeAdditionalProviders;
         private boolean excludeIdFiles;
@@ -130,6 +133,7 @@ public class DatabaseFileListing
             this.excludeLogFiles = initiateInclusive;
             this.excludeNeoStoreFiles = initiateInclusive;
             this.excludeLabelScanStoreFiles = initiateInclusive;
+            this.excludeRelationshipTypeScanStoreFiles = initiateInclusive;
             this.excludeSchemaIndexStoreFiles = initiateInclusive;
             this.excludeAdditionalProviders = initiateInclusive;
             this.excludeIdFiles = initiateInclusive;
@@ -162,6 +166,12 @@ public class DatabaseFileListing
         public StoreFileListingBuilder excludeLabelScanStoreFiles()
         {
             excludeLabelScanStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeRelationshipTypeScanStoreFiles()
+        {
+            excludeRelationshipTypeScanStoreFiles = true;
             return this;
         }
 
@@ -198,6 +208,12 @@ public class DatabaseFileListing
         public StoreFileListingBuilder includeLabelScanStoreFiles()
         {
             excludeLabelScanStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeRelationshipTypeScanStoreFiles()
+        {
+            excludeRelationshipTypeScanStoreFiles = false;
             return this;
         }
 
@@ -240,6 +256,10 @@ public class DatabaseFileListing
                 if ( !excludeLabelScanStoreFiles )
                 {
                     resources.add( fileIndexListing.gatherLabelScanStoreFiles( files ) );
+                }
+                if ( !excludeRelationshipTypeScanStoreFiles )
+                {
+                    resources.add( fileIndexListing.gatherRelationshipTypeScanStoreFiles( files ) );
                 }
                 if ( !excludeSchemaIndexStoreFiles )
                 {
