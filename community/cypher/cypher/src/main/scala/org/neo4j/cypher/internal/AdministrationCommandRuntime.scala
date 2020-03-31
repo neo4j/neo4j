@@ -77,11 +77,11 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     def mapValueConverter: MapValue => MapValue
   }
 
-  case class LiteralPasswordExpression(key: String, value: Value, bytesKey: String, bytesValue: Value) extends PasswordExpression {
+  private case class LiteralPasswordExpression(key: String, value: Value, bytesKey: String, bytesValue: Value) extends PasswordExpression {
     val mapValueConverter = IdentityConverter
   }
 
-  case class ParameterPasswordExpression(key: String,
+  private case class ParameterPasswordExpression(key: String,
                                          value: Value,
                                          bytesKey: String,
                                          bytesValue: Value,
@@ -129,9 +129,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
     params.get(passwordParameter) match {
       case bytes: ByteArray =>
-        bytes.asObjectCopy()
+        bytes.asObject()  // Have as few copies of the password in memory as possible
       case s: StringValue =>
-        UTF8.encode(s.stringValue())
+        UTF8.encode(s.stringValue()) // FIXME should not be passed as a String this far down, encode in parser
       case Values.NO_VALUE =>
         throw new ParameterNotFoundException(s"Expected parameter(s): $passwordParameter")
       case other =>
@@ -203,10 +203,11 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
          |passwordChangeRequired: $$$passwordChangeRequiredKey, suspended: $$$suspendedKey})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameKey, credentials.key, passwordChangeRequiredKey, suspendedKey),
+        Array(userNameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey),
         Array(
           userNameValue,
           credentials.value,
+          credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended))),
       QueryHandler
@@ -219,6 +220,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.", error)
         }),
       sourcePlan,
+      finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero(),
       initFunction = (params, _) => NameValidator.assertValidUsername(runtimeValue(userName, params)),
       parameterConverter = mapValueConverter
     )

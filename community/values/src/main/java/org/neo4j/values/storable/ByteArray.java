@@ -154,4 +154,9 @@ public final class ByteArray extends IntegralArray
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    public void zero()
+    {
+        Arrays.fill( value, (byte) 0 );
+    }
 }

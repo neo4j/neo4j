@@ -196,8 +196,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           }
           .handleResult((_, value, p) => {
             val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObjectCopy()
-            val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObjectCopy()
+            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
+            val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObject()
             if (!oldCredentials.matchesPassword(currentValue))
               Some(new InvalidArgumentsException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newValue))
@@ -212,6 +212,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Some(new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password: User does not exist."))
           }),
         checkCredentialsExpired = false,
+        finallyFunction = p => {
+          p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
+          p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
+        },
         parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().username()))),
         parameterConverter = m => newPw.mapValueConverter(currentConverterBytes(m))
       )
