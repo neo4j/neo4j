@@ -42,6 +42,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private RelationshipDirection direction;
     private boolean lazySelection;
     private boolean filterInitialized;
+    private AccessMode mode;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
     {
@@ -150,7 +151,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         {
             hasChanges = hasChanges(); // <- may setup filter state if needed, for getting the correct relationships from tx-state
             setupFilterStateIfNeeded();
-            if ( filterInitialized && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
+            if ( filterInitialized && allowed() && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
             {
                 if ( tracer != null )
                 {
@@ -185,8 +186,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
-            AccessMode mode = read.ktx.securityContext().mode();
-            if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
+            if ( !skip && allowed() )
             {
                 if ( tracer != null )
                 {
@@ -196,6 +196,15 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             }
         }
         return false;
+    }
+
+    private boolean allowed()
+    {
+        if ( mode == null )
+        {
+            mode = read.ktx.securityContext().mode();
+        }
+        return mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode );
     }
 
     private boolean allowedToSeeEndNode( AccessMode mode )
