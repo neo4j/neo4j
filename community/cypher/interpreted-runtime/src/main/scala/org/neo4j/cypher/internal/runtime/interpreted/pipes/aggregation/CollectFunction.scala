@@ -42,4 +42,6 @@ class CollectFunction(value:Expression, operatorId: Id) extends AggregationFunct
   }
 
   override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)
+
+  override def recordMemoryDeallocation(state: QueryState): Unit = collection.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
 }

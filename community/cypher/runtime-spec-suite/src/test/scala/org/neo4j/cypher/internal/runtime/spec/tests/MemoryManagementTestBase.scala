@@ -676,7 +676,22 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .orderedAggregation(Seq("x AS x", "y As y"), Seq("count(*) AS c"), Seq("x"))
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
+  }
+
+  test("should not kill ordered collect aggregation query") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
       .input(variables = Seq("x", "y"))
       .build()
 

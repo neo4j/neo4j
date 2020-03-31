@@ -31,7 +31,7 @@ import org.neo4j.values.storable.Values
 abstract class PercentileFunction(val value: Expression, val percentile: Expression, operatorId: Id) extends AggregationFunction
                                                                                      with NumericExpressionOnly {
 
-  protected var temp = Vector[AnyValue]()
+  protected var temp: Vector[AnyValue] = Vector[AnyValue]()
   protected var count: Int = 0
   protected var perc: Double = 0
 
@@ -48,6 +48,8 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       state.memoryTracker.allocated(number, operatorId.x)
     })
   }
+
+  override def recordMemoryDeallocation(state: QueryState): Unit = temp.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
 }
 
 class PercentileContFunction(value: Expression, percentile: Expression, operatorId: Id)

@@ -30,7 +30,7 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   extends AggregationFunction
   with NumericExpressionOnly {
 
-  def name = if (population) "STDEVP" else "STDEV"
+  def name: String = if (population) "STDEVP" else "STDEV"
 
   // would be cool to not have to keep a temporary list to do multiple passes
   // this will blow up RAM over a big data set (not lazy!)
@@ -63,4 +63,6 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
       state.memoryTracker.allocated(java.lang.Double.BYTES, operatorId.x)
     })
   }
+
+  override def recordMemoryDeallocation(state: QueryState): Unit = state.memoryTracker.deallocated(java.lang.Double.BYTES * temp.size, operatorId.x)
 }

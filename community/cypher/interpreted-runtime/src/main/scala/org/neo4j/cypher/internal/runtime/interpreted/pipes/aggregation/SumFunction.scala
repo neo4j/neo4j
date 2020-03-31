@@ -43,6 +43,8 @@ class SumFunction(val value: Expression)
 
   }
 
+  override def recordMemoryDeallocation(state: QueryState): Unit = ()
+
   override def apply(data: CypherRow, state: QueryState) {
     val vl = value(data, state)
     actOnNumberOrDuration(vl,

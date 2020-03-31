@@ -43,6 +43,8 @@ trait MinMax extends AggregationFunction {
     }
   }
 
+  override def recordMemoryDeallocation(state: QueryState): Unit = ()
+
   private def checkIfLargest(value: AnyValue) {
     if (biggestSeen eq Values.NO_VALUE) {
       biggestSeen = value
@@ -53,11 +55,11 @@ trait MinMax extends AggregationFunction {
 }
 
 class MaxFunction(val value: Expression) extends AggregationFunction with MinMax {
-  def keep(comparisonResult: Int) = comparisonResult < 0
+  def keep(comparisonResult: Int): Boolean = comparisonResult < 0
   override def name: String = "MAX"
 }
 
 class MinFunction(val value: Expression) extends AggregationFunction with MinMax {
-  def keep(comparisonResult: Int) = comparisonResult > 0
+  def keep(comparisonResult: Int): Boolean = comparisonResult > 0
   override def name: String = "MIN"
 }

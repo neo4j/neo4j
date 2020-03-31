@@ -37,4 +37,9 @@ class DistinctFunction(value: Expression, inner: AggregationFunction, operatorId
   }
 
   override def result(state: QueryState): AnyValue = inner.result(state)
+
+  override def recordMemoryDeallocation(state: QueryState): Unit = {
+    seen.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
+    inner.recordMemoryDeallocation(state)
+  }
 }

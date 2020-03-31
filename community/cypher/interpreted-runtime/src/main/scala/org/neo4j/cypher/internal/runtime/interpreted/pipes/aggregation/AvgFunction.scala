@@ -65,6 +65,8 @@ class AvgFunction(val value: Expression)
     applyValueDirectly(vl)
   }
 
+  override def recordMemoryDeallocation(state: QueryState): Unit = ()
+
   def applyValueDirectly(vl: AnyValue): Unit = {
     actOnNumberOrDuration(vl,
       number => {
