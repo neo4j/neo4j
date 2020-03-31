@@ -32,6 +32,7 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -54,7 +55,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 
-final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
+class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeValueIndexCursor, EntityIndexSeekClient, SortedMergeJoin.Sink
 {
     private Read read;
@@ -69,6 +70,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private IndexOrder indexOrder;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
+    private AccessMode accessMode;
+    private boolean shortcutSecurity;
+    private boolean disableSecurity;
+    private int[] propertyIds;
 
     DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool )
     {
@@ -98,6 +103,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             tracer.onIndexSeek( );
         }
+
+        shortcutSecurity = setupSecurity( descriptor );
 
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
         {
@@ -169,6 +176,43 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     /**
+     * If the current user is allowed to traverse all labels used in this index and read the queried properties no matter what label
+     * the node has, we can skip checking on every node we get back.
+     */
+    private boolean setupSecurity( IndexDescriptor descriptor )
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+
+        if ( stream( query ).anyMatch( q -> q.type() == IndexQuery.IndexQueryType.fulltextSearch ) )
+        {
+            propertyIds = descriptor.schema().getPropertyIds();
+        }
+        else
+        {
+            propertyIds = stream( query ).mapToInt( IndexQuery::propertyKeyId ).toArray();
+        }
+
+        for ( int label : descriptor.schema().getEntityTokenIds() )
+        {
+            if ( !accessMode.allowsTraverseAllNodesWithLabel( label ) )
+            {
+                return false;
+            }
+        }
+        for ( int propId : propertyIds )
+        {
+             if ( !accessMode.allowsReadPropertyAllLabels( propId ) )
+             {
+                 return false;
+             }
+        }
+        return true;
+    }
+
+    /**
      * If we require order, we can only do the merge sort if we also get values.
      * This implicitly relies on the fact that if we can get order, we can also get values.
      */
@@ -188,7 +232,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean acceptEntity( long reference, float score, Value[] values )
     {
-        if ( isRemoved( reference ) )
+        if ( isRemoved( reference ) || !allowed( reference ) )
         {
             return false;
         }
@@ -199,6 +243,43 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.values = values;
             return true;
         }
+    }
+
+    protected boolean allowed( long reference )
+    {
+        if ( disableSecurity || shortcutSecurity )
+        {
+            return true;
+        }
+        try ( DefaultNodeCursor nodeCursor = read.cursors.allocateNodeCursor() )
+        {
+            read.singleNode( reference, nodeCursor );
+            if ( !nodeCursor.next() )
+            {
+                // This node is not visible to this security context
+                return false;
+            }
+
+            boolean allowed = true;
+            long[] labels = nodeCursor.labelsIgnoringTxStateSetRemove().all();
+            for ( int prop : propertyIds )
+            {
+                allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
+            }
+
+            return allowed;
+        }
+    }
+
+    /**
+     * This is to let {@link Read#nodeIndexDistinctValues(IndexDescriptor, NodeValueIndexCursor, boolean)} work.
+     * The security checks in {@link DefaultNodeValueIndexCursor#allowed(long)} expect the reference to be a node,
+     * but when it comes from the mentioned method it is the count of value in the index, thus we must ignore the
+     * security check here.
+     */
+    void disableSecurity()
+    {
+        disableSecurity = true;
     }
 
     @Override

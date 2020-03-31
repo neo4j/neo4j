@@ -505,7 +505,7 @@ public class Operations implements Write, SchemaWrite
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
         IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
-        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
+        try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor();
               IndexReaders indexReaders = new IndexReaders( index, allStoreHolder ) )
         {
             assertIndexOnline( index );
