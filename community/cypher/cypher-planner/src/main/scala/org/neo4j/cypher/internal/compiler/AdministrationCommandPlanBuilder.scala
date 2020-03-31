@@ -168,9 +168,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.SetOwnPassword(passwordEncoder(newPassword), passwordEncoder(currentPassword)),
           prettifier.asString(c)))
 
-      // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
-      case ShowRoles(withUsers, showAll) =>
-        Some(plans.ShowRoles(plans.AssertDbmsAdmin(ShowRoleAction), withUsers, showAll))
+      // SHOW [ ALL | POPULATED ] ROLES
+      case ShowRoles(false, showAll) =>
+        Some(plans.ShowRoles(plans.AssertDbmsAdmin(ShowRoleAction), withUsers = false, showAll = showAll))
+
+      // SHOW [ ALL | POPULATED ] ROLES WITH USERS
+      case ShowRoles(true, showAll) =>
+        Some(plans.ShowRoles(plans.AssertDbmsAdmin(Seq(ShowRoleAction, ShowUserAction)), withUsers = true, showAll = showAll))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
       case c@CreateRole(roleName, None, ifExistsDo) =>
