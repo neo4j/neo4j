@@ -87,6 +87,7 @@ abstract class Read implements TxStateHolder,
     protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
     private final Config config;
+    private final boolean relationshipTypeScanStoreEnabled;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
             KernelTransactionImplementation ktx, Config config )
@@ -96,6 +97,7 @@ abstract class Read implements TxStateHolder,
         this.cursorTracer = cursorTracer;
         this.ktx = ktx;
         this.config = config;
+        this.relationshipTypeScanStoreEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
     }
 
     @Override
@@ -619,7 +621,7 @@ abstract class Read implements TxStateHolder,
 
     boolean relationshipTypeScanStoreEnabled()
     {
-        return config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
+        return relationshipTypeScanStoreEnabled;
     }
 
     private void acquireExclusiveLock( ResourceTypes types, long... ids )
