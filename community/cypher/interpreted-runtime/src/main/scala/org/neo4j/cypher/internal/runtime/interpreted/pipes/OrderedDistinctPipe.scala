@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
@@ -35,9 +36,10 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  // First the ordered columns, then the unordered ones
-  private val keyNames = groupingColumns.sortBy(!_.ordered).map(_.key)
-  private val numberOfSortedColumns = groupingColumns.count(_.ordered)
+  private val (orderedKeyNames, unorderedKeyNames) = {
+    val (ordered, unordered) = groupingColumns.partition(_.ordered)
+    (ordered.map(_.key), unordered.map(_.key))
+  }
 
   protected def internalCreateResults(input: Iterator[CypherRow],
                                       state: QueryState): Iterator[CypherRow] = {
@@ -55,19 +57,18 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
         ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
         i += 1
       }
-      val builder = ListValueBuilder.newListBuilder(keyNames.length)
-      keyNames.foreach(name => builder.add(ctx.getByName(name)))
-      val groupingValue = builder.build()
-      val orderedGroupingValue = groupingValue.take(numberOfSortedColumns)
 
-      if (currentOrderedGroupingValue == null || currentOrderedGroupingValue != orderedGroupingValue) {
-        currentOrderedGroupingValue = orderedGroupingValue
+      val orderedGroupingValues = buildValueList(ctx, orderedKeyNames)
+      val unorderedGroupingValues = buildValueList(ctx, unorderedKeyNames)
+
+      if (currentOrderedGroupingValue == null || currentOrderedGroupingValue != orderedGroupingValues) {
+        currentOrderedGroupingValue = orderedGroupingValues
         seen.foreach(x => state.memoryTracker.deallocated(x, id.x))
         seen = mutable.Set[AnyValue]()
       }
-      val added = seen.add(groupingValue)
+      val added = seen.add(unorderedGroupingValues)
       if (added) {
-        state.memoryTracker.allocated(groupingValue, id.x)
+        state.memoryTracker.allocated(unorderedGroupingValues, id.x)
       }
       added
     }
@@ -79,6 +80,12 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
         otherSource == this.source && otherGroupingColumns.sameElements(this.groupingColumns)
       case _ => false
     }
+  }
+
+  private def buildValueList(ctx: CypherRow, keyNames: Array[String]): ListValue = {
+    val builder = ListValueBuilder.newListBuilder(keyNames.length)
+    keyNames.foreach(name => builder.add(ctx.getByName(name)))
+    builder.build()
   }
 }
 

@@ -100,10 +100,6 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   case object E_INT extends ValueToEstimate
   // a single int column used in DISTINCT
   case object E_INT_IN_DISTINCT extends ValueToEstimate
-  // two int column used in DISTINCT
-  case object E_INT_INT_IN_DISTINCT extends ValueToEstimate
-  // two node column used in DISTINCT
-  case object E_NODE_NODE_IN_DISTINCT extends ValueToEstimate
   // a single node column, which can be stored in a long-slot in slotted
   case object E_NODE_PRIMITIVE extends ValueToEstimate
   // a single node column, which cannot be stored in a long-slot in slotted
@@ -116,9 +112,6 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     data match {
       case E_INT => ValueUtils.of(0).estimatedHeapUsage()
       case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
-      case E_INT_INT_IN_DISTINCT =>
-        ValueUtils.of(java.util.Arrays.asList(0, 0)).estimatedHeapUsage() // We wrap the columns in a list
-      case E_NODE_NODE_IN_DISTINCT => VirtualValues.list(VirtualValues.node(0), VirtualValues.node(0)).estimatedHeapUsage() // We wrap the columns in a list
       case E_NODE_PRIMITIVE => VirtualValues.node(0).estimatedHeapUsage()
       case E_NODE_VALUE => VirtualValues.node(0).estimatedHeapUsage()
     }
@@ -671,7 +664,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(estimateSize(E_INT_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
+    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
 
     // then
     a[HeapMemoryLimitExceeded] should be thrownBy {
