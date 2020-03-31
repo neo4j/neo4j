@@ -19,15 +19,23 @@
  */
 package org.neo4j.annotations.api;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.google.testing.compile.JavaFileObjects.forResource;
 import static com.google.testing.compile.JavaSourcesSubject.assertThat;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.GENERATED_SIGNATURE_DESTINATION;
+import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.VERIFY_TOGGLE;
 
 class PublicApiAnnotationProcessorTest
 {
+    @BeforeEach
+    void setUp()
+    {
+        System.setProperty( VERIFY_TOGGLE, "true" );
+    }
+
     @Test
     void printPublicSignature()
     {
