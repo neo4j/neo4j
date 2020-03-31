@@ -41,12 +41,10 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
-import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.MatchPrivilege
-import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.PasswordString
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadPrivilege
@@ -376,7 +374,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // SHOW USER user PRIVILEGES
       case ShowPrivileges(scope: ShowUserPrivileges) =>
         val user = scope.user
-        val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, ShowPrivilegeAction)) else None
+        val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
         Some(plans.ShowPrivileges(source, scope))
 
       // SHOW [ALL | ROLE role] PRIVILEGES
