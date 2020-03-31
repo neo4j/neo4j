@@ -95,16 +95,31 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
      */
     public abstract void createTestGraph( GraphDatabaseService graphDb );
 
+    /**
+     * Setup privileges in the system graph which all test in the class will be using. The graph is only built once,
+     * regardless of the number of tests.
+     *
+     * @param graphDb a graph API which should be used to build the system test graph
+     */
+    public void createSystemGraph( GraphDatabaseService graphDb )
+    {
+    }
+
     @BeforeEach
     public void setupGraph() throws KernelException
     {
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homeDir(), this::createTestGraph );
+            testSupport.setup( testDirectory.homeDir(), this::createTestGraph, this::createSystemGraph );
         }
+        changeUser( LoginContext.AUTH_DISABLED );
+    }
+
+    protected void changeUser( LoginContext loginContext ) throws KernelException
+    {
         Kernel kernel = testSupport.kernelToTest();
-        tx = beginTransaction( kernel );
+        tx = beginTransaction( kernel, loginContext );
         token = tx.token();
         read = tx.dataRead();
         schemaRead = tx.schemaRead();
@@ -114,11 +129,17 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected KernelTransaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
-        return beginTransaction( kernel );
+        return beginTransaction( kernel, LoginContext.AUTH_DISABLED );
     }
 
-    private static KernelTransaction beginTransaction( Kernel kernel ) throws TransactionFailureException
+    protected KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
-        return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
+        Kernel kernel = testSupport.kernelToTest();
+        return beginTransaction( kernel, loginContext );
+    }
+
+    private static KernelTransaction beginTransaction( Kernel kernel, LoginContext loginContext ) throws TransactionFailureException
+    {
+        return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
     }
 }

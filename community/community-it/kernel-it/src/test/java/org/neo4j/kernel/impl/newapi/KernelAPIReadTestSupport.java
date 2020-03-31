@@ -38,9 +38,10 @@ public interface KernelAPIReadTestSupport
      *
      * @param storeDir The directory in which to create the database.
      * @param create Method which populates the database.
+     * @param systemCreate Method which populates the system database.
      * @throws IOException If database creation failed due to IO problems.
      */
-    void setup( File storeDir, Consumer<GraphDatabaseService> create );
+    void setup( File storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> systemCreate );
 
     /**
      * The Kernel to test. Called before every test.
