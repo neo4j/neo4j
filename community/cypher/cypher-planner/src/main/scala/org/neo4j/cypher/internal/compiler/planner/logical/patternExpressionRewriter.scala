@@ -80,7 +80,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             val uniqueNamedExpr = namedExpr.copy()
             val rewrittenExpression = NestedPlanExistsExpression(plan)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
-               .updated(pattern, "IllegalStateException: should never attempt to rewrite pattern in exists(PatternExpression) on it's own")
+               .updated(pattern, ERROR("Should never attempt to rewrite pattern in exists(PatternExpression) on it's own"))
           }
 
           (newAcc, Some(identity))
@@ -137,4 +137,6 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
     }
     topDown(rewriter, _.isInstanceOf[NestedPlanExpression])
   }
+
+  case class ERROR(msg: String)
 }
