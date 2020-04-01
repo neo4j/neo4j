@@ -25,24 +25,25 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 /**
- * Expression that executes a pipe on evaluation. Returns true if the pipe produces rows, and false if no rows are produced.
+ * Expression that is really a pipe. On evaluation, the pipe is evaluated. For each returned row, a projection
+ * is applied, and the resulting values are collected in a list and returned.
  */
-case class NestedPipeExistsExpression(pipe: Pipe,
-                                      availableExpressionVariables: Array[ExpressionVariable],
-                                      owningPlanId: Id)
+case class NestedPipeCollectExpression(pipe: Pipe,
+                                       projection: Expression,
+                                       availableExpressionVariables: Array[ExpressionVariable],
+                                       owningPlanId: Id)
   extends NestedPipeExpression(pipe, availableExpressionVariables, owningPlanId) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)
-    Values.booleanValue(results.hasNext)
+    collectResults(state, results, projection)
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(NestedPipeCollectExpression(pipe, projection.rewrite(f), availableExpressionVariables, owningPlanId))
 
-  override def arguments: Seq[Expression] = Seq.empty
+  override def arguments: Seq[Expression] = Seq(projection)
 
-  override def children: Seq[AstNode[_]] = availableExpressionVariables
+  override def children: Seq[AstNode[_]] = Seq(projection) ++ availableExpressionVariables
 }

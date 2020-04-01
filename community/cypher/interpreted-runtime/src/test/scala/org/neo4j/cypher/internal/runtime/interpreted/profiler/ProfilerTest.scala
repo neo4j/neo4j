@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NestedPipeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NestedPipeCollectExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
@@ -152,7 +152,7 @@ class ProfilerTest extends CypherFunSuite {
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val start2 = ArgumentPipe()(idGen.id())
     val projectionId = idGen.id()
-    val innerPipe = NestedPipeExpression(testPipe, projectedPath, Seq.empty, projectionId)
+    val innerPipe = NestedPipeCollectExpression(testPipe, projectedPath, Array(), projectionId)
     val pipeUnderInspection = ProjectionPipe(start2, InterpretedCommandProjection(Map("x" -> innerPipe)))(projectionId)
 
     val queryContext: QueryContext = prepareQueryContext()
@@ -176,7 +176,7 @@ class ProfilerTest extends CypherFunSuite {
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )(idGen.id())
     val start2 = ArgumentPipe()(idGen.id())
     val projectionId = idGen.id()
-    val innerPipe = NestedPipeExpression(testPipe, projectedPath, Seq.empty, projectionId)
+    val innerPipe = NestedPipeCollectExpression(testPipe, projectedPath, Array(), projectionId)
     val pipeUnderInspection = ProjectionPipe(start2, InterpretedCommandProjection(Map("x" -> innerPipe)))(projectionId)
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
@@ -201,11 +201,11 @@ class ProfilerTest extends CypherFunSuite {
     val start3 = ArgumentPipe()(idGen.id())
     val profiler1 = ProfilerTestPipe(start1, "nested pipe1", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val projectionId1 = idGen.id()
-    val nestedExpression = NestedPipeExpression(profiler1, projectedPath, Seq.empty, projectionId1)
+    val nestedExpression = NestedPipeCollectExpression(profiler1, projectedPath, Array(), projectionId1)
     val innerInnerPipe = ProjectionPipe(start2, InterpretedCommandProjection(Map("y" -> nestedExpression)))(projectionId1)
     val profiler2 = ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val projectionId2 = idGen.id()
-    val pipeExpression = NestedPipeExpression(profiler2, projectedPath, Seq.empty, projectionId2)
+    val pipeExpression = NestedPipeCollectExpression(profiler2, projectedPath, Array(), projectionId2)
     val pipeUnderInspection = ProjectionPipe(start3, InterpretedCommandProjection(Map("x" -> pipeExpression)))(projectionId2)
 
     val queryContext: QueryContext = prepareQueryContext()

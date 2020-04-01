@@ -233,15 +233,15 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
 
       case e: internal.expressions.PathExpression => self.toCommandProjectedPath(e)
       case e: pipes.NestedPipeCollectExpression =>
-        commands.expressions.NestedPipeExpression(
+        commands.expressions.NestedPipeCollectExpression(
           e.pipe,
           self.toCommandExpression(id, e.projection),
-          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of),
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id)
       case e: pipes.NestedPipeExistsExpression =>
         commands.expressions.NestedPipeExistsExpression(
           e.pipe,
-          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of),
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id)
 
       case e: internal.expressions.GetDegree => getDegree(id, e, self)
