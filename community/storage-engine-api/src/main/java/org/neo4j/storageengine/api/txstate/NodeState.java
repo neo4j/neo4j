@@ -23,6 +23,7 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**
  * Represents the transactional changes to a node:
@@ -37,15 +38,13 @@ public interface NodeState extends EntityState
 {
     LongDiffSets labelDiffSets();
 
-    /**
-     * This method counts all directions separately, i.e.
-     * total count = count(INCOMING) + count(OUTGOING) + count(LOOPS)
-     */
-    int augmentDegree( Direction direction, int degree, int typeId );
+    int augmentDegree( RelationshipDirection direction, int degree, int typeId );
 
     long getId();
 
     IntIterable getAddedRelationshipTypes();
+
+    IntIterable getAddedAndRemovedRelationshipTypes();
 
     LongIterator getAddedRelationships();
 

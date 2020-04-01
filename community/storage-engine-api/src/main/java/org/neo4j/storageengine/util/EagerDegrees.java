@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.storageengine.util;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.Degrees;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 
-class EagerDegrees implements Degrees
+public class EagerDegrees implements Degrees, Degrees.Mutator
 {
     private static final int FIRST_TYPE_UNDECIDED = -1;
 
@@ -35,22 +35,23 @@ class EagerDegrees implements Degrees
     private Degree firstTypeDegrees;
     private MutableIntObjectMap<Degree> degrees;
 
-    void add( int type, int outgoing, int incoming, int loop )
+    @Override
+    public void add( int type, int outgoing, int incoming, int loop )
     {
         getOrCreateDegree( type ).add( outgoing, incoming, loop );
     }
 
-    void addOutgoing( int type, int count )
+    public void addOutgoing( int type, int count )
     {
         getOrCreateDegree( type ).outgoing += count;
     }
 
-    void addIncoming( int type, int count )
+    public void addIncoming( int type, int count )
     {
         getOrCreateDegree( type ).incoming += count;
     }
 
-    void addLoop( int type, int count )
+    public void addLoop( int type, int count )
     {
         getOrCreateDegree( type ).loop += count;
     }

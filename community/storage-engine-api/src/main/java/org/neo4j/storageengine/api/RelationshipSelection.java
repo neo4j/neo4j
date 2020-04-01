@@ -43,6 +43,18 @@ public abstract class RelationshipSelection
     public abstract boolean test( int type );
 
     /**
+     * Tests whether a relationship of a certain direction should be part of this selection.
+     * @param direction {@link RelationshipDirection} of the relationship to test.
+     * @return whether or not this relationship is part of this selection.
+     */
+    public abstract boolean test( RelationshipDirection direction );
+
+    /**
+     * @return the {@link Direction} of relationships in this selection.
+     */
+    public abstract Direction direction();
+
+    /**
      * Tests whether a relationship of a certain type and direction should be part of this selection.
      *
      * @param type      the relationship type id of the relationship to test.
@@ -86,15 +98,36 @@ public abstract class RelationshipSelection
         return direction == Direction.BOTH ? ALL_RELATIONSHIPS : new DirectionalAllTypes( direction );
     }
 
-    private static class DirectionalSingleType extends RelationshipSelection
+    private abstract static class Directional extends RelationshipSelection
+    {
+        protected final Direction direction;
+
+        Directional( Direction direction )
+        {
+            this.direction = direction;
+        }
+
+        @Override
+        public boolean test( RelationshipDirection direction )
+        {
+            return RelationshipSelection.matchesDirection( direction, this.direction );
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return direction;
+        }
+    }
+
+    private static class DirectionalSingleType extends Directional
     {
         private final int type;
-        private final Direction direction;
 
         DirectionalSingleType( int type, Direction direction )
         {
+            super( direction );
             this.type = type;
-            this.direction = direction;
         }
 
         @Override
@@ -122,15 +155,14 @@ public abstract class RelationshipSelection
         }
     }
 
-    private static class DirectionalMultipleTypes extends RelationshipSelection
+    private static class DirectionalMultipleTypes extends Directional
     {
         private final int[] types;
-        private final Direction direction;
 
         DirectionalMultipleTypes( int[] types, Direction direction )
         {
+            super( direction );
             this.types = types;
-            this.direction = direction;
         }
 
         @Override
@@ -185,13 +217,11 @@ public abstract class RelationshipSelection
         }
     }
 
-    private static class DirectionalAllTypes extends RelationshipSelection
+    private static class DirectionalAllTypes extends Directional
     {
-        private final Direction direction;
-
         DirectionalAllTypes( Direction direction )
         {
-            this.direction = direction;
+            super( direction );
         }
 
         @Override
@@ -228,6 +258,18 @@ public abstract class RelationshipSelection
         }
 
         @Override
+        public boolean test( RelationshipDirection direction )
+        {
+            return true;
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return Direction.BOTH;
+        }
+
+        @Override
         public boolean test( int type, RelationshipDirection direction )
         {
             return true;
@@ -252,6 +294,18 @@ public abstract class RelationshipSelection
         public boolean test( int type )
         {
             return false;
+        }
+
+        @Override
+        public boolean test( RelationshipDirection direction )
+        {
+            return false;
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return Direction.BOTH;
         }
 
         @Override

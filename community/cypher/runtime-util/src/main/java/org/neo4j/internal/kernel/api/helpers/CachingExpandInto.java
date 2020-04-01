@@ -210,7 +210,7 @@ public class CachingExpandInto
 
     private int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
     {
-        return nodeCursor.degrees( selection( types, direction ) ).degree( direction );
+        return nodeCursor.degree( selection( types, direction ) );
     }
 
     private static boolean singleNode( Read read, NodeCursor nodeCursor, long node )

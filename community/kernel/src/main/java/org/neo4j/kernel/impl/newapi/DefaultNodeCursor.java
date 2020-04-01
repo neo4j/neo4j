@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -28,7 +28,6 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -37,10 +36,13 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.util.EagerDegrees;
+import org.neo4j.storageengine.util.SingleDegree;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
@@ -229,49 +231,43 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     @Override
     public Degrees degrees( RelationshipSelection selection )
     {
+        EagerDegrees degrees = new EagerDegrees();
+        fillDegrees( selection, degrees );
+        return degrees;
+    }
+
+    @Override
+    public int degree( RelationshipSelection selection )
+    {
+        SingleDegree degrees = new SingleDegree();
+        fillDegrees( selection, degrees );
+        return degrees.getTotal();
+    }
+
+    private void fillDegrees( RelationshipSelection selection, Degrees.Mutator degrees )
+    {
         boolean hasChanges = hasChanges();
         NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
-        Degrees storedDegrees = currentAddedInTx == NO_ID ? storeCursor.degrees( selection ) : null;
-        if ( nodeTxState == null )
+        if ( currentAddedInTx == NO_ID )
         {
-            return storedDegrees == null ? Degrees.EMPTY : storedDegrees;
+            storeCursor.degrees( selection, degrees );
         }
-
-        IntIterable txTypes = nodeTxState.getAddedRelationshipTypes();
-        if ( storedDegrees == null )
+        if ( nodeTxState != null )
         {
-            return new Degrees()
+            // Then add the remaining types that's only present in the tx-state
+            IntIterator txTypes = nodeTxState.getAddedAndRemovedRelationshipTypes().intIterator();
+            while ( txTypes.hasNext() )
             {
-                @Override
-                public int[] types()
+                int type = txTypes.next();
+                if ( selection.test( type ) )
                 {
-                    return txTypes.toArray();
+                    int outgoing = selection.test( RelationshipDirection.OUTGOING ) ? nodeTxState.augmentDegree( RelationshipDirection.OUTGOING, 0, type ) : 0;
+                    int incoming = selection.test( RelationshipDirection.INCOMING ) ? nodeTxState.augmentDegree( RelationshipDirection.INCOMING, 0, type ) : 0;
+                    int loop = selection.test( RelationshipDirection.LOOP ) ? nodeTxState.augmentDegree( RelationshipDirection.LOOP, 0, type ) : 0;
+                    degrees.add( type, outgoing, incoming, loop );
                 }
-
-                @Override
-                public int degree( int type, Direction direction )
-                {
-                    return nodeTxState.augmentDegree( direction, 0, type );
-                }
-            };
+            }
         }
-        return new Degrees()
-        {
-            @Override
-            public int[] types()
-            {
-                MutableIntSet allTypes = IntSets.mutable.of( storedDegrees.types() );
-                allTypes.addAll( txTypes.toArray() );
-                return allTypes.toArray();
-            }
-
-            @Override
-            public int degree( int type, Direction direction )
-            {
-                int storedDegree = storedDegrees.degree( type, direction );
-                return nodeTxState.augmentDegree( direction, storedDegree, type );
-            }
-        };
     }
 
     @Override

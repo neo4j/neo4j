@@ -116,11 +116,11 @@ public final class Nodes
 
     public static int count( NodeCursor nodeCursor, int type, Direction direction )
     {
-        return nodeCursor.degrees( selection( type, direction ) ).degree( type, direction );
+        return nodeCursor.degree( selection( type, direction ) );
     }
 
     public static int count( NodeCursor nodeCursor, Direction direction )
     {
-        return nodeCursor.degrees( selection( direction ) ).degree( direction );
+        return nodeCursor.degree( selection( direction ) );
     }
 }

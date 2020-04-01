@@ -21,12 +21,10 @@ package org.neo4j.cypher.internal.kernel.api.helpers;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto;
-import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -54,7 +52,7 @@ class CachingExpandIntoTest
        findConnections( expandInto, cursor, 42, 43 );
 
         // Then
-        verify( cursor, times( 2 ) ).degrees( any( RelationshipSelection.class ) );
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
     }
 
     @Test
@@ -68,7 +66,7 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 42 );
 
         // Then
-        verify( cursor ).degrees( any( RelationshipSelection.class ) );
+        verify( cursor ).degree( any( RelationshipSelection.class ) );
     }
 
     @Test
@@ -84,7 +82,7 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 43, 5 );
 
         // Then, only call once for 42 and once for 43
-        verify( cursor, times( 2 ) ).degrees( any( RelationshipSelection.class ) );
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
     }
 
     @Test
@@ -102,7 +100,7 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 43 );
 
         // Then, only call 5 times for 42 and 5 times for 43
-        verify( cursor, times( 10 ) ).degrees( any( RelationshipSelection.class ) );
+        verify( cursor, times( 10 ) ).degree( any( RelationshipSelection.class ) );
     }
 
     @Test
@@ -152,9 +150,7 @@ class CachingExpandIntoTest
         NodeCursor mock = mock( NodeCursor.class, RETURNS_DEEP_STUBS );
         when( mock.next() ).thenReturn( true );
         when( mock.supportsFastDegreeLookup()).thenReturn( true );
-        Degrees degrees = mock( Degrees.class );
-        when( degrees.degree( any( Direction.class) ) ).thenReturn( 7 );
-        when( mock.degrees(  any( RelationshipSelection.class ) )).thenReturn( degrees );
+        when( mock.degree( any( RelationshipSelection.class ) ) ).thenReturn( 7 );
         return mock;
     }
 }

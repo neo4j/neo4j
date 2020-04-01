@@ -30,7 +30,6 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.memory.HeapEstimator;
@@ -120,37 +119,32 @@ public class RelationshipChangesForNode
         return false;
     }
 
-    public int augmentDegree( Direction direction, int degree, int typeId )
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
     {
         switch ( direction )
         {
         case INCOMING:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, incoming, loops ) );
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, incoming ) );
         case OUTGOING:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing, loops ) );
-        case BOTH:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing, incoming, loops ) );
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing ) );
+        case LOOP:
+            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, loops ) );
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
     }
 
-    @SafeVarargs
-    private int degreeDiff( int type, MutableIntObjectMap<MutableLongSet>... maps )
+    private int degreeDiff( int type, MutableIntObjectMap<MutableLongSet> map )
     {
-        int diff = 0;
-        for ( MutableIntObjectMap<MutableLongSet> map : maps )
+        if ( map != null )
         {
-            if ( map != null )
+            MutableLongSet set = map.get( type );
+            if ( set != null )
             {
-                MutableLongSet set = map.get( type );
-                if ( set != null )
-                {
-                    diff += set.size();
-                }
+                return set.size();
             }
         }
-        return diff;
+        return 0;
     }
 
     public void clear()

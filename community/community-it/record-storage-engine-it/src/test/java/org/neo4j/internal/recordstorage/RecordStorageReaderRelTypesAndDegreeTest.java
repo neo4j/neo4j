@@ -36,9 +36,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.util.EagerDegrees;
+import org.neo4j.storageengine.util.SingleDegree;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -61,6 +62,7 @@ import static org.neo4j.internal.recordstorage.TestRelType.OUT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 @ExtendWith( RandomExtension.class )
 public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
@@ -237,12 +239,19 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     protected int degreeForDirection( StorageNodeCursor cursor, Direction direction )
     {
-        return cursor.degrees( RelationshipSelection.selection( direction ) ).degree( direction );
+        return degree( cursor, selection( direction ) );
     }
 
     protected int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
     {
-        return cursor.degrees( RelationshipSelection.selection( relType, direction ) ).degree( relType, direction );
+        return degree( cursor, selection( relType, direction ) );
+    }
+
+    private int degree( StorageNodeCursor cursor, RelationshipSelection selection )
+    {
+        SingleDegree degree = new SingleDegree();
+        cursor.degrees( selection, degree );
+        return degree.getTotal();
     }
 
     protected void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
@@ -462,7 +471,8 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     protected Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        Degrees nodeDegrees = nodeCursor.degrees( ALL_RELATIONSHIPS );
+        EagerDegrees nodeDegrees = new EagerDegrees();
+        nodeCursor.degrees( ALL_RELATIONSHIPS, nodeDegrees );
         for ( int type : nodeDegrees.types() )
         {
             degrees.add( new TestDegreeItem( type, nodeDegrees.outgoingDegree( type ), nodeDegrees.incomingDegree( type ) ) );

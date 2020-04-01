@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.storageengine.util;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,8 +36,6 @@ class EagerDegreesTest
 {
     @Inject
     private RandomRule random;
-
-    // TODO: 2020-01-30 shouldReplyZeroForUnknownTypeOrDirection
 
     @Test
     void shouldReplyZeroOnEmptyDegrees()

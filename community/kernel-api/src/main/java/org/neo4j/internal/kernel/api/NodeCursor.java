@@ -51,11 +51,19 @@ public interface NodeCursor extends Cursor
     int[] relationshipTypes();
 
     /**
-     * Gathers degrees for all types and direction provided by the {@link RelationshipSelection}. The returned {@link Degrees} will contain
+     * Gathers degrees for types and direction provided by the {@link RelationshipSelection}. The returned {@link Degrees} will contain
      * this information and will be able to answer degrees for each individual type/direction and also sums.
      *
      * @param selection which types/directions to get degrees for.
      * @return a {@link Degrees} instance with the selected degree information.
      */
     Degrees degrees( RelationshipSelection selection );
+
+    /**
+     * Returns a single total degree for types and directions provided by the {@link RelationshipSelection}.
+     *
+     * @param selection which types/directions to get degrees for.
+     * @return the total degree of all selected relationship types and direction.
+     */
+    int degree( RelationshipSelection selection );
 }

@@ -148,4 +148,9 @@ public interface Degrees
             return 0;
         }
     };
+
+    interface Mutator
+    {
+        void add( int type, int outgoing, int incoming, int loop );
+    }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
@@ -88,7 +89,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         }
 
         @Override
-        public int augmentDegree( Direction direction, int degree, int typeId )
+        public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
         {
             return degree;
         }
@@ -131,6 +132,12 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
 
         @Override
         public IntIterable getAddedRelationshipTypes()
+        {
+            return IntSets.immutable.empty();
+        }
+
+        @Override
+        public IntIterable getAddedAndRemovedRelationshipTypes()
         {
             return IntSets.immutable.empty();
         }
@@ -218,7 +225,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     }
 
     @Override
-    public int augmentDegree( Direction direction, int degree, int typeId )
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
     {
         if ( hasAddedRelationships() )
         {
@@ -301,5 +308,21 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     public IntIterable getAddedRelationshipTypes()
     {
         return relationshipsAdded != null ? relationshipsAdded.relationshipTypes() : IntSets.immutable.empty();
+    }
+
+    @Override
+    public IntIterable getAddedAndRemovedRelationshipTypes()
+    {
+        if ( relationshipsAdded == null && relationshipsRemoved == null )
+        {
+            return IntSets.immutable.empty();
+        }
+        if ( relationshipsAdded != null && relationshipsRemoved != null )
+        {
+            MutableIntSet types = IntSets.mutable.withAll( relationshipsAdded.relationshipTypes() );
+            types.addAll( relationshipsRemoved.relationshipTypes() );
+            return types;
+        }
+        return relationshipsAdded != null ? relationshipsAdded.relationshipTypes() : relationshipsRemoved.relationshipTypes();
     }
 }

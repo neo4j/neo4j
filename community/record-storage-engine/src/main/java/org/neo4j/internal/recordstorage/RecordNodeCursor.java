@@ -28,11 +28,12 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -228,9 +229,8 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public Degrees degrees( RelationshipSelection selection )
+    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
     {
-        EagerDegrees result = new EagerDegrees();
         if ( !isDense() )
         {
             if ( relationshipCursor == null )
@@ -242,21 +242,25 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             {
                 if ( selection.test( relationshipCursor.type() ) )
                 {
+                    int outgoing = 0;
+                    int incoming = 0;
+                    int loop = 0;
                     if ( relationshipCursor.sourceNodeReference() == entityReference() )
                     {
                         if ( relationshipCursor.targetNodeReference() == entityReference() )
                         {
-                            result.addLoop( relationshipCursor.type(), 1 );
+                            loop++;
                         }
-                        else
+                        else if ( selection.test( RelationshipDirection.OUTGOING ) )
                         {
-                            result.addOutgoing( relationshipCursor.type(), 1 );
+                            outgoing++;
                         }
                     }
-                    else
+                    else if ( selection.test( RelationshipDirection.INCOMING ) )
                     {
-                        result.addIncoming( relationshipCursor.type(), 1 );
+                        incoming++;
                     }
+                    mutator.add( relationshipCursor.type(), outgoing, incoming, loop );
                 }
             }
         }
@@ -271,11 +275,21 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             {
                 if ( selection.test( groupCursor.getType() ) )
                 {
-                    result.add( groupCursor.getType(), groupCursor.outgoingCount(), groupCursor.incomingCount(), groupCursor.loopCount() );
+                    int outgoing = 0;
+                    int incoming = 0;
+                    int loop = groupCursor.loopCount();
+                    if ( selection.test( RelationshipDirection.OUTGOING ) )
+                    {
+                        outgoing = groupCursor.outgoingCount();
+                    }
+                    if ( selection.test( RelationshipDirection.INCOMING ) )
+                    {
+                        incoming = groupCursor.incomingCount();
+                    }
+                    mutator.add( groupCursor.getType(), outgoing, incoming, loop );
                 }
             }
         }
-        return result;
     }
 
     @Override

@@ -160,6 +160,12 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public int degree( RelationshipSelection selection )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public void setTracer( KernelReadTracer tracer )
     {
         throw new UnsupportedOperationException( "not implemented" );

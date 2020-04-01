@@ -26,13 +26,13 @@ import java.util.function.LongConsumer;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.CountsDelta;
-import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.util.EagerDegrees;
 
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -85,7 +85,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
     {
-        Degrees degrees = node.degrees( ALL_RELATIONSHIPS );
+        EagerDegrees degrees = new EagerDegrees();
+        node.degrees( ALL_RELATIONSHIPS, degrees );
         for ( int type : degrees.types() )
         {
             visitor.visitDegree( type, degrees.outgoingDegree( type ), degrees.incomingDegree( type ) );
