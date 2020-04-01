@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {
@@ -81,8 +83,7 @@ object CompilationPhases {
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
   )
 
-  // Phase 1
-  def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+  private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     val parse = Parsing.adds(BaseContains[Statement])
     val parseAndCompatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
@@ -106,19 +107,29 @@ object CompilationPhases {
     parseAndCompatibilityCheck andThen
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
-      parsingFinal(config)
-
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
   }
 
-  def parsingFinal(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
-    SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState]) andThen
+  // Phase 1
+  def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+    parsingBase(config) andThen
       AstRewriting(config.sequencer, config.literalExtraction, innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping)
+  }
 
-  // Phase 2 (Fabric alternative)
-  def prepareForFabric(resolver: ProcedureSignatureResolver, config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] =
-    TryRewriteProcedureCalls(resolver) andThen
+  // Phase 1 (Fabric)
+  def fabricParsing(config: ParsingConfig, resolver: ProcedureSignatureResolver): Transformer[BaseContext, BaseState, BaseState] = {
+    parsingBase(config) andThen
+      ExpandStarRewriter andThen
+      TryRewriteProcedureCalls(resolver) andThen
       ObfuscationMetadataCollection andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
+  }
+
+  // Phase 1.1 (Fabric)
+  def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+    SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState]) andThen
+      AstRewriting(config.sequencer, config.literalExtraction, innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping)
+  }
 
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
