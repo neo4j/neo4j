@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.MatchPrivilege
-import org.neo4j.cypher.internal.ast.PasswordString
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadPrivilege
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
@@ -83,6 +82,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -96,7 +96,6 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SecurityAdministrationLogicalPlan
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.string.UTF8
 
 /**
  * This planner takes on queries that run at the DBMS level for multi-database administration
@@ -122,8 +121,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
       case t => planRevoke(source, t.relType)
     }
-    val passwordEncoder: PartialFunction[Either[PasswordString, Parameter], Either[Array[Byte], Parameter]] = {
-      case Left(PasswordString(pw)) => Left(UTF8.encode(pw))
+    val passwordEncoder: PartialFunction[Either[SensitiveStringLiteral, Parameter], Either[Array[Byte], Parameter]] = {
+      case Left(SensitiveStringLiteral(pw)) => Left(pw)
       case Right(param) => Right(param)
     }
     def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {

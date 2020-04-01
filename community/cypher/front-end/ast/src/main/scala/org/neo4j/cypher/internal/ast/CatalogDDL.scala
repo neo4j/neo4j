@@ -68,8 +68,6 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-final case class PasswordString(value: String)(val position: InputPosition) extends SensitiveStringLiteral
-
 trait IfExistsDo
 final case class IfExistsReplace() extends IfExistsDo
 final case class IfExistsDoNothing() extends IfExistsDo
@@ -95,7 +93,7 @@ trait EitherAsString {
 }
 
 final case class CreateUser(userName: Either[String, Parameter],
-                            initialPassword: Either[PasswordString, Parameter],
+                            initialPassword: Either[SensitiveStringLiteral, Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
@@ -124,7 +122,7 @@ final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean
 }
 
 final case class AlterUser(userName: Either[String, Parameter],
-                           initialPassword: Option[Either[PasswordString, Parameter]],
+                           initialPassword: Option[Either[SensitiveStringLiteral, Parameter]],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends WriteAdministrationCommand {
   assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
@@ -136,7 +134,7 @@ final case class AlterUser(userName: Either[String, Parameter],
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(newPassword: Either[PasswordString, Parameter], currentPassword: Either[PasswordString, Parameter])
+final case class SetOwnPassword(newPassword: Either[SensitiveStringLiteral, Parameter], currentPassword: Either[PasswordString, Parameter])
                                (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "ALTER CURRENT USER SET PASSWORD"

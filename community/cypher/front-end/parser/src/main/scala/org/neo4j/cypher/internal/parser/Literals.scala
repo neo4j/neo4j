@@ -173,4 +173,12 @@ trait Literals extends Parser
      | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~~>> (expressions.StringLiteral(_))
   }
+
+  def SensitiveStringLiteral: Rule1[expressions.SensitiveStringLiteral] = rule("\"...string...\"") {
+    (((
+      ch('\'') ~ SensitiveStringCharacters('\'') ~ ch('\'')
+        | ch('"') ~ SensitiveStringCharacters('"') ~ ch('"')
+      ) memoMismatches) suppressSubnodes) ~~>> (expressions.SensitiveStringLiteral(_))
+  }
+
 }

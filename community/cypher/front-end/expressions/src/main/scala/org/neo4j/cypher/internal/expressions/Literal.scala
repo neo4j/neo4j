@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import java.util
+
 import org.neo4j.cypher.internal.util.InputPosition
 
 sealed trait Literal extends Expression {
@@ -67,9 +69,13 @@ case class StringLiteral(value: String)(val position: InputPosition) extends Lit
   override def asCanonicalStringVal = value
 }
 
-trait SensitiveStringLiteral {
-  val value: String
-  val position: InputPosition
+final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression {
+  override def equals(obj: Any): Boolean = obj match {
+    case o: SensitiveStringLiteral => util.Arrays.equals(o.value, value)
+    case _ => false
+  }
+
+  override def hashCode(): Int = util.Arrays.hashCode(value)
 }
 
 case class Null()(val position: InputPosition) extends Literal {

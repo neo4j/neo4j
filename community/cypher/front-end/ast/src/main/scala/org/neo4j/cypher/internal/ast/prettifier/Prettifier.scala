@@ -81,7 +81,6 @@ import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
-import org.neo4j.cypher.internal.ast.PasswordString
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -152,6 +151,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -273,7 +273,7 @@ case class Prettifier(
       s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
     case x @ SetOwnPassword(newPassword, currentPassword) =>
-      def evalPassword(pw: Either[PasswordString, Parameter]): String = pw match {
+      def evalPassword(pw: Either[SensitiveStringLiteral, Parameter]): String = pw match {
         case Right(param) => s"$$${param.name}"
         case _ => s"'******'"
       }
