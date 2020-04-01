@@ -115,21 +115,9 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
-    {
-        return poll( fullNodeValueIndexCursors );
-    }
-
-    @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
         return poll( nodeLabelIndexCursors );
-    }
-
-    @Override
-    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
-    {
-        return poll( fullNodeLabelIndexCursors );
     }
 
     @Override

@@ -107,21 +107,9 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
-    {
-        return trace( new FullAccessNodeValueIndexCursor( DefaultNodeValueIndexCursor::release, allocateFullAccessNodeCursor() ) );
-    }
-
-    @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
         return trace( new DefaultNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release, allocateNodeCursor() ) );
-    }
-
-    @Override
-    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
-    {
-        return trace( new FullAccessNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release, allocateFullAccessNodeCursor() ) );
     }
 
     @Override
