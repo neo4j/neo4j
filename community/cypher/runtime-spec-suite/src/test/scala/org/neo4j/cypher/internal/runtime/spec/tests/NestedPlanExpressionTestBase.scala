@@ -36,11 +36,11 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
                                                                sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("should support nested plan expression with no rows") {
+  test("should support nested plan collect with no rows") {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nestedPlanExpressionProjection("x", "b.prop")
+      .nestedPlanCollectExpressionProjection("x", "b.prop")
       .|.expand("(a)-->(b)")
       .|.allNodeScan("a")
       .argument()
@@ -52,7 +52,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(Seq(Array(Collections.emptyList())), listInAnyOrder = true)
   }
 
-  test("should support nested plan expression with rows") {
+  test("should support nested plan collect with rows") {
     // given
     val size = Math.sqrt(sizeHint).toInt
     given {
@@ -62,7 +62,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nestedPlanExpressionProjection("x", "b.prop")
+      .nestedPlanCollectExpressionProjection("x", "b.prop")
       .|.expand("(a)-->(b)")
       .|.allNodeScan("a")
       .argument()
@@ -76,7 +76,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(Seq(Array(expected)), listInAnyOrder = true)
   }
 
-  test("should support nested plan expression with null dependency") {
+  test("should support nested plan collect with null dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
     given {
@@ -86,7 +86,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nestedPlanExpressionProjection("x", "b.prop")
+      .nestedPlanCollectExpressionProjection("x", "b.prop")
       .|.expand("(a)-->(b)")
       .|.argument("a")
       .optionalExpandAll("(b)-->(a)")
@@ -100,7 +100,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected, listInAnyOrder = true)
   }
 
-  test("should support nested plan expression with dependency") {
+  test("should support nested plan collect with dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
     given {
@@ -110,7 +110,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nestedPlanExpressionProjection("x", "b.prop")
+      .nestedPlanCollectExpressionProjection("x", "b.prop")
       .|.expand("(a)-->(b)")
       .|.argument("a")
       .nodeByLabelScan("a", "A")
@@ -124,7 +124,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected, listInAnyOrder = true)
   }
 
-  test("should support nested plan expression with var-expand") {
+  test("should support nested plan collect with var-expand") {
     // given
     val size = 10
     val (nodes, rels) = given { circleGraph(size) }
@@ -132,7 +132,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nestedPlanExpressionProjection("x", "b")
+      .nestedPlanCollectExpressionProjection("x", "b")
       .|.expand("(a)-[*1..2]->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -149,5 +149,92 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     }
     val expected = nodes.map(a => Array[Any](varExpand(a).asJava))
     runtimeResult should beColumns("x").withRows(expected, listInAnyOrder = true)
+  }
+
+  test("should support nested plan exists with no rows") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expand("(a)-->(b)")
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(false)
+  }
+
+  test("should support nested plan exists with rows") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expand("(a)-->(b)")
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      (0 until size).flatMap(_ => (0 until size)).toList.asJava
+    runtimeResult should beColumns("x").withSingleRow(true)
+  }
+
+  test("should support nested plan exists with null dependency") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expand("(a)-->(b)")
+      .|.argument("a")
+      .optionalExpandAll("(b)-->(a)")
+      .nodeByLabelScan("b", "B")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (0 until size).map(_ => Array[Any](false))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should support nested plan exists with dependency") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expand("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (0 until size).map(_ => Array[Any](true))
+    runtimeResult should beColumns("x").withRows(expected)
   }
 }

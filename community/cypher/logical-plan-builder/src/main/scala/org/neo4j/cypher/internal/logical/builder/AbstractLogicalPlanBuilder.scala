@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -717,9 +718,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => ErrorPlan(lp, e)(_)))
   }
 
-  def nestedPlanExpressionProjection(resultList: String, resultPart: String): IMPL = {
+  def nestedPlanCollectExpressionProjection(resultList: String, resultPart: String): IMPL = {
     val inner = Parser.parseExpression(resultPart)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner)(NONE)))(_)))
+  }
+
+  def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs)(NONE)))(_)))
   }
 
   // SHIP IP
