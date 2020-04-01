@@ -386,7 +386,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 }
 
-trait ProcedureCallTimeTestBase[CONTEXT <: RuntimeContext] {
+trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileTimeTestBase[CONTEXT] =>
 
   test("should profile time of procedure call") {
@@ -412,5 +412,29 @@ trait ProcedureCallTimeTestBase[CONTEXT <: RuntimeContext] {
     result.runtimeResult.queryProfile().operatorProfile(1).time() should be > 0L // procedure call
     result.runtimeResult.queryProfile().operatorProfile(2).time() should be > 0L // unwind
     result.runtimeResult.queryProfile().operatorProfile(3).time() should be > 0L // argument
+  }
+
+  test("should profile time of ordered distinct") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val input = for (n <- nodes) yield Array[Any](nodes.head, n)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .orderedDistinct(Seq("x"), "y AS y")
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).time() should be > 0L // produce results
+    queryProfile.operatorProfile(1).time() should be > 0L // orderedDistinct
+    queryProfile.operatorProfile(2).time() should be > 0L // input
   }
 }

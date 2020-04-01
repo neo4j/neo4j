@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekRangeAndComposi
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeLockingUniqueIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandAllTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandIntoTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalFailureTestBase
@@ -75,7 +76,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTop1TestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTopNTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallDbHitsTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileMemoryTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileMemoryTrackingDisabledTestBase
@@ -165,7 +165,7 @@ class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITIO
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
                                    with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
-                                 with ProcedureCallRowsTestBase[CommunityRuntimeContext]
+                                 with NonParallelProfileRowsTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)

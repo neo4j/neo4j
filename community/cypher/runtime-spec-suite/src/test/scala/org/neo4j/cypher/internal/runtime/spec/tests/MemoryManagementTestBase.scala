@@ -517,13 +517,29 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
-
     // when
     circleGraph(1000)
 
     // then
     a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
+    }
+  }
+
+  test("should kill ordered distinct query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
     }
   }
 
@@ -653,23 +669,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // then
     a[HeapMemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
-    }
-  }
-
-  test("should kill ordered distinct query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
-
-    // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
     }
   }
 

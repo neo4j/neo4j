@@ -976,7 +976,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 }
 
-trait ProcedureCallRowsTestBase[CONTEXT <: RuntimeContext] {
+trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileRowsTestBase[CONTEXT] =>
 
   test("should profile rows of procedure call") {
@@ -1001,5 +1001,29 @@ trait ProcedureCallRowsTestBase[CONTEXT <: RuntimeContext] {
     // then
     result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe sizeHint * 2// procedure call
     result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint // unwind
+  }
+
+  test("should profile rows with ordered distinct") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val input = for (n <- nodes) yield Array[Any](nodes.head, n)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .orderedDistinct(Seq("x"), "y AS y")
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // orderedDistinct
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
   }
 }
