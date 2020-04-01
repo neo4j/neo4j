@@ -33,10 +33,12 @@ import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,LabelScan>
 {
     private final LongSet removed;
+    private final int label;
 
     NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan )
     {
         super( labelScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray() );
+        this.label = label;
         if ( hasChanges )
         {
             TransactionState txState = read.txState();
@@ -62,7 +64,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
         }
         else
         {
-            indexCursor.scan( indexProgressor, addedItems, removed );
+            indexCursor.scan( indexProgressor, addedItems, removed, label );
             return true;
         }
     }

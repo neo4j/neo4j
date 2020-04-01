@@ -46,6 +46,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
     private final DefaultNodeCursor nodeCursor;
     private AccessMode accessMode;
+    private boolean shortcutSecurity;
 
     DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor nodeCursor )
     {
@@ -67,13 +68,15 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         {
             tracer.onLabelScan( label );
         }
+        initSecurity( label );
     }
 
-    public void scan( IndexProgressor progressor, LongIterator added, LongSet removed )
+    public void scan( IndexProgressor progressor, LongIterator added, LongSet removed, int label )
     {
         super.initialize( progressor );
         this.added = added;
         this.removed = removed;
+        initSecurity( label );
     }
 
     NodeLabelClient nodeLabelClient()
@@ -94,16 +97,25 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         };
     }
 
+    private void initSecurity( int label )
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+        shortcutSecurity = accessMode.allowsTraverseAllNodesWithLabel( label );
+    }
+
     protected boolean allowed( long reference, LabelSet labels )
     {
+        if ( shortcutSecurity )
+        {
+            return true;
+        }
         if ( labels == null )
         {
             read.singleNode( reference, nodeCursor );
             return nodeCursor.next();
-        }
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
         }
         return accessMode.allowsTraverseNode( labels.all() );
     }
