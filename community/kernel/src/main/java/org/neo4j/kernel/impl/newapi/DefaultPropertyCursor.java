@@ -23,9 +23,7 @@ import java.util.Iterator;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -45,6 +43,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private Read read;
     private StoragePropertyCursor storeCursor;
     private final PageCursorTracer cursorTracer;
+    private final FullAccessNodeCursor nodeCursor;
+    private final FullAccessRelationshipScanCursor relCursor;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -56,11 +56,14 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     //stores relationship type or NODE if not a relationship
     private int type = NO_TOKEN;
 
-    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer )
+    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer,
+                           FullAccessNodeCursor nodeCursor, FullAccessRelationshipScanCursor relCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
         this.cursorTracer = cursorTracer;
+        this.nodeCursor = nodeCursor;
+        this.relCursor = relCursor;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -152,7 +155,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowed( ) )
+            if ( !skip && allowed() )
             {
                 if ( tracer != null )
                 {
@@ -262,12 +265,9 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         if ( labels == null )
         {
-            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor( cursorTracer ) )
-            {
-                read.singleNode( entityReference, nodeCursor );
-                nodeCursor.next();
-                labels = nodeCursor.labelsIgnoringTxStateSetRemove();
-            }
+            read.singleNode( entityReference, nodeCursor );
+            nodeCursor.next();
+            labels = nodeCursor.labelsIgnoringTxStateSetRemove();
         }
         return labels;
     }
@@ -279,13 +279,9 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         if ( type < 0 )
         {
-            try ( RelationshipScanCursor relCursor = read.cursors()
-                    .allocateFullAccessRelationshipScanCursor( cursorTracer ) )
-            {
-                read.singleRelationship( entityReference, relCursor );
-                relCursor.next();
-                this.type = relCursor.type();
-            }
+            read.singleRelationship( entityReference, relCursor );
+            relCursor.next();
+            this.type = relCursor.type();
         }
         return type;
     }
@@ -301,6 +297,10 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     public void release()
     {
         storeCursor.close();
+        nodeCursor.close();
+        nodeCursor.release();
+        relCursor.close();
+        relCursor.release();
     }
 
     private boolean isNode()

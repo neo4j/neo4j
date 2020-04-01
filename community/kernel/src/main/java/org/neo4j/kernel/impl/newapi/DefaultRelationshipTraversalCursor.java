@@ -39,17 +39,19 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 {
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
     private final PageCursorTracer cursorTracer;
+    private final DefaultNodeCursor nodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
     private RelationshipSelection selection;
     private AccessMode mode;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer, DefaultNodeCursor nodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
         this.cursorTracer = cursorTracer;
+        this.nodeCursor = nodeCursor;
     }
 
     /**
@@ -183,11 +185,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         {
             return true;
         }
-        try ( NodeCursor nodeCursor = read.cursors().allocateNodeCursor( cursorTracer ) )
-        {
-            read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
-            return nodeCursor.next();
-        }
+        read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
+        return nodeCursor.next();
     }
 
     @Override
@@ -219,6 +218,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     public void release()
     {
         storeCursor.close();
+        nodeCursor.close();
+        nodeCursor.release();
     }
 
     @Override

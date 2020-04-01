@@ -42,11 +42,13 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     private LongSet removed;
 
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
+    private final DefaultNodeCursor nodeCursor;
     private AccessMode accessMode;
 
-    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
+    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor nodeCursor )
     {
         this.pool = pool;
+        this.nodeCursor = nodeCursor;
         this.node = NO_ID;
     }
 
@@ -94,11 +96,8 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     {
         if ( labels == null )
         {
-            try ( NodeCursor node = read.cursors.allocateNodeCursor() )
-            {
-                read.singleNode( reference, node );
-                return node.next();
-            }
+            read.singleNode( reference, nodeCursor );
+            return nodeCursor.next();
         }
         if ( accessMode == null )
         {
@@ -201,6 +200,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
 
     public void release()
     {
-        // nothing to do
+        nodeCursor.close();
+        nodeCursor.release();
     }
 }

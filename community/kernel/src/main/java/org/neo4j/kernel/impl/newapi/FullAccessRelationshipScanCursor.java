@@ -25,9 +25,9 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCursor
 {
     FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool,
-            StorageRelationshipScanCursor storeCursor, PageCursorTracer cursorTracer )
+            StorageRelationshipScanCursor storeCursor, PageCursorTracer cursorTracer, FullAccessNodeCursor nodeCursor )
     {
-        super( pool, storeCursor, cursorTracer );
+        super( pool, storeCursor, cursorTracer, nodeCursor );
     }
 
     @Override
