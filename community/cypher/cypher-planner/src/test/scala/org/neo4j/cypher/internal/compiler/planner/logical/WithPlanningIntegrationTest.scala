@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -295,7 +296,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case
         Selection(ands,
         Limit(_,_,_)
-        ) if hasPathExpression(ands) => ()
+        ) if hasNestedPlanExpression(ands) => ()
     }
   }
 
@@ -309,7 +310,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case
         Selection(ands,
         Limit(_,_,_)
-        ) if hasPathExpression(ands)=> ()
+        ) if hasNestedPlanExpression(ands)=> ()
     }
   }
 
@@ -355,9 +356,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     // if we fail planning for this query the test fails
   }
 
-  private def hasPathExpression(ands: Ands): Boolean = {
+  private def hasNestedPlanExpression(ands: Ands): Boolean = {
     ands.treeExists {
-      case _: PathExpression => true
+      case _: NestedPlanExpression => true
     }
   }
 

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.ExpandExpression
@@ -72,9 +73,11 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     val argument: LogicalPlan = plans.Argument(Set.empty)
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
-    val nested = NestedPlanCollectExpression(argument, expression)(pos)
+    val nestedExists = NestedPlanExistsExpression(argument)(pos)
+    serialize(Arguments.Expression(nestedExists)) should equal("NestedPlanExistsExpression(Argument)")
 
-    serialize(Arguments.Expression(nested)) should equal("NestedPlanExpression(Argument)")
+    val nestedCollect = NestedPlanCollectExpression(argument, expression)(pos)
+    serialize(Arguments.Expression(nestedCollect)) should equal("NestedPlanCollectExpression(Argument)")
   }
 
   test("projection should show multiple expressions") {
