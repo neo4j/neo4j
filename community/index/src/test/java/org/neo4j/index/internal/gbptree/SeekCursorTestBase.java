@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,7 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -342,81 +339,73 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    void shouldHandleEmptyRange()
+    void shouldHandleEmptyRange() throws IOException
     {
-        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
-            // GIVEN
-            insert( 0 );
-            insert( 2 );
-            long fromInclusive = 1;
-            long toExclusive = 2;
+        // GIVEN
+        insert( 0 );
+        insert( 2 );
+        long fromInclusive = 1;
+        long toExclusive = 2;
 
-            // WHEN
-            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
-            {
-                // THEN
-                assertFalse( cursor.next() );
-            }
-        } );
+        // WHEN
+        try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+        {
+            // THEN
+            assertFalse( cursor.next() );
+        }
     }
 
     @Test
-    void shouldHandleEmptyRangeBackwards()
+    void shouldHandleEmptyRangeBackwards() throws IOException
     {
-        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
-            // GIVEN
-            insert( 0 );
-            insert( 2 );
-            long fromInclusive = 1;
-            long toExclusive = 0;
+        // GIVEN
+        insert( 0 );
+        insert( 2 );
+        long fromInclusive = 1;
+        long toExclusive = 0;
 
-            // WHEN
-            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
-            {
-                // THEN
-                assertFalse( cursor.next() );
-            }
-        } );
+        // WHEN
+        try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+        {
+            // THEN
+            assertFalse( cursor.next() );
+        }
     }
 
     @Test
-    void shouldHandleBackwardsWithNoExactHitOnFromInclusive()
+    void shouldHandleBackwardsWithNoExactHitOnFromInclusive() throws IOException
     {
-        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
-            // GIVEN
-            insert( 0 );
-            insert( 2 );
-            long fromInclusive = 3;
-            long toExclusive = 0;
+        // GIVEN
+        insert( 0 );
+        insert( 2 );
+        long fromInclusive = 3;
+        long toExclusive = 0;
 
-            // WHEN
-            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
-            {
-                // THEN
-                assertTrue( cursor.next() );
-                assertFalse( cursor.next() );
-            }
-        } );
+        // WHEN
+        try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+        {
+            // THEN
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
     }
 
     @Test
-    void shouldHandleBackwardsWithExactHitOnFromInclusive()
+    void shouldHandleBackwardsWithExactHitOnFromInclusive() throws IOException
     {
-        Assertions.assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
-            // GIVEN
-            insert( 0 );
-            insert( 2 );
-            long fromInclusive = 2;
-            long toExclusive = 0;
+        // GIVEN
+        insert( 0 );
+        insert( 2 );
+        long fromInclusive = 2;
+        long toExclusive = 0;
 
-            // WHEN
-            try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
-            {
-                // THEN
-                assertTrue( cursor.next() );
-                assertFalse( cursor.next() );
-            }
-        } );
+        // WHEN
+        try ( SeekCursor<KEY,VALUE> cursor = seekCursor( fromInclusive, toExclusive ) )
+        {
+            // THEN
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
     }
 
     @Test
@@ -1045,28 +1034,25 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     /* INCONSISTENCY */
 
     @Test
-    void mustThrowIfStuckInInfiniteRootCatchup()
+    void mustThrowIfStuckInInfiniteRootCatchup() throws IOException
     {
-        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
+        // given
+        rootWithTwoLeaves();
+
+        // Find left child and corrupt it by overwriting type to make it look like freelist node instead of tree node.
+        goTo( utilCursor, rootId );
+        long leftChild = node.childAt( utilCursor, 0, stableGeneration, unstableGeneration );
+        goTo( utilCursor, leftChild );
+        utilCursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
+
+        // when
+        RootCatchup tripCountingRootCatchup = new TripCountingRootCatchup( () -> new Root( rootId, rootGeneration ) );
+        assertThrows( TreeInconsistencyException.class, () ->
         {
-            // given
-            rootWithTwoLeaves();
-
-            // Find left child and corrupt it by overwriting type to make it look like freelist node instead of tree node.
-            goTo( utilCursor, rootId );
-            long leftChild = node.childAt( utilCursor, 0, stableGeneration, unstableGeneration );
-            goTo( utilCursor, leftChild );
-            utilCursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
-
-            // when
-            RootCatchup tripCountingRootCatchup = new TripCountingRootCatchup( () -> new Root( rootId, rootGeneration ) );
-            assertThrows( TreeInconsistencyException.class, () ->
+            try ( SeekCursor<KEY,VALUE> seek = seekCursor( 0, 0, cursor, stableGeneration, unstableGeneration, tripCountingRootCatchup ) )
             {
-                try ( SeekCursor<KEY,VALUE> seek = seekCursor( 0, 0, cursor, stableGeneration, unstableGeneration, tripCountingRootCatchup ) )
-                {
-                    seek.next();
-                }
-            } );
+                seek.next();
+            }
         } );
     }
 
