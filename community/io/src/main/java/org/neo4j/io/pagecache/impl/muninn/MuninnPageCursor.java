@@ -119,7 +119,7 @@ public abstract class MuninnPageCursor extends PageCursor
 
     long loadPlainCurrentPageId()
     {
-        return UnsafeUtil.getLong( this, CURRENT_PAGE_ID );
+        return currentPageId;
     }
 
     long loadVolatileCurrentPageId()
