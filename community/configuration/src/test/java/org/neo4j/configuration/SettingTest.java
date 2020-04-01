@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.string.SecureString;
@@ -59,6 +60,7 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
+import static org.neo4j.configuration.SettingValueParsers.DURATION_RANGE;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.HOSTNAME_PORT;
 import static org.neo4j.configuration.SettingValueParsers.INT;
@@ -204,6 +206,25 @@ class SettingTest
         assertEquals( "1s", setting.valueToString( setting.parse( "1s" ) ) );
         assertEquals( "3m", setting.valueToString( setting.parse( "3m" ) ) );
         assertEquals( "0ns", setting.valueToString( setting.parse( "0s" ) ) );
+    }
+
+    @Test
+    void testDurationRange()
+    {
+        var setting = (SettingImpl<DurationRange>) setting( "setting", DURATION_RANGE );
+        assertEquals( 60, setting.parse( "1m-2m" ).getMin().toSeconds() );
+        assertEquals( 120, setting.parse( "1m-2m" ).getMax().toSeconds() );
+        assertEquals( 1000, setting.parse( "1s-2s" ).getMin().toMillis() );
+        assertEquals( 2000, setting.parse( "1s-2s" ).getMax().toMillis() );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "1s" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "1s-" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1s" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1s--2s" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "2s-1s" ) );
+
+        assertEquals( "0ns-0ns", setting.valueToString( setting.parse( "0s-0s" ) ) );
+        assertEquals( "1s-2s", setting.valueToString( setting.parse( "1s-2s" ) ) );
+        assertEquals( "3m-6m", setting.valueToString( setting.parse( "[3m-6m]" ) ) );
     }
 
     @Test

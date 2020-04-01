@@ -288,6 +288,17 @@ org.neo4j.configuration.connectors.HttpsConnector::NAME java.lang.String public 
 org.neo4j.configuration.connectors.HttpsConnector::advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.connectors.HttpsConnector::enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.HttpsConnector::listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
+org.neo4j.configuration.helpers.DurationRange public class extends java.lang.Object
+org.neo4j.configuration.helpers.DurationRange::DurationRange(java.time.Duration, java.time.Duration) void public
+org.neo4j.configuration.helpers.DurationRange::equals(java.lang.Object) boolean public
+org.neo4j.configuration.helpers.DurationRange::fromSeconds(int, int) org.neo4j.configuration.helpers.DurationRange public static
+org.neo4j.configuration.helpers.DurationRange::getDelta() java.time.Duration public
+org.neo4j.configuration.helpers.DurationRange::getMax() java.time.Duration public
+org.neo4j.configuration.helpers.DurationRange::getMin() java.time.Duration public
+org.neo4j.configuration.helpers.DurationRange::hashCode() int public
+org.neo4j.configuration.helpers.DurationRange::parse(java.lang.String) org.neo4j.configuration.helpers.DurationRange public static
+org.neo4j.configuration.helpers.DurationRange::toString() java.lang.String public
+org.neo4j.configuration.helpers.DurationRange::valueToString() java.lang.String public
 org.neo4j.configuration.helpers.SocketAddress public class extends java.lang.Object
 org.neo4j.configuration.helpers.SocketAddress::SocketAddress(int) void public
 org.neo4j.configuration.helpers.SocketAddress::SocketAddress(java.lang.String) void public

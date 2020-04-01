@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
+import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.GraphNameValidator;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.configuration.helpers.NormalizedGraphName;
@@ -361,6 +362,33 @@ public final class SettingValueParsers
         public String valueToString( Duration value )
         {
             return TimeUtil.nanosToString( value.toNanos() );
+        }
+    };
+
+    public static final SettingValueParser<DurationRange> DURATION_RANGE = new SettingValueParser<>()
+    {
+        @Override
+        public DurationRange parse( String value )
+        {
+            return DurationRange.parse( value );
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "a duration-range <min-max> (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
+        }
+
+        @Override
+        public Class<DurationRange> getType()
+        {
+            return DurationRange.class;
+        }
+
+        @Override
+        public String valueToString( DurationRange value )
+        {
+            return value.valueToString();
         }
     };
 
