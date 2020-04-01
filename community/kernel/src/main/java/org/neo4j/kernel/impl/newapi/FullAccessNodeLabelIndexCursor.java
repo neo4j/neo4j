@@ -23,9 +23,9 @@ import org.neo4j.internal.kernel.api.LabelSet;
 
 class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
 {
-    FullAccessNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
+    FullAccessNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor nodeCursor )
     {
-        super( pool );
+        super( pool, nodeCursor );
     }
 
     protected boolean allowed( long reference, LabelSet labels )

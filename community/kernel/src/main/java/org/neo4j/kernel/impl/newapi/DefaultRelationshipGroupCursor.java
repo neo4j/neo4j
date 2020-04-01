@@ -46,6 +46,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     private final CursorPool<DefaultRelationshipGroupCursor> pool;
 
     private StorageRelationshipGroupCursor storeCursor;
+    private final DefaultRelationshipTraversalCursor traversalCursor;
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
@@ -53,10 +54,12 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     private boolean nodeIsDense;
     private AccessMode accessMode;
 
-    DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
+    DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor,
+                                    DefaultRelationshipTraversalCursor traversalCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
+        this.traversalCursor = traversalCursor;
     }
 
     void init( long nodeReference, long reference, boolean nodeIsDense, Read read )
@@ -252,50 +255,41 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
 
     private int traverseCountOutgoing()
     {
-        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        int count = 0;
+        outgoing( traversalCursor );
+        while ( traversalCursor.next() )
         {
-            int count = 0;
-            outgoing( traversal );
-            while ( traversal.next() )
+            if ( traversalCursor.sourceNodeReference() == storeCursor.getOwningNode() )
             {
-                if ( traversal.sourceNodeReference() == storeCursor.getOwningNode() )
-                {
-                    count++;
-                }
+                count++;
             }
-            return count;
         }
+        return count;
     }
 
     private int traverseCountIncoming()
     {
-        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        int count = 0;
+        incoming( traversalCursor );
+        while ( traversalCursor.next() )
         {
-            int count = 0;
-            incoming( traversal );
-            while ( traversal.next() )
+            if ( traversalCursor.targetNodeReference() == storeCursor.getOwningNode() )
             {
-                if ( traversal.targetNodeReference() == storeCursor.getOwningNode() )
-                {
-                    count++;
-                }
+                count++;
             }
-            return count;
         }
+        return count;
     }
 
     private int traverseCountLoop()
     {
-        try ( RelationshipTraversalCursor traversal = read.cursors.allocateRelationshipTraversalCursor() )
+        int count = 0;
+        loops( traversalCursor );
+        while ( traversalCursor.next() )
         {
-            int count = 0;
-            loops( traversal );
-            while ( traversal.next() )
-            {
-                count++;
-            }
-            return count;
+            count++;
         }
+        return count;
     }
 
     @Override
@@ -387,5 +381,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     public void release()
     {
         storeCursor.close();
+        traversalCursor.close();
+        traversalCursor.release();
     }
 }

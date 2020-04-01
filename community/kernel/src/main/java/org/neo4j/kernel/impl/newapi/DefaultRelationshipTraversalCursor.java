@@ -37,6 +37,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         implements RelationshipTraversalCursor
 {
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
+    private final DefaultNodeCursor nodeCursor;
     private LongIterator addedRelationships;
     private int type = ANY_RELATIONSHIP_TYPE;
     private RelationshipDirection direction;
@@ -44,10 +45,12 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private boolean filterInitialized;
     private AccessMode mode;
 
-    DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
+    DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
+                                        DefaultNodeCursor nodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
+        this.nodeCursor = nodeCursor;
     }
 
     /**
@@ -213,11 +216,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         {
             return true;
         }
-        try ( NodeCursor nodeCursor = read.cursors().allocateNodeCursor() )
-        {
-            read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
-            return nodeCursor.next();
-        }
+        read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
+        return nodeCursor.next();
     }
 
     private void setupFilterStateIfNeeded()
@@ -267,6 +267,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     public void release()
     {
         storeCursor.close();
+        nodeCursor.close();
+        nodeCursor.release();
     }
 
     @Override

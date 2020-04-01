@@ -30,12 +30,12 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Arrays.stream;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipIndexCursor, EntityIndexSeekClient
 {
     private final CursorPool<DefaultRelationshipIndexCursor> pool;
+    private final DefaultRelationshipScanCursor relationshipScanCursor;
     private Read read;
     private long relationship;
     private float score;
@@ -43,9 +43,10 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     private int[] propertyIds;
     private boolean shortcutSecurity;
 
-    DefaultRelationshipIndexCursor( CursorPool<DefaultRelationshipIndexCursor> pool )
+    DefaultRelationshipIndexCursor( CursorPool<DefaultRelationshipIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor )
     {
         this.pool = pool;
+        this.relationshipScanCursor = relationshipScanCursor;
         relationship = NO_ID;
         score = Float.NaN;
     }
@@ -106,21 +107,18 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
             return true;
         }
 
-        try ( RelationshipScanCursor relCursor = read.cursors.allocateRelationshipScanCursor() )
+        read.singleRelationship( reference, relationshipScanCursor );
+        if ( !relationshipScanCursor.next() )
         {
-            read.singleRelationship( reference, relCursor );
-            if ( !relCursor.next() )
+            return false;
+        }
+
+        int relType = relationshipScanCursor.type();
+        for ( int prop : propertyIds )
+        {
+            if ( !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
             {
                 return false;
-            }
-
-            int relType = relCursor.type();
-            for ( int prop : propertyIds )
-            {
-                if ( !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
-                {
-                    return false;
-                }
             }
         }
         return true;
@@ -244,6 +242,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
 
     public void release()
     {
-        // nothing to do
+        relationshipScanCursor.close();
+        relationshipScanCursor.release();
     }
 }

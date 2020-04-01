@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.newapi;
 
 final class FullAccessNodeValueIndexCursor extends DefaultNodeValueIndexCursor
 {
-    FullAccessNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool )
+    FullAccessNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, FullAccessNodeCursor nodeCursor )
     {
-        super( pool );
+        super( pool, nodeCursor );
     }
 
     @Override

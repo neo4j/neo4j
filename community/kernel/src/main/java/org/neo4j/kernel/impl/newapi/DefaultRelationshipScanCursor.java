@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
@@ -37,11 +36,13 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private long single;
     private LongIterator addedRelationships;
     private CursorPool<DefaultRelationshipScanCursor> pool;
+    private final DefaultNodeCursor nodeCursor;
 
-    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, DefaultNodeCursor nodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
+        this.nodeCursor = nodeCursor;
     }
 
     void scan( int type, Read read )
@@ -120,13 +121,13 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return true;
         }
-        try ( NodeCursor sourceNode = read.cursors().allocateNodeCursor();
-              NodeCursor targetNode = read.cursors().allocateNodeCursor() )
+        read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
+        if ( nodeCursor.next() )
         {
-            read.singleNode( storeCursor.sourceNodeReference(), sourceNode );
-            read.singleNode( storeCursor.targetNodeReference(), targetNode );
-            return sourceNode.next() && targetNode.next();
+            read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
+            return nodeCursor.next();
         }
+        return false;
     }
 
     @Override
@@ -186,5 +187,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     public void release()
     {
         storeCursor.close();
+        nodeCursor.close();
+        nodeCursor.release();
     }
 }

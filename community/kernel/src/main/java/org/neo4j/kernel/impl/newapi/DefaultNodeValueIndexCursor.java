@@ -69,15 +69,17 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private boolean needsValues;
     private IndexOrder indexOrder;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
+    private final DefaultNodeCursor nodeCursor;
     private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
     private AccessMode accessMode;
     private boolean shortcutSecurity;
     private boolean disableSecurity;
     private int[] propertyIds;
 
-    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool )
+    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor nodeCursor )
     {
         this.pool = pool;
+        this.nodeCursor = nodeCursor;
         node = NO_ID;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;
@@ -243,24 +245,21 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             return true;
         }
-        try ( DefaultNodeCursor nodeCursor = read.cursors.allocateNodeCursor() )
+        read.singleNode( reference, nodeCursor );
+        if ( !nodeCursor.next() )
         {
-            read.singleNode( reference, nodeCursor );
-            if ( !nodeCursor.next() )
-            {
-                // This node is not visible to this security context
-                return false;
-            }
-
-            boolean allowed = true;
-            long[] labels = nodeCursor.labelsIgnoringTxStateSetRemove().all();
-            for ( int prop : propertyIds )
-            {
-                allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
-            }
-
-            return allowed;
+            // This node is not visible to this security context
+            return false;
         }
+
+        boolean allowed = true;
+        long[] labels = nodeCursor.labelsIgnoringTxStateSetRemove().all();
+        for ( int prop : propertyIds )
+        {
+            allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
+        }
+
+        return allowed;
     }
 
     /**
@@ -538,6 +537,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     public void release()
     {
-        // nothing to do
+        nodeCursor.close();
+        nodeCursor.release();
     }
 }

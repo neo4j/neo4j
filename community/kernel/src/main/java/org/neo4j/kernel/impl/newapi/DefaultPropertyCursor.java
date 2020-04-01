@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -42,6 +40,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
     private Read read;
     private StoragePropertyCursor storeCursor;
+    private final FullAccessNodeCursor nodeCursor;
+    private final FullAccessRelationshipScanCursor relCursor;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -52,10 +52,13 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private long relationshipReference = NO_RELATIONSHIP;
     private LabelSet labels;
 
-    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
+    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, FullAccessNodeCursor nodeCursor,
+                           FullAccessRelationshipScanCursor relCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
+        this.nodeCursor = nodeCursor;
+        this.relCursor = relCursor;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -148,7 +151,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowed( ) )
+            if ( !skip && allowed() )
             {
                 if ( tracer != null )
                 {
@@ -230,18 +233,15 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         }
     }
 
-    public LabelSet labelsIgnoringTxStateSetRemove()
+    private LabelSet labelsIgnoringTxStateSetRemove()
     {
         assert isNode();
 
         if ( labels == null )
         {
-            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
-            {
-                read.singleNode( nodeReference, nodeCursor );
-                nodeCursor.next();
-                labels = nodeCursor.labelsIgnoringTxStateSetRemove();
-            }
+            read.singleNode( nodeReference, nodeCursor );
+            nodeCursor.next();
+            labels = nodeCursor.labelsIgnoringTxStateSetRemove();
         }
         return labels;
     }
@@ -250,17 +250,18 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     {
         assert isRelationship();
 
-        try ( RelationshipScanCursor relCursor = read.cursors().allocateFullAccessRelationshipScanCursor() )
-        {
-            read.singleRelationship( relationshipReference, relCursor );
-            relCursor.next();
-            return relCursor.type();
-        }
+        read.singleRelationship( relationshipReference, relCursor );
+        relCursor.next();
+        return relCursor.type();
     }
 
     public void release()
     {
         storeCursor.close();
+        nodeCursor.close();
+        nodeCursor.release();
+        relCursor.close();
+        relCursor.release();
     }
 
     private boolean isNode()
