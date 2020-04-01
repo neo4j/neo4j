@@ -291,8 +291,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeValueIndexCursor = cursor;
     }
 
-    @Override
-    public FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
+    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
     {
         if ( fullAccessNodeValueIndexCursor == null )
         {
@@ -349,8 +348,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeLabelIndexCursor = cursor;
     }
 
-    @Override
-    public DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
+    DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
     {
         if ( fullAccessNodeLabelIndexCursor == null )
         {
