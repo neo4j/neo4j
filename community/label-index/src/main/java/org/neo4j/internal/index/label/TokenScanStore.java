@@ -80,7 +80,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                     cacheTracer );
         }
-        return EmptyRelationshipTypeScanStore.INSTANCE;
+        return new EmptyRelationshipTypeScanStore( fs, directoryStructure );
     }
 
     /**

@@ -105,12 +105,7 @@ class RelationshipTypeScanStoreIT
     void shouldSeeAddedRelationship()
     {
         List<Long> expectedIds = new ArrayList<>();
-        try ( Transaction tx = db.beginTx() )
-        {
-            Relationship relationship = createRelationship( tx );
-            expectedIds.add( relationship.getId() );
-            tx.commit();
-        }
+        createRelationshipInTx( expectedIds );
 
         assertContainIds( expectedIds );
     }
@@ -149,12 +144,7 @@ class RelationshipTypeScanStoreIT
     void shouldRebuildIfMissingDuringStartup()
     {
         List<Long> expectedIds = new ArrayList<>();
-        try ( Transaction tx = db.beginTx() )
-        {
-            Relationship relationship = createRelationship( tx );
-            expectedIds.add( relationship.getId() );
-            tx.commit();
-        }
+        createRelationshipInTx( expectedIds );
 
         ResourceIterator<File> files = getRelationshipTypeScanStoreFiles();
         dbmsController.restartDbms( builder ->
@@ -188,12 +178,7 @@ class RelationshipTypeScanStoreIT
     void shouldBeRecovered()
     {
         List<Long> expectedIds = new ArrayList<>();
-        try ( Transaction tx = db.beginTx() )
-        {
-            Relationship relationship = createRelationship( tx );
-            expectedIds.add( relationship.getId() );
-            tx.commit();
-        }
+        createRelationshipInTx( expectedIds );
 
         dbmsController.restartDbms( builder ->
         {
@@ -263,6 +248,31 @@ class RelationshipTypeScanStoreIT
         } );
     }
 
+    @Test
+    void mustBeConsistentAfterBeingTurnedOffAndOnAgain()
+    {
+        List<Long> expectedIds = new ArrayList<>();
+        createRelationshipInTx( expectedIds );
+
+        // When adding new relationship while relationship type scan store is disabled
+        dbmsController.restartDbms( builder ->
+        {
+            builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
+            return builder;
+        });
+        createRelationshipInTx( expectedIds );
+
+        dbmsController.restartDbms( builder ->
+        {
+            builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+            return builder;
+        });
+        createRelationshipInTx( expectedIds );
+
+        // Then we should still see all relationships after it has been enabled again
+        assertContainIds( expectedIds );
+    }
+
     private ResourceIterator<File> getRelationshipTypeScanStoreFiles()
     {
         RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
@@ -281,6 +291,16 @@ class RelationshipTypeScanStoreIT
         return relationship;
     }
 
+    private void createRelationshipInTx( List<Long> expectedIds )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = createRelationship( tx );
+            expectedIds.add( relationship.getId() );
+            tx.commit();
+        }
+    }
+
     private void assertContainIds( List<Long> expectedIds )
     {
         int relationshipTypeId = getRelationshipTypeId();
@@ -294,7 +314,7 @@ class RelationshipTypeScanStoreIT
         }
         expectedIds.sort( Long::compareTo );
         actualIds.sort( Long::compareTo );
-        assertThat( actualIds ).as( "using RTSS " + relationshipTypeScanStore.getClass().getSimpleName() ).isEqualTo( expectedIds );
+        assertThat( actualIds ).as( "contains expected relationships" ).isEqualTo( expectedIds );
     }
 
     private int countRelationshipsInFulltextIndex( String indexName ) throws KernelException

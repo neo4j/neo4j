@@ -30,6 +30,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -40,10 +42,13 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 public final class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
 {
-    public static final RelationshipTypeScanStore INSTANCE = new EmptyRelationshipTypeScanStore();
+    private final FileSystemAbstraction fileSystem;
+    private final DatabaseLayout directoryStructure;
 
-    private EmptyRelationshipTypeScanStore()
+    public EmptyRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure )
     {
+        this.fileSystem = fileSystem;
+        this.directoryStructure = directoryStructure;
     }
 
     @Override
@@ -107,7 +112,8 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     @Override
     public void init()
-    {   // no-op
+    {
+        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
     }
 
     @Override
