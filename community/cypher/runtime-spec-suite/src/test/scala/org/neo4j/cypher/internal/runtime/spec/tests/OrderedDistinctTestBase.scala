@@ -275,4 +275,79 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     val expected = ((sizeHint / 2 + 1) until sizeHint).distinct.sorted
     runtimeResult should beColumns("prop").withRows(singleColumn(expected))
   }
+
+  test("should work under apply, one column, one sorted") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.orderedDistinct(Seq("y"), "y AS y")
+      .|.unwind("[1,1,2,2,3,3] AS y")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+    } yield Array[Any](x, y)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedRows)
+  }
+
+  test("should work under apply, two columns, one sorted") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "a", "b")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "x AS a", "y AS b")
+      .|.unwind("[1,2,3,1,2,3] AS y")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+    } yield Array[Any](x, x, y)
+
+    runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+  }
+
+  test("should work under apply, two columns, two sorted") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "a", "b")
+      .apply()
+      .|.orderedDistinct(Seq("x", "y"), "x AS a", "y AS b")
+      .|.unwind("[1,1,2,2,3,3] AS y")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+    } yield Array[Any](x, x, y)
+
+    runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+  }
 }
