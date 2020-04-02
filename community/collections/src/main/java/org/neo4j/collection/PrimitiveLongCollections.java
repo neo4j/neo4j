@@ -106,7 +106,7 @@ public final class PrimitiveLongCollections
 
     public static LongIterator concat( Iterator<LongIterator> primitiveLongIterators )
     {
-        return new PrimitiveLongConcaternatingIterator( primitiveLongIterators );
+        return new PrimitiveLongConcatenatingIterator( primitiveLongIterators );
     }
 
     public static LongIterator filter( LongIterator source, final LongPredicate filter )
@@ -389,12 +389,12 @@ public final class PrimitiveLongCollections
         }
     }
 
-    public static class PrimitiveLongConcaternatingIterator extends AbstractPrimitiveLongBaseIterator
+    public static class PrimitiveLongConcatenatingIterator extends AbstractPrimitiveLongBaseIterator
     {
         private final Iterator<? extends LongIterator> iterators;
         private LongIterator currentIterator;
 
-        PrimitiveLongConcaternatingIterator( Iterator<? extends LongIterator> iterators )
+        PrimitiveLongConcatenatingIterator( Iterator<? extends LongIterator> iterators )
         {
             this.iterators = iterators;
         }

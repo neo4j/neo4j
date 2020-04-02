@@ -78,7 +78,7 @@ public class PrimitiveLongResourceCollections
         }
     }
 
-    private static final class PrimitiveLongConcatenatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcaternatingIterator
+    private static final class PrimitiveLongConcatenatingResourceIterator extends PrimitiveLongCollections.PrimitiveLongConcatenatingIterator
             implements PrimitiveLongResourceIterator
     {
         private final Iterable<PrimitiveLongResourceIterator> iterators;
