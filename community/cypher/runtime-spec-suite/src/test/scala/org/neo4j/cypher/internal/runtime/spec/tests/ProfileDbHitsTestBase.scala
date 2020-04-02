@@ -308,8 +308,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
-    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * (costOfGetPropertyChain + costOfProperty)) // cacheProperties
+    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)) // cacheProperties
   }
 
   test("should profile dbHits with apply") {
