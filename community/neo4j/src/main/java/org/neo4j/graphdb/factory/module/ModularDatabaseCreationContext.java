@@ -134,8 +134,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fs = globalModule.getFileSystem();
         this.transactionStats = editionComponents.getTransactionMonitor();
         this.eventListeners = globalModule.getDatabaseEventListeners();
-        this.databaseHealthFactory = () -> globalModule.getGlobalHealthService()
-                .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, namedDatabaseId.name() ),
+        this.databaseHealthFactory = () -> new DatabaseHealth(
+                        new DatabasePanicEventGenerator( eventListeners, namedDatabaseId.name() ),
                         databaseLogService.getInternalLog( DatabaseHealth.class ) );
         this.commitProcessFactory = editionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();

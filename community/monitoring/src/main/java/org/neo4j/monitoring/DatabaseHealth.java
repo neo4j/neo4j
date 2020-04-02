@@ -37,27 +37,11 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
     private final DatabasePanicEventGenerator panicEventGenerator;
     private final Log log;
     private volatile Throwable causeOfPanic;
-    private final CompositeDatabaseHealth globalHealth;
 
     public DatabaseHealth( DatabasePanicEventGenerator panicEventGenerator, Log log )
     {
-        this( panicEventGenerator, log, null );
-    }
-
-    public DatabaseHealth( DatabasePanicEventGenerator panicEventGenerator, Log log, CompositeDatabaseHealth globalHealth )
-    {
         this.panicEventGenerator = panicEventGenerator;
         this.log = log;
-        this.globalHealth = globalHealth;
-    }
-
-    @Override
-    public void stop() throws Exception
-    {
-       if ( globalHealth != null )
-       {
-           globalHealth.removeDatabaseHealth( this );
-       }
     }
 
     /**
