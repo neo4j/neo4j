@@ -227,7 +227,7 @@ public final class GrabAllocator implements MemoryAllocator
                 throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
             }
             long grabSize = Math.min( GRAB_SIZE, expectedMaxMemory );
-            if ( bytes > GRAB_SIZE )
+            if ( bytes + alignment - 1 > GRAB_SIZE )
             {
                 // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
                 grabSize = bytes;
@@ -236,7 +236,7 @@ public final class GrabAllocator implements MemoryAllocator
                 if ( !allocationGrab.canAllocate( bytes, alignment ) )
                 {
                     allocationGrab.free();
-                    grabSize = bytes + alignment;
+                    grabSize = bytes + alignment - 1;
                     allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
                 }
                 long allocation = allocationGrab.allocate( bytes, alignment );
@@ -258,7 +258,7 @@ public final class GrabAllocator implements MemoryAllocator
                         return head.allocate( bytes, alignment );
                     }
                     grab.free();
-                    grabSize = bytes + alignment;
+                    grabSize = bytes + alignment - 1;
                 }
                 head = new Grab( head, grabSize, memoryTracker );
                 expectedMaxMemory -= grabSize;
