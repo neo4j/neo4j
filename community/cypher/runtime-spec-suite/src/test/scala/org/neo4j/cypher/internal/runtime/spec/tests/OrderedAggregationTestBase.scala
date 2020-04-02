@@ -24,6 +24,7 @@ import java.util.Collections
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -373,5 +374,36 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("i", "count")
       .withRows(inOrder((0 until sizeHint).map(Array[Any](_, 1))))
+  }
+
+  test("should count on single ordered grouping column under apply") {
+    val nodesPerLabel = 100
+    index("B", "prop")
+    val (aNodes, bNodes) = given {
+      val aNodes = nodeGraph(nodesPerLabel, "A")
+      val bNodes = nodePropertyGraph(nodesPerLabel, {
+        case i: Int => Map("prop" -> (if (i % 2 == 0) 5 else 0))
+      }, "B")
+      (aNodes, bNodes)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.orderedAggregation(Seq("b AS b"), Seq("count(number) AS c"), Seq("b"))
+      .|.unwind("range(1, b.prop) AS number")
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- aNodes
+      b <- bNodes if b.getProperty("prop").asInstanceOf[Int] == 5
+    }  yield Array[Any](a, b, 5)
+
+    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 }
