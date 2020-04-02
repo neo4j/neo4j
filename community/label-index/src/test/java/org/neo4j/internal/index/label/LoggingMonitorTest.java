@@ -40,6 +40,7 @@ class LoggingMonitorTest
         LoggingMonitor loggingMonitor = new LoggingMonitor( log, type );
         String lowerToken = type == EntityType.NODE ? "label" : "relationship type";
         String upperToken = type == EntityType.NODE ? "Label" : "Relationship type";
+        String typePlural = type == EntityType.NODE ? "nodes" : "relationships";
 
         // When
         loggingMonitor.noIndex();
@@ -55,7 +56,7 @@ class LoggingMonitorTest
         logProvider.clear();
 
         loggingMonitor.rebuilt( 0 );
-        assertThat( logProvider ).forClass( LoggingMonitorTest.class ).containsMessages( upperToken );
+        assertThat( logProvider ).forClass( LoggingMonitorTest.class ).containsMessages( upperToken, typePlural );
         logProvider.clear();
 
         loggingMonitor.recoveryCleanupRegistered();

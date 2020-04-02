@@ -46,6 +46,9 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
  */
 public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
 {
+    String LABEL_SCAN_STORE_MONITOR_TAG = "LabelScanStore";
+    String RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG = "RelationshipTypeScanStore";
+
     /**
      * Create a new {@link LabelScanStore}.
      */

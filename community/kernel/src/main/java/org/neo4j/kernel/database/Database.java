@@ -169,6 +169,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.index.label.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
+import static org.neo4j.internal.index.label.TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
 import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
@@ -605,7 +607,7 @@ public class Database extends LifecycleAdapter
             boolean readOnly,
             PageCacheTracer cacheTracer )
     {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ) );
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ), LABEL_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream labelStream = new FullLabelStream( indexStoreView );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 cacheTracer );
@@ -629,7 +631,8 @@ public class Database extends LifecycleAdapter
             Config config,
             PageCacheTracer cacheTracer )
     {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ) );
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ),
+                RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream relationshipTypeStream = new FullRelationshipTypeStream( indexStoreView );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream, readOnly, monitors, recoveryCleanupWorkCollector,

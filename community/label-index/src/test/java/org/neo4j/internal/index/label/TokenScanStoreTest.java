@@ -85,6 +85,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
+import static org.neo4j.internal.index.label.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
 import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
@@ -124,7 +125,7 @@ public class TokenScanStoreTest
     {
         String expectedMessage = "Expected exception message";
         Monitors monitors = mock( Monitors.class );
-        when( monitors.newMonitor( LabelScanStore.Monitor.class ) ).thenReturn( TokenScanStore.Monitor.EMPTY );
+        when( monitors.newMonitor( LabelScanStore.Monitor.class, LABEL_SCAN_STORE_MONITOR_TAG ) ).thenReturn( TokenScanStore.Monitor.EMPTY );
         doThrow( new RuntimeException( expectedMessage ) ).when( monitors ).addMonitorListener( any() );
 
         LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, true, monitors );

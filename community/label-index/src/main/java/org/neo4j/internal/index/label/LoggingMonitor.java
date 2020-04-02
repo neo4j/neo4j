@@ -30,19 +30,21 @@ import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.internal.index.label.LabelScanStore.Monitor;
 
 /**
- * Logs about important events about {@link LabelScanStore} {@link Monitor}.
+ * Logs about important events about {@link LabelScanStore} and {@link RelationshipTypeScanStore}.
  */
 public class LoggingMonitor extends Monitor.Adaptor
 {
     private final Log log;
+    private final EntityType type;
     private final String lowerToken;
     private final String upperToken;
 
     public LoggingMonitor( Log log, EntityType type )
     {
         this.log = log;
-        lowerToken = type == EntityType.NODE ? "label" : "relationship type";
-        upperToken = type == EntityType.NODE ? "Label" : "Relationship type";
+        this.type = type;
+        this.lowerToken = type == EntityType.NODE ? "label" : "relationship type";
+        this.upperToken = type == EntityType.NODE ? "Label" : "Relationship type";
     }
 
     @Override
@@ -66,7 +68,7 @@ public class LoggingMonitor extends Monitor.Adaptor
     @Override
     public void rebuilt( long roughEntityCount )
     {
-        log.info( "%s index rebuilt (roughly %d nodes)", upperToken, roughEntityCount );
+        log.info( "%s index rebuilt (roughly %d %ss)", upperToken, roughEntityCount, type.name().toLowerCase() );
     }
 
     @Override

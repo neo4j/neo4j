@@ -65,6 +65,29 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return this;
     }
 
+    public LogAssert containsMessagesOnce( String... messages )
+    {
+        isNotNull();
+        for ( String message : messages )
+        {
+            long messageMatchCount = messageMatchCount( message );
+            if ( messageMatchCount != 1 )
+            {
+                if ( messageMatchCount == 0 )
+                {
+                    failWithMessage( "Expected log to contain messages: `%s` exactly once but no matches found in:%n%s",
+                            Arrays.toString( messages ), actual.serialize() );
+                }
+                else
+                {
+                    failWithMessage( "Expected log to contain messages: `%s` exactly once but %d matches found in:%n%s",
+                            Arrays.toString( messages ), messageMatchCount, actual.serialize() );
+                }
+            }
+        }
+        return this;
+    }
+
     public LogAssert doesNotHaveAnyLogs()
     {
         isNotNull();
@@ -168,6 +191,14 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return logCalls.stream().anyMatch( call -> matchedLogger( call ) &&
                 matchedLevel( call ) &&
                 matchedMessage( message, call ) );
+    }
+
+    private long messageMatchCount( String message )
+    {
+        var logCalls = actual.getLogCalls();
+        return logCalls.stream().filter( call -> matchedLogger( call ) &&
+                matchedLevel( call ) &&
+                matchedMessage( message, call ) ).count();
     }
 
     private static boolean matchedMessage( String message, LogCall call )

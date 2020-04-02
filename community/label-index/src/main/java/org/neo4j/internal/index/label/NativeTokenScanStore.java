@@ -192,10 +192,12 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
         this.cacheTracer = cacheTracer;
-        this.storeFile = entityType == EntityType.NODE ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
+        boolean isLabelScanStore = entityType == EntityType.NODE;
+        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
-        this.monitor = monitors.newMonitor( Monitor.class );
+        String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
+        this.monitor = monitors.newMonitor( Monitor.class, monitorTag );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.fileSystem = fs;
         this.entityType = entityType;
@@ -432,7 +434,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private GBPTree.Monitor treeMonitor()
     {
-        return new LabelIndexTreeMonitor();
+        return new TokenIndexTreeMonitor();
     }
 
     @Override
@@ -548,7 +550,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         }
     }
 
-    private class LabelIndexTreeMonitor extends GBPTree.Monitor.Adaptor
+    private class TokenIndexTreeMonitor extends GBPTree.Monitor.Adaptor
     {
         @Override
         public void cleanupRegistered()
