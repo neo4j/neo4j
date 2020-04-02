@@ -23,13 +23,12 @@ import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.CypherOption
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -81,11 +80,6 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 object FullyParsedQuery {
 
   case class CacheKey(statement: Statement, fields: QueryOptions.CacheKey)
-
-  private val prettifier = Prettifier(ExpressionStringifier())
-
-  private def prettify(query: FullyParsedQuery): String =
-    "/* FullyParsedQuery */ " + prettifier.asString(query.state.statement())
 }
 
 /**
@@ -140,6 +134,30 @@ case class QueryOptions(offset: InputPosition,
     },
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
+
+  def render: Option[String] = {
+    def arg(value: CypherOption, ignoredValue: CypherOption) =
+      if (value == ignoredValue) Seq()
+      else Seq(value.name)
+
+    def option(key: String, value: CypherOption, ignoredValue: CypherOption) =
+      if (value == ignoredValue) Seq()
+      else Seq(s"$key=${value.name}")
+
+    val parts = Seq(
+      arg(version, CypherVersion.default),
+      option("planner", planner, CypherPlannerOption.default),
+      option("runtime", runtime, CypherRuntimeOption.default),
+      option("updateStrategy", updateStrategy, CypherUpdateStrategy.default),
+      option("expressionEngine", expressionEngine, CypherExpressionEngineOption.default),
+      option("operatorEngine", operatorEngine, CypherOperatorEngineOption.default),
+      option("interpretedPipesFallback", interpretedPipesFallback, CypherInterpretedPipesFallbackOption.default),
+      debugOptions.map(flag => s"debug=$flag"),
+    ).flatten
+
+    if (parts.nonEmpty) Some(s"CYPHER ${parts.mkString(" ")}")
+    else None
+  }
 
 }
 
