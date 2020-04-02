@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryGroup;
-import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.resources.CpuClock;
@@ -76,7 +75,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
 import static java.util.stream.Collectors.toSet;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 
 /**
  * Central source of transactions in the database.
@@ -188,7 +187,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
         this.transactionMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, namedDatabaseId.name() + " transactions pool",
-                config.get( memory_transaction_global_max_size ) );
+                config.get( memory_transaction_database_max_size ) );
         doBlockNewTransactions();
     }
 
@@ -407,11 +406,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             this.transactions.add( tx );
             return tx;
         }
-    }
-
-    public MemoryPool getTransactionMemoryPool()
-    {
-        return transactionMemoryPool;
     }
 
     private static class GlobalKernelTransactionPool extends LinkedQueuePool<KernelTransactionImplementation>

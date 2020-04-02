@@ -184,6 +184,7 @@ org.neo4j.configuration.GraphDatabaseSettings::logical_logs_location org.neo4j.g
 org.neo4j.configuration.GraphDatabaseSettings::logs_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lucene_searcher_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::max_concurrent_transactions org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::memory_transaction_database_max_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::memory_transaction_global_max_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::memory_transaction_max_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::neo4j_home org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final

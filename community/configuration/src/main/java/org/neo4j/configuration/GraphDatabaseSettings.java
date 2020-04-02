@@ -1124,6 +1124,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Long> memory_transaction_global_max_size =
             newBuilder( "dbms.memory.transaction.global_max_size", BYTES, 0L ).build();
 
+    @Description( "Limit the amount of memory that all transaction in one database can consume, in bytes (or kilobytes with the 'k' " +
+            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
+    public static final Setting<Long> memory_transaction_database_max_size =
+            newBuilder( "dbms.memory.transaction.datababase_max_size", BYTES, 0L ).build();
+
     @Description( "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' " +
             "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
     public static final Setting<Long> memory_transaction_max_size =
