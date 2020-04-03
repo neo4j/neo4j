@@ -426,6 +426,7 @@ public final class UnsafeUtil
     public static ByteBuffer allocateByteBuffer( int size )
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect( size );
+        addAllocatedPointer( getDirectByteBufferAddress( buffer ), size );
         GlobalMemoryTracker.INSTANCE.allocateDirect( size );
         return buffer;
     }
@@ -437,6 +438,7 @@ public final class UnsafeUtil
     public static void freeByteBuffer( ByteBuffer byteBuffer )
     {
         int capacity = byteBuffer.capacity();
+        checkFree( getDirectByteBufferAddress( byteBuffer ) );
         UnsafeUtil.invokeCleaner( byteBuffer );
         GlobalMemoryTracker.INSTANCE.releaseDirect( capacity );
     }
@@ -966,12 +968,12 @@ public final class UnsafeUtil
         unsafe.putObjectVolatile( obj, offset, value );
     }
 
-    public static int arrayBaseOffset( Class klass )
+    public static int arrayBaseOffset( Class<?> klass )
     {
         return unsafe.arrayBaseOffset( klass );
     }
 
-    public static int arrayIndexScale( Class klass )
+    public static int arrayIndexScale( Class<?> klass )
     {
         int scale = unsafe.arrayIndexScale( klass );
         if ( scale == 0 )
