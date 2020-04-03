@@ -100,6 +100,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
+import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -4809,13 +4810,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         ByteBuffer buffer = allocateDirect( filePageSize );
-        File file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
-        try ( PagedFile pf = map( file, filePageSize );
-                PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        try
         {
-            assertTrue( cursor.next() );
-            verifyCopyToBufferBounds( cursor, buffer );
+            File file = file( "a" );
+            generateFileWithRecords( file, recordsPerFilePage, recordSize );
+            try ( PagedFile pf = map( file, filePageSize );
+                  PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                verifyCopyToBufferBounds( cursor, buffer );
+            }
+        }
+        finally
+        {
+            releaseBuffer( buffer );
         }
     }
 
@@ -4839,13 +4847,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         ByteBuffer buffer = allocateDirect( filePageSize );
-        File file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
-        try ( PagedFile pf = map( file, filePageSize );
-                PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try
         {
-            assertTrue( cursor.next() );
-            verifyCopyToBufferBounds( cursor, buffer );
+            File file = file( "a" );
+            generateFileWithRecords( file, recordsPerFilePage, recordSize );
+            try ( PagedFile pf = map( file, filePageSize );
+                  PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                verifyCopyToBufferBounds( cursor, buffer );
+            }
+        }
+        finally
+        {
+            releaseBuffer( buffer );
         }
     }
 
@@ -4945,13 +4960,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToReadOnlyDirectByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buf = allocateDirect( filePageSize ).asReadOnlyBuffer();
-        try ( PagedFile pf = map( file( "a" ), filePageSize );
-                PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        ByteBuffer allocation = allocateDirect( filePageSize );
+        try
         {
-            assertTrue( cursor.next() );
-
-            assertThrows( ReadOnlyBufferException.class, () -> cursor.copyTo( 0, buf ) );
+            ByteBuffer buf = allocation.asReadOnlyBuffer();
+            try ( PagedFile pf = map( file( "a" ), filePageSize );
+                  PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertThrows( ReadOnlyBufferException.class, () -> cursor.copyTo( 0, buf ) );
+            }
+        }
+        finally
+        {
+            releaseBuffer( allocation );
         }
     }
 

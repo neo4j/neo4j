@@ -28,6 +28,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 
 import static java.lang.Math.min;
+import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 
 /**
  * The main implementation of {@link FlushableChannel}. This class provides buffering over a simple {@link StoreChannel}
@@ -143,6 +144,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
     public void close() throws IOException
     {
         prepareForFlush().flush();
+        releaseBuffer( buffer );
         this.closed = true;
         this.channel.close();
     }

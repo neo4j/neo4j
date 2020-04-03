@@ -185,10 +185,14 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
     @Override
     public void close() throws IOException
     {
-        channel.close();
-        if ( cleanBufferOnClose )
+        if ( channel != null )
         {
-            releaseBuffer( aheadBuffer );
+            channel.close();
+            channel = null;
+            if ( cleanBufferOnClose )
+            {
+                releaseBuffer( aheadBuffer );
+            }
         }
     }
 
