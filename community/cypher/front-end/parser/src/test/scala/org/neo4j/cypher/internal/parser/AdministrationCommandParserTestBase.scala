@@ -47,9 +47,9 @@ class AdministrationCommandParserTestBase
 
   def toUtf8Bytes(pw: String): Array[Byte] = pw.getBytes(StandardCharsets.UTF_8)
 
-  def pw(password: String): Either[SensitiveStringLiteral, expressions.Parameter] = Left(expressions.SensitiveStringLiteral(toUtf8Bytes(password))(_))
+  def pw(password: String) = expressions.SensitiveStringLiteral(toUtf8Bytes(password))(_)
 
-  def pwParam(name: String): Either[SensitiveStringLiteral, expressions.Parameter] = Right(expressions.Parameter(name, CTString)(_))
+  def pwParam(name: String): expressions.Parameter = expressions.Parameter(name, CTString)(_)
 
   type resourcePrivilegeFunc = (PrivilegeType, ActionResource, List[GraphScope], PrivilegeQualifier, Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
   type noResourcePrivilegeFunc = (PrivilegeType, List[GraphScope], PrivilegeQualifier, Seq[Either[String, Parameter]]) => InputPosition => ast.Statement

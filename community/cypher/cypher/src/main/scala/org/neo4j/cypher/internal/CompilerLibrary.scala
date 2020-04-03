@@ -35,6 +35,7 @@ import scala.collection.JavaConverters.collectionAsScalaIterableConverter
  * @param factory factory to create compilers
  */
 class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => ExecutionEngine) {
+  def supportsAdministrativeCommands(): Boolean = factory.supportsAdministrativeCommands()
 
   private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
 

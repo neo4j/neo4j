@@ -156,7 +156,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case DropUser(source, userName) => (context, parameterMapping) =>
       val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
-        s"""MATCH (user:User {name: $$$userNameKey}) DETACH DELETE user
+        s"""MATCH (user:User {name: $$`$userNameKey`}) DETACH DELETE user
           |RETURN 1 AS ignore""".stripMargin,
         VirtualValues.map(Array(userNameKey), Array(userNameValue)),
         QueryHandler
@@ -179,9 +179,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
       def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
       val query =
-        s"""MATCH (user:User {name: $$$usernameKey})
+        s"""MATCH (user:User {name: $$`$usernameKey`})
           |WITH user, user.credentials AS oldCredentials
-          |SET user.credentials = $$${newPw.key}
+          |SET user.credentials = $$`${newPw.key}`
           |SET user.passwordChangeRequired = false
           |RETURN oldCredentials""".stripMargin
 
@@ -239,7 +239,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$$nameKey})
+           |MATCH (node:$label {name: $$`$nameKey`})
            |RETURN node.name AS name
         """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
@@ -257,7 +257,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$$nameKey})
+           |MATCH (node:$label {name: $$`$nameKey`})
            |RETURN node.name AS name
         """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
@@ -275,7 +275,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case EnsureNodeExists(source, label, name, valueMapper) => (context, parameterMapping) =>
       val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
-        s"""MATCH (node:$label {name: $$$nameKey})
+        s"""MATCH (node:$label {name: $$`$nameKey`})
            |RETURN node""".stripMargin,
         VirtualValues.map(Array(nameKey), Array(nameValue)),
         QueryHandler
@@ -314,13 +314,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
           converter(m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
         }
-        (s"AND d.name = $$$key", VirtualValues.map(Array(key), Array(value)), combinedConverter)
+        (s"AND d.name = $$`$key`", VirtualValues.map(Array(key), Array(value)), combinedConverter)
       // show all databases
       case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
     }
     val query = s"""
        |MATCH (d: Database)
-       |WHERE d.name IN $$$accessibleDbsKey $extraFilter
+       |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
        |CALL dbms.database.state(d.name) yield status, error, address, role
        |WITH d, status as currentStatus, error, address, role
        |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn

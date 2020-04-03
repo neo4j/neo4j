@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.StrictnessMode
@@ -53,12 +54,12 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 
 // Security administration commands
 case class ShowUsers(source: PrivilegePlan)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], initialPassword: Either[Array[Byte], Parameter],
+case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], initialPassword: Expression,
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter], initialPassword: Option[Either[Array[Byte], Parameter]],
+case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter], initialPassword: Option[Expression],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class SetOwnPassword(newPassword: Either[Array[Byte], Parameter], currentPassword: Either[Array[Byte], Parameter])
+case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)
                          (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class ShowRoles(source: PrivilegePlan, withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))

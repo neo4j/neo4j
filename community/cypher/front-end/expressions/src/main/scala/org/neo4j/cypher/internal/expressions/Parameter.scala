@@ -42,6 +42,8 @@ trait SensitiveParameter {
   val position: InputPosition
 }
 
+trait SensitiveAutoParameter extends SensitiveParameter
+
 case class ParameterWithOldSyntax(name: String,
                                   parameterType: CypherType)(val position: InputPosition)
   extends Expression with Param {

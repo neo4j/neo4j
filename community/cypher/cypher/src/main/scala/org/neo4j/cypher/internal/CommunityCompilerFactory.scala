@@ -46,6 +46,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
   private val log: Log = logProvider.getLog(getClass)
 
+  override def supportsAdministrativeCommands(): Boolean = plannerConfig.planSystemCommands
+
   override def createCompiler(cypherVersion: CypherVersion,
                               cypherPlanner: CypherPlannerOption,
                               cypherRuntime: CypherRuntimeOption,

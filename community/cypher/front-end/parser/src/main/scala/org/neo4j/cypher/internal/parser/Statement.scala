@@ -119,20 +119,20 @@ trait Statement extends Parser
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD stringLiteralPassword optionalStatus
     group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, suspended) =>
-      ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
+      ast.CreateUser(userNameAndIfExistsDo._1, initialPassword, requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
     group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2)) |
+      ast.CreateUser(userNameAndIfExistsDo._1, initialPassword, requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2)) |
     //
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalStatus
     group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, suspended) =>
-      ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
+      ast.CreateUser(userNameAndIfExistsDo._1, initialPassword, requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
     group(createUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userNameAndIfExistsDo._1, password(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2))
+      ast.CreateUser(userNameAndIfExistsDo._1, initialPassword, requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2))
   }
 
   def createUserStart: Rule1[(Either[String, Parameter], IfExistsDo)] = {
@@ -152,20 +152,20 @@ trait Statement extends Parser
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.AlterUser(userName, Some(password(initialPassword)), None, suspended)) |
+      ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.AlterUser(userName, Some(password(initialPassword)), requirePasswordChange, suspended)) |
+      ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username SET PASSWORD parameterPassword optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.AlterUser(userName, Some(password(initialPassword)), None, suspended)) |
+      ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.AlterUser(userName, Some(password(initialPassword)), requirePasswordChange, suspended)) |
+      ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username setRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ setRequirePasswordChange ~~ optionalStatus) ~~>>
@@ -179,16 +179,16 @@ trait Statement extends Parser
   def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG ALTER CURRENT USER SET PASSWORD") {
     // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO stringLiteralPassword
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringLiteral ~~ keyword("TO") ~~ SensitiveStringLiteral) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
+      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
     // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO parameterPassword
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringLiteral ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
+      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
     // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO stringLiteralPassword
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringLiteral) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword))) |
+      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
     // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO parameterPassword
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(password(newPassword), password(currentPassword)))
+      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword))
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {
@@ -598,11 +598,6 @@ trait Statement extends Parser
 
   def DropView: Rule1[DropView] = rule("CATALOG DROP VIEW") {
     group((keyword("CATALOG DROP VIEW") | keyword("CATALOG DROP QUERY")) ~~ CatalogName) ~~>> (ast.DropView(_))
-  }
-
-  private def password(expr: Expression): Either[SensitiveStringLiteral, Parameter] = expr match {
-    case ssl: SensitiveStringLiteral => Left(ssl)
-    case p: Parameter => Right(p)
   }
 
   def SymbolicNameOrStringParameter: Rule1[Either[String, expressions.Parameter]] =

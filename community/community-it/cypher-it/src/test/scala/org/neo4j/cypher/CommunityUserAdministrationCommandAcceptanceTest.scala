@@ -552,7 +552,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
 
-    the[InvalidArgumentsException] thrownBy {
+    the[QueryExecutionException] thrownBy {
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO ''")
       // THEN
@@ -564,7 +564,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val parameter = new util.HashMap[String, Object]()
     parameter.put("password", "bar")
 
-    the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
+    the[QueryExecutionException] thrownBy {
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
       // THEN
@@ -572,6 +572,29 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should fail when changing own password to existing password and then succeed with a new password") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("password", "bar")
+
+    the[QueryExecutionException] thrownBy {
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
+    } should have message "User 'foo' failed to alter their own password: Old password and new password cannot be the same."
+
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+
+    val parameter2 = new util.HashMap[String, Object]()
+    parameter2.put("password", "badger")
+
+    // WHEN
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter2)
+
+    // THEN
+    testUserLogin("foo", "badger", AuthenticationResult.SUCCESS)
   }
 
   test("should change own password to parameter") {

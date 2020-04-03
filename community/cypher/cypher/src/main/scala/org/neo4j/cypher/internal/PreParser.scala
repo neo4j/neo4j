@@ -76,12 +76,14 @@ class PreParser(configuredVersion: CypherVersion,
    *
    * @param queryText the query
    * @param profile true if the query should be profiled even if profile is not given as a pre-parser option
+   * @param couldContainSensitiveFields true if the query might contain passwords, like some administrative commands can
    * @throws SyntaxException if there are syntactic errors in the pre-parser options
    * @return the pre-parsed query
    */
   @throws(classOf[SyntaxException])
-  def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
-    val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+  def preParseQuery(queryText: String, profile: Boolean = false, couldContainSensitiveFields: Boolean = false): PreParsedQuery = {
+    val preParsedQuery = if (couldContainSensitiveFields) actuallyPreParse(queryText)
+    else preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
     if (profile) preParsedQuery.copy(options = preParsedQuery.options.copy(executionMode = CypherExecutionMode.profile))
     else preParsedQuery
   }

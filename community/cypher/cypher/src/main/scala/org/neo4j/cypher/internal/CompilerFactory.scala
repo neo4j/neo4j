@@ -28,6 +28,8 @@ import org.neo4j.cypher.CypherVersion
  * Factory which creates cypher compilers.
  */
 trait CompilerFactory {
+  def supportsAdministrativeCommands(): Boolean
+
   def createCompiler(cypherVersion: CypherVersion,
                      cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,

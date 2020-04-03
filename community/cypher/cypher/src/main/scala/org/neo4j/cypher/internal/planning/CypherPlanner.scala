@@ -62,6 +62,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPla
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
@@ -192,7 +194,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         innerVariableNamer,
         params,
         compatibilityMode)
-      parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
+      if (!config.planSystemCommands) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
     }
   }
@@ -347,6 +349,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         if (m.isApplicableAdministrationCommand(logicalPlanState)) {
           val allowQueryCaching = logicalPlanState.maybeLogicalPlan match {
             case Some(_: SystemProcedureCall) => false
+            case Some(ContainsSensitiveFields()) => false
             case _ => true
           }
           (FineToReuse, allowQueryCaching)
@@ -386,6 +389,15 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
         IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
     }
+}
+
+object ContainsSensitiveFields {
+  def unapply(plan: LogicalPlan): Boolean = {
+    plan.treeExists {
+      case _: SensitiveStringLiteral => true
+      case _: SensitiveParameter => true
+    }
+  }
 }
 
 case class LogicalPlanResult(logicalPlanState: LogicalPlanState,

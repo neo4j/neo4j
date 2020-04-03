@@ -146,11 +146,13 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WritePrivilege
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
@@ -244,10 +246,7 @@ case class Prettifier(
         case _: IfExistsDoNothing => " IF NOT EXISTS"
         case _                    => ""
       }
-      val password = initialPassword match {
-        case Left(_) => "'******'"
-        case Right(param) => s"$$${param.name}"
-      }
+      val password = Prettifier.escapePassword(initialPassword)
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
       else ""
@@ -259,11 +258,7 @@ case class Prettifier(
 
     case x @ AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
       val userNameString = Prettifier.escapeName(userName)
-      val passwordString = initialPassword match {
-        case None => ""
-        case Some(Left(_)) => s" '******'"
-        case Some(Right(param)) => s" $$${param.name}"
-      }
+      val passwordString = initialPassword.map(" " + Prettifier.escapePassword(_)).getOrElse("")
       val passwordModeString = if (requirePasswordChange.isDefined)
         s" CHANGE ${if (!requirePasswordChange.get) "NOT " else ""}REQUIRED"
       else
@@ -273,11 +268,7 @@ case class Prettifier(
       s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
     case x @ SetOwnPassword(newPassword, currentPassword) =>
-      def evalPassword(pw: Either[SensitiveStringLiteral, Parameter]): String = pw match {
-        case Right(param) => s"$$${param.name}"
-        case _ => s"'******'"
-      }
-      s"${x.name} FROM ${evalPassword(currentPassword)} TO ${evalPassword(newPassword)}"
+      s"${x.name} FROM ${Prettifier.escapePassword(currentPassword)} TO ${Prettifier.escapePassword(newPassword)}"
 
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
@@ -776,7 +767,13 @@ object Prettifier {
 
   def escapeName(name: Either[String, Parameter]): String = name match {
     case Left(s) => escapeName(s)
-    case Right(p) => s"$$${p.name}"
+    case Right(p) => s"$$${escapeName(p.name)}"
+  }
+
+  def escapePassword(password: Expression): String = password match {
+    case _: SensitiveStringLiteral => "'******'"
+    case _: SensitiveAutoParameter => "'******'"
+    case param: Parameter => s"$$${escapeName(param.name)}"
   }
 
   def escapeNames(names: Seq[Either[String, Parameter]]): String = names.map(escapeName).mkString(", ")

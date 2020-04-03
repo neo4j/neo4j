@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
@@ -93,7 +93,7 @@ trait EitherAsString {
 }
 
 final case class CreateUser(userName: Either[String, Parameter],
-                            initialPassword: Either[SensitiveStringLiteral, Parameter],
+                            initialPassword: Expression,
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
@@ -122,7 +122,7 @@ final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean
 }
 
 final case class AlterUser(userName: Either[String, Parameter],
-                           initialPassword: Option[Either[SensitiveStringLiteral, Parameter]],
+                           initialPassword: Option[Expression],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends WriteAdministrationCommand {
   assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
@@ -134,7 +134,7 @@ final case class AlterUser(userName: Either[String, Parameter],
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(newPassword: Either[SensitiveStringLiteral, Parameter], currentPassword: Either[PasswordString, Parameter])
+final case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)
                                (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "ALTER CURRENT USER SET PASSWORD"

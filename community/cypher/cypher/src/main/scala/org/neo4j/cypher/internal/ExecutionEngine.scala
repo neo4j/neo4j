@@ -195,7 +195,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
-      val preParsedQuery = preParser.preParseQuery(query, profile)
+      val couldContainSensitiveFields = isOutermostQuery && compilerLibrary.supportsAdministrativeCommands()
+      val preParsedQuery = preParser.preParseQuery(query, profile, couldContainSensitiveFields)
       doExecute(preParsedQuery, params, context, isOutermostQuery, prePopulate, NoInput, queryTracer, subscriber)
     }
   }

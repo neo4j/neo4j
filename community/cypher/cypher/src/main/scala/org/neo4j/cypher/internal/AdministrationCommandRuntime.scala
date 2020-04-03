@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
@@ -87,14 +88,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                          bytesValue: Value,
                                          mapValueConverter: MapValue => MapValue) extends PasswordExpression
 
-  protected def getPasswordExpression(password: Either[Array[Byte], AnyRef]): PasswordExpression =
+  protected def getPasswordExpression(password: expressions.Expression): PasswordExpression =
     password match {
-      case Left(encodedPassword) =>
-        validatePassword(encodedPassword)
-        LiteralPasswordExpression(internalKey("credentials"), hashPassword(encodedPassword), internalKey("credentials_bytes"), Values.byteArray(encodedPassword))
-      case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
-        // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-        val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
+      case parameterPassword: ParameterFromSlot =>
         validateStringParameterType(parameterPassword)
         def convertPasswordParameters(params: MapValue): MapValue = {
           val passwordParameter = parameterPassword.name
@@ -106,14 +102,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         ParameterPasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
     }
 
-  protected def getPasswordFieldsCurrent(password: Either[Array[Byte], AnyRef]): (String, Value, MapValue => MapValue) = {
+  protected def getPasswordFieldsCurrent(password: expressions.Expression): (String, Value, MapValue => MapValue) = {
     password match {
-      case Left(encodedPassword) =>
-        validatePassword(encodedPassword)
-        (internalKey("current_credentials_bytes"), Values.byteArray(encodedPassword), IdentityConverter)
-      case Right(pw) if pw.isInstanceOf[ParameterFromSlot] =>
-        // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-        val parameterPassword = pw.asInstanceOf[ParameterFromSlot]
+      case parameterPassword: ParameterFromSlot =>
         validateStringParameterType(parameterPassword)
         val passwordParameter = parameterPassword.name
         val renamedParameter = s"__current_${passwordParameter}_bytes"
@@ -187,7 +178,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
-                                  password: Either[Array[Byte], Parameter],
+                                  password: expressions.Expression,
                                   requirePasswordChange: Boolean,
                                   suspended: Boolean)(
                                    sourcePlan: Option[ExecutionPlan],
@@ -199,8 +190,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val mapValueConverter: MapValue => MapValue = p => credentials.mapValueConverter(userNameConverter(p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$$userNameKey, credentials: $$${credentials.key},
-         |passwordChangeRequired: $$$passwordChangeRequiredKey, suspended: $$$suspendedKey})
+      s"""CREATE (u:User {name: $$`$userNameKey`, credentials: $$`${credentials.key}`,
+         |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
         Array(userNameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey),

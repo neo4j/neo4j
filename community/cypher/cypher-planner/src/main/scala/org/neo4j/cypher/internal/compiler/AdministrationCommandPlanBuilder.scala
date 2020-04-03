@@ -82,7 +82,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -121,10 +120,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
       case t => planRevoke(source, t.relType)
     }
-    val passwordEncoder: PartialFunction[Either[SensitiveStringLiteral, Parameter], Either[Array[Byte], Parameter]] = {
-      case Left(SensitiveStringLiteral(pw)) => Left(pw)
-      case Right(param) => Right(param)
-    }
+
     def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {
       case _: IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(Seq(DropRoleAction, CreateRoleAction)), roleName)
       case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
@@ -143,7 +139,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, passwordEncoder(initialPassword), requirePasswordChange, suspended),
+          plans.CreateUser(source, userName, initialPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
@@ -164,13 +160,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin
         Some(plans.LogSystemCommand(
-          plans.AlterUser(assertionSubPlan, userName, initialPassword.map(passwordEncoder), requirePasswordChange, suspended),
+          plans.AlterUser(assertionSubPlan, userName, initialPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(newPassword, currentPassword) =>
         Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(passwordEncoder(newPassword), passwordEncoder(currentPassword)),
+          plans.SetOwnPassword(newPassword, currentPassword),
           prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES
