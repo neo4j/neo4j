@@ -126,7 +126,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val expr = ExistsSubClause(pattern, Some(where))(pos, Set.empty)
 
-    val outerVariables: Set[LogicalVariable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
+    val outerVariables: Set[Variable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
     expr.withOuterScope(outerVariables).dependencies should equal(Set(varFor("n"), varFor("r1")))
   }
 

@@ -26,8 +26,11 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{Never, SameNameNamer, normalizeWithAndReturnClauses}
-import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, inSequence}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.v4_0.util.inSequence
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 trait RewritePhaseTest {
@@ -87,7 +90,7 @@ trait RewritePhaseTest {
     rewrittenAst
   }
 
-  private def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
+ def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
     val fromAst = parseAndRewrite(from, features: _*)
     val fromInState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst), maybeSemantics = Some(fromAst.semanticState(features: _*)))
     val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())

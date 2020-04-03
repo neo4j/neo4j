@@ -16,9 +16,18 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.ast.ProjectingUnionDistinct
+import org.neo4j.cypher.internal.v4_0.ast.Query
+import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
-import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, ProjectingUnionDistinct, Query, Statement, Where}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels, LabelName, NodePattern}
+import org.neo4j.cypher.internal.v4_0.ast.Where
+import org.neo4j.cypher.internal.v4_0.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.HasLabels
+import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.v4_0.expressions.NodePattern
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
@@ -159,8 +168,26 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (a) WITH a.name AS n ORDER BY a.foo MATCH (a) RETURN a.age",
       "MATCH (`  a@7`) WITH `  a@7`.name as n ORDER BY `  a@7`.foo MATCH (`  a@49`) RETURN `  a@49`.age AS `a.age`",
       List(varFor("  a@7"), varFor("  a@49"))
+    ),
+    TestCase(
+      "MATCH (n) WHERE EXISTS { MATCH (n)-->(p) } WITH n as m, 1 as n RETURN m, n",
+      "MATCH (`  n@7`) WHERE EXISTS { MATCH (`  n@7`)-->(p) } WITH `  n@7` as m, 1 as `  n@61` RETURN m, `  n@61`",
+      List(varFor("  n@7"), varFor("  n@61"))
     )
   )
+
+  test("should rewrite outer scope variables of exists subclause even if not used in subclause") {
+    val query = "MATCH (n) WHERE EXISTS { MATCH (p:Label) } WITH n as m, 1 as n RETURN m, n"
+
+    val statement = prepareFrom(query).statement()
+
+    val outerScope = statement.treeFold(Set.empty[Variable]) {
+      case expr: ExistsSubClause =>
+        acc => (acc ++ expr.outerScope, Some(identity))
+    }
+
+    outerScope.map(_.name) should be(Set("  n@7"))
+  }
 
   override def rewriterPhaseUnderTest: Phase[BaseContext, BaseState, BaseState] = Namespacer
 
