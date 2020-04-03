@@ -22,7 +22,7 @@ package org.neo4j.memory;
 /**
  * Memory allocation tracker that tracks bytes allocation and de-allocation
  */
-public interface MemoryTracker
+public interface MemoryTracker extends AutoCloseable
 {
     /**
      * @return number of bytes of direct memory that are used
@@ -69,4 +69,10 @@ public interface MemoryTracker
     long heapHighWaterMark();
 
     void reset();
+
+    @Override
+    default void close()
+    {
+        reset();
+    }
 }

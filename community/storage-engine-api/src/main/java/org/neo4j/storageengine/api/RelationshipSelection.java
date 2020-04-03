@@ -36,6 +36,7 @@ public abstract class RelationshipSelection
 {
     /**
      * Tests whether a relationship of a certain type should be part of this selection.
+     *
      * @param type the relationship type id of the relationship to test.
      * @return whether or not this relationship type is part of this selection.
      */
@@ -43,7 +44,8 @@ public abstract class RelationshipSelection
 
     /**
      * Tests whether a relationship of a certain type and direction should be part of this selection.
-     * @param type the relationship type id of the relationship to test.
+     *
+     * @param type      the relationship type id of the relationship to test.
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship type is part of this selection.
      */
@@ -51,6 +53,7 @@ public abstract class RelationshipSelection
 
     /**
      * Selects the correct set of added relationships from transaction state, based on the selection criteria.
+     *
      * @param transactionState the {@link NodeState} to select added relationships from.
      * @return a {@link LongIterator} of added relationships matching the selection criteria from transaction state.
      */
@@ -146,13 +149,18 @@ public abstract class RelationshipSelection
         public LongIterator addedRelationship( NodeState transactionState )
         {
             LongIterator[] all = new LongIterator[types.length];
+            int index = 0;
             for ( int i = 0; i < types.length; i++ )
             {
                 // We have to avoid duplication here, so check backwards if this type exists earlier in the array
                 if ( !existsEarlier( types, i ) )
                 {
-                    all[i] = transactionState.getAddedRelationships( direction, types[i] );
+                    all[index++] = transactionState.getAddedRelationships( direction, types[i] );
                 }
+            }
+            if ( index != types.length )
+            {
+                all = Arrays.copyOf( all, index );
             }
             return PrimitiveLongCollections.concat( all );
         }
@@ -166,7 +174,7 @@ public abstract class RelationshipSelection
         private boolean existsEarlier( int[] types, int i )
         {
             int candidateType = types[i];
-            for ( int j = i - 1; j >= 0 ; j-- )
+            for ( int j = i - 1; j >= 0; j-- )
             {
                 if ( candidateType == types[j] )
                 {
@@ -211,7 +219,7 @@ public abstract class RelationshipSelection
         }
     }
 
-    public static RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection()
+    public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection()
     {
         @Override
         public boolean test( int type )
@@ -238,7 +246,7 @@ public abstract class RelationshipSelection
         }
     };
 
-    public static RelationshipSelection NO_RELATIONSHIPS = new RelationshipSelection()
+    public static final RelationshipSelection NO_RELATIONSHIPS = new RelationshipSelection()
     {
         @Override
         public boolean test( int type )
