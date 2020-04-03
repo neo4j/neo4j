@@ -36,7 +36,7 @@ public final class SettingImpl<T> implements Setting<T>
 {
     private final String name;
     private final String suffix;
-    private SettingImpl<T> dependency;
+    private final SettingImpl<T> dependency;
     private final SettingValueParser<T> parser;
     private final T defaultValue;
     private final List<SettingConstraint<T>> constraints;
