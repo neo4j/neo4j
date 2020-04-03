@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -138,7 +139,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val expr = ExistsSubClause(pattern, Some(where))(pos, Set.empty)
 
-    val outerVariables: Set[LogicalVariable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
+    val outerVariables: Set[Variable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
     expr.withOuterScope(outerVariables).dependencies should equal(Set(varFor("n"), varFor("r1")))
   }
 

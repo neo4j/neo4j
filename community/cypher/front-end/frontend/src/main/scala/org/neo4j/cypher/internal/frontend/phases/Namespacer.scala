@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ast.semantics.SymbolUse
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
@@ -73,11 +74,23 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
                                 ambiguousNames: Set[String]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) =>
-        val symbolDefinition = variableDefinitions(SymbolUse(i))
-        val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
-        val renaming = Ref(i) -> newVariable
+        val renaming = createVariableRenaming(variableDefinitions, i)
         acc => (acc + renaming, Some(identity))
+      case e: ExistsSubClause =>
+        val renamings = e.outerScope
+          .filter(v => ambiguousNames(v.name))
+          .foldLeft(Set[(Ref[Variable], Variable)]()) { (innerAcc, v) =>
+            innerAcc + createVariableRenaming(variableDefinitions, v)
+          }
+        acc => (acc ++ renamings, Some(identity))
     }
+
+  private def createVariableRenaming(variableDefinitions: Map[SymbolUse, SymbolUse], v: Variable) = {
+    val symbolDefinition = variableDefinitions(SymbolUse(v))
+    val newVariable = v.renameId(s"  ${symbolDefinition.nameWithPosition}")
+    val renaming = Ref(v) -> newVariable
+    renaming
+  }
 
   private def projectUnions: Rewriter =
     bottomUp(Rewriter.lift {
@@ -96,6 +109,14 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
           case Some(newVariable) => newVariable
           case None              => v
         }
+      case e: ExistsSubClause =>
+        val newOuterScope = e.outerScope.map(v => {
+          renamings.get(Ref(v)) match {
+            case Some(newVariable) => newVariable
+            case None              => v
+          }
+        })
+        e.withOuterScope(newOuterScope)
     }))
 
 }
