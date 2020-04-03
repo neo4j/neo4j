@@ -100,8 +100,7 @@ public class LogTailScanner
             CheckPoint latestCheckPoint = null;
             StoreId storeId = StoreId.UNKNOWN;
             try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                  ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
-                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
+                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( channel ) ) )
             {
                 LogHeader logHeader = logFiles.extractHeader( version );
                 storeId = logHeader.getStoreId();
