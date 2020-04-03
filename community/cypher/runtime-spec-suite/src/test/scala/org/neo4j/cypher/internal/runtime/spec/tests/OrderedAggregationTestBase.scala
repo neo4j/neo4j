@@ -406,4 +406,57 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
+
+  test("should handle long chunks") {
+    // given
+    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10,
+      rowNumber => rowNumber / 100,
+      identity)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = input.flatten.map(row => row :+ 1)
+    runtimeResult should beColumns("x", "y", "c").withRows(expected)
+  }
+
+  test("should count on single ordered, single unordered grouping column under apply") {
+    val propValue = 10
+    val nodesPerLabel = 100
+    index("B", "prop")
+    val (aNodes, bNodes) = given {
+      val aNodes = nodeGraph(nodesPerLabel, "A")
+      val bNodes = nodePropertyGraph(nodesPerLabel, {
+        case i: Int => Map("prop" -> (if (i % 2 == 0) propValue else 0))
+      }, "B")
+      (aNodes, bNodes)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "n", "c")
+      .apply()
+      .|.orderedAggregation(Seq("b AS b", "number AS n"), Seq("count(number) AS c"), Seq("b"))
+      .|.unwind("range(1, b.prop) AS number")
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- aNodes
+      b <- bNodes if b.getProperty("prop").asInstanceOf[Int] == propValue
+      n <- Range.inclusive(1, propValue)
+    }  yield Array[Any](a, b, n, 1)
+
+    runtimeResult should beColumns("a", "b", "n", "c").withRows(inOrder(expected))
+  }
 }
