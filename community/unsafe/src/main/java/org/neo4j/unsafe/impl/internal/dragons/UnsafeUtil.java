@@ -962,7 +962,6 @@ public final class UnsafeUtil
     public static void copyMemory( long srcAddress, long destAddress, long bytes )
     {
         checkAccess( srcAddress, bytes );
-        checkAccess( destAddress, bytes );
         unsafe.copyMemory( srcAddress, destAddress, bytes );
     }
 
