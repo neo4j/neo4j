@@ -32,10 +32,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ActorsExtension
@@ -130,9 +128,9 @@ class GBPTreeLockTest
     }
 
     @Test
-    void test_race_ULvsUL()
+    void test_race_ULvsUL() throws Throwable
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock ) );
+        assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
     }
 
     @Test
@@ -142,27 +140,27 @@ class GBPTreeLockTest
     }
 
     @Test
-    void test_race_ULvsLL()
+    void test_race_ULvsLL() throws Throwable
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock ) );
+        assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
     }
 
     @Test
-    void test_race_LUvsLU()
+    void test_race_LUvsLU() throws Throwable
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerLock ) );
+        assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
     }
 
     @Test
-    void test_race_LUvsLL()
+    void test_race_LUvsLL() throws Throwable
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock ) );
+        assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
     }
 
     @Test
     void test_race_LLvsLL() throws Throwable
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock ) );
+        assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
     }
 
     private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
