@@ -276,8 +276,7 @@ public class LogTailScanner
                 try ( LogVersionedStoreChannel storeChannel = logFiles.openForVersion( logVersion ) )
                 {
                     storeChannel.position( currentPosition.getByteOffset() );
-                    try ( ReadAheadLogChannel logChannel = new ReadAheadLogChannel( storeChannel );
-                            LogEntryCursor cursor = new LogEntryCursor( logEntryReader, logChannel ) )
+                    try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( storeChannel ) ) )
                     {
                         while ( cursor.next() )
                         {

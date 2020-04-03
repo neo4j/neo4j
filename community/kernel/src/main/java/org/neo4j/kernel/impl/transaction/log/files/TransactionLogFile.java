@@ -46,7 +46,6 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
-import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -63,7 +62,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private ByteBuffer byteBuffer;
 
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -89,7 +87,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        this.byteBuffer = allocateDirect( calculateLogBufferSize() );
+        // Channel will free buffer when closed.
+        ByteBuffer byteBuffer = allocateDirect( calculateLogBufferSize() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, byteBuffer );
     }
 
@@ -140,10 +139,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         if ( writer != null )
         {
             writer.close();
-        }
-        if ( byteBuffer != null )
-        {
-            releaseBuffer( byteBuffer );
         }
     }
 

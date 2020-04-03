@@ -72,7 +72,7 @@ public final class UnsafeUtil
     private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty = "org.neo4j.internal.unsafe.UnsafeUtil.allowUnalignedMemoryAccess";
 
-    private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>();
+    private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>( Long::compareUnsigned );
     private static final ThreadLocal<Allocation> lastUsedAllocation = new ThreadLocal<>();
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeCounter = new AtomicLong();
@@ -425,10 +425,16 @@ public final class UnsafeUtil
      */
     public static ByteBuffer allocateByteBuffer( int size )
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( size );
-        addAllocatedPointer( getDirectByteBufferAddress( buffer ), size );
-        GlobalMemoryTracker.INSTANCE.allocateDirect( size );
-        return buffer;
+        try
+        {
+            long addr = allocateMemory( size );
+            setMemory( addr, size, (byte) 0 );
+            return newDirectByteBuffer( addr, size );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     /**
@@ -437,10 +443,7 @@ public final class UnsafeUtil
      */
     public static void freeByteBuffer( ByteBuffer byteBuffer )
     {
-        int capacity = byteBuffer.capacity();
-        checkFree( getDirectByteBufferAddress( byteBuffer ) );
-        UnsafeUtil.invokeCleaner( byteBuffer );
-        GlobalMemoryTracker.INSTANCE.releaseDirect( capacity );
+        free( getDirectByteBufferAddress( byteBuffer ), byteBuffer.capacity() );
     }
 
     /**
@@ -539,6 +542,7 @@ public final class UnsafeUtil
             allocations.forEach( ( k, v ) -> sb.append( '\n' ).append( k ) );
             throw new AssertionError( sb.toString() );
         }
+        allocation.freed = true;
         int idx = (int) (count & 4095);
         freeTraces[idx] = new FreeTrace( pointer, allocation, count );
     }
@@ -555,7 +559,7 @@ public final class UnsafeUtil
     {
         long boundary = pointer + size;
         Allocation allocation = lastUsedAllocation.get();
-        if ( allocation != null )
+        if ( allocation != null && !allocation.freed )
         {
             if ( compareUnsigned( allocation.pointer, pointer ) <= 0 &&
                  compareUnsigned( allocation.boundary, boundary ) > 0 &&
@@ -1035,9 +1039,9 @@ public final class UnsafeUtil
         if ( directByteBufferCtor == null )
         {
             // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
-            Object dbb = unsafe.allocateInstance( directByteBufferClass );
+            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( directByteBufferClass );
             initDirectByteBuffer( dbb, addr, cap );
-            return (ByteBuffer) dbb;
+            return dbb;
         }
         // Reflection based fallback code.
         return (ByteBuffer) directByteBufferCtor.newInstance( addr, cap );
@@ -1046,9 +1050,10 @@ public final class UnsafeUtil
     /**
      * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
      */
-    public static void initDirectByteBuffer( Object dbb, long addr, int cap )
+    public static void initDirectByteBuffer( ByteBuffer dbb, long addr, int cap )
     {
         checkAccess( addr, cap );
+        dbb.order( ByteOrder.BIG_ENDIAN );
         unsafe.putInt( dbb, directByteBufferMarkOffset, -1 );
         unsafe.putInt( dbb, directByteBufferPositionOffset, 0 );
         unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
@@ -1227,6 +1232,7 @@ public final class UnsafeUtil
         private final long sizeInBytes;
         private final long boundary;
         private final long freeCounter;
+        public volatile boolean freed;
 
         Allocation( long pointer, long sizeInBytes, long freeCounter )
         {
