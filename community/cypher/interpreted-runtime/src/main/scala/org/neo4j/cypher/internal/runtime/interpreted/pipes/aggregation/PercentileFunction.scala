@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -35,7 +35,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   protected var count: Int = 0
   protected var perc: Double = 0
 
-  override def apply(data: CypherRow, state: QueryState) {
+  override def apply(data: ReadableRow, state: QueryState) {
     actOnNumber(value(data, state), number => {
       if (count < 1) {
         perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()

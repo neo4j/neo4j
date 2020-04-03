@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
-import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -38,7 +38,7 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
       aggregator(state).result
     }
 
-    override def apply(data: CypherRow, state: QueryState): Unit = {
+    override def apply(data: ReadableRow, state: QueryState): Unit = {
       val argValues = arguments.map(arg => {
         arg(data, state)
       })
