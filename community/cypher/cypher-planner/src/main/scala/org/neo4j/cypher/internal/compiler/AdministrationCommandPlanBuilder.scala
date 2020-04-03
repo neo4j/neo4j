@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterUser
-import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
@@ -58,6 +57,8 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SetPasswordsAction
+import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowDatabases
 import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
@@ -154,7 +155,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER USER foo
       case c@AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
-        val admin = plans.AssertDbmsAdmin(AlterUserAction)
+        val isSetPassword = initialPassword.isDefined || requirePasswordChange.isDefined
+        val admin = (isSetPassword, suspended) match {
+          case (true, Some(_)) => plans.AssertDbmsAdmin(Seq(SetPasswordsAction, SetUserStatusAction))
+          case (true, None) => plans.AssertDbmsAdmin(SetPasswordsAction)
+          case (false, Some(_)) => plans.AssertDbmsAdmin(SetUserStatusAction)
+        }
         val assertionSubPlan =
           if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin

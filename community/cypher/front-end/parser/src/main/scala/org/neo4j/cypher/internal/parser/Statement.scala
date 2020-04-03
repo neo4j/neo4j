@@ -502,6 +502,8 @@ trait Statement extends Parser
     keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
     keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
     keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+    keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
+    keyword("SET") ~~ passwordKeyword ~~~> (_ => ast.SetPasswordsAction) |
     keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
     keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
     keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
@@ -525,6 +527,8 @@ trait Statement extends Parser
   private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
 
   private def TransactionKeyword: Rule0 = keyword("TRANSACTION") | keyword("TRANSACTIONS")
+
+  private def passwordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
 
   private def Graph: Rule1[GraphScope] = rule("on a graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~

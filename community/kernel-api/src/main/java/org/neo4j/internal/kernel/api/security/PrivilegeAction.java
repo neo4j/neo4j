@@ -62,7 +62,8 @@ public enum PrivilegeAction
 
     SHOW_USER,
     CREATE_USER,
-    ALTER_USER,
+    SET_USER_STATUS,
+    SET_PASSWORDS,
     DROP_USER,
 
     SHOW_ROLE,
@@ -182,8 +183,23 @@ public enum PrivilegeAction
                     {
                     case SHOW_USER:
                     case CREATE_USER:
-                    case ALTER_USER:
                     case DROP_USER:
+                        return true;
+                    default:
+                        return ALTER_USER.satisfies( action ) || this == action;
+                    }
+                }
+            },
+
+    ALTER_USER
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case SET_USER_STATUS:
+                    case SET_PASSWORDS:
                         return true;
                     default:
                         return this == action;

@@ -337,6 +337,8 @@ abstract class UserManagementAction(override val name: String) extends DbmsAdmin
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")
 case object ShowUserAction extends UserManagementAction("SHOW USER")
 case object CreateUserAction extends UserManagementAction("CREATE USER")
+case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
+case object SetPasswordsAction extends UserManagementAction("SET PASSWORDS")
 case object AlterUserAction extends UserManagementAction("ALTER USER")
 case object DropUserAction extends UserManagementAction("DROP USER")
 

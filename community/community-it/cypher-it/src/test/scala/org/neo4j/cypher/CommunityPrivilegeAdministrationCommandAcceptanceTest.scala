@@ -78,6 +78,8 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     "USER MANAGEMENT ON DBMS",
     "CREATE USER ON DBMS",
     "DROP USER ON DBMS",
+    "SET USER STATUS ON DBMS",
+    "SET PASSWORDS ON DBMS",
     "ALTER USER ON DBMS",
     "SHOW USER ON DBMS",
     "DATABASE MANAGEMENT ON DBMS",

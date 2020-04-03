@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.AllAdminAction
 import org.neo4j.cypher.internal.ast.AllConstraintActions
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -87,6 +89,8 @@ object AdminActionMapper {
     case AllUserActions => security.PrivilegeAction.USER_MANAGEMENT
     case ShowUserAction => security.PrivilegeAction.SHOW_USER
     case CreateUserAction => security.PrivilegeAction.CREATE_USER
+    case SetUserStatusAction => security.PrivilegeAction.SET_USER_STATUS
+    case SetPasswordsAction => security.PrivilegeAction.SET_PASSWORDS
     case AlterUserAction => security.PrivilegeAction.ALTER_USER
     case DropUserAction => security.PrivilegeAction.DROP_USER
 
