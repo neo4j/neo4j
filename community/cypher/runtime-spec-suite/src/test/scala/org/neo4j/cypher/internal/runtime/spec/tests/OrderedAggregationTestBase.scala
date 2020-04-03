@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -459,4 +460,45 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("a", "b", "n", "c").withRows(inOrder(expected))
   }
+
+  test("ordered aggregation should not exhaust input when there is no demand, one column, one ordered") {
+    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10, row => row / 10)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "c")
+      .orderedAggregation(Seq("x AS x"), Seq("count(*) AS c"), Seq("x"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val stream = input.stream()
+    // When
+    val result = execute(logicalQuery, runtime, stream, TestSubscriber.concurrent)
+
+    // Then
+    result.request(1)
+    result.await() shouldBe true
+    //we shouldn't have exhausted the entire input
+    stream.hasMore shouldBe true
+  }
+
+  test("ordered aggregation should not exhaust input when there is no demand, two columns, one ordered") {
+    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10, row => row / 10, identity)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val stream = input.stream()
+    // When
+    val result = execute(logicalQuery, runtime, stream, TestSubscriber.concurrent)
+
+    // Then
+    result.request(1)
+    result.await() shouldBe true
+    //we shouldn't have exhausted the entire input
+    stream.hasMore shouldBe true
+  }
+
 }
