@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.stringValue
 
-class CountTest extends CypherFunSuite with AggregateTest {
+class CountFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new CountFunction(inner)
 
   test("testCounts") {

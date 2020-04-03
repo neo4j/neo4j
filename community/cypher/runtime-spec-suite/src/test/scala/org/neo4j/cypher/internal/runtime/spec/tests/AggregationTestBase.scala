@@ -38,8 +38,8 @@ import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
-import scala.util.Random
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.util.Random
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -651,22 +651,58 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("countStar", "count", "avg", "collect", "max", "min", "sum")
+      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
       .aggregation(Seq.empty, Seq(
         "count(*) AS countStar",
         "count(x.num) AS count",
+        "count(DISTINCT x.num) AS countD",
         "avg(x.num) AS avg",
+        "avg(DISTINCT x.num) AS avgD",
         "collect(x.num) AS collect",
+        "collect(DISTINCT x.num) AS collectD",
         "max(x.num) AS max",
         "min(x.num) AS min",
-        "sum(x.num) AS sum"))
+        "sum(x.num) AS sum",
+        "sum(DISTINCT x.num) AS sumD",
+      ))
       .allNodeScan("x")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withSingleRow(0, 0, null, Collections.emptyList(),  null, null, 0)
+    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
+      .withSingleRow(0, 0, 0, null, null, Collections.emptyList(), Collections.emptyList(),  null, null, 0, 0)
+  }
+
+  test("should return one row for one input row") {
+    // given one row
+    val input = inputValues(Array(1))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
+      .aggregation(Seq("x AS x"), Seq(
+        "count(*) AS countStar",
+        "count(x) AS count",
+        "count(DISTINCT x) AS countD",
+        "avg(x) AS avg",
+        "avg(DISTINCT x) AS avgD",
+        "collect(x) AS collect",
+        "collect(DISTINCT x) AS collectD",
+        "max(x) AS max",
+        "min(x) AS min",
+        "sum(x) AS sum",
+        "sum(DISTINCT x) AS sumD",
+      ))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
+      .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1),  1, 1, 1, 1)
   }
 
   test("should aggregate twice in a row") {
