@@ -637,7 +637,7 @@ public class Database extends LifecycleAdapter
         RelationshipTypeScanStore relationshipTypeScanStore =
                 toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                         config, cacheTracer );
-         storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
+        storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
         return relationshipTypeScanStore;
     }
 

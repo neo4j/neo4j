@@ -345,9 +345,6 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId );
     }
 
-    /**
-     * @return store files, namely the single "neostore.labelscanstore.db" store file.
-     */
     @Override
     public ResourceIterator<File> snapshotStoreFiles()
     {
@@ -421,7 +418,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         try
         {
             index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), 0, monitor, readRebuilding,
-                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, PageCacheTracer.NULL, immutable.empty() );
+                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty() );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )

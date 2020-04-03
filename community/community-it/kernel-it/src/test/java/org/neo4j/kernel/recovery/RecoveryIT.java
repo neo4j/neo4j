@@ -188,20 +188,8 @@ class RecoveryIT
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
         recoverDatabase( tracers );
 
-        if ( enableRelationshipTypeScanStore() )
-        {
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 238 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 238 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 157 );
-            assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
-        }
-        else
-        {
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 234 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 234 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 153 );
-            assertThat( pageCacheTracer.faults() ).isEqualTo( 81 );
-        }
+        assertThat( pageCacheTracer.pins() ).isEqualTo( pageCacheTracer.unpins() );
+        assertThat( pageCacheTracer.hits() + pageCacheTracer.faults() ).isEqualTo( pageCacheTracer.pins() );
 
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction tx = recoveredDatabase.beginTx() )
@@ -821,7 +809,7 @@ class RecoveryIT
                 .setConfig( preallocate_logical_logs, false )
                 .setConfig( logical_log_rotation_threshold, logThreshold )
                 .build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( databaseLayout.getDatabaseName() );
         storageEngineFactory = database.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         return database;
     }

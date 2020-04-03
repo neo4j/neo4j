@@ -40,7 +40,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 public final class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
 {
-    public static final RelationshipTypeScanStore instance = new EmptyRelationshipTypeScanStore();
+    public static final RelationshipTypeScanStore INSTANCE = new EmptyRelationshipTypeScanStore();
 
     private EmptyRelationshipTypeScanStore()
     {
@@ -55,19 +55,19 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     @Override
     public TokenScanReader newReader()
     {
-        return EmptyTokenScanReader.instance;
+        return EmptyTokenScanReader.INSTANCE;
     }
 
     @Override
     public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
-        return EmptyTokenScanWriter.instance;
+        return EmptyTokenScanWriter.INSTANCE;
     }
 
     @Override
     public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
     {
-        return EmptyTokenScanWriter.instance;
+        return EmptyTokenScanWriter.INSTANCE;
     }
 
     @Override
@@ -78,13 +78,13 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     @Override
     public AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer )
     {
-        return EmptyAllEntriesTokenScanReader.instance;
+        return EmptyAllEntriesTokenScanReader.INSTANCE;
     }
 
     @Override
     public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer  )
     {
-        return EmptyAllEntriesTokenScanReader.instance;
+        return EmptyAllEntriesTokenScanReader.INSTANCE;
     }
 
     @Override
@@ -96,7 +96,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     @Override
     public EntityTokenUpdateListener updateListener()
     {
-        return EmptyEntityTokenUpdateListener.instance;
+        return EmptyEntityTokenUpdateListener.INSTANCE;
     }
 
     @Override
@@ -144,7 +144,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     private static class EmptyEntityTokenUpdateListener implements EntityTokenUpdateListener
     {
-        static EntityTokenUpdateListener instance = new EmptyEntityTokenUpdateListener();
+        static final EntityTokenUpdateListener INSTANCE = new EmptyEntityTokenUpdateListener();
 
         @Override
         public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, PageCursorTracer cursorTracer )
@@ -154,7 +154,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     private static class EmptyAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     {
-        static AllEntriesTokenScanReader instance = new EmptyAllEntriesTokenScanReader();
+        static final AllEntriesTokenScanReader INSTANCE = new EmptyAllEntriesTokenScanReader();
 
         @Override
         public int rangeSize()
@@ -182,7 +182,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     private static class EmptyTokenScanWriter implements TokenScanWriter
     {
-        static TokenScanWriter instance = new EmptyTokenScanWriter();
+        static final TokenScanWriter INSTANCE = new EmptyTokenScanWriter();
 
         @Override
         public void write( EntityTokenUpdate update ) throws IOException
@@ -197,7 +197,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     private static class EmptyTokenScanReader implements TokenScanReader
     {
-        static TokenScanReader instance = new EmptyTokenScanReader();
+        static final TokenScanReader INSTANCE = new EmptyTokenScanReader();
 
         @Override
         public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer )
@@ -208,7 +208,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
         @Override
         public TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
         {
-            return EmptyTokenScan.instance;
+            return EmptyTokenScan.INSTANCE;
         }
 
         @Override
@@ -220,7 +220,7 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 
     private static class EmptyTokenScan implements TokenScan
     {
-        static final TokenScan instance = new EmptyTokenScan();
+        static final TokenScan INSTANCE = new EmptyTokenScan();
 
         @Override
         public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer )
