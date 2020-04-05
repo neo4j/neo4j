@@ -20,7 +20,7 @@ import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 import scala.reflect.Manifest
 

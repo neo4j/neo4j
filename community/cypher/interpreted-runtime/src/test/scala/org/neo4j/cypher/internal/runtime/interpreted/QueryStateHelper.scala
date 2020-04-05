@@ -36,7 +36,7 @@ import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 object QueryStateHelper extends MockitoSugar {
   def empty: QueryState = emptyWith()

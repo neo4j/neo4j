@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition, OpenCypherExceptionFactory}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
   def create(): BaseContext = {

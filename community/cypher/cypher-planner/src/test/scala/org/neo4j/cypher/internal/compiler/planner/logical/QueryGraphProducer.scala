@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.v4_0.frontend.phases.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.util.inSequence
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {
 

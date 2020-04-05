@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{IntValue, LongValue, NumberValue, Values}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 class ProcedureCallPipeTest
   extends CypherFunSuite

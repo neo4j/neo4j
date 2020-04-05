@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.neo4j.values.virtual.MapValue
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
   def create(cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory("<QUERY>", None),

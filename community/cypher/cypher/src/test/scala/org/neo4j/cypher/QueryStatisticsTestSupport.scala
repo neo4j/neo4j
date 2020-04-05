@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 trait QueryStatisticsTestSupport extends MockitoSugar {
   self: Assertions =>

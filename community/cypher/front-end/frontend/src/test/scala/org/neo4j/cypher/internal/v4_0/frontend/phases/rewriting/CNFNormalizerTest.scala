@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.{CNFNormalizer, Compilatio
 import org.neo4j.cypher.internal.v4_0.rewriting.{AstRewritingMonitor, PredicateTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition, Rewriter}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
