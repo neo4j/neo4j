@@ -174,7 +174,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           config:CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
                           stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
-      val exceptionFactory = new Neo4jCypherExceptionFactory(queryString, Some(pos))
+      val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,

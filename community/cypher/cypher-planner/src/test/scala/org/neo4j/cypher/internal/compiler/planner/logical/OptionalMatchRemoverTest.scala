@@ -350,7 +350,7 @@ assert_that(
 
   private def getTheWholePlannerQueryFrom(query: String): PlannerQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
-    val exceptionFactory = new Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
+    val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
     onError(result.errors)
