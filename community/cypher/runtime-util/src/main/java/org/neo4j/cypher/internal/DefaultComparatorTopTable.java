@@ -24,9 +24,13 @@ import java.util.Iterator;
 
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
@@ -50,10 +54,15 @@ import static org.neo4j.util.Preconditions.checkArgument;
  * When sort() is called, it does a heap sort in-place which will reverse the order
  * again, resulting in a fully sorted array which the iterator will go through.
  */
-public class DefaultComparatorTopTable<T> implements Iterable<T> // implements SortTable<T>
+public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable // implements SortTable<T>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( DefaultComparatorTopTable.class );
+
     private final Comparator<T> comparator;
     private final long totalCount;
+    private final MemoryTracker memoryTracker;
+
+    private long trackedSize;
     private boolean heapified;
     private boolean isSorted;
     private int size;
@@ -62,11 +71,20 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
     @SuppressWarnings( "unchecked" )
     public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount )
     {
+        this( comparator, totalCount, EmptyMemoryTracker.INSTANCE );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount, MemoryTracker memoryTracker )
+    {
         checkArgument( totalCount > 0, "Top table size must be greater than 0" );
         this.comparator = requireNonNull( comparator );
         this.totalCount = totalCount;
-        int initialSize = (int) Math.min( totalCount, 1024 );
+        this.memoryTracker = memoryTracker;
 
+        int initialSize = (int) Math.min( totalCount, 1024 );
+        trackedSize = shallowSizeOfObjectArray( initialSize );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
         heap = (T[]) new Object[initialSize];
     }
 
@@ -134,6 +152,13 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             }
         }
         isSorted = true;
+    }
+
+    @Override
+    public void close()
+    {
+        memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
+        trackedSize = -SHALLOW_SIZE; // Make close idempotent
     }
 
     /**
@@ -214,8 +239,12 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             newCapacity = MAX_ARRAY_SIZE;
         }
 
+        long oldHeapUsage = trackedSize;
+        trackedSize = shallowSizeOfObjectArray( newCapacity );
+        memoryTracker.allocateHeap( trackedSize );
         T[] newHeap = (T[]) new Object[newCapacity];
-        System.arraycopy( heap, 0, newHeap, 0, size );
+        System.arraycopy( heap, 0, newHeap, 0, Math.min( size, newCapacity ) );
         heap = newHeap;
+        memoryTracker.releaseHeap( oldHeapUsage );
     }
 }
