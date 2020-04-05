@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
@@ -63,7 +64,7 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
     {
         if ( items.length == size )
         {
-            grow();
+            grow( size + 1 );
         }
         items[size++] = item;
     }
@@ -78,14 +79,25 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
     public void close()
     {
         memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
+        trackedSize = -SHALLOW_SIZE; // Make close idempotent
     }
 
     /**
      * Grow and report size change to tracker
      */
-    private void grow()
+    private void grow( int minimumCapacity )
     {
         int newCapacity = size + (size >> 1) + 1; // Grow by 50%
+        if ( newCapacity > MAX_ARRAY_SIZE || newCapacity < 0 ) // Check for overflow
+        {
+            if ( minimumCapacity > MAX_ARRAY_SIZE )
+            {
+                // Nothing left to do here. We have failed to prevent an overflow.
+                throw new OutOfMemoryError();
+            }
+            newCapacity = MAX_ARRAY_SIZE;
+        }
+
         long oldHeapUsage = trackedSize;
         trackedSize = shallowSizeOfObjectArray( newCapacity );
         memoryTracker.allocateHeap( trackedSize );
