@@ -27,6 +27,8 @@ import java.util.Iterator;
 
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +39,7 @@ class LongProbeTableTest
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
 
-    private final LongProbeTable<Long> table = LongProbeTable.createLongProbeTable( memoryTracker );
+    private final LongProbeTable<LongValue> table = LongProbeTable.createLongProbeTable( memoryTracker );
 
     @AfterEach
     void tearDown()
@@ -57,9 +59,9 @@ class LongProbeTableTest
     void countInternalStructure()
     {
         // We avoid key 0 and 1 since they are sentinel values and we don't track them
-        table.put( 2, 1L );
-        table.put( 2, 2L );
-        table.put( 3, 3L );
+        table.put( 2, Values.longValue( 1L ) );
+        table.put( 2, Values.longValue( 2L ) );
+        table.put( 3, Values.longValue( 3L ) );
 
         // Validate size
         long itemSize = meter.measure( 1L ) * 3;
@@ -67,16 +69,16 @@ class LongProbeTableTest
         assertEquals( actualSize, memoryTracker.estimatedHeapMemory() );
 
         // Validate content
-        Iterator<Long> iterator2 = table.get( 2 );
+        Iterator<LongValue> iterator2 = table.get( 2 );
         assertTrue( iterator2.hasNext() );
-        assertEquals( 1, iterator2.next() );
+        assertEquals( 1, iterator2.next().longValue() );
         assertTrue( iterator2.hasNext() );
-        assertEquals( 2, iterator2.next() );
+        assertEquals( 2, iterator2.next().longValue() );
         assertFalse( iterator2.hasNext() );
 
-        Iterator<Long> iterator3 = table.get( 3 );
+        Iterator<LongValue> iterator3 = table.get( 3 );
         assertTrue( iterator3.hasNext() );
-        assertEquals( 3, iterator3.next() );
+        assertEquals( 3, iterator3.next().longValue() );
         assertFalse( iterator3.hasNext() );
     }
 
@@ -88,9 +90,9 @@ class LongProbeTableTest
         memoryTracker.allocateHeap( externalAllocation );
 
         // We avoid key 0 and 1 since they are sentinel values and we don't track them
-        table.put( 2, 1L );
-        table.put( 2, 2L );
-        table.put( 3, 3L );
+        table.put( 2, Values.longValue( 1L ) );
+        table.put( 2, Values.longValue( 2L ) );
+        table.put( 3, Values.longValue( 3L ) );
 
         // Validate size
         long itemSize = meter.measure( 1L ) * 3;

@@ -495,6 +495,24 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should kill top n query before it runs out of memory, where n is the maximum array size") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
   test("should kill top n query before it runs out of memory, where n > max array size") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -591,10 +609,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
+    // TODO: Improve this to be a bit more reliable
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
     estimatedRowSize should be >= expectedRowSize
-    estimatedRowSize should be < expectedRowSize * 10 // in pipelined we have lot's of overhead for some operators in corner cases
+    estimatedRowSize should be < expectedRowSize * 30 // in pipelined we have lot's of overhead for some operators in corner cases
     expectedRowSize
   }
 

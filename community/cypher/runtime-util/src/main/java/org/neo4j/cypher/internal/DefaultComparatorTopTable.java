@@ -157,8 +157,11 @@ public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable 
     @Override
     public void close()
     {
-        memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
-        trackedSize = -SHALLOW_SIZE; // Make close idempotent
+        if ( heap != null )
+        {
+            memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
+            heap = null;
+        }
     }
 
     /**

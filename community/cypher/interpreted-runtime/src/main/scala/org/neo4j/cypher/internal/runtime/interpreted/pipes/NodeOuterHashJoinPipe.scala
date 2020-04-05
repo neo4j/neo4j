@@ -73,6 +73,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 //noinspection ReferenceMustBePrefixed
 class ProbeTable() {
   private val table: mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]] =
+    // TODO: Use memory tracking ProbeTable
     new mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]]
 
   private val rowsWithNullInKey: ListBuffer[CypherRow] = new ListBuffer[CypherRow]()

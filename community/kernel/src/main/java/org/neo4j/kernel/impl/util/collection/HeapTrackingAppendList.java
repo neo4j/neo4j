@@ -78,8 +78,11 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
     @Override
     public void close()
     {
-        memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
-        trackedSize = -SHALLOW_SIZE; // Make close idempotent
+        if ( items != null )
+        {
+            memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
+            items = null;
+        }
     }
 
     /**
