@@ -141,7 +141,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     restartTx()
 
-    val attachedToFind = tx.getRelationshipById(toFind.getId);
+    val attachedToFind = tx.getRelationshipById(toFind.getId)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")

@@ -57,7 +57,7 @@ case class TestPath(override val startNode: Node, _relationships: Seq[Relationsh
     TestPath(startNode, _relationships.take(n))
 
   def slice(from: Int, until: Int): TestPath =
-    new TestPath(_relationships(from).getStartNode, _relationships.slice(from, until))
+    TestPath(_relationships(from).getStartNode, _relationships.slice(from, until))
 
   def reverse: TestPath =
     TestPath(endNode(), _relationships.reverse)
