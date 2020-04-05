@@ -55,7 +55,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    val topTable = new DefaultComparatorTopTable(comparator, limit)
+    val topTable = new DefaultComparatorTopTable(comparator, limit, state.memoryTracker.memoryTrackerForOperator(id.x))
 
     var i = 1L
     while (input.hasNext) {
@@ -70,6 +70,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     topTable.sort()
 
+    // TODO: Use an auto-closing iterator that closes the topTable and deallocates its heap usage
     topTable.iterator.asScala
   }
 }
