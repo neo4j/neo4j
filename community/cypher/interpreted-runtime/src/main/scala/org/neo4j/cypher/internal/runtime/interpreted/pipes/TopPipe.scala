@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.values.storable.FloatingPointValue
 
 import scala.collection.Iterator.empty
@@ -56,7 +57,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    if (limit > Int.MaxValue) {
+    if (limit > Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES) {
       // For count values larger than the maximum 32-bit integer we fallback on a full sort instead of allocating a huge top table
       // (Instead of throw new IllegalArgumentException(s"ORDER BY + LIMIT $longCount exceeds the maximum value of ${Int.MaxValue}"))
       // NOTE: If the _input size_ is larger than Int.MaxValue this will still fail, since an array cannot hold that many elements
