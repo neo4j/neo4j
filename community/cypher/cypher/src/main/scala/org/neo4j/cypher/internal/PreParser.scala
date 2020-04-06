@@ -82,10 +82,16 @@ class PreParser(configuredVersion: CypherVersion,
    */
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false, couldContainSensitiveFields: Boolean = false): PreParsedQuery = {
-    val preParsedQuery = if (couldContainSensitiveFields) actuallyPreParse(queryText)
-    else preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
-    if (profile) preParsedQuery.copy(options = preParsedQuery.options.copy(executionMode = CypherExecutionMode.profile))
-    else preParsedQuery
+    val preParsedQuery = if (couldContainSensitiveFields) {   // This is potentially any outer query running on the system database
+      actuallyPreParse(queryText)
+    } else {
+      preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+    }
+    if (profile) {
+      preParsedQuery.copy(options = preParsedQuery.options.copy(executionMode = CypherExecutionMode.profile))
+    } else {
+      preParsedQuery
+    }
   }
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {

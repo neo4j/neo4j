@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.parboiled.scala.Rule1

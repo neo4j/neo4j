@@ -34,7 +34,7 @@ public final class ByteArray extends IntegralArray
 
     private final byte[] value;
 
-    private volatile boolean invalid;
+    private boolean invalid;
 
     ByteArray( byte[] value )
     {

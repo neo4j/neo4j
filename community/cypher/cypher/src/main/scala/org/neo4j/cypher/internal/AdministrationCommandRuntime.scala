@@ -70,23 +70,11 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   protected def internalKey(name: String): String = internalPrefix + name
 
-  trait PasswordExpression {
-    def key: String
-    def value: Value
-    def bytesKey: String
-    def bytesValue: Value
-    def mapValueConverter: MapValue => MapValue
-  }
-
-  private case class LiteralPasswordExpression(key: String, value: Value, bytesKey: String, bytesValue: Value) extends PasswordExpression {
-    val mapValueConverter = IdentityConverter
-  }
-
-  private case class ParameterPasswordExpression(key: String,
-                                         value: Value,
-                                         bytesKey: String,
-                                         bytesValue: Value,
-                                         mapValueConverter: MapValue => MapValue) extends PasswordExpression
+  protected case class PasswordExpression(key: String,
+                                          value: Value,
+                                          bytesKey: String,
+                                          bytesValue: Value,
+                                          mapValueConverter: MapValue => MapValue)
 
   protected def getPasswordExpression(password: expressions.Expression): PasswordExpression =
     password match {
@@ -99,7 +87,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           val hashedPassword = hashPassword(encodedPassword)
           params.updatedWith(passwordParameter, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
         }
-        ParameterPasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
+        PasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
     }
 
   protected def getPasswordFieldsCurrent(password: expressions.Expression): (String, Value, MapValue => MapValue) = {
@@ -122,7 +110,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       case bytes: ByteArray =>
         bytes.asObject()  // Have as few copies of the password in memory as possible
       case s: StringValue =>
-        UTF8.encode(s.stringValue()) // FIXME should not be passed as a String this far down, encode in parser
+        UTF8.encode(s.stringValue()) // User parameters have String type
       case Values.NO_VALUE =>
         throw new ParameterNotFoundException(s"Expected parameter(s): $passwordParameter")
       case other =>
@@ -132,7 +120,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def validateStringParameterType(param: ParameterFromSlot): Unit = {
     param.parameterType match {
-      case _:StringType =>
+      case _: StringType =>
       case _ => throw new ParameterWrongTypeException(s"Only ${StringType.instance} values are accepted as password, got: " + param.parameterType)
     }
   }
