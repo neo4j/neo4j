@@ -705,4 +705,35 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     consume(result)
   }
 
+  test("should kill partial top query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should not kill partial top query with distinct ordered rows") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
+  }
 }

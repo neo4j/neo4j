@@ -40,11 +40,14 @@ case class PartialTopNPipe(source: Pipe,
 
   override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
-  class TopNReceiver(var remainingLimit: Long) extends OrderedChunkReceiver {
+  class TopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
     private val buffer = new java.util.ArrayList[ExecutionContext]()
     private var topTable: DefaultComparatorTopTable[ExecutionContext] = _
 
-    override def clear(): Unit = buffer.clear()
+    override def clear(): Unit = {
+      buffer.forEach(state.memoryTracker.deallocated)
+      buffer.clear()
+    }
 
     override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = prefixComparator.compare(first, current) == 0
 
@@ -53,6 +56,7 @@ case class PartialTopNPipe(source: Pipe,
       if (remainingLimit > 0) {
         remainingLimit -= 1
         buffer.add(row)
+        state.memoryTracker.allocated(row)
       } else {
         if (topTable == null) {
           // At this point we switch from a buffer for the whole chunk to a TopTable
@@ -61,10 +65,14 @@ case class PartialTopNPipe(source: Pipe,
           var i = 0
           while (i < buffer.size()) {
             topTable.add(buffer.get(i))
+            // Only calling allocated here for the rows that are already buffered,
+            // and not for any rows after that, makes the assumption that rows have more or less the same size.
+            // We don't know which ones are actually kept in the TopTable.
+            state.memoryTracker.allocated(row)
             i += 1
           }
           // Clean up the buffer
-          buffer.clear()
+          clear()
         }
         // Add the current row to the TopTable
         topTable.add(row)
@@ -101,7 +109,7 @@ case class PartialTopNPipe(source: Pipe,
 
         // We have to re-attach the already read first row to the iterator
         val restoredInput = Iterator.single(first) ++ input
-        val receiver = new TopNReceiver(longCount)
+        val receiver = new TopNReceiver(longCount, state)
         internalCreateResultsWithReceiver(restoredInput, state, receiver)
       }
     }
