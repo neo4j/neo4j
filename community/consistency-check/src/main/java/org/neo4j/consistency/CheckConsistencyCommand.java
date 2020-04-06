@@ -139,7 +139,7 @@ public class CheckConsistencyCommand extends AbstractCommand
                         .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
                             verbose, options.getReportDir().toFile().getCanonicalFile(),
                                 new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
-                                        options.isCheckLabelScanStore(), options.isCheckPropertyOwners() ) );
+                                        options.isCheckLabelScanStore(), options.isCheckRelationshipTypeScanStore(), options.isCheckPropertyOwners() ) );
 
                 if ( !consistencyCheckResult.isSuccessful() )
                 {

@@ -94,7 +94,7 @@ class ConsistencyCheckTasks
         this.pageCacheTracer = pageCacheTracer;
     }
 
-    List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes,
+    List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkRelationshipTypeScanStore, boolean checkIndexes,
             boolean checkGraph )
     {
         List<ConsistencyCheckerTask> tasks = new ArrayList<>();

@@ -99,7 +99,9 @@ class CheckConsistencyCommandIT
                 "                  [--check-index-structure=<true/false>]%n" +
                 "                  [--check-indexes=<true/false>]%n" +
                 "                  [--check-label-scan-store=<true/false>]%n" +
-                "                  [--check-property-owners=<true/false>] [--report-dir=<path>]%n" +
+                "                  [--check-property-owners=<true/false>]%n" +
+                "                  [--check-relationship-type-scan-store=<true/false>]%n" +
+                "                  [--report-dir=<path>]%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
@@ -133,6 +135,10 @@ class CheckConsistencyCommandIT
                 "                              Default: true%n" +
                 "      --check-label-scan-store=<true/false>%n" +
                 "                            Perform consistency checks on the label scan store.%n" +
+                "                              Default: true%n" +
+                "      --check-relationship-type-scan-store=<true/false>%n" +
+                "                            Perform consistency checks on the relationship type%n" +
+                "                              scan store.%n" +
                 "                              Default: true%n" +
                 "      --check-property-owners=<true/false>%n" +
                 "                            Perform additional consistency checks on property%n" +
@@ -319,7 +325,7 @@ class CheckConsistencyCommandIT
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        any(), eq( new ConsistencyFlags( false, false, false, false, true ) ) );
+                        any(), eq( new ConsistencyFlags( false, false, false, false, false, true ) ) );
     }
 
     @Test

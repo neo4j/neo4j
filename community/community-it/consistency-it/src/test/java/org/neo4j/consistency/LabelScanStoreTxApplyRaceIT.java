@@ -102,7 +102,7 @@ class LabelScanStoreTxApplyRaceIT
         managementService.shutdown();
 
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults(), NONE,
-                toOutputStream( System.out ), false, new ConsistencyFlags( true, true, true, true, false ) ).isSuccessful() );
+                toOutputStream( System.out ), false, new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
     }
 
     private Runnable creator( AtomicReferenceArray<Node> nodeHeads, int guy )

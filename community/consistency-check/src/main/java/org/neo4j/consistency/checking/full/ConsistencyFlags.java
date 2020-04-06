@@ -24,24 +24,27 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class ConsistencyFlags
 {
-    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true, true, false );
+    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true, true, true, false );
 
     private final boolean checkGraph;
     private final boolean checkIndexes;
     private final boolean checkIndexStructure;
     private final boolean checkLabelScanStore;
+    private final boolean checkRelationshipTypeScanStore;
     private final boolean checkPropertyOwners;
 
     public ConsistencyFlags( boolean checkGraph,
             boolean checkIndexes,
             boolean checkIndexStructure,
             boolean checkLabelScanStore,
+            boolean checkRelationshipTypeScanStore,
             boolean checkPropertyOwners )
     {
         this.checkGraph = checkGraph;
         this.checkIndexes = checkIndexes;
         this.checkIndexStructure = checkIndexStructure;
         this.checkLabelScanStore = checkLabelScanStore;
+        this.checkRelationshipTypeScanStore = checkRelationshipTypeScanStore;
         this.checkPropertyOwners = checkPropertyOwners;
     }
 
@@ -63,6 +66,11 @@ public class ConsistencyFlags
     public boolean isCheckLabelScanStore()
     {
         return checkLabelScanStore;
+    }
+
+    public boolean isCheckRelationshipTypeScanStore()
+    {
+        return checkRelationshipTypeScanStore;
     }
 
     public boolean isCheckPropertyOwners()
