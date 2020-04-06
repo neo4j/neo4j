@@ -268,7 +268,7 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case _ => false
   }
 
-  var theHashCode: Int = -1
+  private var theHashCode: Int = -1
 
   override def hashCode(): Int = {
     if (theHashCode == -1) {
