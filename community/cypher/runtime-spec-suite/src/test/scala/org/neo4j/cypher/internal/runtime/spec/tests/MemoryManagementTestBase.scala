@@ -205,6 +205,38 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should kill partial sort query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should not kill partial sort query with distinct ordered rows") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
+  }
+
   test("should kill distinct query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
