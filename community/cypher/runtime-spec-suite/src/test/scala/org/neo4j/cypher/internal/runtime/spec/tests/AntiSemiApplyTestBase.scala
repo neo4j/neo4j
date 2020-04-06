@@ -189,7 +189,6 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .antiSemiApply()
       .|.optional("x")
       .|.allNodeScan("a", "x")
-      .|.argument("x")
       .input(variables = Seq("x"))
       .build()
 
@@ -209,7 +208,6 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .antiSemiApply()
       .|.optional("x")
       .|.allNodeScan("a", "x")
-      .|.argument("x")
       .input(variables = Seq("x"))
       .build()
 

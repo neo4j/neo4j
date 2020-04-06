@@ -487,7 +487,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.expandInto("(a1)-->(b)")
       .|.nonFuseable()
       .|.nodeByLabelScan("b", "B")
-      .|.argument()
       .nodeByLabelScan("a1", "A")
       .build()
 
@@ -517,7 +516,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.optionalExpandInto("(a1)-->(b)")
       .|.nonFuseable()
       .|.nodeByLabelScan("b", "B")
-      .|.argument()
       .nodeByLabelScan("a1", "A")
       .build()
 
@@ -605,7 +603,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeByIdSeek("a2", Set("a1"), nodes.head.getId)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -627,7 +624,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeByIdSeek("a2", Set("a1"), nodes.take(2 * limit).map(_.getId): _*)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -650,7 +646,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -672,7 +667,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.directedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId): _*)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -695,7 +689,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -717,7 +710,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.map(_.getId): _*)
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -743,7 +735,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeIndexOperator("x:A(prop)")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -769,7 +760,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeIndexOperator("x:A(prop = 42)")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -795,7 +785,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeIndexOperator("x:A(prop = 42 OR 76)")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 
@@ -821,7 +810,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.limit(limit)
       .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)")
-      .|.argument()
       .allNodeScan("a1")
       .build()
 

@@ -188,7 +188,6 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
       .semiApply()
       .|.optional("x")
       .|.allNodeScan("a", "x")
-      .|.argument("x")
       .input(variables = Seq("x"))
       .build()
 
@@ -208,7 +207,6 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
       .semiApply()
       .|.optional("x")
       .|.allNodeScan("a", "x")
-      .|.argument("x")
       .input(variables = Seq("x"))
       .build()
 

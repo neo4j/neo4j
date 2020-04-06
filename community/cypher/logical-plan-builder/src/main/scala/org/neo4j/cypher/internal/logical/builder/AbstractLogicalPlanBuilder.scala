@@ -116,9 +116,9 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
-import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
@@ -189,8 +189,30 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   protected class Tree(operator: OperatorBuilder) {
-    var left: Option[Tree] = None
-    var right: Option[Tree] = None
+    private var _left: Option[Tree] = None
+    private var _right: Option[Tree] = None
+
+    def left: Option[Tree] = _left
+    def left_=(newVal: Option[Tree]): Unit = {
+      operator match {
+        case _:LeafOperator =>
+          throw new IllegalArgumentException(s"Cannot attach a LHS to a leaf plan.")
+        case _ =>
+      }
+      _left = newVal
+    }
+
+    def right: Option[Tree] = _right
+    def right_=(newVal: Option[Tree]): Unit = {
+      operator match {
+        case _:LeafOperator =>
+          throw new IllegalArgumentException(s"Cannot attach a RHS to a leaf plan.")
+        case _:UnaryOperator =>
+          throw new IllegalArgumentException(s"Cannot attach a RHS to a unary plan.")
+        case _ =>
+      }
+      _right = newVal
+    }
 
     def build(): LogicalPlan = {
       operator match {
@@ -773,7 +795,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         parent.right = Some(newTree)
         looseEnds += newTree
 
-      case 0 => // append to rhs
+      case 0 => // append to lhs
         appendAtIndent()
 
       case -1 => // end of rhs
