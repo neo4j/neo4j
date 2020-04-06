@@ -44,11 +44,13 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
 {
     private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout directoryStructure;
+    private final boolean readOnly;
 
-    public EmptyRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure )
+    public EmptyRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
     {
         this.fileSystem = fileSystem;
         this.directoryStructure = directoryStructure;
+        this.readOnly = readOnly;
     }
 
     @Override
@@ -113,6 +115,16 @@ public final class EmptyRelationshipTypeScanStore implements RelationshipTypeSca
     @Override
     public void init()
     {
+        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+        {
+            throw new IllegalStateException(
+                    "Database was started in read only mode and with relationship type scan store turned OFF, " +
+                            "but relationship type scan store file still exists and cannot be deleted in read only mode. " +
+                            "Please start database with relationship type scan store turned ON or " +
+                            "without read only mode to let database delete the relationship type scan store safely. " +
+                            "Note that consistency check use read only mode. " +
+                            "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
+        }
         fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
     }
 

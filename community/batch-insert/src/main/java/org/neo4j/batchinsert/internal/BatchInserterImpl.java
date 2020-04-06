@@ -557,7 +557,7 @@ public class BatchInserterImpl implements BatchInserter
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
-        EmptyRelationshipTypeScanStore relationshipTypeScanStore = new EmptyRelationshipTypeScanStore( fileSystem, databaseLayout );
+        EmptyRelationshipTypeScanStore relationshipTypeScanStore = new EmptyRelationshipTypeScanStore( fileSystem, databaseLayout, false );
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeScanStore,
                 NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
