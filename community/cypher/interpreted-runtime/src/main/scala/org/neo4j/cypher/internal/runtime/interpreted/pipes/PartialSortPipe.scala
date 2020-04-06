@@ -32,14 +32,20 @@ case class PartialSortPipe(source: Pipe,
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with OrderedInputPipe {
 
-  class PartialSortReceiver extends OrderedChunkReceiver {
+  class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
     private val buffer = new java.util.ArrayList[ExecutionContext]()
 
-    override def clear(): Unit = buffer.clear()
+    override def clear(): Unit = {
+      buffer.forEach(x => state.memoryTracker.deallocated(x))
+      buffer.clear()
+    }
 
     override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = prefixComparator.compare(first, current) == 0
 
-    override def processRow(row: ExecutionContext): Unit = buffer.add(row)
+    override def processRow(row: ExecutionContext): Unit = {
+      state.memoryTracker.allocated(row)
+      buffer.add(row)
+    }
 
     override def result(): Iterator[ExecutionContext] = {
       if (buffer.size() > 1) {
@@ -52,5 +58,5 @@ case class PartialSortPipe(source: Pipe,
     override def processNextChunk: Boolean = true
   }
 
-  override def getReceiver(state: QueryState): OrderedChunkReceiver = new PartialSortReceiver()
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = new PartialSortReceiver(state)
 }
