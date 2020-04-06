@@ -45,6 +45,7 @@ public enum RecordType
     // Below are non-native records
 
     LABEL_SCAN_DOCUMENT,
+    RELATIONSHIP_TYPE_SCAN_DOCUMENT,
     INDEX_STATISTICS,
     ID_STORE,
     INDEX,

@@ -48,6 +48,7 @@ import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -240,9 +241,12 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors,
-                    workCollector, pageCacheTracer );
+            LabelScanStore labelScanStore =
+                    TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector, pageCacheTracer );
+            RelationshipTypeScanStore relationshipTypeScanstore = TokenScanStore
+                    .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector, config, pageCacheTracer );
             life.add( labelScanStore );
+            life.add( relationshipTypeScanstore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, pageCacheTracer );
             life.add( indexStatisticsStore );
 
@@ -261,7 +265,9 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
+            DirectStoreAccess stores =
+                    new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
+                            idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, new DuplicatingLog( log, reportLog ) );
         }

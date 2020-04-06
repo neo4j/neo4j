@@ -43,6 +43,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -132,6 +133,7 @@ public class DetectAllRelationshipInconsistenciesIT
             StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
+                    db.getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class ),
                     db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
                     db.getDependencyResolver().resolveDependency( TokenHolders.class ),
                     db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ),

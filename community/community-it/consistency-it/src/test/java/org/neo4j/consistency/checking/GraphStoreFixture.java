@@ -48,6 +48,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
+import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -151,6 +153,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private final PageCache pageCache;
     private final TestDirectory testDirectory;
     private LabelScanStore labelScanStore;
+    private RelationshipTypeScanStore relationshipTypeScanStore;
     private IndexStatisticsStore indexStatisticsStore;
     private ThreadPoolJobScheduler jobScheduler;
     private CountsStore counts;
@@ -232,9 +235,10 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
             Monitors monitors = new Monitors();
             labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
+            relationshipTypeScanStore = startRelationshipTypeScanStore( pageCache, indexStoreView, monitors, readOnly, config );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
             indexStatisticsStore = startIndexStatisticsStore( readOnly );
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore, NULL ),
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, relationshipTypeScanStore, indexes, readOnlyTokenHolders( neoStore, NULL ),
                     indexStatisticsStore, idGeneratorFactory );
             storeReader = new RecordStorageReader( neoStore );
         }
@@ -298,6 +302,25 @@ public abstract class GraphStoreFixture implements AutoCloseable
             throw new UncheckedIOException( e );
         }
         return labelScanStore;
+    }
+
+    private RelationshipTypeScanStore startRelationshipTypeScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly,
+            Config config )
+    {
+        FullRelationshipTypeStream typeStream = new FullRelationshipTypeStream( indexStoreView );
+        RelationshipTypeScanStore relationshipTypeScanStore =
+                TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout(), fileSystem, typeStream, readOnly, monitors, immediate(), config,
+                        PageCacheTracer.NULL );
+        try
+        {
+            relationshipTypeScanStore.init();
+            relationshipTypeScanStore.start();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        return relationshipTypeScanStore;
     }
 
     private IndexProviderMap createIndexes( PageCache pageCache, Config config, LogProvider logProvider, Monitors monitors )
@@ -665,6 +688,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             storeReader.close();
             neoStore.close();
             labelScanStore.shutdown();
+            relationshipTypeScanStore.shutdown();
             indexStatisticsStore.shutdown();
             jobScheduler.shutdown();
             directStoreAccess = null;

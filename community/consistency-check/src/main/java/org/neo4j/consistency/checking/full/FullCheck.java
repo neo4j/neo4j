@@ -49,6 +49,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -153,8 +154,9 @@ public class FullCheck
         {
             if ( flags.isCheckIndexStructure() )
             {
-                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes,
-                        allIdGenerators( directStoreAccess ), report, progressFactory, pageCacheTracer );
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.relationshipTypeScanStore(),
+                        directStoreAccess.indexStatisticsStore(), countsStore, indexes, allIdGenerators( directStoreAccess ), report, progressFactory,
+                        pageCacheTracer );
             }
 
             if ( !useExperimentalChecker )
@@ -216,29 +218,32 @@ public class FullCheck
     }
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, IndexAccessors indexes,
+            RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
+            CountsStore countsStore, IndexAccessors indexes,
             List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) )
         {
             final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-            final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            final long additionalCount = 1 /*LabelScanStore*/ + 1 /*RelationshipTypeScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
             final long idGeneratorsCount = idGenerators.size();
             final long totalCount = schemaIndexCount + additionalCount + idGeneratorsCount;
             var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
             listener.started();
 
-            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore, idGenerators, cursorTracer );
+            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, idGenerators, cursorTracer );
             consistencyCheckSchemaIndexes( indexes, report, listener, cursorTracer );
             listener.done();
         }
     }
 
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators,
+            LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
+            IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators,
             PageCursorTracer cursorTracer )
     {
         consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorTracer );
+        consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorTracer );
         for ( IdGenerator idGenerator : idGenerators )
