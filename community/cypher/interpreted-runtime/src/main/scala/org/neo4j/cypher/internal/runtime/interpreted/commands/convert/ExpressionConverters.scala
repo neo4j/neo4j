@@ -157,7 +157,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     }
 
     val projector = project(e.step)
-    val dependencies = e.step.dependencies.map(_.asInstanceOf[LogicalVariable].name)
+    val dependencies = e.step.dependencies.map(_.name)
 
     ProjectedPath(dependencies, projector)
   }
