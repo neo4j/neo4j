@@ -614,7 +614,7 @@ public class ShortestPath implements PathFinder<Path>
     public static class LevelData
     {
         public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( LevelData.class );
-        private long[] relsToHere;
+        private Relationship[] relsToHere;
         public final int depth;
 
         LevelData( Relationship relToHere, int depth )
@@ -628,17 +628,17 @@ public class ShortestPath implements PathFinder<Path>
 
         void addRel( Relationship rel )
         {
-            long[] newRels;
+            Relationship[] newRels;
             if ( relsToHere == null )
             {
-                newRels = new long[1];
+                newRels = new Relationship[1];
             }
             else
             {
-                newRels = new long[relsToHere.length + 1];
+                newRels = new Relationship[relsToHere.length + 1];
                 System.arraycopy( relsToHere, 0, newRels, 0, relsToHere.length );
             }
-            newRels[newRels.length - 1] = rel.getId();
+            newRels[newRels.length - 1] = rel;
             relsToHere = newRels;
         }
     }
@@ -734,9 +734,9 @@ public class ShortestPath implements PathFinder<Path>
         }
         Collection<PathData> set = new ArrayList<>();
         var transaction = context.transaction();
-        for ( long rel : levelData.relsToHere )
+        for ( Relationship rel : levelData.relsToHere )
         {
-            set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( transaction.getRelationshipById( rel ) ) ) ) );
+            set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( rel ) ) ) );
             if ( stopAsap )
             {
                 break;
@@ -752,7 +752,7 @@ public class ShortestPath implements PathFinder<Path>
                 Node otherNode = entry.rels.getFirst().getOtherNode( entry.node );
                 LevelData otherLevelData = data.visitedNodes.get( otherNode );
                 int counter = 0;
-                for ( long rel : otherLevelData.relsToHere )
+                for ( Relationship rel : otherLevelData.relsToHere )
                 {
                     // ...may split into several paths
                     LinkedList<Relationship> rels = ++counter == otherLevelData.relsToHere.length ?
@@ -760,7 +760,7 @@ public class ShortestPath implements PathFinder<Path>
                     // lists being copied
                             entry.rels
                             : new LinkedList<>( entry.rels );
-                    rels.addFirst( transaction.getRelationshipById( rel ) );
+                    rels.addFirst( rel );
                     nextSet.add( new PathData( otherNode, rels ) );
                     if ( stopAsap )
                     {

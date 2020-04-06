@@ -59,7 +59,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntity.class );
 
     private final InternalTransaction internalTransaction;
-    private final RelationshipTraversalCursor cursor;
+    private RelationshipTraversalCursor cursor;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
