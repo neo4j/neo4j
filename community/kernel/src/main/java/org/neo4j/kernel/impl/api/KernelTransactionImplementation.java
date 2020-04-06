@@ -63,6 +63,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -139,7 +140,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
     private static final String TRANSACTION_TAG = "transaction";
-    private static final int INITIAL_RESERVED_BYTES = FeatureToggles.getInteger( KernelTransactionImplementation.class, "initialReservedHeap", 1024 );
+    private static final String INITIAL_RESERVED_BYTES_TOGGLE =
+            FeatureToggles.getString( KernelTransactionImplementation.class, "heapGrabSize", "2m" );
+    private static final long INITIAL_RESERVED_BYTES = ByteUnit.parse( INITIAL_RESERVED_BYTES_TOGGLE );
 
     private final CollectionsFactory collectionsFactory;
 

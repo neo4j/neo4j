@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class LocalMemoryTrackerWithPoolTest
 {
     private static final long LOCAL_LIMIT = 10;
-    private static final long INITIAL_RESERVE = 2;
+    private static final long GRAB_SIZE = 2;
 
     private MemoryPool memoryPool;
     private LocalMemoryTracker memoryTracker;
@@ -39,7 +39,7 @@ class LocalMemoryTrackerWithPoolTest
     void setUp()
     {
         memoryPool = MemoryPools.fromLimit( 0 );
-        memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, INITIAL_RESERVE );
+        memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, GRAB_SIZE );
     }
 
     @AfterEach
@@ -47,6 +47,13 @@ class LocalMemoryTrackerWithPoolTest
     {
         memoryTracker.reset();
         assertReserved( 0 );
+    }
+
+    @Test
+    void grabSize()
+    {
+        memoryTracker.allocateHeap( 1 );
+        assertReserved( GRAB_SIZE );
     }
 
     @Test
@@ -58,8 +65,8 @@ class LocalMemoryTrackerWithPoolTest
     @Test
     void reserveFromParentWhenLocalPoolIsEmpty()
     {
-        memoryTracker.allocateHeap( INITIAL_RESERVE + 2 );
-        assertThat( memoryPool.used() ).isGreaterThan( INITIAL_RESERVE );
+        memoryTracker.allocateHeap( GRAB_SIZE + 2 );
+        assertThat( memoryPool.used() ).isGreaterThan( GRAB_SIZE );
     }
 
     @Test
@@ -71,7 +78,7 @@ class LocalMemoryTrackerWithPoolTest
         memoryTracker.releaseHeap( 1 );
         memoryTracker.allocateHeap( 1 );
         memoryTracker.releaseHeap( 1 );
-        assertReserved( INITIAL_RESERVE );
+        assertReserved( GRAB_SIZE );
     }
 
     @Test

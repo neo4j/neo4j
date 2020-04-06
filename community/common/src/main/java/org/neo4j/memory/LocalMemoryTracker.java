@@ -40,7 +40,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
 public class LocalMemoryTracker implements MemoryTracker
 {
     private static final long NO_LIMIT = Long.MAX_VALUE;
-    private static final long DEFAULT_RESERVE = 1024;
+    private static final long DEFAULT_GRAB_SIZE = 1024;
 
     /**
      * Imposes limits on a {@link MemoryGroup} level, e.g. global maximum transactions size
@@ -48,9 +48,9 @@ public class LocalMemoryTracker implements MemoryTracker
     private final MemoryPool memoryGroupPool;
 
     /**
-     * The number of bytes to reserve for the first allocation
+     * The chunk size to reserve from the memory pool
      */
-    private final long initialGrabSize;
+    private final long grabSize;
 
     /**
      * A per tracker limit.
@@ -79,19 +79,19 @@ public class LocalMemoryTracker implements MemoryTracker
 
     public LocalMemoryTracker()
     {
-        this( NO_TRACKING, NO_LIMIT, DEFAULT_RESERVE );
+        this( NO_TRACKING, NO_LIMIT, DEFAULT_GRAB_SIZE );
     }
 
     public LocalMemoryTracker( MemoryPool memoryGroupPool )
     {
-        this( memoryGroupPool, NO_LIMIT, DEFAULT_RESERVE );
+        this( memoryGroupPool, NO_LIMIT, DEFAULT_GRAB_SIZE );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryGroupPool, long localHeapBytesLimit, long initialGrabSize )
+    public LocalMemoryTracker( MemoryPool memoryGroupPool, long localHeapBytesLimit, long grabSize )
     {
         this.memoryGroupPool = requireNonNull( memoryGroupPool );
-        this.localHeapBytesLimit = validateHeapLimit( localHeapBytesLimit );
-        this.initialGrabSize = requireNonNegative( initialGrabSize );
+        this.localHeapBytesLimit = localHeapBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localHeapBytesLimit );
+        this.grabSize = requireNonNegative( grabSize );
     }
 
     @Override
@@ -129,8 +129,7 @@ public class LocalMemoryTracker implements MemoryTracker
 
         if ( allocatedBytesHeap > localHeapPool )
         {
-            // TODO: try different strategies, e.g. grow factor, static increment, etc... For now we double
-            long grab = max( initialGrabSize, max( bytes, localHeapPool ) );
+            long grab = max( bytes, grabSize );
             reserveHeap( grab );
         }
     }
