@@ -58,6 +58,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 @DbmsExtension
 class TokenCreationIT
 {
+    private static final int WORKERS = 10;
+
     @Inject
     private GraphDatabaseService db;
 
@@ -67,7 +69,7 @@ class TokenCreationIT
     @BeforeEach
     void setUp()
     {
-        executorService = Executors.newCachedThreadPool();
+        executorService = Executors.newFixedThreadPool( WORKERS );
     }
 
     @AfterEach
@@ -79,10 +81,9 @@ class TokenCreationIT
     @RepeatedTest( 5 )
     void concurrentLabelTokenCreation() throws InterruptedException, ExecutionException
     {
-        int concurrentWorkers = 10;
-        CountDownLatch latch = new CountDownLatch( concurrentWorkers );
+        CountDownLatch latch = new CountDownLatch( WORKERS );
         List<Future<?>> futures = new ArrayList<>();
-        for ( int i = 0; i < concurrentWorkers; i++ )
+        for ( int i = 0; i < WORKERS; i++ )
         {
             futures.add( executorService.submit( new LabelCreator( db, latch ) ) );
         }
@@ -92,7 +93,7 @@ class TokenCreationIT
         consumeFutures( futures );
     }
 
-    private void consumeFutures( List<Future<?>> futures ) throws InterruptedException, ExecutionException
+    private void consumeFutures( List<Future<?>> futures ) throws ExecutionException
     {
         Futures.getAll( futures );
     }
