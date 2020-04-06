@@ -217,7 +217,7 @@ case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsM
 }
 
 trait RowOrderMatcher extends RowsMatcher {
-  var inner: Option[RowOrderMatcher] = None
+  protected var inner: Option[RowOrderMatcher] = None
   private def append(x: RowOrderMatcher): Unit =
     inner match {
       case None => inner = Some(x)
