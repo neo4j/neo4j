@@ -300,7 +300,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
+      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
       .orderedAggregation(Seq("x AS x"), Seq(
         "count(*) AS countStar",
         "count(x.num) AS count",
@@ -310,7 +310,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
         "collect(x.num) AS collect",
         "collect(DISTINCT x.num) AS collectD",
         "max(x.num) AS max",
+        "max(DISTINCT x.num) AS maxD",
         "min(x.num) AS min",
+        "min(DISTINCT x.num) AS minD",
         "sum(x.num) AS sum",
         "sum(DISTINCT x.num) AS sumD",
       ), Seq("x"))
@@ -320,7 +322,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues())
 
     // then
-    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD").withNoRows()
+    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD").withNoRows()
   }
 
   test("should return one row for one input row") {
@@ -329,7 +331,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
+      .produceResults("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
       .orderedAggregation(Seq("x AS x"), Seq(
         "count(*) AS countStar",
         "count(x) AS count",
@@ -339,7 +341,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
         "collect(x) AS collect",
         "collect(DISTINCT x) AS collectD",
         "max(x) AS max",
+        "max(DISTINCT x) AS maxD",
         "min(x) AS min",
+        "min(DISTINCT x) AS minD",
         "sum(x) AS sum",
         "sum(DISTINCT x) AS sumD",
       ), Seq("x"))
@@ -349,8 +353,8 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "min", "sum", "sumD")
-      .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1),  1, 1, 1, 1)
+    runtimeResult should beColumns("countStar", "count", "countD", "avg", "avgD", "collect", "collectD", "max", "maxD", "min", "minD", "sum", "sumD")
+      .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1), 1, 1, 1, 1, 1, 1)
   }
 
   test("should keep input order") {
