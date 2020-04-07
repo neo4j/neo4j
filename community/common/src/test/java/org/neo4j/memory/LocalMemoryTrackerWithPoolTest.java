@@ -50,12 +50,6 @@ class LocalMemoryTrackerWithPoolTest
     }
 
     @Test
-    void reserveInitialBytes()
-    {
-        assertReserved( 2 );
-    }
-
-    @Test
     void respectsLocalLimit()
     {
         assertThrows( HeapMemoryLimitExceeded.class, () -> memoryTracker.allocateHeap( LOCAL_LIMIT + 1 ) );

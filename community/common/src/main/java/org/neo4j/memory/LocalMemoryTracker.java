@@ -48,9 +48,14 @@ public class LocalMemoryTracker implements MemoryTracker
     private final MemoryPool memoryGroupPool;
 
     /**
+     * The number of bytes to reserve for the first allocation
+     */
+    private final long initialGrabSize;
+
+    /**
      * A per tracker limit.
      */
-    private final long localHeapBytesLimit;
+    private long localHeapBytesLimit;
 
     /**
      * Number of bytes we are allowed to use on the heap. If this run out, we need to reserve more from the parent.
@@ -82,11 +87,11 @@ public class LocalMemoryTracker implements MemoryTracker
         this( memoryGroupPool, NO_LIMIT, DEFAULT_RESERVE );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryGroupPool, long localHeapBytesLimit, long initialReservedBytes )
+    public LocalMemoryTracker( MemoryPool memoryGroupPool, long localHeapBytesLimit, long initialGrabSize )
     {
         this.memoryGroupPool = requireNonNull( memoryGroupPool );
-        this.localHeapBytesLimit = localHeapBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localHeapBytesLimit );
-        reserveHeap( initialReservedBytes );
+        this.localHeapBytesLimit = validateHeapLimit( localHeapBytesLimit );
+        this.initialGrabSize = requireNonNegative( initialGrabSize );
     }
 
     @Override
@@ -124,7 +129,8 @@ public class LocalMemoryTracker implements MemoryTracker
 
         if ( allocatedBytesHeap > localHeapPool )
         {
-            long grab = max( bytes, localHeapPool ); // TODO: try different strategies, e.g. grow factor, static increment, etc... For now we double
+            // TODO: try different strategies, e.g. grow factor, static increment, etc... For now we double
+            long grab = max( initialGrabSize, max( bytes, localHeapPool ) );
             reserveHeap( grab );
         }
     }
@@ -167,6 +173,11 @@ public class LocalMemoryTracker implements MemoryTracker
         heapHighWaterMark = 0;
     }
 
+    public void setHeapLimit( long localHeapBytesLimit )
+    {
+        this.localHeapBytesLimit = validateHeapLimit( localHeapBytesLimit );
+    }
+
     /**
      * Will reserve heap on the parent tracker.
      *
@@ -177,5 +188,10 @@ public class LocalMemoryTracker implements MemoryTracker
     {
         memoryGroupPool.reserve( size );
         localHeapPool += size;
+    }
+
+    private static long validateHeapLimit( long localHeapBytesLimit )
+    {
+        return localHeapBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localHeapBytesLimit );
     }
 }

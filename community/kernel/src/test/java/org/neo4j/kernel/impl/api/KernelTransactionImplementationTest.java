@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.HeapMemoryLimitExceeded;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -79,25 +80,23 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 class KernelTransactionImplementationTest extends KernelTransactionTestBase
 {
     private static Stream<Arguments> parameters()
     {
-        Consumer<KernelTransaction> readTxInitializer = tx ->
-        {
-        };
+        Consumer<KernelTransaction> readTxInitializer = tx -> { };
         Consumer<KernelTransaction> writeTxInitializer = tx ->
-        {
-            ((KernelTransactionImplementation) tx).txState().nodeDoCreate( 42 );
-        };
+                ((KernelTransactionImplementation) tx).txState().nodeDoCreate( 42 );
         return Stream.of(
-            arguments( "readOperationsInNewTransaction", false, readTxInitializer ),
-            arguments( "write", true, writeTxInitializer )
+                arguments( "readOperationsInNewTransaction", false, readTxInitializer ),
+                arguments( "write", true, writeTxInitializer )
         );
     }
 
@@ -220,7 +219,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     @ParameterizedTest
     @MethodSource( "parameters" )
     void shouldRollbackOnClosingTerminatedTransaction( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
-            throws TransactionFailureException
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
@@ -258,7 +256,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     @ParameterizedTest
     @MethodSource( "parameters" )
     void shouldRollbackOnClosingTerminatedButSuccessfulTransaction( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
-            throws TransactionFailureException
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
@@ -323,7 +320,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldThrowOnTerminationInCommit( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
+    void shouldThrowOnTerminationInCommit( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
     {
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
         transactionInitializer.accept( transaction );
@@ -393,7 +390,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         long startingTime = clock.millis();
         doAnswer( invocation ->
         {
-            @SuppressWarnings( "unchecked" )
             Collection<StorageCommand> commands = invocation.getArgument( 0 );
             commands.add( mock( StorageCommand.class ) );
             return null;
@@ -744,6 +740,25 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.IMPLICIT,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
         assertEquals( "KernelTransaction[lease:" + leaseId + "]", transaction.toString() );
+    }
+
+    @Test
+    void dynamicChangeTransactionHeapLimit() throws TransactionFailureException
+    {
+        config.set( memory_transaction_max_size, mebiBytes( 2 ) );
+        try ( KernelTransactionImplementation transaction = newTransaction( 1000 ) )
+        {
+            // Limit should prevent this from succeeding
+            assertThrows( HeapMemoryLimitExceeded.class, () -> transaction.memoryTracker().allocateHeap( mebiBytes( 3 ) ) );
+            transaction.closeTransaction();
+
+            // Increase limit and try again
+            config.setDynamic( memory_transaction_max_size, mebiBytes( 4 ), "test" );
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, new SimpleStatementLocks( new NoOpClient() ), KernelTransaction.Type.IMPLICIT,
+                    SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
+
+            transaction.memoryTracker().allocateHeap( mebiBytes( 3 ) );
+        }
     }
 
     private LoginContext loginContext( boolean isWriteTx )

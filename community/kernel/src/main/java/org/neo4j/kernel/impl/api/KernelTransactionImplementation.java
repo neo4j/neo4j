@@ -195,7 +195,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
-    private final MemoryTracker memoryTracker;
+    private final LocalMemoryTracker memoryTracker;
+    private volatile long transactionHeapBytesLimit;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -255,9 +256,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         indexingService,
                         config, pageCursorTracer );
         traceProvider = getTraceProvider( config );
+        transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
-        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, config.get( memory_transaction_max_size ), INITIAL_RESERVED_BYTES );
+        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES );
     }
 
     /**
@@ -292,6 +294,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
         this.initializationTrace = traceProvider.getTraceInfo();
+        this.memoryTracker.setHeapLimit( transactionHeapBytesLimit );
         return this;
     }
 
@@ -1287,6 +1290,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         config.addListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
         config.addListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
+        config.addListener( memory_transaction_max_size, ( before, after ) -> transactionHeapBytesLimit = after );
     }
 
     /**

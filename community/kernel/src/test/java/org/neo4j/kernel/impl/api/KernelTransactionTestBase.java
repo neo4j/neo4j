@@ -39,6 +39,7 @@ import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -89,7 +90,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
@@ -173,7 +173,7 @@ class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-        var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, "test", KibiByte.toBytes( 2 ) );
+        var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, "test", ByteUnit.mebiBytes( 4 ) );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
