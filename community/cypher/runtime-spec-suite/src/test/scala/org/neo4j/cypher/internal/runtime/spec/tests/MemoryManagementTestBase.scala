@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapMemoryLimitExceeded
 import org.neo4j.values.virtual.VirtualValues
 
@@ -444,11 +445,11 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, input))
   }
 
-  test("should kill top n query before it runs out of memory, where n < Int.MaxValue") {
+  test("should kill top n query before it runs out of memory, where n < max array size") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue - 1)
+      .top(Seq(Ascending("x")), Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES - 1L)
       .input(variables = Seq("x"))
       .build()
 
@@ -462,7 +463,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  test("should kill top n query before it runs out of memory, where n > Int.MaxValue") {
+  test("should kill top n query before it runs out of memory, where n > max array size") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")

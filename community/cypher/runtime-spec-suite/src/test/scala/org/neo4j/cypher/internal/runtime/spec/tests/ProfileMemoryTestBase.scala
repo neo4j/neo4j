@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.memory.HeapEstimator
 
 abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -148,7 +149,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
   }
 
-  test("should profile memory of top n, where n < Int.MaxValue") {
+  test("should profile memory of top n, where n < max array size") {
     given {
       nodeGraph(SIZE)
     }
@@ -156,7 +157,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue - 1)
+      .top(Seq(Ascending("x")), Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES - 1L)
       .allNodeScan("x")
       .build()
 
@@ -164,7 +165,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
-  test("should profile memory of top n, where n > Int.MaxValue") {
+  test("should profile memory of top n, where n > max array size") {
     given {
       nodeGraph(SIZE)
     }
