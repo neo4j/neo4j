@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatest.mockito.MockitoSugar.mock
 
 //noinspection TypeAnnotation
 case class TestContext(override val notificationLogger: InternalNotificationLogger = mock[InternalNotificationLogger]) extends BaseContext {

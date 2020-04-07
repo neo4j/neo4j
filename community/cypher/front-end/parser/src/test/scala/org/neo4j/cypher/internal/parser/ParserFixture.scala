@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 object ParserFixture extends MockitoSugar {
 

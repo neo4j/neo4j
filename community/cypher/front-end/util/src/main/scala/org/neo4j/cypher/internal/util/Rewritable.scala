@@ -26,19 +26,19 @@ import scala.collection.mutable
 
 object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter =
-    f.orElse(PartialFunction(identity[AnyRef]))
+    f.orElse({ case x => x })
 
   val noop: Rewriter = Rewriter.lift(PartialFunction.empty)
 }
 
 object RewriterWithArgs {
   def lift(f: PartialFunction[(AnyRef, Seq[AnyRef]), AnyRef]): RewriterWithArgs =
-    f.orElse(PartialFunction({
+    f.orElse({
       // We need to dup anything not matched by f given the children
       case (p: Product, children) => Rewritable.dupProduct(p, children).asInstanceOf[AnyRef]
       case (a: AnyRef, children) => Rewritable.dupAny(a, children)
       case (null, _) => null
-    }))
+    })
 }
 
 object Rewritable {
