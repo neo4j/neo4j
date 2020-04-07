@@ -543,6 +543,21 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should not kill ordered distinct query with distinct values in ordered column") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
+  }
+
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
