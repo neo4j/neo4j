@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
+import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapMemoryLimitExceeded
 import org.neo4j.values.virtual.VirtualValues
 
@@ -449,7 +449,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES - 1L)
+      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
       .input(variables = Seq("x"))
       .build()
 
@@ -467,7 +467,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue + 1L)
+      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
       .input(variables = Seq("x"))
       .build()
 

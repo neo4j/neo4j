@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
@@ -63,14 +64,19 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         checkArgument( totalCount > 0, "Top table size must be greater than 0" );
         this.comparator = requireNonNull( comparator );
         this.totalCount = totalCount;
+        int initialSize = Math.min( totalCount, 1024 );
 
-        heap = (T[]) new Object[totalCount];
+        heap = (T[]) new Object[initialSize];
     }
 
     public boolean add( T e )
     {
         if ( size < totalCount )
         {
+            if ( size >= heap.length )
+            {
+                grow( size + 1 );
+            }
             heap[size++] = e;
             return true;
         }
@@ -181,5 +187,27 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             k = child;
         }
         heap[k] = x;
+    }
+
+    /**
+     * Grow and report size change to tracker
+     */
+    private void grow( int minimumCapacity )
+    {
+        int oldCapacity = heap.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1) + 1; // Grow by 50%
+        if ( newCapacity > MAX_ARRAY_SIZE || newCapacity < 0 ) // Check for overflow
+        {
+            if ( minimumCapacity > MAX_ARRAY_SIZE )
+            {
+                // Nothing left to do here. We have failed to prevent an overflow.
+                throw new OutOfMemoryError( "Top table overflow" );
+            }
+            newCapacity = MAX_ARRAY_SIZE;
+        }
+
+        T[] newHeap = (T[]) new Object[newCapacity];
+        System.arraycopy( heap, 0, newHeap, 0, Math.min( size, newCapacity ) );
+        heap = newHeap;
     }
 }

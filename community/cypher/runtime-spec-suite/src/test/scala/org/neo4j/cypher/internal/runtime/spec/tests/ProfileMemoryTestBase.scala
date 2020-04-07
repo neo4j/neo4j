@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.result.OperatorProfile
-import org.neo4j.memory.HeapEstimator
+import org.neo4j.internal.helpers.ArrayUtil
 
 abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -157,7 +157,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES - 1L)
+      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
       .allNodeScan("x")
       .build()
 
@@ -173,7 +173,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue + 1L)
+      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
       .allNodeScan("x")
       .build()
 
