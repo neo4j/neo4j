@@ -89,7 +89,6 @@
     <dependency>
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-        <version>1.2.0</version>
         <exclusions>
             <exclusion>
                 <artifactId>scala-library</artifactId>
