@@ -1087,7 +1087,7 @@ class IndexingServiceTest
             exceptionBarrier.await();
 
             assertThat( internalLogProvider ).containsMessages( expectedCause.getMessage() )
-                    .containsMessages( format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
+                    .containsMessages( format( "Index %s entered %s state ", indexRule, FAILED ) );
         }
         finally
         {

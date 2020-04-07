@@ -118,7 +118,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
                  reportDir = Path.of( System.getProperty( "java.io.tmpdir" ) ).resolve( "reports" ).toAbsolutePath();
             }
             Path reportFile = reportDir.resolve( getDefaultFilename() );
-            ctx.out().println( "Writing report to " + reportFile.toAbsolutePath().toString() );
+            ctx.out().println( "Writing report to " + reportFile.toAbsolutePath() );
             reporter.dump( classifiers, reportFile, progress, force );
         }
         catch ( IOException e )

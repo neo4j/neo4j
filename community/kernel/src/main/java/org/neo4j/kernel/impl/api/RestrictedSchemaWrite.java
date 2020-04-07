@@ -52,7 +52,7 @@ public class RestrictedSchemaWrite implements SchemaWrite
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsSchemaWrites( action ) )
         {
-            throw accessMode.onViolation( format( "Schema operation '%s' is not allowed for %s.", action.toString(), securityContext.description() ) );
+            throw accessMode.onViolation( format( "Schema operation '%s' is not allowed for %s.", action, securityContext.description() ) );
         }
     }
 

@@ -146,7 +146,7 @@ class LogTruncationTest
         }
         catch ( Exception e )
         {
-            throw new AssertionError( "Failed to deserialize " + cmd.toString() + ", because: ", e );
+            throw new AssertionError( "Failed to deserialize " + cmd + ", because: ", e );
         }
         bytesSuccessfullyWritten--;
         while ( bytesSuccessfullyWritten-- > 0 )

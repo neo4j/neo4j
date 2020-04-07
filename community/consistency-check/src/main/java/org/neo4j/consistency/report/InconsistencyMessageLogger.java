@@ -94,7 +94,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         }
         catch ( Exception e )
         {
-            return String.format( "%s[%d,Error generating toString: %s]", record.getClass().getSimpleName(), record.getId(), e.toString() );
+            return String.format( "%s[%d,Error generating toString: %s]", record.getClass().getSimpleName(), record.getId(), e );
         }
     }
 

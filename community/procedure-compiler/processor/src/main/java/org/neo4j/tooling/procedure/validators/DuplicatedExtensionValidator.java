@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.validators;
 
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.DuplicatedProcedureError;
-import org.neo4j.tooling.procedure.visitors.AnnotationTypeVisitor;
-
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +31,9 @@ import javax.lang.model.element.Element;
 import javax.lang.model.util.Elements;
 
 import org.neo4j.procedure.Procedure;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.DuplicatedProcedureError;
+import org.neo4j.tooling.procedure.visitors.AnnotationTypeVisitor;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -91,7 +90,7 @@ public class DuplicatedExtensionValidator<T extends Annotation>
 
     private String defaultQualifiedName( Element procedure )
     {
-        return String.format( "%s.%s", elements.getPackageOf( procedure ).toString(), procedure.getSimpleName() );
+        return String.format( "%s.%s", elements.getPackageOf( procedure ), procedure.getSimpleName() );
     }
 
     private Stream<CompilationMessage> asErrors( Map.Entry<String,List<Element>> indexedProcedures )

@@ -2093,12 +2093,12 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     private void assertEqualsKey( KEY expected, KEY actual )
     {
         assertEquals( 0,
-            layout.compare( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
+            layout.compare( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
         assertEquals( 0,
-            layout.compareValue( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
+            layout.compareValue( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 }

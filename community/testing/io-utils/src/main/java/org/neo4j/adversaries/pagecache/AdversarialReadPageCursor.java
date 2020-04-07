@@ -486,7 +486,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
         StringBuilder sb = new StringBuilder();
         for ( Object o : s.inconsistentReadHistory )
         {
-            sb.append( o.toString() ).append( '\n' );
+            sb.append( o ).append( '\n' );
             if ( o instanceof NumberValue )
             {
                 NumberValue v = (NumberValue) o;

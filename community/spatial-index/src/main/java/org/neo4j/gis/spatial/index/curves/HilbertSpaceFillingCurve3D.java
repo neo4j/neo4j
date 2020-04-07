@@ -245,7 +245,7 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
         @Override
         public String toString()
         {
-            return firstMove.toString() + secondMove.toString() + overallDirection.toString();
+            return firstMove.toString() + secondMove + overallDirection;
         }
     }
 

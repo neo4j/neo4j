@@ -170,7 +170,7 @@ public abstract class Neo4jAlgoTestCase
         }
         assertTrue( unexpectedDefs.isEmpty(), "These unexpected paths were found: " + unexpectedDefs +
                 ". In addition these expected paths weren't found:" + pathDefs );
-        assertTrue( pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs.toString() );
+        assertTrue( pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs );
     }
 
     protected static void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )

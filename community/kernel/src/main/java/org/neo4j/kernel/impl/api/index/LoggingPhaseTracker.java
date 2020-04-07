@@ -213,7 +213,7 @@ public class LoggingPhaseTracker implements PhaseTracker
         @Override
         public String toString()
         {
-            StringJoiner joiner = new StringJoiner( ", ", phase.toString() + "[", "]" );
+            StringJoiner joiner = new StringJoiner( ", ", phase + "[", "]" );
             if ( nbrOfReports == 0 )
             {
                 addToString( "nbrOfReports", nbrOfReports, joiner, false );

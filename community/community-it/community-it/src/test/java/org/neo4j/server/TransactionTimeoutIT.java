@@ -67,7 +67,7 @@ public class TransactionTimeoutIT extends ExclusiveWebContainerTestBase
 
     private String txURI()
     {
-        return testWebContainer.getBaseUri().toString() + txEndpoint();
+        return testWebContainer.getBaseUri() + txEndpoint();
     }
 
 }

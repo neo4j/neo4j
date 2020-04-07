@@ -306,7 +306,7 @@ public class DebugUtil
                     .append( message != null ? message : "" );
             for ( StackTraceElement element : elements )
             {
-                builder.append( format( "%n" ) ).append( "    at " ).append( element.toString() );
+                builder.append( format( "%n" ) ).append( "    at " ).append( element );
             }
             return builder.toString();
         }

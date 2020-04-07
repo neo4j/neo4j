@@ -50,7 +50,7 @@ public class MultipleUnderlyingStorageExceptions extends UnderlyingStorageExcept
 
         for ( Pair<IndexDescriptor, UnderlyingStorageException> pair : exceptions )
         {
-            builder.append( format( " (%s) %s", pair.first().toString(), pair.other().getMessage() ) );
+            builder.append( format( " (%s) %s", pair.first(), pair.other().getMessage() ) );
         }
 
         return builder.toString();

@@ -284,7 +284,7 @@ class RelationshipGroupDefragmenterTest
             assertTrue(
                 groupRecord.getNext() == groupRecord.getId() + 1 ||
                     groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue(), "Expected this group to have a next of current + " + units + " OR NULL, " +
-                    "but was " + groupRecord.toString() );
+                    "but was " + groupRecord );
             assertTrue(
                 groupRecord.getType() > currentTypeId, "Expected " + groupRecord + " to have type > " + currentTypeId );
             currentTypeId = groupRecord.getType();

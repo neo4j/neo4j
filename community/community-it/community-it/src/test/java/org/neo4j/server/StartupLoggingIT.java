@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
                 warn( "Config file \\[nonexistent-file.conf\\] does not exist." ),
                 info( "Starting..." ),
                 info( NEO4J_IS_STARTING_MESSAGE ),
-                info( "Remote interface available at " + uri.toString() ),
+                info( "Remote interface available at " + uri ),
                 info( "Started." ),
                 info( "Stopping..." ),
                 info( "Stopped." )

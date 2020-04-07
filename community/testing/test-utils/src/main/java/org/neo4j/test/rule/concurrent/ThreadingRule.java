@@ -91,7 +91,7 @@ public class ThreadingRule extends ExternalResource
         for ( int i = 0; i < threads; i++ )
         {
             result.add( executor.submit( task(
-                    function, function.toString() + ":task=" + i, parameter, NULL_CONSUMER ) ) );
+                    function, function + ":task=" + i, parameter, NULL_CONSUMER ) ) );
         }
         return result;
     }

@@ -672,7 +672,7 @@ public class ProcedureCompilationTest
         StringBuilder builder = new StringBuilder();
         for ( Object o : list )
         {
-            builder.append( o.toString() );
+            builder.append( o );
         }
         return builder.toString();
     }

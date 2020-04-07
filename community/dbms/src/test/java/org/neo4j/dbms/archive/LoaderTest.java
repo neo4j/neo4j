@@ -179,7 +179,7 @@ class LoaderTest
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination.toFile() );
 
         FileSystemException exception = assertThrows( FileSystemException.class, () -> new Loader().load( archive, databaseLayout ) );
-        assertEquals( destination.getParent().toString() + ": Not a directory", exception.getMessage() );
+        assertEquals( destination.getParent() + ": Not a directory", exception.getMessage() );
     }
 
     @Test

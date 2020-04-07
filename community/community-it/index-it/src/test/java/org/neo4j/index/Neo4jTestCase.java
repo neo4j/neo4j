@@ -179,7 +179,7 @@ public abstract class Neo4jTestCase
             {
                 buffer.append( delimiter );
             }
-            buffer.append( item.toString() );
+            buffer.append( item );
         }
         return buffer.toString();
     }

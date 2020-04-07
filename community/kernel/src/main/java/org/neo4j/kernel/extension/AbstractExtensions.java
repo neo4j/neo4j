@@ -60,7 +60,7 @@ public abstract class AbstractExtensions extends DependencyResolver.Adapter impl
             {
                 Object extensionDependencies = getExtensionDependencies( extensionFactory );
                 Lifecycle dependency = newInstance( extensionContext, extensionFactory, extensionDependencies );
-                Objects.requireNonNull( dependency, extensionFactory.toString() + " returned a null extension." );
+                Objects.requireNonNull( dependency, extensionFactory + " returned a null extension." );
                 life.add( dependencies.satisfyDependency( dependency ) );
             }
             catch ( UnsatisfiedDependencyException exception )

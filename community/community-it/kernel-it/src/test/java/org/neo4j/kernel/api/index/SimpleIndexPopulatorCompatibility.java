@@ -300,7 +300,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                         anyHits = true;
                         nodesStillLeft.add( Long.toString( nodes.next() ) );
                     }
-                    assertFalse( "Expected this query to have zero hits but found " + nodesStillLeft.toString(), anyHits );
+                    assertFalse( "Expected this query to have zero hits but found " + nodesStillLeft, anyHits );
                 }
             }
         }

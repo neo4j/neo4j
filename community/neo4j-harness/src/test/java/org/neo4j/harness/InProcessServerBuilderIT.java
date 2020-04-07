@@ -160,7 +160,7 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
+            assertThat( HTTP.GET( neo4j.httpURI() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
         }
     }
 
@@ -173,7 +173,7 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
+            assertThat( HTTP.GET( neo4j.httpURI() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
         }
     }
 

@@ -178,7 +178,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         if ( cursor.checkAndClearBoundsFlag() )
         {
             throw new IllegalStateException(
-                    String.format( "Cursor %s access out of bounds, page id %d, offset %d", cursor.toString(),
+                    String.format( "Cursor %s access out of bounds, page id %d, offset %d", cursor,
                             cursor.getCurrentPageId(), cursor.getOffset() ) );
         }
     }

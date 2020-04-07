@@ -23,10 +23,10 @@ import java.util.Iterator;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.AssertOpen;
@@ -247,7 +247,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         else
         {
             return "PropertyCursor[id=" + propertyKey() +
-                   ", " + storeCursor.toString() + " ]";
+                   ", " + storeCursor + " ]";
         }
     }
 

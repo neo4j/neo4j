@@ -137,7 +137,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );
+        return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate() );
     }
 
     @Override

@@ -186,7 +186,7 @@ public class Dumper
 
         private ArchiveEntry createEntry( Path file, Path root, ArchiveOutputStream archive ) throws IOException
         {
-            return archive.createArchiveEntry( file.toFile(), "./" + root.relativize( file ).toString() );
+            return archive.createArchiveEntry( file.toFile(), "./" + root.relativize( file ) );
         }
     }
 }

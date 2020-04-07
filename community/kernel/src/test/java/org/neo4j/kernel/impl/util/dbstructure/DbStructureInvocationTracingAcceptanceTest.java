@@ -192,7 +192,7 @@ class DbStructureInvocationTracingAcceptanceTest
             builder.append( "\n\n" );
             for ( Diagnostic<?> diagnostic : diagnostics )
             {
-                builder.append( diagnostic.toString() );
+                builder.append( diagnostic );
                 builder.append( "\n" );
             }
             throw new AssertionError( builder.toString() );

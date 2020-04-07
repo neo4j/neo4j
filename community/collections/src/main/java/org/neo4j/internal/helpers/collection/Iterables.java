@@ -203,7 +203,7 @@ public final class Iterables
         StringBuilder sb = new StringBuilder();
         while ( it.hasNext() )
         {
-            sb.append( it.next().toString() );
+            sb.append( it.next() );
             if ( it.hasNext() )
             {
                 sb.append( separator );

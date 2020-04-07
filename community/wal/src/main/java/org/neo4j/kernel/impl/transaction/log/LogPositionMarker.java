@@ -58,6 +58,6 @@ public class LogPositionMarker
     @Override
     public String toString()
     {
-        return "Mark:" + newPosition().toString();
+        return "Mark:" + newPosition();
     }
 }

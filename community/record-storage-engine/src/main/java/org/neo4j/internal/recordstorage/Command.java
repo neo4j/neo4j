@@ -655,7 +655,7 @@ public abstract class Command implements StorageCommand
             String beforeAndAfterRecords = super.toString();
             if ( schemaRule != null )
             {
-                return beforeAndAfterRecords + " : " + schemaRule.toString();
+                return beforeAndAfterRecords + " : " + schemaRule;
             }
             return beforeAndAfterRecords;
         }

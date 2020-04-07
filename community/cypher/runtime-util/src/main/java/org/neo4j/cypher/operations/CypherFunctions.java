@@ -540,7 +540,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container.toString() ), null );
+            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container ), null );
         }
     }
 
@@ -1094,7 +1094,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Boolean or String, got: " + in.toString(), null );
+            throw new ParameterWrongTypeException( "Expected a Boolean or String, got: " + in, null );
         }
     }
 
@@ -1122,7 +1122,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in.toString(), null );
+            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in, null );
         }
     }
 
@@ -1143,7 +1143,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in.toString(), null );
+            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in, null );
         }
     }
 
@@ -1169,7 +1169,7 @@ public final class CypherFunctions
         else
         {
             throw new ParameterWrongTypeException(
-                    "Expected a String, Number, Boolean, Temporal or Duration, got: " + in.toString(), null );
+                    "Expected a String, Number, Boolean, Temporal or Duration, got: " + in, null );
         }
     }
 
@@ -1426,7 +1426,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "Expected a numeric value but got: " + value.toString(), null );
+            throw new CypherTypeException( "Expected a numeric value but got: " + value, null );
         }
     }
 
