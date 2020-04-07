@@ -41,7 +41,7 @@ import scala.util.Success
 import scala.util.Try
 
 object ScenarioTestHelper {
-  var unexpectedSuccessCount = new AtomicInteger(0)
+  private val unexpectedSuccessCount = new AtomicInteger(0)
 
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
@@ -50,7 +50,7 @@ object ScenarioTestHelper {
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     checkForDuplicates(scenarios, blacklist.toList)
-    val (expectFail, expectPass) = scenarios.partition { s => blacklist.exists(_.isBlacklisted(s)) }
+    val (expectFail, expectPass) = scenarios.partition(s => blacklist.exists(_.isBlacklisted(s)))
     if (debugOutput) {
       val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
       if (unusedBlacklistEntries.nonEmpty) {
