@@ -50,12 +50,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
     {
         throw new UnsupportedOperationException();

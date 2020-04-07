@@ -102,15 +102,6 @@ public class PartitionedIndexReader extends AbstractIndexReader
         return false;
     }
 
-    @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
-            PageCursorTracer cursorTracer )
-    {
-        BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues, cursorTracer ) );
-        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], unordered( needsValues ), false );
-    }
-
     private static final class InnerException extends RuntimeException
     {
         private InnerException( IndexNotApplicableKernelException e )

@@ -19,30 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.ReaderSlice;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.StreamSupport;
-
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
@@ -55,22 +37,20 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
-import org.neo4j.kernel.api.impl.schema.ValueEncoding;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.AbstractIndexReader;
-import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -188,80 +168,6 @@ public class SimpleIndexReader extends AbstractIndexReader
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
-    }
-
-    /**
-     * OBS this implementation can only provide values for properties of type {@link String}.
-     * Other property types will still be counted as distinct, but {@code client} won't receive {@link Value}
-     * instances for those.
-     * @param client {@link IndexProgressor.EntityValueClient} to get initialized with this progression.
-     * @param propertyAccessor {@link NodePropertyAccessor} for reading property values.
-     * @param needsValues whether to load string values.
-     */
-    @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
-            PageCursorTracer cursorTracer )
-    {
-        try
-        {
-            IndexQuery[] noQueries = new IndexQuery[0];
-            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-            IndexReader reader = getIndexSearcher().getIndexReader();
-            List<LeafReaderContext> leaves = reader.leaves();
-            Fields[] subFields = new Fields[leaves.size()];
-            ReaderSlice[] readerSlices = new ReaderSlice[leaves.size()];
-            for ( int i = 0; i < leaves.size(); i++ )
-            {
-                LeafReaderContext context = leaves.get( i );
-                LeafReader leafReader = context.reader();
-                subFields[i] = fieldsOf( leafReader );
-                readerSlices[i] = new ReaderSlice( context.docBase, reader.maxDoc(), i );
-            }
-            Fields fields = new MultiFields( subFields, readerSlices );
-            for ( ValueEncoding valueEncoding : ValueEncoding.values() )
-            {
-
-                Terms terms = fields.terms( valueEncoding.key() );
-                if ( terms != null )
-                {
-                    Function<BytesRef,Value> valueMaterializer = valueEncoding == ValueEncoding.String && needsValues
-                                                                 ? term -> Values.stringValue( term.utf8ToString() )
-                                                                 : term -> null;
-                    TermsEnum termsIterator = terms.iterator();
-                    multiProgressor.initialize( descriptor, new LuceneDistinctValuesProgressor( termsIterator, client, valueMaterializer ), noQueries,
-                            unordered( needsValues ), false );
-                }
-            }
-            client.initialize( descriptor, multiProgressor, noQueries, unordered( needsValues ), false );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    private Fields fieldsOf( LeafReader leafReader )
-    {
-        return new Fields()
-        {
-            @Override
-            public Iterator<String> iterator()
-            {
-                return StreamSupport.stream( leafReader.getFieldInfos().spliterator(), false ).map( info -> info.name ).iterator();
-            }
-
-            @Override
-            public Terms terms( String field ) throws IOException
-            {
-                return leafReader.terms( field );
-            }
-
-            @Override
-            public int size()
-            {
-                return leafReader.getFieldInfos().size();
-            }
-        };
     }
 
     private void assertNotComposite( IndexQuery[] predicates )

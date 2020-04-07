@@ -125,15 +125,6 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues,
-            PageCursorTracer cursorTracer )
-    {
-        BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-        cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], unordered( needsValues ), false );
-        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor, propertyAccessor, needsValues, cursorTracer ) );
-    }
-
-    @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );

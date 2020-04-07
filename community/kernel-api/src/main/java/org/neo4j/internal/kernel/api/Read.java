@@ -76,24 +76,6 @@ public interface Read
             throws KernelException;
 
     /**
-     * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]),
-     * where the count (number of nodes having the particular value) will be accessed using {@link NodeValueIndexCursor#nodeReference()}
-     * and the value (if the index can provide it) using {@link NodeValueIndexCursor#propertyValue(int)}.
-     * Before accessing a property value the caller should check {@link NodeValueIndexCursor#hasValue()} to see
-     * whether or not the index could yield values.
-     *
-     * For merely counting distinct values in an index, loop over and sum iterations.
-     * For counting number of indexed nodes in an index, loop over and sum all counts.
-     *
-     * NOTE distinct values may not be 100% accurate for point values that are very close to each other. In those cases they can be
-     * reported as a single distinct values with a higher count instead of several separate values.
-     * @param index {@link IndexDescriptor} for the index.
-     * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
-     * @param needsValues whether values should be loaded and given to the cursor.
-     */
-    void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException;
-
-    /**
      * Returns node id of node found in the unique index, or -1 if no node was found.
      *
      * Note that this is a very special method and should be use with caution. It has special locking semantics in

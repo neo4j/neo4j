@@ -86,7 +86,6 @@ abstract class Read implements TxStateHolder,
     protected final DefaultPooledCursors cursors;
     protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
-    private final Config config;
     private final boolean relationshipTypeScanStoreEnabled;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
@@ -96,7 +95,6 @@ abstract class Read implements TxStateHolder,
         this.cursors = cursors;
         this.cursorTracer = cursorTracer;
         this.ktx = ktx;
-        this.config = config;
         this.relationshipTypeScanStoreEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
     }
 
@@ -135,18 +133,6 @@ abstract class Read implements TxStateHolder,
         IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
         reader.query( this, withFullPrecision, constraints, cursorTracer, query );
-    }
-
-    @Override
-    public void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( index, true );
-        cursorImpl.setRead( this );
-        CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor( cursorTracer ),
-                cursors.allocatePropertyCursor( cursorTracer ), this );
-        reader.distinctValues( cursorImpl, accessor, needsValues, cursorTracer );
     }
 
     private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode, IndexDescriptor index )

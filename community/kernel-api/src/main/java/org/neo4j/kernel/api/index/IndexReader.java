@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -65,21 +64,6 @@ public interface IndexReader extends Resource
      */
     boolean hasFullValuePrecision( IndexQuery... predicates );
 
-    /**
-     * Initializes {@code client} to be able to progress through all distinct values in this index. {@link IndexProgressor.EntityValueClient}
-     * is used because it has a perfect method signature, even if the {@code reference} argument will instead be used
-     * as number of index entries for the specific indexed value.
-     *
-     * {@code needsValues} decides whether values will be materialized and given to the client.
-     * The use-case for setting this to {@code false} is to have a more efficient counting of distinct values in an index,
-     * regardless of the actual values.
-     * @param client {@link IndexProgressor.EntityValueClient} to get initialized with this progression.
-     * @param propertyAccessor used for distinguishing between lossy indexed values.
-     * @param needsValues whether values should be loaded.
-     * @param cursorTracer underlying page cursor tracer
-     */
-    void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues, PageCursorTracer cursorTracer );
-
     IndexReader EMPTY = new IndexReader()
     {
         // Used for checking index correctness
@@ -112,13 +96,6 @@ public interface IndexReader extends Resource
         {
             return true;
         }
-
-        @Override
-        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
-                PageCursorTracer cursorTracer )
-        {
-            // do nothing
-        }
     };
 
     class Adaptor implements IndexReader
@@ -145,12 +122,6 @@ public interface IndexReader extends Resource
         public boolean hasFullValuePrecision( IndexQuery... predicates )
         {
             return false;
-        }
-
-        @Override
-        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
-                PageCursorTracer cursorTracer )
-        {
         }
 
         @Override

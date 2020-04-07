@@ -199,13 +199,6 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues,
-            PageCursorTracer cursorTracer )
-    {
-        throw new UnsupportedOperationException( "Fulltext indexes does not support distinctValues queries" );
-    }
-
-    @Override
     public void close()
     {
         List<AutoCloseable> resources = new ArrayList<>( searchers.size() + 1 );

@@ -143,27 +143,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     @Override
     public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
 
-    @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor ignore, boolean needsValues, PageCursorTracer cursorTracer )
-    {
-        KEY lowest = layout.newKey();
-        lowest.initialize( Long.MIN_VALUE );
-        lowest.initValuesAsLowest();
-        KEY highest = layout.newKey();
-        highest.initialize( Long.MAX_VALUE );
-        highest.initValuesAsHighest();
-        try
-        {
-            Seeker<KEY,VALUE> seeker = tree.seek( lowest, highest, cursorTracer );
-            client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, layout, layout::compareValue ),
-                    new IndexQuery[0], unordered( needsValues ), false );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
     abstract void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates );
 
     /**

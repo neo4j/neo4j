@@ -20,13 +20,11 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -114,33 +112,6 @@ class ReadTracingIT
             }
 
             assertZeroCursor( cursorTracer );
-        }
-    }
-
-    @Test
-    void tracePageCacheAccessOnNodeIndexDistinct() throws IndexNotFoundKernelException
-    {
-        createNodeConstraint();
-        createMatchingNode();
-
-        try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
-        {
-            var kernelTransaction = transaction.kernelTransaction();
-            var dataRead = kernelTransaction.dataRead();
-            var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( indexName );
-            var cursorTracer = kernelTransaction.pageCursorTracer();
-
-            assertZeroCursor( cursorTracer );
-
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor() )
-            {
-                dataRead.nodeIndexDistinctValues( indexDescriptor, cursor, false );
-
-                consumeCursor( cursor );
-            }
-
-            assertOneCursor( cursorTracer );
-            assertThat( cursorTracer.faults() ).isZero();
         }
     }
 
