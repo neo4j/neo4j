@@ -23,7 +23,6 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util
-import java.util.concurrent.atomic.AtomicInteger
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
 import org.junit.jupiter.api.DynamicTest
@@ -41,8 +40,6 @@ import scala.util.Success
 import scala.util.Try
 
 object ScenarioTestHelper {
-  var unexpectedSuccessCount = new AtomicInteger(0)
-
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
                   graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
@@ -50,7 +47,7 @@ object ScenarioTestHelper {
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     checkForDuplicates(scenarios, blacklist.toList)
-    val (expectFail, expectPass) = scenarios.partition { s => blacklist.exists(_.isBlacklisted(s)) }
+    val (expectFail, expectPass) = scenarios.partition(s => blacklist.exists(_.isBlacklisted(s)))
     if (debugOutput) {
       val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
       if (unusedBlacklistEntries.nonEmpty) {
@@ -68,9 +65,7 @@ object ScenarioTestHelper {
             scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig)).execute()
           } match {
             case Success(_) =>
-              if (config.experimental) {
-                unexpectedSuccessCount.getAndAdd(1)
-              } else {
+              if (!config.experimental) {
                 if (!blacklist.exists(_.isFlaky(scenario)))
                   throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
               }
