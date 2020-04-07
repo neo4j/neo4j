@@ -302,6 +302,7 @@ public interface Read
      * @param cursor
      *         the cursor to use for consuming the results.
      */
+    // Used by APOC.
     void relationships( long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor );
 
     /**
@@ -312,6 +313,7 @@ public interface Read
      * @param cursor
      *         the cursor to use for consuming the results.
      */
+    // Used by APOC and GDS.
     void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
 
     /**
