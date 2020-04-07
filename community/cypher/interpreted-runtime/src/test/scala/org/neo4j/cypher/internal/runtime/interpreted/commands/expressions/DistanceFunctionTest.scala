@@ -241,8 +241,8 @@ class DistanceFunctionTest extends CypherFunSuite {
     val northPole = makePoint(0, 90)
 
     val points =
-      for (x <- -180.0 to 180.0 by 36.0; y <- -75.0 to 75.0 by 30.0) yield {
-        makePoint(x, y)
+      for (x <- -180 to 180 by 36; y <- -75 to 75 by 30) yield {
+        makePoint(x.toDouble, y.toDouble)
       }
     val distances = Seq(1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0)
 
@@ -256,8 +256,8 @@ class DistanceFunctionTest extends CypherFunSuite {
         var maxLong = -90.0
 
         // Test that points on the circle lie inside the bounding box
-        for (brng <- 0.0 to 2.0 * Math.PI by 0.01) {
-          val dest = destinationPoint(point, distance, brng)
+        for (brng <- BigDecimal(0) to 2.0 * Math.PI by 0.01) {
+          val dest = destinationPoint(point, distance, brng.doubleValue)
           dest should beInsideOneBoundingBox(boxes, tolerant = true)
           val destLat = dest.coordinate()(1)
           val destLong = dest.coordinate()(0)

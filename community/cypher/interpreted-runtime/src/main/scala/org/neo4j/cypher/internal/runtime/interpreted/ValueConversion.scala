@@ -96,7 +96,7 @@ object ValueConversion {
   }
 
   def asValues(params: Map[String, Any]): MapValue = {
-    if (params.isEmpty) return VirtualValues.EMPTY_MAP;
+    if (params.isEmpty) return VirtualValues.EMPTY_MAP
     val builder = new MapValueBuilder(params.size)
     params.foreach {
       case (key,value) => builder.add(key, asValue(value))
