@@ -60,7 +60,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     if (limit > Int.MaxValue - HeapEstimator.ARRAY_HEADER_BYTES) {
       // For count values larger than the maximum 32-bit integer we fallback on a full sort instead of allocating a huge top table
       // (Instead of throw new IllegalArgumentException(s"ORDER BY + LIMIT $longCount exceeds the maximum value of ${Int.MaxValue}"))
-      // NOTE: If the _input size_ is larger than Int.MaxValue this will still fail, since an array cannot hold that many elements
+      // NOTE: If the _input size_ is larger than Int.MaxValue - 8 this will still fail, since an array cannot hold that many elements
       val buffer = new mutable.ArrayBuffer[CypherRow](initialFallbackSortArraySize)
       while (input.hasNext) {
         val row = input.next()
