@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common.EntityType
 import org.neo4j.common.TokenNameLookup
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
 import org.neo4j.cypher.internal.planner.spi.TokenContext
@@ -32,7 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.exceptions.Status
 
 /**
- * This test class lives here instead of in the same module as [[TranslateExceptionMacros]],
+ * This test class lives here instead of in the same module as [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros]],
  * since we cannot easily import the necessary classes in the macro expansion module,
  * without having problems with compilation order of macros and calling code.
  */

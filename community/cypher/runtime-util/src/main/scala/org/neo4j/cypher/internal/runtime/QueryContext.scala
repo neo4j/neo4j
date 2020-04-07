@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
-import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -295,7 +294,7 @@ trait Operations[T, CURSOR] {
     * @return `null` if there are no changes.
     *         `NO_VALUE` if the property was deleted.
     *         `v` if the property was set to v
-    * @throws EntityNotFoundException if the node was deleted
+    * @throws org.neo4j.exceptions.EntityNotFoundException if the node was deleted
     */
   def getTxStateProperty(obj: Long, propertyKeyId: Int): Value
 

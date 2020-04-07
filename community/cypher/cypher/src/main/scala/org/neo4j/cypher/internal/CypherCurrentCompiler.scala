@@ -61,7 +61,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -99,7 +98,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
    * @param tracer                  compilation tracer to which events of the compilation process are reported
    * @param preParsingNotifications notifications from pre-parsing
    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
-   * @throws Neo4jException public cypher exceptions on compilation problems
+   * @throws org.neo4j.exceptions.Neo4jException public cypher exceptions on compilation problems
    * @return a compiled and executable query
    */
   override def compile(query: InputQuery,

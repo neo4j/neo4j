@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
-import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
@@ -124,7 +123,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
   /**
    * Assert that all acquired resources have been released back to their central pools.
    *
-   * Examples of such resources would be worker threads and [[Cursor]]
+   * Examples of such resources would be worker threads and [[org.neo4j.internal.kernel.api.Cursor]]
    */
   @throws[RuntimeResourceLeakException]
   def assertAllReleased(): Unit
