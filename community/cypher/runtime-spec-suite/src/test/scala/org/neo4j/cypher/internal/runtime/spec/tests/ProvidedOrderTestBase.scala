@@ -80,7 +80,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("prop")
+        .produceResults("prop").withLeveragedOrder()
         .projection("x.prop AS prop")
         .expand("(y)-->(z)") // 6x more rows
         .expand("(x)-->(y)") // 6x more rows
@@ -106,7 +106,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("prop", "c")
+        .produceResults("prop", "c").withLeveragedOrder()
         .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
         .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
@@ -142,7 +142,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("prop")
+        .produceResults("prop").withLeveragedOrder()
         .projection("y.prop AS prop")
         .nodeHashJoin("y")
         .|.expand("(z)-->(y)")
@@ -193,7 +193,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("prop")
+        .produceResults("prop").withLeveragedOrder()
         .projection("y.prop AS prop")
         .apply()
         .|.filter("y.prop % 2 = 0")
@@ -229,7 +229,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x", "zProp")
+        .produceResults("x", "zProp").withLeveragedOrder()
         .projection("z.prop AS zProp")
         .apply()
         .|.optional("x")
@@ -270,7 +270,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "c")
+        .produceResults("num", "c").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.aggregation(Seq.empty, Seq("count(*) AS c"))
@@ -297,7 +297,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "name")
+        .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.sort(Seq(Ascending("name")))
@@ -328,7 +328,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "name")
+        .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.top(Seq(Ascending("name")), 1)
@@ -362,7 +362,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "name")
+        .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.projection("a.name AS name")
@@ -394,7 +394,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "name")
+        .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.projection("a.name AS name")
@@ -426,7 +426,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("num", "name")
+        .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
         .|.optional("a")
@@ -478,7 +478,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("prop")
+        .produceResults("prop").withLeveragedOrder()
         .projection("z.prop AS prop")
         .cartesianProduct()
         .|.allNodeScan("y")
