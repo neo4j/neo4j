@@ -247,7 +247,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       val read = reads()
       val cursors = transactionalContext.cursors
-      val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer();
+      val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
       read.singleNode(node, cursor)
       if (!cursor.next()) RelationshipIterator.EMPTY
       else {
