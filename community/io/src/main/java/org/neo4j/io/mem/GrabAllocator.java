@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.mem;
 
-import java.lang.ref.Cleaner;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
+
+import java.lang.ref.Cleaner;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
@@ -207,7 +207,8 @@ public final class GrabAllocator implements MemoryAllocator
                 throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
             }
             long grabSize = Math.min( GRAB_SIZE, expectedMaxMemory );
-            if ( bytes + alignment - 1 > GRAB_SIZE )
+            long maxAllocationSize = bytes + alignment - 1;
+            if ( maxAllocationSize > GRAB_SIZE )
             {
                 // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
                 grabSize = bytes;
@@ -216,7 +217,7 @@ public final class GrabAllocator implements MemoryAllocator
                 if ( !allocationGrab.canAllocate( bytes, alignment ) )
                 {
                     allocationGrab.free();
-                    grabSize = bytes + alignment - 1;
+                    grabSize = maxAllocationSize;
                     allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
                 }
                 long allocation = allocationGrab.allocate( bytes, alignment );
@@ -238,7 +239,7 @@ public final class GrabAllocator implements MemoryAllocator
                         return head.allocate( bytes, alignment );
                     }
                     grab.free();
-                    grabSize = bytes + alignment - 1;
+                    grabSize = maxAllocationSize;
                 }
                 head = new Grab( head, grabSize, memoryTracker );
                 expectedMaxMemory -= grabSize;
