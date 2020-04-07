@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.AlterUser
-import org.neo4j.cypher.internal.ast.CatalogDDL
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateGraph
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -71,10 +70,10 @@ trait Statement extends Parser
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    AdministrationCommand | CatalogCommand | Command | Query
+    AdministrationCommand | MultiGraphCommand | Command | Query
   )
 
-  def CatalogCommand: Rule1[ast.MultiGraphDDL] = rule("Multi graph DDL statement") {
+  def MultiGraphCommand: Rule1[ast.MultiGraphDDL] = rule("Multi graph DDL statement") {
     CreateGraph | DropGraph | CreateView | DropView
   }
 

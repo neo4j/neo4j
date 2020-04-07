@@ -52,6 +52,10 @@ class CommandParserTest
     yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None))
   }
 
+  test("USE neo4j CREATE INDEX FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, Some(use(varFor("neo4j")))))
+  }
+
   test("CREATE INDEX FOR (n:Person) ON (n.name, n.age)") {
     yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None))
   }
@@ -69,6 +73,14 @@ class CommandParserTest
   }
 
   test("CREATE INDEX $my_index FOR (n:Person) ON (n.name)") {
+    failsToParse
+  }
+
+  test("CREATE INDEX FOR n:Person ON (n.name)") {
+    failsToParse
+  }
+
+  test("CREATE INDEX FOR (n:Person) ON n.name") {
     failsToParse
   }
 
@@ -151,8 +163,8 @@ class CommandParserTest
     failsToParse
   }
 
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
+  test("USE neo4j CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
+    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), Some(use(varFor("neo4j")))))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {

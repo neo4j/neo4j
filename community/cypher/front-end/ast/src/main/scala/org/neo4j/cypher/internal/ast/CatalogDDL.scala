@@ -38,11 +38,8 @@ sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 }
 
 sealed trait AdministrationCommand extends CatalogDDL {
-  private var useGraph: Option[UseGraph] = None
-  def withGraph(useGraph: Option[UseGraph]): AdministrationCommand = {
-    this.useGraph = useGraph
-    this
-  }
+  def useGraph: Option[GraphSelection]
+  def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand
   def isReadOnly: Boolean
 
   override def semanticCheck: SemanticCheck =
@@ -75,11 +72,12 @@ final case class IfExistsDoNothing() extends IfExistsDo
 final case class IfExistsThrowError() extends IfExistsDo
 final case class IfExistsInvalidSyntax() extends IfExistsDo
 
-final case class ShowUsers()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowUsers(useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name: String = "SHOW USERS"
 
-  //TODO (fabric): roles and suspended is enterprise only
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
   override def returnColumnNames: List[String] = List("user", "roles", "passwordChangeRequired", "suspended")
 
   override def semanticCheck: SemanticCheck =
@@ -98,11 +96,14 @@ final case class CreateUser(userName: Either[String, Parameter],
                             initialPassword: Either[PasswordString, Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
-                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+                            ifExistsDo: IfExistsDo,
+                            useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
   }
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userAsString': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
@@ -114,9 +115,11 @@ final case class CreateUser(userName: Either[String, Parameter],
   private val userAsString: String = eitherAsString(userName)
 }
 
-final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
+final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "DROP USER"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -126,44 +129,53 @@ final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean
 final case class AlterUser(userName: Either[String, Parameter],
                            initialPassword: Option[Either[PasswordString, Parameter]],
                            requirePasswordChange: Option[Boolean],
-                           suspended: Option[Boolean])(val position: InputPosition) extends WriteAdministrationCommand {
+                           suspended: Option[Boolean],
+                           useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
   assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
 
   override def name = "ALTER USER"
 
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(newPassword: Either[PasswordString, Parameter], currentPassword: Either[PasswordString, Parameter])
-                               (val position: InputPosition) extends WriteAdministrationCommand {
+final case class SetOwnPassword(newPassword: Either[PasswordString, Parameter], currentPassword: Either[PasswordString, Parameter],
+                                useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "ALTER CURRENT USER SET PASSWORD"
 
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowRoles(withUsers: Boolean, showAll: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"
 
-  override def returnColumnNames: List[String] = List("role", "isBuiltIn") ++ (if (withUsers) List("member") else List.empty)
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
+  override def returnColumnNames: List[String] = if (withUsers) List("role", "member") else List("role")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateRole(roleName: Either[String, Parameter], from: Option[Either[String, Parameter]], ifExistsDo: IfExistsDo)
-                           (val position: InputPosition) extends WriteAdministrationCommand {
+final case class CreateRole(roleName: Either[String, Parameter], from: Option[Either[String, Parameter]], ifExistsDo: IfExistsDo,
+                            useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE ROLE"
     case _ => "CREATE ROLE"
   }
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =
     ifExistsDo match {
@@ -176,18 +188,22 @@ final case class CreateRole(roleName: Either[String, Parameter], from: Option[Ei
     }
 }
 
-final case class DropRole(roleName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
+final case class DropRole(roleName: Either[String, Parameter], ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "DROP ROLE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "GRANT ROLE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = {
     super.semanticCheck chain
@@ -195,9 +211,11 @@ final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], us
   }
 }
 
-final case class RevokeRolesFromUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class RevokeRolesFromUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "REVOKE ROLE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -472,20 +490,24 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: Priv
       SemanticCheckResult.success
 }
 
-final case class GrantPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]])
-                               (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+final case class GrantPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]],
+                                useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"GRANT ${privilege.name}"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 }
 
-final case class DenyPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]])
-                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+final case class DenyPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]],
+                               useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"DENY ${privilege.name}"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 }
 
 final case class RevokePrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]],
-                                 revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+                                 revokeType: RevokeType, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name: String = {
     if (revokeType.name.nonEmpty) {
@@ -494,11 +516,15 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: Option[Acti
       s"REVOKE ${privilege.name}"
     }
   }
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 }
 
-final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowPrivileges(scope: ShowPrivilegeScope, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW PRIVILEGE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def returnColumnNames: List[String] = List("access", "action", "resource", "graph", "segment", "role") ++ (scope match {
     case _ : ShowUserPrivileges => List("user")
@@ -510,9 +536,11 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabases()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDatabases(useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DATABASES"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
 
@@ -521,9 +549,11 @@ final case class ShowDatabases()(val position: InputPosition) extends ReadAdmini
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDefaultDatabase()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDefaultDatabase(useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DEFAULT DATABASE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error")
 
@@ -532,9 +562,11 @@ final case class ShowDefaultDatabase()(val position: InputPosition) extends Read
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDatabase(dbName: Either[String, Parameter], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DATABASE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
 
@@ -543,12 +575,14 @@ final case class ShowDatabase(dbName: Either[String, Parameter])(val position: I
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand {
+final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case _: IfExistsReplace => "CREATE OR REPLACE DATABASE"
     case _ => "CREATE DATABASE"
   }
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case _: IfExistsInvalidSyntax =>
@@ -560,27 +594,33 @@ final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: I
   }
 }
 
-final case class DropDatabase(dbName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
+final case class DropDatabase(dbName: Either[String, Parameter], ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "DROP DATABASE"
 
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StartDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class StartDatabase(dbName: Either[String, Parameter], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "START DATABASE"
 
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StopDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class StopDatabase(dbName: Either[String, Parameter], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "STOP DATABASE"
+
+  override def withGraph(useGraph: Option[GraphSelection]): AdministrationCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

@@ -133,7 +133,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case ShowUsers(source) => (context, parameterMapping) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         """MATCH (u:User)
-          |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
+          |RETURN u.name as user, null as role, u.passwordChangeRequired AS passwordChangeRequired, null as suspended""".stripMargin,
         VirtualValues.EMPTY_MAP,
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
       )

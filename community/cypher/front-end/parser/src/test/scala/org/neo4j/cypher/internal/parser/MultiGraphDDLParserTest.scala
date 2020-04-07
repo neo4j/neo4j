@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class CatalogDDLParserTest extends AdministrationCommandParserTestBase {
+class MultiGraphDDLParserTest extends AdministrationCommandParserTestBase {
 
   private val singleQuery = ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)
   private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
