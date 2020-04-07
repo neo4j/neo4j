@@ -24,9 +24,8 @@ import org.parboiled.matchers.TestNotMatcher
 import org.parboiled.support.Chars
 import org.parboiled.support.MatcherPath
 
-import scala.collection.JavaConversions.`deprecated asScalaBuffer`
-import scala.collection.JavaConversions.`deprecated seqAsJavaList`
-
+import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
 
@@ -59,7 +58,7 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
   override def getExpectedString(error: InvalidInputError) : String = {
     val pathStartIndex = error.getStartIndex - error.getIndexDelta
 
-    val labels = error.getFailedMatchers.toList.flatMap(path => {
+    val labels = error.getFailedMatchers.asScala.toList.flatMap(path => {
       val labelMatcher = findProperLabelMatcher(path, pathStartIndex)
       if (labelMatcher == null) {
         List()
@@ -72,7 +71,7 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
       }
     }).distinct
 
-    join(labels)
+    join(labels.asJava)
   }
 
   private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int) : Matcher = {
