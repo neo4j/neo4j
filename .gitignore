@@ -24,6 +24,8 @@ out
 .checkstyle
 Thumbs.db
 /cypher-shell.zip
+/apoc.zip
 packaging/standalone/src/main/distribution/cypher-shell
+packaging/standalone/src/main/distribution/apoc*
 /.profiler/
 dependency-reduced-pom.xml

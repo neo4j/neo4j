@@ -481,6 +481,7 @@
             </includes>
             <excludes>
               <exclude>**/cypher-shell/*</exclude>
+              <exclude>**/apoc/*</exclude>
             </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
