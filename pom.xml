@@ -727,6 +727,7 @@
           <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
           <configLocation>checkstyle/scalastyle_config.xml</configLocation>
           <skip>${skip-scalastyle}</skip>
+          <inputEncoding>UTF-8</inputEncoding>
         </configuration>
         <dependencies>
           <dependency>
