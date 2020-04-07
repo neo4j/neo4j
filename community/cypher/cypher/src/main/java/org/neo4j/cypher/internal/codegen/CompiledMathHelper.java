@@ -561,11 +561,11 @@ public final class CompiledMathHelper
             Number number = (Number) value;
             if ( number.longValue() > Integer.MAX_VALUE )
             {
-                throw new CypherTypeException( value.toString() + " is too large to cast to an int32", null );
+                throw new CypherTypeException( value + " is too large to cast to an int32", null );
             }
             return number.intValue();
         }
-        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value ), null );
     }
 
     public static long transformToLong( Object value )
@@ -585,7 +585,7 @@ public final class CompiledMathHelper
             return number.longValue();
         }
 
-        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value ), null );
     }
 
     public static long transformToLongOrFail( Object value, String errorOnFloatingPoint )
@@ -613,7 +613,7 @@ public final class CompiledMathHelper
             return number.longValue();
         }
 
-        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value ), null );
     }
 
     /**

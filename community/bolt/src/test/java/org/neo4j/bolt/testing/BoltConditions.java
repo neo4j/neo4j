@@ -73,7 +73,7 @@ public class BoltConditions
     public static Condition<RecordedBoltResponse> succeededWithMetadata( final String key, final AnyValue value )
     {
         return new Condition<>( response -> response.message() == SUCCESS && response.hasMetadata( key ) && response.metadata( key ).equals( value ),
-                "SUCCESS " + format( " with metadata %s = %s", key, value.toString() ) );
+                "SUCCESS " + format( " with metadata %s = %s", key, value ) );
     }
 
     public static Condition<RecordedBoltResponse> containsNoRecord()
@@ -106,7 +106,7 @@ public class BoltConditions
     {
         return new Condition<>( response -> response.message() == SUCCESS && response.hasMetadata( key ) &&
                 pattern.matcher( ((TextValue) response.metadata( key )).stringValue() ).matches(),
-                "SUCCESS " + format( " with metadata %s ~ %s", key, pattern.toString() ) );
+                "SUCCESS " + format( " with metadata %s ~ %s", key, pattern ) );
     }
 
     public static Condition<RecordedBoltResponse> wasIgnored()

@@ -551,7 +551,7 @@ public class SpaceFillingCurveTest
                                             if ( debug )
                                             {
                                                 final long end = System.currentTimeMillis();
-                                                logger.debug( String.format( "Results for level %d, with search %s.", level, searchEnvelope.toString() ) );
+                                                logger.debug( String.format( "Results for level %d, with search %s.", level, searchEnvelope ) );
                                                 logger.debug( String.format( "Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
                                                         monitor.getSearchArea(), monitor.getCoveredArea(),
                                                         (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
@@ -581,7 +581,7 @@ public class SpaceFillingCurveTest
                 if ( debug )
                 {
                     // Average over all runs on this level
-                    logger.debug( String.format( formatBody, level, config.toString(),
+                    logger.debug( String.format( formatBody, level, config,
                             areaStats.avg(), areaStats.min, areaStats.max,
                             rangeStats.avg(), rangeStats.min, rangeStats.max,
                             maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max ) );

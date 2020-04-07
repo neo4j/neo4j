@@ -91,7 +91,7 @@ public class DuplicatedExtensionValidator<T extends Annotation>
 
     private String defaultQualifiedName( Element procedure )
     {
-        return String.format( "%s.%s", elements.getPackageOf( procedure ).toString(), procedure.getSimpleName() );
+        return String.format( "%s.%s", elements.getPackageOf( procedure ), procedure.getSimpleName() );
     }
 
     private Stream<CompilationMessage> asErrors( Map.Entry<String,List<Element>> indexedProcedures )

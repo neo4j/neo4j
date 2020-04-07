@@ -480,7 +480,7 @@ public abstract class StandardExpander implements PathExpander
         @Override
         void buildString( StringBuilder result )
         {
-            result.append( typesMap.toString() );
+            result.append( typesMap );
         }
 
         @Override

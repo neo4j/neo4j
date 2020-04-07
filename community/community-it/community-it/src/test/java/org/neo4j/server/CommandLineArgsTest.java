@@ -61,7 +61,7 @@ public class CommandLineArgsTest
         File homeDir = new File( "/some/absolute/homedir" ).getAbsoluteFile();
 
         assertEquals( homeDir, parse( "--home-dir", homeDir.toString() ).homeDir() );
-        assertEquals( homeDir, parse( "--home-dir=" + homeDir.toString() ).homeDir() );
+        assertEquals( homeDir, parse( "--home-dir=" + homeDir ).homeDir() );
     }
 
     @Test

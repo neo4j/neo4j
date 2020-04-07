@@ -111,6 +111,6 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
         RawBytes rawBytes = keyAt( root.id(), 0, INTERNAL );
 
         // then
-        assertEquals( Long.BYTES, rawBytes.bytes.length, "expected no tail on internal key but was " + rawBytes.toString() );
+        assertEquals( Long.BYTES, rawBytes.bytes.length, "expected no tail on internal key but was " + rawBytes );
     }
 }

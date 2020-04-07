@@ -75,7 +75,7 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     @Override
     void buildString( StringBuilder result )
     {
-        result.append( orderedTypes.toString() );
+        result.append( orderedTypes );
     }
 
     @Override

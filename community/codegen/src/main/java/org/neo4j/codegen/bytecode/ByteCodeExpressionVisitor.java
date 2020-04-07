@@ -991,7 +991,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         if ( !lhs.type().equals( rhs.type() ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Can only %s values of the same type (lhs: %s, rhs: %s)", operation, lhs.type().toString(), rhs.type().toString() )
+                    String.format( "Can only %s values of the same type (lhs: %s, rhs: %s)", operation, lhs.type(), rhs.type() )
             );
         }
     }

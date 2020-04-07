@@ -211,6 +211,6 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     private void assertEqualsKey( KEY expected, KEY actual )
     {
         assertEquals( 0, layout.compare( expected, actual ),
-                format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
+                format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 }

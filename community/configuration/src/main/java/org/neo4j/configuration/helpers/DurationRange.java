@@ -93,7 +93,7 @@ public class DurationRange
     @Override
     public String toString()
     {
-        return '[' + min.toString() + '-' + max.toString() + ']';
+        return '[' + min.toString() + '-' + max + ']';
     }
 
     @Override

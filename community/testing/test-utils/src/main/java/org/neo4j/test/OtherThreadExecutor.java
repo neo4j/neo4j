@@ -300,7 +300,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
             StringBuilder builder = new StringBuilder();
             for ( StackTraceElement element : stackTrace )
             {
-                builder.append( format( element.toString() + "%n" ) );
+                builder.append( format( element + "%n" ) );
             }
             return builder.toString();
         }

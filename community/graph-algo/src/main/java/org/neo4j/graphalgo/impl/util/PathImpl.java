@@ -95,7 +95,7 @@ public final class PathImpl implements Path
             }
             else
             {
-                return relToString( relationship ) + ":" + previous.toString();
+                return relToString( relationship ) + ":" + previous;
             }
         }
     }

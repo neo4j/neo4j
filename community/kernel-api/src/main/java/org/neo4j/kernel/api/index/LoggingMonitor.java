@@ -91,6 +91,6 @@ public class LoggingMonitor implements IndexProvider.Monitor
 
     private static String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
     {
-        return "descriptor=" + indexDescriptor.toString() + ", indexFile=" + indexFile.getAbsolutePath();
+        return "descriptor=" + indexDescriptor + ", indexFile=" + indexFile.getAbsolutePath();
     }
 }

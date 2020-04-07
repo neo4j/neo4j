@@ -309,7 +309,7 @@ abstract class TraversalTestBase
             {
                 buffer.append( delimiter );
             }
-            buffer.append( item.toString() );
+            buffer.append( item );
         }
         return buffer.toString();
     }

@@ -45,7 +45,7 @@ public class Utils
         }
         if ( isRegularFile( directory ) )
         {
-            throw new FileSystemException( directory.toString() + ": Not a directory" );
+            throw new FileSystemException( directory + ": Not a directory" );
         }
         if ( !isWritable( directory ) )
         {

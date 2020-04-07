@@ -244,7 +244,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
         Path parent = path.getParent();
         if ( !parent.getFileName().toString().equals( name ) )
         {
-            throw new IllegalStateException( path.toAbsolutePath().toString() + " parent is not " + name );
+            throw new IllegalStateException( path.toAbsolutePath() + " parent is not " + name );
         }
         return parent;
     }
@@ -293,17 +293,17 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                 case ENUM:
                 case INTERFACE:
                 case CLASS:
-                    pushScope( "." + element.getSimpleName().toString() );
+                    pushScope( "." + element.getSimpleName() );
                     processType( (TypeElement) element );
                     break;
                 case ENUM_CONSTANT:
                 case FIELD:
-                    pushScope( "#" + element.toString() );
+                    pushScope( "#" + element );
                     processField( (VariableElement) element );
                     break;
                 case CONSTRUCTOR:
                 case METHOD:
-                    pushScope( "::" + element.toString() );
+                    pushScope( "::" + element );
                     processMethod( (ExecutableElement) element );
                     break;
                 default:
@@ -422,7 +422,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
         {
             return typeParameter.toString();
         }
-        return typeParameter.toString() + " extends " + String.join( " & ", bounds );
+        return typeParameter + " extends " + String.join( " & ", bounds );
     }
 
     private void addFieldName( StringBuilder sb, VariableElement variableElement )
@@ -524,7 +524,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
         if ( kind == TypeKind.TYPEVAR )
         {
             TypeVariable typeVariable = (TypeVariable) type;
-            return "#" + typeVariable.toString();
+            return "#" + typeVariable;
         }
         if ( kind == TypeKind.DECLARED )
         {

@@ -95,7 +95,7 @@ class GBPTreeCleanupJob implements CleanupJob
         StringJoiner joiner = new StringJoiner( ", ", "CleanupJob(", ")" );
         joiner.add( "file=" + indexFile.getAbsolutePath() );
         joiner.add( "needed=" + needed );
-        joiner.add( "failure=" + (failure == null ? null : failure.toString()) );
+        joiner.add( "failure=" + failure );
         return joiner.toString();
     }
 }

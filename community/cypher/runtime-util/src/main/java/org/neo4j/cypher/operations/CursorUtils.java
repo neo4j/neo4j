@@ -339,7 +339,7 @@ public final class CursorUtils
         }
         else
         {
-            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container.toString() ),
+            throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", container ),
                     null );
         }
     }

@@ -38,7 +38,7 @@ public class AnyValueTestUtil
 
     private static String formatMessage( String should, AnyValue a, AnyValue b )
     {
-        return String.format( "%s(%s) %s %s(%s)", a.getClass().getSimpleName(), a.toString(), should, b.getClass().getSimpleName(), b.toString() );
+        return String.format( "%s(%s) %s %s(%s)", a.getClass().getSimpleName(), a, should, b.getClass().getSimpleName(), b );
     }
 
     public static void assertEqualValues( AnyValue a, AnyValue b )

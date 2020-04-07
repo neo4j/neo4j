@@ -241,7 +241,7 @@ public final class Values
             return shortValue( number.shortValue() );
         }
 
-        throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
+        throw new UnsupportedOperationException( "Unsupported type of Number " + number );
     }
 
     public static LongValue longValue( long value )
@@ -477,7 +477,7 @@ public final class Values
             return NO_VALUE;
         }
 
-        throw new UnsupportedOperationException( "Unsupported type of Temporal " + value.toString() );
+        throw new UnsupportedOperationException( "Unsupported type of Temporal " + value );
     }
 
     public static DurationValue durationValue( TemporalAmount value )

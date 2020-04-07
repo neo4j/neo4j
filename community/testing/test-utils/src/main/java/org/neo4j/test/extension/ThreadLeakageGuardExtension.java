@@ -110,7 +110,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
         if ( !leakedThreads.isEmpty() )
         {
-            String message = format( "%d leaked thread(s) detected:%n%s", leakedThreads.size(), leakedThreads.toString() );
+            String message = format( "%d leaked thread(s) detected:%n%s", leakedThreads.size(), leakedThreads );
             if ( PRINT_ONLY )
             {
                 printError( context, message );

@@ -112,7 +112,7 @@ class Neo4jExtensionRegisterIT
     void fixturesRegistered( Neo4j neo4j ) throws Exception
     {
         // Then
-        HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/neo4j/tx/commit",
+        HTTP.Response response = HTTP.POST( neo4j.httpURI() + "db/neo4j/tx/commit",
                 quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
         assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 2 );

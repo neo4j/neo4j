@@ -88,7 +88,7 @@ class DumperTest
         Files.write( archive.getParent(), new byte[0] );
         FileSystemException exception =
                 assertThrows( FileSystemException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
-        assertEquals( archive.getParent().toString() + ": Not a directory", exception.getMessage() );
+        assertEquals( archive.getParent() + ": Not a directory", exception.getMessage() );
     }
 
     @Test

@@ -784,7 +784,7 @@ class TestTransactionEvents
         }
 
         assertEquals( 1, changedRelationships.size() );
-        assertTrue( changedRelationships.contains( livesIn.name() ), livesIn + " not in " + changedRelationships.toString() );
+        assertTrue( changedRelationships.contains( livesIn.name() ), livesIn + " not in " + changedRelationships );
     }
 
     @Test

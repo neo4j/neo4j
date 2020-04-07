@@ -100,7 +100,7 @@ final class SpatialConfigExtractor
                     }
                     catch ( BufferUnderflowException e )
                     {
-                        logExtractionFailure( "Got an exception, " + e.toString() + ".", log, spatialFile.getIndexFile() );
+                        logExtractionFailure( "Got an exception, " + e + ".", log, spatialFile.getIndexFile() );
                     }
                 }
                 else

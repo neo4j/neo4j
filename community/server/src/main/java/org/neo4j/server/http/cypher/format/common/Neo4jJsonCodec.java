@@ -243,7 +243,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else
         {
-            throw new IllegalArgumentException( "Expected a Node or Relationship, but got a " + value.toString() );
+            throw new IllegalArgumentException( "Expected a Node or Relationship, but got a " + value );
         }
     }
 

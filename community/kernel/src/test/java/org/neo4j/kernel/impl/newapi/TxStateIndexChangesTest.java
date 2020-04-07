@@ -868,7 +868,7 @@ class TxStateIndexChangesTest
 
     private static void assertContainsInOrder( LongIterable iterable, long... nodeIds )
     {
-        assertTrue( iterable.containsAll( nodeIds ), "Expected: " + iterable.toString() + " to contains: " + Arrays.toString( nodeIds ) );
+        assertTrue( iterable.containsAll( nodeIds ), "Expected: " + iterable + " to contains: " + Arrays.toString( nodeIds ) );
     }
 
     private static void assertContainsInOrder( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )

@@ -2333,13 +2333,13 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private void assertEqualsKey( KEY expected, KEY actual )
     {
         assertEquals( 0, layout.compare( expected, actual ),
-                format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
+                format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
         assertEquals( 0, layout.compareValue( expected, actual ),
-                format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
+                format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private void insertKeysAndValues( int keyCount ) throws IOException

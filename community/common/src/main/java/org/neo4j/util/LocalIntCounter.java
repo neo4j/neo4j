@@ -57,6 +57,6 @@ public class LocalIntCounter extends MutableInt
     @Override
     public String toString()
     {
-        return "local:" + super.toString() + ",global:" + global.toString();
+        return "local:" + super.toString() + ",global:" + global;
     }
 }

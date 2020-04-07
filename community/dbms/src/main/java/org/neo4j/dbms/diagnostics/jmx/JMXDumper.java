@@ -130,7 +130,7 @@ public class JMXDumper
 
                 catch ( NumberFormatException e )
                 {
-                    printError( pidFile.toString() + " does not contain a valid id. Found: " + pidFileContent );
+                    printError( pidFile + " does not contain a valid id. Found: " + pidFileContent );
                 }
             }
             catch ( IOException e )

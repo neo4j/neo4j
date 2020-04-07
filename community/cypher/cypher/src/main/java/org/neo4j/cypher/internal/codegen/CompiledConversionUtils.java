@@ -92,7 +92,7 @@ public abstract class CompiledConversionUtils
         {
             return Array.getLength( value ) > 0;
         }
-        throw new CypherTypeException( "Don't know how to treat that as a predicate: " + value.toString(), null );
+        throw new CypherTypeException( "Don't know how to treat that as a predicate: " + value, null );
     }
 
     public static Set<?> toSet( Object value )
@@ -274,7 +274,7 @@ public abstract class CompiledConversionUtils
         {
             return ((BooleanValue) o).booleanValue();
         }
-        throw new CypherTypeException( "Don't know how to treat that as a boolean: " + o.toString(), null );
+        throw new CypherTypeException( "Don't know how to treat that as a boolean: " + o, null );
     }
 
     @SuppressWarnings( {"unchecked", "WeakerAccess"} )

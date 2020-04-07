@@ -247,7 +247,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         else
         {
             return "PropertyCursor[id=" + propertyKey() +
-                   ", " + storeCursor.toString() + " ]";
+                   ", " + storeCursor + " ]";
         }
     }
 

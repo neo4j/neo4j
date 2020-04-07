@@ -105,7 +105,7 @@ public class StringDeserialization implements Deserialization<String>
         }
         else
         {
-            throw new IllegalArgumentException( value.toString() + " " + value.getClass().getSimpleName() );
+            throw new IllegalArgumentException( value + " " + value.getClass().getSimpleName() );
         }
     }
 

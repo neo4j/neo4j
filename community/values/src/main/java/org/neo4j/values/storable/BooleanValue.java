@@ -129,7 +129,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public String toString()
         {
-            return format( "%s('%s')", getTypeName(), Boolean.toString( true ) );
+            return format( "%s('%s')", getTypeName(), true );
         }
     };
 
@@ -187,7 +187,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public String toString()
         {
-            return format( "%s('%s')", getTypeName(), Boolean.toString( false ) );
+            return format( "%s('%s')", getTypeName(), false );
         }
     };
 }

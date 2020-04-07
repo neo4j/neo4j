@@ -164,7 +164,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
     {
         for ( final TypeElement service : serviceProviders.keySet() )
         {
-            final String path = "META-INF/services/" + elementUtils.getBinaryName( service ).toString();
+            final String path = "META-INF/services/" + elementUtils.getBinaryName( service );
             info( "Generating service config file: " + path );
 
             final SortedSet<String> oldProviders = loadIfExists( path );

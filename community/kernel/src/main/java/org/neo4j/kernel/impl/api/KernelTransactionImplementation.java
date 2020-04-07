@@ -933,7 +933,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         AccessMode accessMode = securityContext().mode();
         if ( !accessMode.allowsTokenCreates( action ) )
         {
-            throw accessMode.onViolation( format( "'%s' operations are not allowed for %s.", action.toString(), securityContext().description() ) );
+            throw accessMode.onViolation( format( "'%s' operations are not allowed for %s.", action, securityContext().description() ) );
         }
     }
 

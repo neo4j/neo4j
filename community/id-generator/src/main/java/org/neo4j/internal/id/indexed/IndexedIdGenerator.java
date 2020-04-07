@@ -689,7 +689,7 @@ public class IndexedIdGenerator implements IdGenerator
                     @Override
                     public void value( IdRange value )
                     {
-                        System.out.println( format( "%s [%d]", value.toString(), key.getIdRangeIdx() ) );
+                        System.out.println( format( "%s [%d]", value, key.getIdRangeIdx() ) );
                     }
                 }, cursorTracer );
                 System.out.println( header );
