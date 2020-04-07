@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -29,7 +30,14 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait Command extends Statement {
-  override def returnColumns = List.empty
+  private var useGraph: Option[UseGraph] = None
+  def withGraph(useGraph: Option[UseGraph]): Command = {
+    this.useGraph = useGraph
+    this
+  }
+  def getGraph: Option[UseGraph] = useGraph
+
+  override def returnColumns: List[LogicalVariable] = List.empty
 }
 
 case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {

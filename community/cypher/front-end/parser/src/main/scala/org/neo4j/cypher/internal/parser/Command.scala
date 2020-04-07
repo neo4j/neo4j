@@ -29,10 +29,12 @@ trait Command extends Parser
   with Expressions
   with Literals
   with Base
-  with ProcedureCalls {
+  with ProcedureCalls
+  with GraphSelection {
 
   def Command: Rule1[ast.Command] = rule(
-    CreateUniqueConstraint
+    optional(UseGraph) ~~ (
+      CreateUniqueConstraint
       | CreateUniqueCompositeConstraint
       | CreateNodeKeyConstraint
       | CreateNodePropertyExistenceConstraint
@@ -46,7 +48,7 @@ trait Command extends Parser
       | DropRelationshipPropertyExistenceConstraint
       | DropConstraintOnName
       | DropIndex
-      | DropIndexOnName
+      | DropIndexOnName) ~~> ((use, command) => command.withGraph(use))
   )
 
   def PropertyExpressions: Rule1[Seq[Property]] = rule("multiple property expressions") {

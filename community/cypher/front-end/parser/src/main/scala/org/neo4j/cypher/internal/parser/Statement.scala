@@ -65,47 +65,52 @@ import org.parboiled.scala.Rule1
 import org.parboiled.scala.group
 
 trait Statement extends Parser
+  with GraphSelection
   with Query
   with Command
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    MultiDatabaseAdministrationCommand | CatalogCommand | UserAdministrationCommand | PrivilegeAdministrationCommand | Command | Query
+    AdministrationCommand | CatalogCommand | Command | Query
   )
 
-  def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
+  def CatalogCommand: Rule1[ast.MultiGraphDDL] = rule("Multi graph DDL statement") {
     CreateGraph | DropGraph | CreateView | DropView
   }
 
-  def MultiDatabaseAdministrationCommand: Rule1[CatalogDDL] = rule("MultiDatabase administration statement") {
+  def AdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Administration statement")(
+    optional(UseGraph) ~~ (MultiDatabaseAdministrationCommand | UserAdministrationCommand | PrivilegeAdministrationCommand) ~~> ((use, command) => command.withGraph(use))
+  )
+
+  def MultiDatabaseAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("MultiDatabase administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | ShowDefaultDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
-  def UserAdministrationCommand: Rule1[CatalogDDL] = rule("Security role and user administration statement") {
+  def UserAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
-  def PrivilegeAdministrationCommand: Rule1[CatalogDDL] = rule("Security privilege administration statement") {
+  def PrivilegeAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeCommand)
   }
 
-  def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
+  def GrantCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege grant statement") {
       GrantRole | GrantDatabasePrivilege | GrantTraverse | GrantRead | GrantMatch | GrantWrite | GrantDbmsPrivilege
   }
 
-  def DenyCommand: Rule1[CatalogDDL] = rule("Security privilege deny statement") {
+  def DenyCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege deny statement") {
     DenyDatabasePrivilege | DenyTraverse | DenyRead | DenyMatch | DenyWrite | DenyDbmsPrivilege
   }
 
-  def RevokeCommand: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
+  def RevokeCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke statement") {
     RevokeRole | RevokeDatabasePrivilege | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite | RevokeGrant | RevokeDeny | RevokeDbmsPrivilege
   }
 
-  def RevokeGrant: Rule1[CatalogDDL] = rule("Security privilege revoke grant statement") {
+  def RevokeGrant: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke grant statement") {
     RevokeGrantDatabasePrivilege | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantWrite | RevokeGrantDbmsPrivilege
   }
 
-  def RevokeDeny: Rule1[CatalogDDL] = rule("Security privilege revoke deny statement") {
+  def RevokeDeny: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke deny statement") {
     RevokeDenyDatabasePrivilege | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite | RevokeDenyDbmsPrivilege
   }
 
