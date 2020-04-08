@@ -13,7 +13,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-logical-plan-builder</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4j - Cypher logical plan builder</name>
+  <name>Neo4j - Cypher Logical Plan Builder</name>
   <description>Neo4j - Cypher logical plan builder</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
