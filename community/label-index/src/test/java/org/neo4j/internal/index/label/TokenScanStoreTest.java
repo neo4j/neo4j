@@ -615,7 +615,7 @@ public class TokenScanStoreTest
         toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore(), Config.defaults(),
                 PageCacheTracer.NULL );
 
-        assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyRelationshipTypeScanStore.class );
+        assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyingRelationshipTypeScanStore.class );
     }
 
     @Test

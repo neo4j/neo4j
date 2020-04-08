@@ -49,13 +49,13 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
  * rebuilt. We need to do this because we don't know if rtss missed any updates
  * while it was turned OFF.
  */
-public final class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
+public final class EmptyingRelationshipTypeScanStore implements RelationshipTypeScanStore
 {
     private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout directoryStructure;
     private final boolean readOnly;
 
-    public EmptyRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    public EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
     {
         this.fileSystem = fileSystem;
         this.directoryStructure = directoryStructure;
