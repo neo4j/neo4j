@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * A {@link QuerySubscriber} that implements the {@link Result} interface.
@@ -56,7 +57,7 @@ import org.neo4j.values.AnyValue;
  */
 public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
 {
-    private final DefaultValueMapper valueMapper;
+    private final ValueMapper<Object> valueMapper;
     private final TransactionalContext context;
     private QueryExecution execution;
     private AnyValue[] currentRecord;
@@ -69,8 +70,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
 
     public ResultSubscriber( TransactionalContext context )
     {
+        this(context, new DefaultValueMapper( context.transaction() ));
+    }
+
+    public ResultSubscriber( TransactionalContext context, ValueMapper<Object> valueMapper )
+    {
         this.context = context;
-        this.valueMapper = new DefaultValueMapper( context.transaction() );
+        this.valueMapper = valueMapper;
     }
 
     public void init( QueryExecution execution )

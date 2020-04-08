@@ -127,8 +127,7 @@ public class DatabaseManagementServiceFactory
         LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( getClass() );
         DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule );
-        DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
-                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
+        DatabaseManagementService managementService = createManagementService( globalModule, globalLife, internalLog, databaseManager );
         globalDependencies.satisfyDependencies( managementService );
 
         edition.bootstrapFabricServices();
@@ -155,6 +154,13 @@ public class DatabaseManagementServiceFactory
         startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
 
         return managementService;
+    }
+
+    protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, Log internalLog,
+            DatabaseManager<?> databaseManager )
+    {
+        return new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
+                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
     }
 
     private Lifecycle createWebServer( AbstractEditionModule edition, DatabaseManagementService managementService,

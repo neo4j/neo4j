@@ -60,7 +60,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
     private final Database database;
-    private final TransactionalContextFactory contextFactory;
+    protected final TransactionalContextFactory contextFactory;
     private final Config config;
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
@@ -159,7 +159,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return transformedResult;
     }
 
-    private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeoutMillis )
+    protected InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeoutMillis )
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction );
