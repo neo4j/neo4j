@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking.labelscan;
 
 import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -39,6 +39,6 @@ public class LabelScanDocumentProcessor extends RecordProcessor.Adapter<EntityTo
     @Override
     public void process( EntityTokenRange entityTokenRange, PageCursorTracer cursorTracer )
     {
-        reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ), labelScanCheck, cursorTracer );
+        reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ), labelScanCheck, cursorTracer );
     }
 }

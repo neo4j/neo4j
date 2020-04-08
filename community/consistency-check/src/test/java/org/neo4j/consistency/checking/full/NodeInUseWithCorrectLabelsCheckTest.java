@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -121,7 +121,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        CheckerEngine<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
         checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
@@ -146,7 +146,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        CheckerEngine<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
         checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
@@ -168,7 +168,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         ConsistencyReport.LabelScanConsistencyReport report = mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        CheckerEngine<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
         checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
@@ -191,7 +191,7 @@ class NodeInUseWithCorrectLabelsCheckTest
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
         // when
-        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        CheckerEngine<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
         checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess, NULL );
         recordAccess.checkDeferred();
 
@@ -253,13 +253,13 @@ class NodeInUseWithCorrectLabelsCheckTest
         return engine;
     }
 
-    private static NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels,
+    private static NodeInUseWithCorrectLabelsCheck<TokenScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels,
             boolean checkStoreToIndex )
     {
         return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, COMPLETE_ALL_TOKENS, checkStoreToIndex );
     }
 
-    interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+    interface Engine extends CheckerEngine<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport>
     {
     }
 }

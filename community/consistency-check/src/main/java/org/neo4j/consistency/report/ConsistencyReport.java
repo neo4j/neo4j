@@ -30,7 +30,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -77,11 +77,11 @@ public interface ConsistencyReport
         void forDynamicLabelBlock( RecordType type, DynamicRecord record,
                                    RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker, PageCursorTracer cursorTracer );
 
-        void forNodeLabelScan( LabelScanDocument document,
-                               RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer );
+        void forNodeLabelScan( TokenScanDocument document,
+                               RecordCheck<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer );
 
-        void forRelationshipTypeScan( LabelScanDocument document,
-                RecordCheck<LabelScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer );
+        void forRelationshipTypeScan( TokenScanDocument document,
+                RecordCheck<TokenScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer );
 
         void forIndexEntry( IndexEntry entry,
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker, PageCursorTracer cursorTracer );
@@ -110,7 +110,7 @@ public interface ConsistencyReport
 
         DynamicLabelConsistencyReport forDynamicLabelBlock( RecordType type, DynamicRecord record );
 
-        LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document );
+        LabelScanConsistencyReport forNodeLabelScan( TokenScanDocument document );
 
         IndexConsistencyReport forIndexEntry( IndexEntry entry );
 
@@ -720,14 +720,14 @@ public interface ConsistencyReport
         }
 
         @Override
-        public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker,
+        public void forNodeLabelScan( TokenScanDocument document, RecordCheck<TokenScanDocument,LabelScanConsistencyReport> checker,
                 PageCursorTracer cursorTracer )
         {
 
         }
 
         @Override
-        public void forRelationshipTypeScan( LabelScanDocument document, RecordCheck<LabelScanDocument,RelationshipTypeScanConsistencyReport> checker,
+        public void forRelationshipTypeScan( TokenScanDocument document, RecordCheck<TokenScanDocument,RelationshipTypeScanConsistencyReport> checker,
                 PageCursorTracer cursorTracer )
         {
 
@@ -807,7 +807,7 @@ public interface ConsistencyReport
         }
 
         @Override
-        public LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document )
+        public LabelScanConsistencyReport forNodeLabelScan( TokenScanDocument document )
         {
             return (LabelScanConsistencyReport) proxy;
         }

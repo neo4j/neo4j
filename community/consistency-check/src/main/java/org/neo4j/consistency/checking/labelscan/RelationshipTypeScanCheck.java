@@ -24,16 +24,16 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.full.RelationshipInUseWithCorrectRelationshipTypeCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
-public class RelationshipTypeScanCheck implements RecordCheck<LabelScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport>
+public class RelationshipTypeScanCheck implements RecordCheck<TokenScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport>
 {
     @Override
-    public void check( LabelScanDocument record, CheckerEngine<LabelScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> engine,
+    public void check( TokenScanDocument record, CheckerEngine<TokenScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> engine,
             RecordAccess records, PageCursorTracer cursorTracer )
     {
         EntityTokenRange range = record.getEntityTokenRange();

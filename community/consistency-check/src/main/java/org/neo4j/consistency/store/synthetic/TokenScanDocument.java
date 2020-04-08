@@ -26,11 +26,11 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class LabelScanDocument extends AbstractBaseRecord
+public class TokenScanDocument extends AbstractBaseRecord
 {
     private EntityTokenRange entityTokenRange;
 
-    public LabelScanDocument( EntityTokenRange entityTokenRange )
+    public TokenScanDocument( EntityTokenRange entityTokenRange )
     {
         super( entityTokenRange.id() );
         this.entityTokenRange = entityTokenRange;
@@ -50,7 +50,7 @@ public class LabelScanDocument extends AbstractBaseRecord
     }
 
     @Override
-    public LabelScanDocument copy()
+    public TokenScanDocument copy()
     {
         throw new UnsupportedOperationException( "Synthetic records cannot be copied." );
     }

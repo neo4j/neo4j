@@ -32,7 +32,7 @@ import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
@@ -281,7 +281,7 @@ class NodeChecker implements Checker
                     {
                         if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                         {
-                            reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) ).nodeNotInUse(
+                            reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) ).nodeNotInUse(
                                     recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
                         }
                     }
@@ -301,7 +301,7 @@ class NodeChecker implements Checker
             {
                 if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
-                    reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) )
+                    reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
                             .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
                 }
             }
@@ -317,7 +317,7 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new LabelScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS ) ) )
+                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS ) ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
             }
         }
@@ -340,7 +340,7 @@ class NodeChecker implements Checker
             {
                 if ( labelIndexState.currentRange.covers( nodeIdMissingFromStore ) && labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
-                    reporter.forNodeLabelScan( new LabelScanDocument( labelIndexState.currentRange ) )
+                    reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
                             .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
                 }
                 labelIndexState.lastCheckedNodeId = nodeIdMissingFromStore;
@@ -353,9 +353,9 @@ class NodeChecker implements Checker
             PageCursorTracer cursorTracer )
     {
         compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
-                indexLabel -> reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ) )
+                indexLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
                         .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId(), cursorTracer ), indexLabel ),
-                storeLabel -> reporter.forNodeLabelScan( new LabelScanDocument( entityTokenRange ) )
+                storeLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
                         .nodeLabelNotInIndex( recordLoader.node( node.getId(), cursorTracer ), storeLabel ) );
     }
 

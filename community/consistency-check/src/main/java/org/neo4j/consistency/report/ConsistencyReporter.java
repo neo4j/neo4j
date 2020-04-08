@@ -51,7 +51,7 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -443,15 +443,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forNodeLabelScan( LabelScanDocument document,
-                                  RecordCheck<LabelScanDocument, LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer )
+    public void forNodeLabelScan( TokenScanDocument document,
+                                  RecordCheck<TokenScanDocument, LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer )
     {
         dispatch( RecordType.LABEL_SCAN_DOCUMENT, LABEL_SCAN_REPORT, document, checker, cursorTracer );
     }
 
     @Override
-    public void forRelationshipTypeScan( LabelScanDocument document,
-            RecordCheck<LabelScanDocument,RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer )
+    public void forRelationshipTypeScan( TokenScanDocument document,
+            RecordCheck<TokenScanDocument,RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer )
     {
         dispatch( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, RELATIONSHIP_TYPE_SCAN_REPORT, document, checker, cursorTracer );
     }
@@ -555,7 +555,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document )
+    public LabelScanConsistencyReport forNodeLabelScan( TokenScanDocument document )
     {
         return report( LABEL_SCAN_REPORT, RecordType.LABEL_SCAN_DOCUMENT, document );
     }
