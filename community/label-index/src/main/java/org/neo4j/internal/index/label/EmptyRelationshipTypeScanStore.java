@@ -40,6 +40,15 @@ import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
+/**
+ * This is an almost no-op relationship type scan store and is used
+ * in place of the real implementation when rtss is turned OFF.
+ *
+ * It does one thing and that is delete any rtss file that exists during startup.
+ * In this way we make sure that when rtss is turned back ON again it will be
+ * rebuilt. We need to do this because we don't know if rtss missed any updates
+ * while it was turned OFF.
+ */
 public final class EmptyRelationshipTypeScanStore implements RelationshipTypeScanStore
 {
     private final FileSystemAbstraction fileSystem;
