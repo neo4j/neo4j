@@ -210,11 +210,11 @@ object PreParser {
     if (runtime.isSelected && expressionEngine.isSelected && ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine.pick, runtime.pick)))
       throw new InvalidPreparserOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
 
-    if (runtime.isSelected && operatorEngine.isSelected && ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS(operatorEngine.pick, runtime.pick)) {
+    if (runtime.isSelected && operatorEngine.isSelected && ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS((operatorEngine.pick, runtime.pick))) {
       throw new InvalidPreparserOption(s"Cannot combine OPERATOR ENGINE '${operatorEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
     }
 
-    if (runtime.isSelected && interpretedPipesFallback.isSelected && ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS(interpretedPipesFallback.pick, runtime.pick)) {
+    if (runtime.isSelected && interpretedPipesFallback.isSelected && ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS((interpretedPipesFallback.pick, runtime.pick))) {
       throw new InvalidPreparserOption(s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.pick.name}' with RUNTIME '${runtime.pick.name}'")
     }
 
