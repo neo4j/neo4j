@@ -53,19 +53,19 @@ import static org.neo4j.util.Preconditions.checkArgument;
 public class DefaultComparatorTopTable<T> implements Iterable<T> // implements SortTable<T>
 {
     private final Comparator<T> comparator;
-    private final int totalCount;
+    private final long totalCount;
     private boolean heapified;
     private boolean isSorted;
     private int size;
     private T[] heap;
 
     @SuppressWarnings( "unchecked" )
-    public DefaultComparatorTopTable( Comparator<T> comparator, int totalCount )
+    public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount )
     {
         checkArgument( totalCount > 0, "Top table size must be greater than 0" );
         this.comparator = requireNonNull( comparator );
         this.totalCount = totalCount;
-        int initialSize = Math.min( totalCount, 1024 );
+        int initialSize = (int) Math.min( totalCount, 1024 );
 
         heap = (T[]) new Object[initialSize];
     }
@@ -191,9 +191,9 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
     }
 
     /**
-     * Grow and report size change to tracker
+     * Grow  heap.
      */
-    private void grow( int minimumCapacity )
+    private void grow( long minimumCapacity )
     {
         int oldCapacity = heap.length;
         int newCapacity = oldCapacity + (oldCapacity >> 1) + 1; // Grow by 50%

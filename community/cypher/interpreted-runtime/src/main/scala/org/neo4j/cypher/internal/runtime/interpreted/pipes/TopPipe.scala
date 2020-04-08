@@ -27,12 +27,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.values.storable.FloatingPointValue
 
 import scala.collection.Iterator.empty
 import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.mutable
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -57,41 +55,22 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    if (limit > ArrayUtil.MAX_ARRAY_SIZE) {
-      // For count values larger than the maximum 32-bit integer we fallback on a full sort instead of allocating a huge top table
-      // (Instead of throw new IllegalArgumentException(s"ORDER BY + LIMIT $longCount exceeds the maximum value of ${Int.MaxValue}"))
-      // NOTE: If the _input size_ is larger than Int.MaxValue - 8 this will still fail, since an array cannot hold that many elements
-      val buffer = new mutable.ArrayBuffer[CypherRow](initialFallbackSortArraySize)
-      while (input.hasNext) {
-        val row = input.next()
-        buffer += row
+    val topTable = new DefaultComparatorTopTable(comparator, limit)
+
+    var i = 1L
+    while (input.hasNext) {
+      val row = input.next()
+      topTable.add(row)
+      if (i < limit) {
+        // This makes the assumption that rows have more or less the same size, since we don't know which ones are actually kept in the TopTable here.
         state.memoryTracker.allocated(row, id.x)
       }
-      val array = buffer.toArray
-      java.util.Arrays.sort(array, comparator)
-      var c: Long = 0 // Counter to be used inside of stream
-      array.toStream.takeWhile { _ => c = c + 1; c <= limit }.iterator
+      i += 1
     }
-    else {
-      // The main case: allocate a table of size count to hold the top rows
-      val count = limit.toInt
-      val topTable = new DefaultComparatorTopTable(comparator, count)
 
-      var i = 1
-      while (input.hasNext) {
-        val row = input.next()
-        topTable.add(row)
-        if (i < count) {
-          // This makes the assumption that rows have more or less the same size, since we don't know which ones are actually kept in the TopTable here.
-          state.memoryTracker.allocated(row, id.x)
-        }
-        i += 1
-      }
+    topTable.sort()
 
-      topTable.sort()
-
-      topTable.iterator.asScala
-    }
+    topTable.iterator.asScala
   }
 }
 
