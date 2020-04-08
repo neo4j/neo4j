@@ -446,6 +446,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         DISABLED, DEFAULT, ALL
     }
 
+    @Internal
+    public static final Setting<Boolean> cypher_read_properties_from_cursor =
+            newBuilder( "unsupported.cypher.read_properties_from_cursor", BOOL, false).build();
+
+
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +
             " was chosen as a trade-off between getting a useful amount of queries, and not" +

@@ -295,7 +295,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     legacyCsvQuoteEscaping = false,
     csvBufferSize = 4 * 1024 * 1024,
     nonIndexedLabelWarningThreshold = 10000,
-    planSystemCommands = false
+    planSystemCommands = false,
+    readPropertiesFromCursor = false
   )
 
   def buildSinglePlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None): SinglePlannerQuery = {
