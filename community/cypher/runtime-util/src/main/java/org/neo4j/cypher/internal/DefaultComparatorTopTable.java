@@ -111,20 +111,27 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
      */
     public void sort()
     {
-        if ( !heapified )
+        if ( isSorted )
         {
-            heapify();
+            return;
         }
 
-        // Heap sort the array
-        int n = size - 1;
-        while ( n > 0 )
+        if ( !heapified )
         {
-            T tmp = heap[n];
-            heap[n] = heap[0];
-            heap[0] = tmp;
-            siftDown( 0, tmp, n );
-            n--;
+            java.util.Arrays.sort(heap, 0, size, comparator);
+        }
+        else
+        {
+            // Heap sort the array
+            int n = size - 1;
+            while ( n > 0 )
+            {
+                T tmp = heap[n];
+                heap[n] = heap[0];
+                heap[0] = tmp;
+                siftDown( 0, tmp, n );
+                n--;
+            }
         }
         isSorted = true;
     }
