@@ -28,7 +28,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 
 import static java.lang.Math.min;
-import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
+import static java.lang.Math.toIntExact;
 
 /**
  * The main implementation of {@link FlushableChannel}. This class provides buffering over a simple {@link StoreChannel}
@@ -36,7 +36,7 @@ import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
  */
 public class PhysicalFlushableChannel implements FlushableChannel
 {
-    public static final int DEFAULT_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 512 );
+    public static final int DEFAULT_BUFFER_SIZE = toIntExact( ByteUnit.kibiBytes( 4 ) );
 
     private volatile boolean closed;
 
@@ -45,12 +45,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     public PhysicalFlushableChannel( StoreChannel channel )
     {
-        this( channel, DEFAULT_BUFFER_SIZE );
-    }
-
-    public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )
-    {
-        this( channel, ByteBuffers.allocate( bufferSize ) );
+        this( channel, ByteBuffers.allocate( DEFAULT_BUFFER_SIZE ) );
     }
 
     public PhysicalFlushableChannel( StoreChannel channel, ByteBuffer byteBuffer )
@@ -144,7 +139,6 @@ public class PhysicalFlushableChannel implements FlushableChannel
     public void close() throws IOException
     {
         prepareForFlush().flush();
-        releaseBuffer( buffer );
         this.closed = true;
         this.channel.close();
     }

@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.api.map.primitive.ObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,6 +27,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
+import org.eclipse.collections.api.map.primitive.ObjectLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -55,7 +54,6 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -755,7 +753,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         PhysicalLogVersionedStoreChannel storeChannel = logFiles.openForVersion( logVersion );
         storeChannel.position( startPosition.getByteOffset() );
-        return new ReadAheadLogChannel( storeChannel, LogVersionBridge.NO_MORE_CHANNELS );
+        return new ReadAheadLogChannel( storeChannel );
     }
 
     private LogPosition getLastReadablePosition( LogFile logFile ) throws IOException

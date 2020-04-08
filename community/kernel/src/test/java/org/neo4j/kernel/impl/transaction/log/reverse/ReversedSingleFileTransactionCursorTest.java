@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChecksumChannel;
@@ -62,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -227,7 +225,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private ReversedSingleFileTransactionCursor txCursor( boolean failOnCorruptedLogFiles ) throws IOException
     {
-        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition(), NO_MORE_CHANNELS );
+        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() );
         try
         {
             return new ReversedSingleFileTransactionCursor( fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor );

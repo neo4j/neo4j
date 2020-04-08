@@ -17,27 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
-import org.neo4j.io.fs.StoreChannel;
-
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
+/**
+ * A life-time scope for the contained direct byte buffer.
+ */
+public final class BufferScope implements AutoCloseable
 {
-    PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
+    public final ByteBuffer buffer;
+
+    public BufferScope( int capacity )
     {
-        super( channel, byteBuffer );
+        buffer = ByteBuffers.allocateDirect( capacity );
     }
 
-    void setChannel( StoreChannel channel )
+    @Override
+    public void close()
     {
-        this.channel = channel;
-    }
-
-    void setBuffer( ByteBuffer byteBuffer )
-    {
-        this.buffer = byteBuffer;
+        ByteBuffers.releaseBuffer( buffer );
     }
 }

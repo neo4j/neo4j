@@ -20,9 +20,13 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
+
+import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 
 /**
  * Basically a sequence of {@link StoreChannel channels} seamlessly seen as one.
@@ -30,21 +34,26 @@ import org.neo4j.io.fs.StoreChannel;
 public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChannel> implements ReadableLogChannel
 {
     private final LogVersionBridge bridge;
+    private final ByteBuffer buffer;
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel )
     {
-        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, allocateDirect( DEFAULT_READ_AHEAD_SIZE ) );
     }
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
     {
-        this( startingChannel, bridge, DEFAULT_READ_AHEAD_SIZE );
+        this( startingChannel, bridge, allocateDirect( DEFAULT_READ_AHEAD_SIZE ) );
     }
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
+    /**
+     * This constructor is private to ensure that the given buffer always comes form one of our own constructors.
+     */
+    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ByteBuffer buffer )
     {
-        super( startingChannel, readAheadSize );
+        super( startingChannel, buffer );
         this.bridge = bridge;
+        this.buffer = buffer;
     }
 
     @Override
@@ -70,5 +79,12 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     protected LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
     {
         return bridge.next( channel );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        super.close();
+        ByteBuffers.releaseBuffer( buffer );
     }
 }

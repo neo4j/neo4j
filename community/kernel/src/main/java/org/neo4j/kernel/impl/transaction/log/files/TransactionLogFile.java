@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.memory.BufferScope;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
@@ -45,7 +46,6 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
-import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -58,6 +58,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
     private final PageCacheTracer pageCacheTracer;
+    private BufferScope bufferScope;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
 
@@ -87,9 +88,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        // Channel will free buffer when closed.
-        ByteBuffer byteBuffer = allocateDirect( calculateLogBufferSize() );
-        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, byteBuffer );
+        bufferScope = new BufferScope( calculateLogBufferSize() );
+        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, bufferScope.buffer );
     }
 
     private void seekChannelPosition( long currentLogVersion ) throws IOException
@@ -136,10 +136,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void shutdown() throws IOException
     {
-        if ( writer != null )
-        {
-            writer.close();
-        }
+        IOUtils.closeAll( writer, bufferScope );
     }
 
     @Override

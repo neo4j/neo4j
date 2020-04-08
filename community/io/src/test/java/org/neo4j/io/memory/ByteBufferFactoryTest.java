@@ -19,9 +19,6 @@
  */
 package org.neo4j.io.memory;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +31,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,8 +80,7 @@ class ByteBufferFactoryTest
     void shouldCreateNewInstancesOfLocalAllocators()
     {
         // given
-        Supplier<ByteBufferFactory.Allocator> allocator = mock( Supplier.class );
-        when( allocator.get() ).thenAnswer( invocationOnMock -> mock( ByteBufferFactory.Allocator.class ) );
+        Supplier<ByteBufferFactory.Allocator> allocator = () -> mock( ByteBufferFactory.Allocator.class );
         ByteBufferFactory factory = new ByteBufferFactory( allocator, 100 );
 
         // when
@@ -162,5 +160,23 @@ class ByteBufferFactoryTest
             assertEquals( 1, seenBuffers.get( i ).size() );
         }
         factory.close();
+    }
+
+    @Test
+    void byteBufferMustThrowOutOfBoundsAfterRelease()
+    {
+        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES );
+        buffer.get( 0 );
+        ByteBuffers.releaseBuffer( buffer );
+        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
+    }
+
+    @Test
+    void doubleFreeOfByteBufferIsOkay()
+    {
+        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES );
+        ByteBuffers.releaseBuffer( buffer );
+        ByteBuffers.releaseBuffer( buffer ); // This must not throw.
+        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,6 +26,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -52,8 +51,9 @@ class PhysicalFlushableChecksumChannelTest
     {
         final File firstFile = new File( directory.homeDir(), "file1" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
+        ByteBuffer chanBuf = ByteBuffer.allocate( 100 );
         int channelChecksum;
-        try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel ) )
+        try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel, chanBuf ) )
         {
             channel.beginChecksum();
             channel.put( (byte) 10 );
@@ -82,8 +82,9 @@ class PhysicalFlushableChecksumChannelTest
     {
         final File firstFile = new File( directory.homeDir(), "file1" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
+        ByteBuffer chanBuf = ByteBuffer.allocate( 100 );
         int channelChecksum;
-        try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel ) )
+        try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel, chanBuf ) )
         {
             channel.put( (byte) 5 );
             channel.beginChecksum();

@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Node;
@@ -253,7 +252,7 @@ class TestLogPruning
             int counter = 0;
             LogVersionBridge bridge = channel -> channel;
             LogVersionedStoreChannel versionedStoreChannel = files.openForVersion( version );
-            try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
+            try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge ) )
             {
                 try ( PhysicalTransactionCursor physicalTransactionCursor =
                         new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader( db.getDependencyResolver().resolveDependency(

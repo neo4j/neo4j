@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.memory.BufferScope;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
@@ -388,14 +388,15 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private static void dumpFile( FileSystemAbstraction fs, File file, Dumper dumper ) throws IOException
     {
         dumper.file( file );
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ) ) )
+        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE );
+              var channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.buffer ) )
         {
             while ( true )
             {
                 byte typeByte = channel.get();
                 if ( typeByte < 0 || typeByte >= TYPES.length )
                 {
-                    System.out.println( "Unknown type " + typeByte + " at " + ((ReadAheadChannel) channel).position() );
+                    System.out.println( "Unknown type " + typeByte + " at " + channel.position() );
                     continue;
                 }
 
@@ -426,7 +427,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                     dumper.typeAndTwoIds( type, time, channel.getLong(), channel.getLong() );
                     break;
                 default:
-                    System.out.println( "Unknown type " + type + " at " + ((ReadAheadChannel) channel).position() );
+                    System.out.println( "Unknown type " + type + " at " + channel.position() );
                     break;
                 }
             }
