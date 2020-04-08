@@ -137,7 +137,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case _: ShowUsers => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction)))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
-      case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo, _) =>
+      case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
@@ -148,13 +148,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
-      case c@DropUser(userName, ifExists, _) =>
+      case c@DropUser(userName, ifExists) =>
         val admin = plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction), userName, "delete", "Deleting yourself is not allowed")
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "User", userName) else plans.EnsureNodeExists(admin, "User", userName)
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, initialPassword, requirePasswordChange, suspended, _) =>
+      case c@AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
         val isSetPassword = initialPassword.isDefined || requirePasswordChange.isDefined
         val admin = (isSetPassword, suspended) match {
           case (true, Some(_)) => plans.AssertDbmsAdmin(Seq(SetPasswordsAction, SetUserStatusAction))
@@ -169,26 +169,26 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-      case c@SetOwnPassword(newPassword, currentPassword, _) =>
+      case c@SetOwnPassword(newPassword, currentPassword) =>
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(passwordEncoder(newPassword), passwordEncoder(currentPassword)),
           prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES
-      case ShowRoles(false, showAll, _) =>
+      case ShowRoles(false, showAll) =>
         Some(plans.ShowRoles(plans.AssertDbmsAdmin(ShowRoleAction), withUsers = false, showAll = showAll))
 
       // SHOW [ ALL | POPULATED ] ROLES WITH USERS
-      case ShowRoles(true, showAll, _) =>
+      case ShowRoles(true, showAll) =>
         Some(plans.ShowRoles(plans.AssertDbmsAdmin(Seq(ShowRoleAction, ShowUserAction)), withUsers = true, showAll = showAll))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
-      case c@CreateRole(roleName, None, ifExistsDo, _) =>
+      case c@CreateRole(roleName, None, ifExistsDo) =>
         val source = getSourceForCreateRole(roleName, ifExistsDo)
         Some(plans.LogSystemCommand(plans.CreateRole(source, roleName), prettifier.asString(c)))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS] AS COPY OF bar
-      case c@CreateRole(roleName, Some(fromName), ifExistsDo, _) =>
+      case c@CreateRole(roleName, Some(fromName), ifExistsDo) =>
         val source = getSourceForCreateRole(roleName, ifExistsDo)
         Some(plans.LogSystemCommand(
           plans.CopyRolePrivileges(
@@ -200,13 +200,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]
-      case c@DropRole(roleName, ifExists, _) =>
+      case c@DropRole(roleName, ifExists) =>
         val admin = plans.AssertDbmsAdmin(DropRoleAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", roleName) else plans.EnsureNodeExists(admin, "Role", roleName)
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
-      case c@GrantRolesToUsers(roleNames, userNames, _) =>
+      case c@GrantRolesToUsers(roleNames, userNames) =>
         val plan = (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(plans.AssertDbmsAdmin(AssignRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan]) {
@@ -215,7 +215,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE roles FROM users
-      case c@RevokeRolesFromUsers(roleNames, userNames, _) =>
+      case c@RevokeRolesFromUsers(roleNames, userNames) =>
         val plan = (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(plans.AssertDbmsAdmin(RemoveRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan]) {
@@ -224,28 +224,28 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DBMS TO role
-      case c@GrantPrivilege(DbmsPrivilege(action), _, _, _, roleNames, _) =>
+      case c@GrantPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
         val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
           case (source, roleName) => plans.GrantDbmsAction(source, action, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DBMS TO role
-      case c@DenyPrivilege(DbmsPrivilege(action), _, _, _, roleNames, _) =>
+      case c@DenyPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
         val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
           case (source, roleName) => plans.DenyDbmsAction(source, action, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DBMS FROM role
-      case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
         val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
           case (previous, roleName) => planRevokes(previous, revokeType, (s, r) => plans.RevokeDbmsAction(s, action, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DATABASE foo TO role
-      case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, _) =>
+      case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -254,7 +254,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DATABASE foo TO role
-      case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, _) =>
+      case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -264,7 +264,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DATABASE foo FROM role
-      case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
           roleName -> qualifier
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -274,7 +274,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
-      case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames, _) =>
+      case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -283,7 +283,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
-      case c@DenyPrivilege(TraversePrivilege(), _, database, segments, roleNames, _) =>
+      case c@DenyPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -292,7 +292,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -301,7 +301,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames, _) =>
+      case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -310,7 +310,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames, _) =>
+      case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -319,7 +319,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE WRITE ON GRAPH foo ELEMENTS * (*) FROM role
-      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -328,7 +328,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT READ {prop} ON GRAPH foo ELEMENTS A (*) TO role
-      case c@GrantPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames, _) =>
+      case c@GrantPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -337,7 +337,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY READ {prop} ON GRAPH foo ELEMENTS A (*) TO role
-      case c@DenyPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames, _) =>
+      case c@DenyPrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -346,7 +346,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE READ {prop} ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(ReadPrivilege(), Some(resources), database, segments, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -355,7 +355,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
-      case c@GrantPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames, _) =>
+      case c@GrantPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -364,7 +364,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
-      case c@DenyPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames, _) =>
+      case c@DenyPrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -373,7 +373,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE MATCH {prop} ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames, revokeType, _) =>
+      case c@RevokePrivilege(MatchPrivilege(), Some(resources), database, segments, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
@@ -382,13 +382,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW USER user PRIVILEGES
-      case ShowPrivileges(scope: ShowUserPrivileges, _) =>
+      case ShowPrivileges(scope: ShowUserPrivileges) =>
         val user = scope.user
         val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
         Some(plans.ShowPrivileges(source, scope))
 
       // SHOW [ALL | ROLE role] PRIVILEGES
-      case ShowPrivileges(scope, _) =>
+      case ShowPrivileges(scope) =>
         Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope))
 
       // SHOW DATABASES
@@ -400,11 +400,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowDefaultDatabase())
 
       // SHOW DATABASE foo
-      case ShowDatabase(dbName, _) =>
+      case ShowDatabase(dbName) =>
         Some(plans.ShowDatabase(dbName))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo, _) =>
+      case CreateDatabase(dbName, ifExistsDo) =>
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
@@ -413,17 +413,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
 
       // DROP DATABASE foo [IF EXISTS]
-      case DropDatabase(dbName, ifExists, _) =>
+      case DropDatabase(dbName, ifExists) =>
         val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else admin
         Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName))
 
       // START DATABASE foo
-      case StartDatabase(dbName, _) =>
+      case StartDatabase(dbName) =>
         Some(plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), dbName))
 
       // STOP DATABASE foo
-      case StopDatabase(dbName, _) =>
+      case StopDatabase(dbName) =>
         Some(plans.StopDatabase(
           plans.EnsureValidNonSystemDatabase(
             plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName))

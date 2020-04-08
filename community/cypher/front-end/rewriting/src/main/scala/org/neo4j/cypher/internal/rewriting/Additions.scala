@@ -84,39 +84,39 @@ object Additions {
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
 
       // Grant DEFAULT DATABASE
-      case p@GrantPrivilege(_, _, DefaultDatabaseScope(), _, _, _) =>
+      case p@GrantPrivilege(_, _, DefaultDatabaseScope(), _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // Deny DEFAULT DATABASE
-      case p@DenyPrivilege(_, _, DefaultDatabaseScope(), _, _, _) =>
+      case p@DenyPrivilege(_, _, DefaultDatabaseScope(), _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // Revoke DEFAULT DATABASE
-      case p@RevokePrivilege(_, _, DefaultDatabaseScope(), _, _, _, _) =>
+      case p@RevokePrivilege(_, _, DefaultDatabaseScope(), _, _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // grant dbms privilege (except role management)
-      case p@GrantPrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
+      case p@GrantPrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
         throw cypherExceptionFactory.syntaxException(s"${action.name} privilege is not supported in this Cypher version.", p.position)
 
       // deny dbms privilege (except role management)
-      case p@DenyPrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
+      case p@DenyPrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
         throw cypherExceptionFactory.syntaxException(s"${action.name} privilege is not supported in this Cypher version.", p.position)
 
       // revoke dbms privilege (except role management)
-      case p@RevokePrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
+      case p@RevokePrivilege(DbmsPrivilege(action: DbmsAdminAction), _, _, _, _, _) if !action.isInstanceOf[RoleManagementAction] =>
         throw cypherExceptionFactory.syntaxException(s"${action.name} privilege is not supported in this Cypher version.", p.position)
 
       // grant transaction administration
-      case p@GrantPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _) =>
+      case p@GrantPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
 
       // deny transaction administration
-      case p@DenyPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _) =>
+      case p@DenyPrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
 
       // revoke transaction administration
-      case p@RevokePrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _, _) =>
+      case p@RevokePrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
     }
   }
