@@ -39,32 +39,30 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 object LogicalPlanToPlanBuilderString {
   private val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
 
+  private case class LevelPlanItem(level: Int, plan: LogicalPlan)
+
   /**
    * Generates a string that plays nicely together with `AbstractLogicalPlanBuilder`.
    */
   def apply(logicalPlan: LogicalPlan): String = {
-    var childrenStack = (0, logicalPlan) :: Nil
+    var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
     val sb = new StringBuilder()
 
     while (childrenStack.nonEmpty) {
-      val head = childrenStack.head
+      val LevelPlanItem(level, plan) = childrenStack.head
       childrenStack = childrenStack.tail
-      head match {
-        case (level, plan) =>
-          for(_ <- 1 to level) {
-            sb ++= ".|"
-          }
 
-          sb += '.'
-          sb ++= pre(plan)
-          sb += '('
-          sb ++= par(plan)
-          sb += ')'
-          sb ++= System.lineSeparator()
+      sb ++= ".|" * level
 
-          plan.lhs.foreach(lhs => childrenStack ::= (level, lhs))
-          plan.rhs.foreach(rhs => childrenStack ::= (level + 1, rhs))
-      }
+      sb += '.'
+      sb ++= pre(plan)
+      sb += '('
+      sb ++= par(plan)
+      sb += ')'
+      sb ++= System.lineSeparator()
+
+      plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
+      plan.rhs.foreach(rhs => childrenStack ::= LevelPlanItem(level + 1, rhs))
     }
 
     sb ++= ".build()"
@@ -305,13 +303,14 @@ object LogicalPlanToPlanBuilderString {
       case RangeBetween(greaterThan, lessThan) =>
         val gt = rangeStr(greaterThan, propName)
         val lt = rangeStr(lessThan, propName)
-        RangeStr(Some(gt.post._2, switchSign(gt.post._1)), propName, lt.post)
+        val pre = (gt.post._2, switchInequalitySign(gt.post._1))
+        RangeStr(Some(pre), propName, lt.post)
     }
   }
 
-  private def switchSign(s: String): String = switchSign(s.head) +: s.tail
+  private def switchInequalitySign(s: String): String = switchInequalitySign(s.head) +: s.tail
 
-  private def switchSign(c: Char): Char = c match {
+  private def switchInequalitySign(c: Char): Char = c match {
     case '>' => '<'
     case '<' => '>'
   }
