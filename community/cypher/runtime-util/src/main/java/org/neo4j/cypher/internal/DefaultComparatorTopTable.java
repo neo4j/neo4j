@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal;
 import java.util.Comparator;
 import java.util.Iterator;
 
+import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Objects.requireNonNull;
@@ -201,13 +202,13 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             if ( minimumCapacity > MAX_ARRAY_SIZE )
             {
                 // Nothing left to do here. We have failed to prevent an overflow.
-                throw new OutOfMemoryError( "Top table overflow" );
+                throw new CypherExecutionException( "Top table cannot hold more than " + MAX_ARRAY_SIZE + " elements." );
             }
             newCapacity = MAX_ARRAY_SIZE;
         }
 
         T[] newHeap = (T[]) new Object[newCapacity];
-        System.arraycopy( heap, 0, newHeap, 0, Math.min( size, newCapacity ) );
+        System.arraycopy( heap, 0, newHeap, 0, size );
         heap = newHeap;
     }
 }
