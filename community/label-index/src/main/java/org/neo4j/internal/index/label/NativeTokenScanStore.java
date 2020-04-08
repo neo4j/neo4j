@@ -342,7 +342,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         {
             throw new RuntimeException( e );
         }
-        return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId );
+        return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId, entityType );
     }
 
     @Override

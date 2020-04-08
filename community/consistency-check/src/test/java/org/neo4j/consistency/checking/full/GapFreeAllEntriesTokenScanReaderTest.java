@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -168,16 +169,16 @@ class GapFreeAllEntriesTokenScanReaderTest
     private static LabelScanStore prepareLabelScanStore( int[] ranges )
     {
         var labelScanStore = mock( LabelScanStore.class );
-        when( labelScanStore.allEntityTokenRanges( any( PageCursorTracer.class ) ) ).thenReturn( ranges( RANGE_SIZE, ranges ) );
+        when( labelScanStore.allEntityTokenRanges( any( PageCursorTracer.class ) ) ).thenReturn( ranges( labelScanStore.entityType(), RANGE_SIZE, ranges ) );
         return labelScanStore;
     }
 
-    private static AllEntriesTokenScanReader ranges( int rangeSize, int... ranges )
+    private static AllEntriesTokenScanReader ranges( EntityType entityType, int rangeSize, int... ranges )
     {
         List<EntityTokenRange> rangeList = new ArrayList<>();
         for ( int rangeId = 0; rangeId < ranges.length; rangeId++ )
         {
-            rangeList.add( new EntityTokenRange( rangeId, labelsPerNode( ranges[rangeId] ) ) );
+            rangeList.add( new EntityTokenRange( rangeId, labelsPerNode( ranges[rangeId] ), entityType ) );
         }
 
         return new AllEntriesTokenScanReader()

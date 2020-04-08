@@ -22,11 +22,17 @@ package org.neo4j.consistency.report;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.Strings;
+import org.neo4j.internal.index.label.EntityTokenRange;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssert;
 
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -82,6 +88,28 @@ class MessageConsistencyLoggerTest
                         "- " + neoStoreRecord( true, -1 ),
                         "+ " + neoStoreRecord( true, -1 ),
                         "Inconsistent with: 1 2" ) );
+    }
+
+    @Test
+    void shouldAdaptLogMessageToEntityTokenRangeTypeNode()
+    {
+        // when
+        logger.error( RecordType.LABEL_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRange( 0, new long[0][], NODE ) ),
+                "Some label index error", new NodeRecord( 1 ) );
+
+        // then
+        logMatcher.containsMessages( "NodeLabelRange" );
+    }
+
+    @Test
+    void shouldAdaptLogMessageToEntityTokenRangeTypeRelationship()
+    {
+        // when
+        logger.error( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRange( 0, new long[0][], RELATIONSHIP ) ),
+                "Some relationship type error", new RelationshipRecord( 1 ) );
+
+        // then
+        logMatcher.containsMessages( "RelationshipTypeRange" );
     }
 
     private static String join( String firstLine, String... lines )

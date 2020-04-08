@@ -23,6 +23,8 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
+import org.neo4j.common.EntityType;
+
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
@@ -38,6 +40,7 @@ public class EntityTokenRange
     private final long idRange;
     private final long[] entities;
     private final long[][] tokens;
+    private final EntityType entityType;
     private final long lowRangeId;
     private final long highRangeId;
 
@@ -47,10 +50,11 @@ public class EntityTokenRange
      * and second the token ids for that entity, potentially empty if there are none for that entity.
      * The first dimension must be the size of the range.
      */
-    public EntityTokenRange( long idRange, long[][] tokens )
+    public EntityTokenRange( long idRange, long[][] tokens, EntityType entityType )
     {
         this.idRange = idRange;
         this.tokens = tokens;
+        this.entityType = entityType;
         int rangeSize = tokens.length;
         this.lowRangeId = idRange * rangeSize;
         this.highRangeId = lowRangeId + rangeSize - 1;
@@ -138,8 +142,9 @@ public class EntityTokenRange
     @Override
     public String toString()
     {
+        String rangeName = entityType == EntityType.NODE ? "NodeLabelRange" : "RelationshipTypeRange";
         String rangeString = lowRangeId + "-" + (highRangeId + 1);
-        String prefix = "NodeLabelRange[idRange=" + rangeString;
+        String prefix = rangeName + "[idRange=" + rangeString;
         return toString( prefix, entities, tokens );
     }
 

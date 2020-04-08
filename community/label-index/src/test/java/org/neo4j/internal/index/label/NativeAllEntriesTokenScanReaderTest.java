@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
@@ -88,7 +89,7 @@ class NativeAllEntriesTokenScanReaderTest
     private static void shouldIterateCorrectlyOver( Labels... data ) throws Exception
     {
         // GIVEN
-        try ( AllEntriesTokenScanReader reader = new NativeAllEntriesTokenScanReader( store( data ), highestLabelId( data ) ) )
+        try ( AllEntriesTokenScanReader reader = new NativeAllEntriesTokenScanReader( store( data ), highestLabelId( data ), NODE ) )
         {
             // WHEN/THEN
             assertRanges( reader, data );

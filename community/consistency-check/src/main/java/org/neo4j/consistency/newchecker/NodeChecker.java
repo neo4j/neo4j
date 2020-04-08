@@ -317,7 +317,7 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS ) ) )
+                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS, NODE ) ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
             }
         }

@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Iterator;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.EntityTokenRange;
@@ -38,6 +39,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     private static final String GAP_FREE_ALL_ENTRIES_READER_TAG = "gapFreeAllEntriesReader";
     private final AllEntriesTokenScanReader entityTokenRanges;
     private final long highId;
+    private final EntityType entityType;
     private final PageCursorTracer cursorTracer;
 
     GapFreeAllEntriesTokenScanReader( TokenScanStore scanStore, long highId, PageCacheTracer cacheTracer )
@@ -45,6 +47,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         this.cursorTracer = cacheTracer.createPageCursorTracer( GAP_FREE_ALL_ENTRIES_READER_TAG );
         this.entityTokenRanges = scanStore.allEntityTokenRanges( cursorTracer );
         this.highId = highId;
+        this.entityType = scanStore.entityType();
     }
 
     @Override
@@ -74,7 +77,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         {
             highestRangeId = (highId - 1 ) / rangeSize;
         }
-        return new GapFillingIterator( entityTokenRanges.iterator(), highestRangeId, rangeSize );
+        return new GapFillingIterator( entityTokenRanges.iterator(), highestRangeId, rangeSize, entityType );
     }
 
     private static class GapFillingIterator extends PrefetchingIterator<EntityTokenRange>
@@ -82,15 +85,17 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
         private final long highestRangeId;
         private final Iterator<EntityTokenRange> source;
         private final long[][] emptyRangeData;
+        private final EntityType entityType;
 
         private EntityTokenRange nextFromSource;
         private long currentRangeId = -1;
 
-        GapFillingIterator( Iterator<EntityTokenRange> entityTokenRangeIterator, long highestRangeId, int rangeSize )
+        GapFillingIterator( Iterator<EntityTokenRange> entityTokenRangeIterator, long highestRangeId, int rangeSize, EntityType entityType )
         {
             this.highestRangeId = highestRangeId;
             this.source = entityTokenRangeIterator;
             this.emptyRangeData = new long[rangeSize][];
+            this.entityType = entityType;
         }
 
         @Override
@@ -111,7 +116,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     if ( currentRangeId < nextFromSource.id() )
                     {
                         // Source range iterator has a gap we need to fill
-                        return new EntityTokenRange( ++currentRangeId, emptyRangeData );
+                        return new EntityTokenRange( ++currentRangeId, emptyRangeData, entityType );
                     }
                 }
 
@@ -123,7 +128,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                 }
                 else if ( currentRangeId < highestRangeId )
                 {
-                    nextFromSource = new EntityTokenRange( highestRangeId, emptyRangeData );
+                    nextFromSource = new EntityTokenRange( highestRangeId, emptyRangeData, entityType );
                     // continue in the outer loop
                 }
                 else

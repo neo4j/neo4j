@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -49,12 +50,14 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     private final IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider;
     private final List<Seeker<TokenScanKey,TokenScanValue>> cursors = new ArrayList<>();
     private final int highestTokenId;
+    private final EntityType entityType;
 
     NativeAllEntriesTokenScanReader( IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider,
-            int highestTokenId )
+            int highestTokenId, EntityType entityType )
     {
         this.seekProvider = seekProvider;
         this.highestTokenId = highestTokenId;
+        this.entityType = entityType;
     }
 
     @Override
@@ -87,7 +90,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     cursors.add( cursor );
                 }
             }
-            return new EntityTokenRangeIterator( lowestRange );
+            return new EntityTokenRangeIterator( lowestRange, entityType );
         }
         catch ( IOException e )
         {
@@ -116,13 +119,15 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     private class EntityTokenRangeIterator extends PrefetchingIterator<EntityTokenRange>
     {
         private long currentRange;
+        private final EntityType entityType;
 
         // entityId (relative to lowestRange) --> tokenId[]
         private final MutableLongList[] tokensForEachEntity = new MutableLongList[RANGE_SIZE];
 
-        EntityTokenRangeIterator( long lowestRange )
+        EntityTokenRangeIterator( long lowestRange, EntityType entityType )
         {
             this.currentRange = lowestRange;
+            this.entityType = entityType;
         }
 
         @Override
@@ -166,7 +171,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     }
                 }
 
-                EntityTokenRange range = new EntityTokenRange( currentRange, EntityTokenRange.convertState( tokensForEachEntity ) );
+                EntityTokenRange range = new EntityTokenRange( currentRange, EntityTokenRange.convertState( tokensForEachEntity ), entityType );
                 currentRange = nextLowestRange;
 
                 return range;

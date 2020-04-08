@@ -80,6 +80,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -307,7 +308,7 @@ class ConsistencyReporterTest
             }
             if ( type == TokenScanDocument.class )
             {
-                return new TokenScanDocument( new EntityTokenRange( 0, new long[][] {} ) );
+                return new TokenScanDocument( new EntityTokenRange( 0, new long[][] {}, NODE ) );
             }
             if ( type == IndexEntry.class )
             {
