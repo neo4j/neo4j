@@ -66,11 +66,11 @@ import org.parboiled.scala.group
 trait Statement extends Parser
   with GraphSelection
   with Query
-  with Command
+  with SchemaCommand
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    AdministrationCommand | MultiGraphCommand | Command | Query
+    AdministrationCommand | MultiGraphCommand | SchemaCommand | Query
   )
 
   def MultiGraphCommand: Rule1[ast.MultiGraphDDL] = rule("Multi graph DDL statement") {

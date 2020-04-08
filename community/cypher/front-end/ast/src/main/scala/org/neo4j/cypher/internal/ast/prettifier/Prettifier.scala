@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ast.AllResource
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Command
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateGraph
@@ -165,13 +165,13 @@ case class Prettifier(
   private val base = IndentingQueryPrettifier()
 
   def asString(statement: Statement): String = statement match {
-    case q: Query => base.query(q)
-    case c: Command => asString(c)
+    case q: Query                 => base.query(q)
+    case c: SchemaCommand         => asString(c)
     case c: AdministrationCommand => asString(c)
-    case c: MultiGraphDDL => asString(c)
+    case c: MultiGraphDDL         => asString(c)
   }
 
-  def asString(command: Command): String = {
+  def asString(command: SchemaCommand): String = {
     val useString = asString(command.useGraph)
     val commandString = command match {
 

@@ -25,14 +25,14 @@ import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule3
 import org.parboiled.scala.group
 
-trait Command extends Parser
+trait SchemaCommand extends Parser
   with Expressions
   with Literals
   with Base
   with ProcedureCalls
   with GraphSelection {
 
-  def Command: Rule1[ast.Command] = rule(
+  def SchemaCommand: Rule1[ast.SchemaCommand] = rule(
     optional(UseGraph) ~~ (
       CreateUniqueConstraint
       | CreateUniqueCompositeConstraint

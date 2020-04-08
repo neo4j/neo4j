@@ -29,21 +29,21 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-sealed trait Command extends Statement {
+sealed trait SchemaCommand extends Statement {
   def useGraph: Option[GraphSelection]
-  def withGraph(useGraph: Option[GraphSelection]): Command
+  def withGraph(useGraph: Option[GraphSelection]): SchemaCommand
 
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
-case class CreateIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends Command {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+case class CreateIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
 case class CreateIndexNewSyntax(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], useGraph: Option[GraphSelection] = None)(val position: InputPosition)
-  extends Command with SemanticAnalysisTooling {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  extends SchemaCommand with SemanticAnalysisTooling {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def semanticCheck =
     declareVariable(variable, CTNode) chain
     SemanticExpressionCheck.simple(properties) chain
@@ -55,18 +55,18 @@ case class CreateIndexNewSyntax(variable: Variable, label: LabelName, properties
     }
 }
 
-case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends Command {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def property = properties.head
   def semanticCheck = Seq()
 }
 
-case class DropIndexOnName(name: String, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends Command {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+case class DropIndexOnName(name: String, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
-trait PropertyConstraintCommand extends Command with SemanticAnalysisTooling {
+trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def property: Property
@@ -81,7 +81,7 @@ trait PropertyConstraintCommand extends Command with SemanticAnalysisTooling {
       }
 }
 
-trait CompositePropertyConstraintCommand extends Command with SemanticAnalysisTooling {
+trait CompositePropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -137,38 +137,38 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 }
 
 case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodeKeyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodeKeyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends UniquePropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends UniquePropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property, name: Option[String], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodePropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodePropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property, name: Option[String], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends RelationshipPropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends RelationshipPropertyConstraintCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class DropConstraintOnName(name: String, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends Command {
-  override def withGraph(useGraph: Option[GraphSelection]): Command = copy(useGraph = useGraph)(position)
+case class DropConstraintOnName(name: String, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
