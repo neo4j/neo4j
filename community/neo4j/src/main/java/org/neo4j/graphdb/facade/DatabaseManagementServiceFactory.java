@@ -131,6 +131,8 @@ public class DatabaseManagementServiceFactory
                 globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
         globalDependencies.satisfyDependencies( managementService );
 
+        edition.bootstrapFabricServices();
+
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new TransactionalDbmsOperations( globalProcedures ) );
 

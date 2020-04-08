@@ -285,4 +285,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
         var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, logService );
         return new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, monitors, clock, bookmarkAwaitDuration );
     }
+
+    @Override
+    public void bootstrapFabricServices()
+    {
+        // no Fabric in Community Edition yet
+    }
 }

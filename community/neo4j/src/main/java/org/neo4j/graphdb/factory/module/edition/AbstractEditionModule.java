@@ -177,6 +177,8 @@ public abstract class AbstractEditionModule
      */
     public abstract QueryEngineProvider getQueryEngineProvider();
 
+    public abstract void bootstrapFabricServices();
+
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
             DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService );
 
