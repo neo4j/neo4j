@@ -634,7 +634,9 @@ class RecoveryIT
                 .setMonitors( monitors ).build();
         try
         {
-            var e = assertThrows( Exception.class, () -> service.database( DEFAULT_DATABASE_NAME ).beginTx() );
+            var database = service.database( layout.getDatabaseName() );
+            assertFalse( database.isAvailable( 0 ) );
+            var e = assertThrows( Exception.class, database::beginTx );
             assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
         }
         finally
