@@ -55,7 +55,7 @@ public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.Inde
         }
         if ( entityType == EntityType.RELATIONSHIP )
         {
-            relationshipChecker = new RelationshipInUseWithCorrectRelationshipTypeCheck<>( entityTokenLongIds );
+            relationshipChecker = new RelationshipInUseWithCorrectRelationshipTypeCheck<>( entityTokenLongIds, propertySchemaType, false );
         }
     }
 

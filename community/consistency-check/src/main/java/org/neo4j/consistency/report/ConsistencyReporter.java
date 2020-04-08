@@ -44,6 +44,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistenc
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeScanConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.SchemaConsistencyReport;
 import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
@@ -81,6 +82,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private static final ProxyFactory<DynamicConsistencyReport> DYNAMIC_REPORT = create( DynamicConsistencyReport.class );
     private static final ProxyFactory<DynamicLabelConsistencyReport> DYNAMIC_LABEL_REPORT = create( DynamicLabelConsistencyReport.class );
     private static final ProxyFactory<LabelScanConsistencyReport> LABEL_SCAN_REPORT = create( LabelScanConsistencyReport.class );
+    private static final ProxyFactory<RelationshipTypeScanConsistencyReport> RELATIONSHIP_TYPE_SCAN_REPORT =
+            create( RelationshipTypeScanConsistencyReport.class );
     private static final ProxyFactory<IndexConsistencyReport> INDEX_REPORT = create( IndexConsistencyReport.class );
     private static final ProxyFactory<RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT = create( RelationshipGroupConsistencyReport.class );
     private static final ProxyFactory<CountsConsistencyReport> COUNTS_REPORT = create( CountsConsistencyReport.class );
@@ -444,6 +447,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                   RecordCheck<LabelScanDocument, LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer )
     {
         dispatch( RecordType.LABEL_SCAN_DOCUMENT, LABEL_SCAN_REPORT, document, checker, cursorTracer );
+    }
+
+    @Override
+    public void forRelationshipTypeScan( LabelScanDocument document,
+            RecordCheck<LabelScanDocument,RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer )
+    {
+        dispatch( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, RELATIONSHIP_TYPE_SCAN_REPORT, document, checker, cursorTracer );
     }
 
     @Override

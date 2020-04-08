@@ -208,7 +208,10 @@ public abstract class GraphStoreFixture implements AutoCloseable
             fileSystem = new DefaultFileSystemAbstraction();
             jobScheduler = new ThreadPoolJobScheduler( "Fixture-" );
             LogProvider logProvider = NullLogProvider.getInstance();
-            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly );
+            Config config = Config.newBuilder()
+                    .set( GraphDatabaseSettings.read_only, readOnly )
+                    .set( getConfig() )
+                    .build();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
             StoreFactory storeFactory = new StoreFactory( databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider,
                     PageCacheTracer.NULL );

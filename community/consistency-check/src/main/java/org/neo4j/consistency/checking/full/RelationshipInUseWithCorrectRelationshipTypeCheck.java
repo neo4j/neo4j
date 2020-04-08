@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -35,10 +36,14 @@ public class RelationshipInUseWithCorrectRelationshipTypeCheck
         <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.RelationshipInUseWithCorrectRelationshipTypeReport>
         implements ComparativeRecordChecker<RECORD,RelationshipRecord, REPORT>
 {
+    private final PropertySchemaType propertySchemaType;
     private final long[] indexRelationshipTypes;
+    private final boolean checkStoreToIndex;
 
-    public RelationshipInUseWithCorrectRelationshipTypeCheck( long[] expectedEntityTokenIds )
+    public RelationshipInUseWithCorrectRelationshipTypeCheck( long[] expectedEntityTokenIds, PropertySchemaType propertySchemaType, boolean checkStoreToIndex )
     {
+        this.propertySchemaType = propertySchemaType;
+        this.checkStoreToIndex = checkStoreToIndex;
         this.indexRelationshipTypes = sortAndDeduplicate( expectedEntityTokenIds );
     }
 
@@ -48,21 +53,57 @@ public class RelationshipInUseWithCorrectRelationshipTypeCheck
     {
         if ( relationshipRecord.inUse() )
         {
-            // Relationship indexes are always semantically multi-token, which means that the relationship record just need to have one of the possible
-            // relationship types mentioned by the index. Relationships can't have more than one type anyway.
-            long type = relationshipRecord.getType();
-            if ( Arrays.binarySearch( indexRelationshipTypes, type ) < 0 )
+            if ( propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN )
             {
-                // The relationship did not have any of the relationship types mentioned by the index.
-                for ( long indexRelationshipType : indexRelationshipTypes )
+                // Relationship record just need to have one of the possible relationship types mentioned by the index.
+                // Relationships can't have more than one type anyway.
+                long type = relationshipRecord.getType();
+                if ( Arrays.binarySearch( indexRelationshipTypes, type ) < 0 )
                 {
-                    engine.report().relationshipDoesNotHaveExpectedRelationshipType( relationshipRecord, indexRelationshipType );
+                    // The relationship did not have any of the relationship types mentioned by the index.
+                    for ( long indexRelationshipType : indexRelationshipTypes )
+                    {
+                        engine.report().relationshipDoesNotHaveExpectedRelationshipType( relationshipRecord, indexRelationshipType );
+                    }
                 }
             }
+            else if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
+            {
+                // The relationship must have all of the types specified by the index.
+                long storeType = relationshipRecord.getType();
+                boolean foundType = false;
+                for ( long indexRelationshipType : indexRelationshipTypes )
+                {
+                    if ( indexRelationshipType == storeType )
+                    {
+                        foundType = true;
+                    }
+                    else
+                    {
+                        engine.report().relationshipDoesNotHaveExpectedRelationshipType( relationshipRecord, indexRelationshipType );
+                    }
+                }
+                if ( !foundType )
+                {
+                    reportRelationshipTypeNotInIndex( engine.report(), relationshipRecord, storeType );
+                }
+            }
+            else
+            {
+                throw new IllegalStateException( "Unknown property schema type '" + propertySchemaType + "'." );
+            }
         }
-        else
+        else if ( indexRelationshipTypes.length != 0 )
         {
             engine.report().relationshipNotInUse( relationshipRecord );
+        }
+    }
+
+    private void reportRelationshipTypeNotInIndex( REPORT report, RelationshipRecord relationshipRecord, long storeType )
+    {
+        if ( checkStoreToIndex )
+        {
+            report.relationshipTypeNotInIndex( relationshipRecord, storeType );
         }
     }
 }

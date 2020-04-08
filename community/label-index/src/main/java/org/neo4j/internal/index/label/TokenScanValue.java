@@ -90,6 +90,6 @@ class TokenScanValue
     @Override
     public String toString()
     {
-        return String.valueOf( bits );
+        return Long.toBinaryString( bits );
     }
 }

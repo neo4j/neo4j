@@ -66,6 +66,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -309,8 +310,7 @@ public class FullCheckIntegrationTest
         long labelId = idGenerator.label() - 1;
 
         LabelScanStore labelScanStore = fixture.directStoreAccess().labelScanStore();
-        Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable( tokenChanges( nodeId1, new long[]{}, new long[]{labelId} )
-        );
+        Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable( tokenChanges( nodeId1, new long[]{}, new long[]{labelId} ) );
         write( labelScanStore, nodeLabelUpdates );
 
         // when
@@ -321,12 +321,12 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private void write( LabelScanStore labelScanStore, Iterable<EntityTokenUpdate> nodeLabelUpdates )
+    void write( TokenScanStore tokenScanStore, Iterable<EntityTokenUpdate> entityTokenUpdates )
             throws IOException
     {
-        try ( TokenScanWriter writer = labelScanStore.newWriter( NULL ) )
+        try ( TokenScanWriter writer = tokenScanStore.newWriter( NULL ) )
         {
-            for ( EntityTokenUpdate update : nodeLabelUpdates )
+            for ( EntityTokenUpdate update : entityTokenUpdates )
             {
                 writer.write( update );
             }
@@ -2140,19 +2140,23 @@ public class FullCheckIntegrationTest
             @Override
             protected void generateInitialData( GraphDatabaseService db )
             {
+                // Make sure all tokens are created in expected order
+                // because many tests rely on sort order for those token ids.
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
                     KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-
-                    // the Core API for composite index creation is not quite merged yet
+                    TokenRead tokenRead = ktx.tokenRead();
                     TokenWrite tokenWrite = ktx.tokenWrite();
+                    label1 = tokenWrite.labelGetOrCreateForName( "label1" );
+                    label2 = tokenWrite.labelGetOrCreateForName( "label2" );
+                    label3 = tokenWrite.labelGetOrCreateForName( "label3" );
+                    tokenWrite.labelGetOrCreateForName( "label4" );
+                    draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
                     key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
-                    int key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
-                    label3 = ktx.tokenRead().nodeLabel( "label3" );
-                    ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ), null );
-
-                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+                    mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
+                    C = tokenWrite.relationshipTypeGetOrCreateForName( "C" );
+                    T = tokenWrite.relationshipTypeGetOrCreateForName( "T" );
+                    M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
                     tx.commit();
                 }
                 catch ( KernelException e )
@@ -2160,11 +2164,21 @@ public class FullCheckIntegrationTest
                     throw new RuntimeException( e );
                 }
 
+                // Create indexes
+                try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+                {
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).create();
+
+                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+                    tx.commit();
+                }
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
                     tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 }
 
+                // Create initial data
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
                     Node node1 = set( tx.createNode( label( "label1" ) ) );
@@ -2176,25 +2190,7 @@ public class FullCheckIntegrationTest
                     indexedNodes.add( set( tx.createNode( label( "label3" ) ), property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
 
                     set( tx.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
-
-                    KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                    TokenRead tokenRead = ktx.tokenRead();
-                    TokenWrite tokenWrite = ktx.tokenWrite();
-                    label1 = tokenRead.nodeLabel( "label1" );
-                    label2 = tokenRead.nodeLabel( "label2" );
-                    label3 = tokenRead.nodeLabel( "label3" );
-                    tokenRead.nodeLabel( "label4" );
-                    draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
-                    key1 = tokenRead.propertyKey( PROP1 );
-                    mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
-                    C = tokenRead.relationshipType( "C" );
-                    T = tokenRead.relationshipType( "T" );
-                    M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
                     tx.commit();
-                }
-                catch ( KernelException e )
-                {
-                    throw new RuntimeException( e );
                 }
             }
 

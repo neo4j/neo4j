@@ -80,6 +80,9 @@ public interface ConsistencyReport
         void forNodeLabelScan( LabelScanDocument document,
                                RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer );
 
+        void forRelationshipTypeScan( LabelScanDocument document,
+                RecordCheck<LabelScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer );
+
         void forIndexEntry( IndexEntry entry,
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker, PageCursorTracer cursorTracer );
 
@@ -555,6 +558,8 @@ public interface ConsistencyReport
         void relationshipNotInUse( RelationshipRecord referredRelationshipRecord );
 
         void relationshipDoesNotHaveExpectedRelationshipType( RelationshipRecord referredRelationshipRecord, long expectedRelationshipTypeId );
+
+        void relationshipTypeNotInIndex( RelationshipRecord referredRelationshipRecord, long missingTypeId );
     }
 
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -573,6 +578,25 @@ public interface ConsistencyReport
 
         @Warning
         @Documented( "Label index was not properly shutdown and rebuild is required." )
+        void dirtyIndex();
+    }
+
+    interface RelationshipTypeScanConsistencyReport extends RelationshipInUseWithCorrectRelationshipTypeReport
+    {
+        @Override
+        @Documented( "This relationship type scan document refers to a relationship record that is not in use." )
+        void relationshipNotInUse( RelationshipRecord referredRelationshipRecord );
+
+        @Override
+        @Documented( "This relationship type scan document refers to a relationship that does not have the expected type." )
+        void relationshipDoesNotHaveExpectedRelationshipType( RelationshipRecord referredRelationshipRecord, long expectedRelationshipTypeId );
+
+        @Override
+        @Documented( "This relationship record has a type that is not found in the relationship type scan store entry for this relationship." )
+        void relationshipTypeNotInIndex( RelationshipRecord referredRelationshipRecord, long missingTypeId );
+
+        @Warning
+        @Documented( "Relationship type index was not properly shutdown and rebuild is required." )
         void dirtyIndex();
     }
 
@@ -697,6 +721,13 @@ public interface ConsistencyReport
 
         @Override
         public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker,
+                PageCursorTracer cursorTracer )
+        {
+
+        }
+
+        @Override
+        public void forRelationshipTypeScan( LabelScanDocument document, RecordCheck<LabelScanDocument,RelationshipTypeScanConsistencyReport> checker,
                 PageCursorTracer cursorTracer )
         {
 

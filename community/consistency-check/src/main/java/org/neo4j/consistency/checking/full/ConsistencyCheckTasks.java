@@ -36,12 +36,15 @@ import org.neo4j.consistency.checking.index.IndexEntryProcessor;
 import org.neo4j.consistency.checking.index.IndexIterator;
 import org.neo4j.consistency.checking.labelscan.LabelScanCheck;
 import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
+import org.neo4j.consistency.checking.labelscan.RelationshipTypeScanCheck;
+import org.neo4j.consistency.checking.labelscan.RelationshipTypeScanDocumentProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -72,13 +75,15 @@ class ConsistencyCheckTasks
     private final MultiPassStore.Factory multiPass;
     private final ConsistencyReporter reporter;
     private final LabelScanStore labelScanStore;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final IndexAccessors indexes;
     private final CacheAccess cacheAccess;
     private final int numberOfThreads;
     private final PageCacheTracer pageCacheTracer;
 
     ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder, StoreProcessor defaultProcessor, StoreAccess nativeStores,
-            Statistics statistics, CacheAccess cacheAccess, LabelScanStore labelScanStore, IndexAccessors indexes, MultiPassStore.Factory multiPass,
+            Statistics statistics, CacheAccess cacheAccess, LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore, IndexAccessors indexes, MultiPassStore.Factory multiPass,
             ConsistencyReporter reporter, int numberOfThreads, PageCacheTracer pageCacheTracer )
     {
         this.multiPartBuilder = multiPartBuilder;
@@ -89,6 +94,7 @@ class ConsistencyCheckTasks
         this.multiPass = multiPass;
         this.reporter = reporter;
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.indexes = indexes;
         this.numberOfThreads = numberOfThreads;
         this.pageCacheTracer = pageCacheTracer;
@@ -204,6 +210,14 @@ class ConsistencyCheckTasks
                     new GapFreeAllEntriesTokenScanReader( labelScanStore, highId, pageCacheTracer ),
                     new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
                     ROUND_ROBIN ) );
+        }
+        if ( checkRelationshipTypeScanStore )
+        {
+            long highId = nativeStores.getRelationshipStore().getHighId();
+            tasks.add( recordScanner( "RelationshipTypeScanStore",
+                    new GapFreeAllEntriesTokenScanReader( relationshipTypeScanStore, highId, pageCacheTracer ),
+                    new RelationshipTypeScanDocumentProcessor( filteredReporter, new RelationshipTypeScanCheck() ),
+                    Stage.SEQUENTIAL_FORWARD, ROUND_ROBIN ) );
         }
         if ( checkIndexes )
         {

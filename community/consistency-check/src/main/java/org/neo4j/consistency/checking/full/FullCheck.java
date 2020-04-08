@@ -175,9 +175,10 @@ public class FullCheck
                 MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR, pageCacheTracer );
                 ConsistencyCheckTasks taskCreator =
                         new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
-                                indexes, multiPass, reporter, threads, pageCacheTracer );
-                List<ConsistencyCheckerTask> tasks = taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckIndexes(),
-                        flags.isCheckGraph() );
+                                directStoreAccess.relationshipTypeScanStore(), indexes, multiPass, reporter, threads, pageCacheTracer );
+                List<ConsistencyCheckerTask> tasks =
+                        taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckRelationshipTypeScanStore(), flags.isCheckIndexes(),
+                                flags.isCheckGraph() );
                 progress.build();
                 TaskExecutor.execute( tasks, decorator::prepare );
                 checkCountsStoreConsistency( report, countsBuilder, recordAccess, countsStore, pageCacheTracer );
@@ -231,7 +232,8 @@ public class FullCheck
             var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
             listener.started();
 
-            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, idGenerators, cursorTracer );
+            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, idGenerators,
+                    cursorTracer );
             consistencyCheckSchemaIndexes( indexes, report, listener, cursorTracer );
             listener.done();
         }

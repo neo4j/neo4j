@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
 import org.neo4j.internal.index.label.EntityTokenRange;
-import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -40,7 +40,7 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     private final long highId;
     private final PageCursorTracer cursorTracer;
 
-    GapFreeAllEntriesTokenScanReader( LabelScanStore scanStore, long highId, PageCacheTracer cacheTracer )
+    GapFreeAllEntriesTokenScanReader( TokenScanStore scanStore, long highId, PageCacheTracer cacheTracer )
     {
         this.cursorTracer = cacheTracer.createPageCursorTracer( GAP_FREE_ALL_ENTRIES_READER_TAG );
         this.entityTokenRanges = scanStore.allEntityTokenRanges( cursorTracer );
@@ -68,8 +68,13 @@ class GapFreeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     @Override
     public Iterator<EntityTokenRange> iterator()
     {
-        return new GapFillingIterator( entityTokenRanges.iterator(), (highId - 1) / entityTokenRanges.rangeSize(),
-                entityTokenRanges.rangeSize() );
+        long highestRangeId = 0;
+        int rangeSize = entityTokenRanges.rangeSize();
+        if ( rangeSize != 0 )
+        {
+            highestRangeId = (highId - 1 ) / rangeSize;
+        }
+        return new GapFillingIterator( entityTokenRanges.iterator(), highestRangeId, rangeSize );
     }
 
     private static class GapFillingIterator extends PrefetchingIterator<EntityTokenRange>
