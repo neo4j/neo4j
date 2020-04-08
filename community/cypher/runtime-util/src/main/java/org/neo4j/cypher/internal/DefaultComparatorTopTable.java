@@ -115,6 +115,11 @@ public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable 
         return false;
     }
 
+    public int getSize()
+    {
+        return size;
+    }
+
     /**
      * Returns the top <code>totalCount</code> elements, but in no particular order
      */

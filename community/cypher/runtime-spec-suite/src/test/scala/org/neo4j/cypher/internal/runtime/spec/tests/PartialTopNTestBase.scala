@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -252,4 +254,90 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("partial top should not exhaust input when limit is lower then the input size") {
+    val input = inputColumns(nBatches = sizeHint / 10, batchSize = 10, row => row / 10, row => row % 10)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val stream = input.stream()
+    // When
+    val result = execute(logicalQuery, runtime, stream, TestSubscriber.concurrent)
+    // Then
+    result.request(Long.MaxValue)
+    result.await() shouldBe false
+    //we shouldn't have exhausted the entire input
+    stream.hasMore shouldBe true
+  }
+
+  test("should work on RHS of apply") {
+    val propValue = 10
+    val topLimit = 42
+    index("B", "prop")
+    val (aNodes, bNodes) = given {
+      val aNodes = nodeGraph(2, "A")
+      val bNodes = nodePropertyGraph(4, {
+        case i: Int => Map("prop" -> (if (i % 2 == 0) propValue else 0))
+      }, "B")
+      (aNodes, bNodes)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
+      .|.unwind("range(b.prop, 1, -1) AS c")
+      .|.nodeIndexOperator("b:B(prop > 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val rhs = for {
+      b <- bNodes if b.getProperty("prop").asInstanceOf[Int] > 0
+      c <- Range.inclusive(1, propValue)
+    } yield (b, c)
+
+    val expected = for {
+      a <- aNodes
+      (b, c) <- rhs.take(topLimit)
+    } yield Array[Any](a, b, c)
+
+    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
+  }
+
+  test("should work on RHS of apply with variable number of rows per argument") {
+    val inputSize = 100
+    val topLimit = 17
+    val input = for (a <- 1 to inputSize) yield Array[Any](a)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
+      .|.unwind("range(a, b, -1) AS c")
+      .|.unwind("range(1, a) AS b")
+      .|.argument("a")
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for {
+      a <- 1 to inputSize
+      rhs = for {
+        b <- 1 to a
+        c <- b to a
+      } yield (b, c)
+      (b, c) <- rhs.take(topLimit)
+    } yield Array[Any](a, b, c)
+
+    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
+  }
 }
