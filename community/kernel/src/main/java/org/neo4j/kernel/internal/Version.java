@@ -22,12 +22,23 @@ package org.neo4j.kernel.internal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.System.getProperty;
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
+import static org.apache.commons.lang3.StringUtils.defaultString;
 
 public class Version
 {
+    static final String CUSTOM_VERSION_SETTING = "unsupported.neo4j.custom.version";
+    private static final String DEFAULT_DEV_VERSION = "dev";
     private static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
-    private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID, Version.class.getPackage().getImplementationVersion() );
+    private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID, selectVersion() );
+
+    static String selectVersion()
+    {
+        var versionString = getProperty( CUSTOM_VERSION_SETTING, Version.class.getPackage().getImplementationVersion() );
+        return defaultString( versionString, DEFAULT_DEV_VERSION );
+    }
 
     private final String artifactId;
     private final String title;
@@ -93,9 +104,11 @@ public class Version
 
     protected Version( String artifactId, String version )
     {
+        requireNonNull( artifactId );
+        requireNonNull( version );
         this.artifactId = artifactId;
         this.title = artifactId;
-        this.version = version == null ? "dev" : version;
+        this.version = version;
         this.releaseVersion = parseReleaseVersion( this.version );
     }
 

@@ -22,6 +22,8 @@ package org.neo4j.kernel.internal;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.kernel.internal.Version.CUSTOM_VERSION_SETTING;
 
 class VersionTest
 {
@@ -49,6 +51,30 @@ class VersionTest
 
         assertThat( version( "0" ).getReleaseVersion() ).isEqualTo( "0" );
         assertThat( version( "0" ).getVersion() ).isEqualTo( "0" );
+    }
+
+    @Test
+    void versionWithCustomString()
+    {
+        var planetExpress = "planetExpress";
+        var planetExpressVersion = version( planetExpress );
+        assertThat( planetExpressVersion.getVersion() ).isEqualTo( planetExpress );
+        assertThat( planetExpressVersion.getReleaseVersion() ).isEqualTo( planetExpress );
+    }
+
+    @Test
+    void versionStringSelection()
+    {
+        var planetExpress = "planetExpress";
+        try
+        {
+            System.setProperty( CUSTOM_VERSION_SETTING, planetExpress );
+            assertEquals( planetExpress, Version.selectVersion() );
+        }
+        finally
+        {
+            System.clearProperty( CUSTOM_VERSION_SETTING );
+        }
     }
 
     private Version version( String version )
