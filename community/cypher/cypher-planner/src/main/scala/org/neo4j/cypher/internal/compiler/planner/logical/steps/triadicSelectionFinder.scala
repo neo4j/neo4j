@@ -86,10 +86,10 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
                                       qg: QueryGraph,
                                       interestingOrder: InterestingOrder,
                                       context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
-    case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
+    case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll, _) =>
       findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, interestingOrder, context)
 
-    case exp2@Expand(Selection(Ands(innerPredicates), exp1: Expand), _, _, _, _, _, ExpandAll) =>
+    case exp2@Expand(Selection(Ands(innerPredicates), exp1: Expand), _, _, _, _, _, ExpandAll, _) =>
       findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates.toSeq, exp1, exp2, qg, interestingOrder, context)
 
     case _ => Seq.empty

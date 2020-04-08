@@ -331,7 +331,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private val nodeIndexSeekCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
     case (_: AllNodesScan, _, _) => 1000000000.0
     case (_: NodeIndexSeek, _, _) => 0.1
-    case (Expand(plan, _, _, _, _, _, _), input, c) => nodeIndexSeekCost((plan, input, c))
+    case (Expand(plan, _, _, _, _, _, _, _), input, c) => nodeIndexSeekCost((plan, input, c))
     case (Selection(_, plan), input, c) => nodeIndexSeekCost((plan, input, c))
     case _ => 1000.0
   }
@@ -757,7 +757,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE a.name = b.prop AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _, _)) => ()
     }
   }
 
@@ -766,7 +766,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE b.prop = a.name AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _, _)) => ()
     }
   }
 

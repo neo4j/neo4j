@@ -193,7 +193,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         Apply(
         Limit(
         Expand(
-        AllNodesScan("b1", _), _, _, _, _, _, _), _, _),
+        AllNodesScan("b1", _), _, _, _, _, _, _, _), _, _),
         Optional(
         ProjectEndpoints(
         Argument(args), "r", "b2", false, "a1", true, None, true, SimplePatternLength
@@ -207,7 +207,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _), _, _),
+      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _, _), _, _),
       Optional(
       Selection(
       predicates,
@@ -227,7 +227,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _), _, _),
+      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _, _), _, _),
       Optional(
       ProjectEndpoints(
       Argument(args),
@@ -347,7 +347,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     val plan = cfg.getLogicalPlanFor(query)._2
     inside(plan) {
-      case Apply(_:Projection, Apply(_:AllNodesScan, Optional(Expand(Selection(_, AllNodesScan("c", arguments)), _, _, _, _, _, _), _))) =>
+      case Apply(_:Projection, Apply(_:AllNodesScan, Optional(Expand(Selection(_, AllNodesScan("c", arguments)), _, _, _, _, _, _, _), _))) =>
         arguments should equal(Set("a", "x"))
     }
   }

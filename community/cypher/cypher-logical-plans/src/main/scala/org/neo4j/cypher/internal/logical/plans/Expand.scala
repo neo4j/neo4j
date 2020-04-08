@@ -19,11 +19,18 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -37,13 +44,25 @@ case class Expand(source: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: String,
                   relName: String,
-                  mode: ExpansionMode = ExpandAll)
+                  mode: ExpansionMode = ExpandAll,
+                  readProperties: Option[ExpandCursorProperties] = None)
                  (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
-  override val lhs = Some(source)
-  override def rhs = None
+  override val lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
+
+  def withNodeProperties(props: CursorProperty*): Expand =
+    copy(readProperties =
+      readProperties
+        .map(_.withNodeProperties(props:_*))
+        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))
+  def withRelationshipProperties(props: CursorProperty*): Expand =
+    copy(readProperties =
+      readProperties
+        .map(_.withRelationshipProperties(props:_*))
+        .orElse(Some(ExpandCursorProperties(relProperties = props))))
 }
 
 /**
@@ -62,8 +81,8 @@ case class OptionalExpand(source: LogicalPlan,
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
-  override val lhs = Some(source)
-  override def rhs = None
+  override val lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
@@ -87,9 +106,8 @@ case class VarExpand(source: LogicalPlan,
                      nodePredicate: Option[VariablePredicate] = None,
                      relationshipPredicate: Option[VariablePredicate] = None)
                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
-  override val lhs = Some(source)
-  override def rhs = None
-
+  override val lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
@@ -113,8 +131,8 @@ case class PruningVarExpand(source: LogicalPlan,
                            (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
-  override val lhs = Some(source)
-  override def rhs = None
+  override val lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
 
   override val availableSymbols: Set[String] = source.availableSymbols + to
 }
@@ -132,3 +150,8 @@ case object ExpandAll extends ExpansionMode
 case object ExpandInto extends ExpansionMode
 
 case class VariablePredicate(variable: LogicalVariable, predicate: Expression)
+
+case class ExpandCursorProperties(nodeProperties: Seq[CursorProperty] = Seq.empty, relProperties: Seq[CursorProperty] = Seq.empty) {
+  def withNodeProperties(props: CursorProperty*): ExpandCursorProperties = copy(nodeProperties = nodeProperties ++ props)
+  def withRelationshipProperties(props: CursorProperty*): ExpandCursorProperties = copy(relProperties = relProperties ++ props)
+}

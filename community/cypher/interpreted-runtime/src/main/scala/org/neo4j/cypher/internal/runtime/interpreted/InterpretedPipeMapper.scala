@@ -263,8 +263,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeCountFromCountStorePipe(ident, labels.map(l => l.map(LazyLabel.apply)))(id = id)
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
-        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
-          RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply))(id = id)
+        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply(_)),
+          RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply(_)))(id = id)
 
       case NodeByLabelScan(ident, label, _) =>
         indexRegistrator.registerLabelScan()
@@ -346,10 +346,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val runtimeProperties = properties.toArray.map(buildExpression(_))
         CachePropertiesPipe(source, runtimeProperties)(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll, _) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto, _) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>

@@ -56,7 +56,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         case Selection(_,
               Expand(
                 _:NodeIndexScan | _:NodeByLabelScan,
-                _, _, _, _, _, _
+                _, _, _, _, _, _, _
               )
              ) => ()
       }
@@ -76,7 +76,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               Apply(
                 Projection(_: Argument, _),
                 _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan
-              ), _, _, _, _, _, _) => ()
+              ), _, _, _, _, _, _, _) => ()
       }
     }
   }
@@ -94,7 +94,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               Apply(
                 Projection(_: Argument, _),
                 _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan
-              ), _, _, _, _, _, _) => ()
+              ), _, _, _, _, _, _, _) => ()
       }
     }
   }
@@ -114,7 +114,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
             Selection(_,
               Expand(
-                _:NodeByLabelScan, _, _, _, _, _, _
+                _:NodeByLabelScan, _, _, _, _, _, _, _
               )
             ), _) => ()
     }
@@ -224,7 +224,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case SemiApply(
              CartesianProduct(_: NodeIndexSeek, _: AllNodesScan),
              Expand(
-               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
+               Selection(_, _: Argument), _, _, _, _, _, _, _)) => ()
     }
   }
 

@@ -510,7 +510,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
 
-      case Expand(_, fromName, dir, typeNames, toName, relName, mode) =>
+      case Expand(_, fromName, dir, typeNames, toName, relName, mode, _) =>
         val expression = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1)))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
