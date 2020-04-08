@@ -464,10 +464,10 @@ trait Statement extends Parser
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 
-  private def Database: Rule1[GraphScope] = rule("on a database") {
+  private def Database: Rule1[List[GraphScope]] = rule("on a database") {
     group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      (SymbolicNameOrStringParameter ~~>> (ast.NamedGraphScope(_)) | keyword("*") ~~~> ast.AllGraphsScope()) |
-    keyword("ON DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
+      group((SymbolicNameOrStringParameterList ~~>> (params => ipp => params.map(ast.NamedGraphScope(_)(ipp)))) | (keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))) |
+        (keyword("ON DEFAULT DATABASE") ~~~> (ipp => List(ast.DefaultDatabaseScope()(ipp))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
@@ -534,10 +534,10 @@ trait Statement extends Parser
 
   private def passwordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
 
-  private def Graph: Rule1[GraphScope] = rule("on a graph")(
+  private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
-      (group(SymbolicNameOrStringParameter) ~~>> (name => ast.NamedGraphScope(name)) |
-        keyword("*") ~~~> ast.AllGraphsScope())
+      group((SymbolicNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
+        keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
   )
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(

@@ -84,15 +84,15 @@ object Additions {
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
 
       // Grant DEFAULT DATABASE
-      case p@GrantPrivilege(_, _, DefaultDatabaseScope(), _, _) =>
+      case p@GrantPrivilege(_, _, List(DefaultDatabaseScope()), _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // Deny DEFAULT DATABASE
-      case p@DenyPrivilege(_, _, DefaultDatabaseScope(), _, _) =>
+      case p@DenyPrivilege(_, _, List(DefaultDatabaseScope()), _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // Revoke DEFAULT DATABASE
-      case p@RevokePrivilege(_, _, DefaultDatabaseScope(), _, _, _) =>
+      case p@RevokePrivilege(_, _, List(DefaultDatabaseScope()), _, _, _) =>
         throw cypherExceptionFactory.syntaxException("DEFAULT DATABASE is not supported in this Cypher version.", p.position)
 
       // grant dbms privilege (except role management)

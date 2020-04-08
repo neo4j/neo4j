@@ -245,85 +245,86 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DATABASE foo TO role
-      case c@GrantPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
-        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
-          roleName -> qualifier
+      case c@GrantPrivilege(DatabasePrivilege(action), _, graphScopes, qualifiers, roleNames) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify; graphScope <- graphScopes) yield {
+          (roleName, qualifier, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (role, qualifier)) => plans.GrantDatabaseAction(source, action, database, qualifier, role)
+          case (source, (role, qualifier, graphScope)) =>
+            plans.GrantDatabaseAction(source, action, graphScope, qualifier, role)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DATABASE foo TO role
-      case c@DenyPrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames) =>
-        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
-          roleName -> qualifier
+      case c@DenyPrivilege(DatabasePrivilege(action), _, graphScopes, qualifiers, roleNames) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify; graphScope <- graphScopes) yield {
+          (roleName, qualifier,  graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (role, qualifier)) =>
-            plans.DenyDatabaseAction(source, action, database, qualifier, role)
+         case (source, (role, qualifier, graphScope)) =>
+            plans.DenyDatabaseAction(source, action, graphScope, qualifier, role)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DATABASE foo FROM role
-      case c@RevokePrivilege(DatabasePrivilege(action), _, database, qualifiers, roleNames, revokeType) =>
-        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify) yield {
-          roleName -> qualifier
+      case c@RevokePrivilege(DatabasePrivilege(action), _, graphScopes, qualifiers, roleNames, revokeType) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers.simplify; graphScope <- graphScopes) yield {
+          (roleName, qualifier, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (plan, (role, qualifier)) =>
-            planRevokes(plan, revokeType, (s, r) => plans.RevokeDatabaseAction(s, action, database, qualifier, role, r))
+          case (plan, (role, qualifier, graphScope)) =>
+            planRevokes(plan, revokeType, (s, r) => plans.RevokeDatabaseAction(s, action, graphScope, qualifier, role, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
-      case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@GrantPrivilege(TraversePrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => plans.GrantTraverse(source, database, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.GrantTraverse(source, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
-      case c@DenyPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@DenyPrivilege(TraversePrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => plans.DenyTraverse(source, database, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.DenyTraverse(source, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames, revokeType) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@RevokePrivilege(TraversePrivilege(), _, graphScopes, segments, roleNames, revokeType) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => plans.RevokeTraverse(s, database, segment, roleName, r))
+          case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeTraverse(s, graphScope, segment, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@GrantPrivilege(WritePrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => plans.GrantWrite(source, database, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.GrantWrite(source, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@DenyPrivilege(WritePrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => plans.DenyWrite(source, database, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.DenyWrite(source, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE WRITE ON GRAPH foo ELEMENTS * (*) FROM role
-      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames, revokeType) =>
-        val plan = (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
+      case c@RevokePrivilege(WritePrivilege(), _, graphScopes, segments, roleNames, revokeType) =>
+        val plan = (for (roleName <- roleNames; segment <- segments.simplify; graphScope <- graphScopes) yield {
+          (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment)) => planRevokes(source, revokeType, (s, r) => plans.RevokeWrite(s, database, segment, roleName, r))
+          case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeWrite(s, graphScope, segment, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -332,7 +333,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => plans.GrantRead(source, resource, database, segment, roleName)
+          case (source, (roleName, (segment, resource))) => plans.GrantRead(source, resource, database.head, segment, roleName) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -341,7 +342,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => plans.DenyRead(source, resource, database, segment, roleName)
+          case (source, (roleName, (segment, resource))) => plans.DenyRead(source, resource, database.head, segment, roleName) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -350,7 +351,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => plans.RevokeRead(s, resource, database, segment, roleName, r))
+          case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => plans.RevokeRead(s, resource, database.head, segment, roleName, r)) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -359,7 +360,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => plans.GrantMatch(source, resource, database, segment, roleName)
+          case (source, (roleName, (segment, resource))) => plans.GrantMatch(source, resource, database.head, segment, roleName) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -368,7 +369,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => plans.DenyMatch(source, resource, database, segment, roleName)
+          case (source, (roleName, (segment, resource))) => plans.DenyMatch(source, resource, database.head, segment, roleName) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -377,7 +378,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val plan = (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment -> resource)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => plans.RevokeMatch(s, resource, database, segment, roleName, r))
+          case (source, (roleName, (segment, resource))) => planRevokes(source, revokeType, (s,r) => plans.RevokeMatch(s, resource, database.head, segment, roleName, r)) //FIXME
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -449,6 +450,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       planState.copy(maybeLogicalPlan = maybeLogicalPlan, plannerName = AdministrationPlannerName)
     else planState
   }
+
 }
 
 case object UnsupportedSystemCommand extends Phase[PlannerContext, BaseState, LogicalPlanState] {

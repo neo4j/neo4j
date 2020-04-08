@@ -693,9 +693,9 @@ object Prettifier {
     }
   }
 
-  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = (extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
+  def extractScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): (String, String) = (extractDbScope(dbScope)._1, extractQualifierPart(qualifier))
 
-  def extractScope(resource: ActionResource, dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String, String) = {
+  def extractScope(resource: ActionResource, dbScope: List[GraphScope], qualifier: PrivilegeQualifier): (String, String, String) = {
     val resourceName = resource match {
       case PropertyResource(name)    => escapeName(name)
       case PropertiesResource(names) => names.map(escapeName).mkString(", ")
@@ -708,12 +708,19 @@ object Prettifier {
   def revokeOperation(operation: String, revokeType: String) = s"$operation($revokeType)"
 
   def prettifyDatabasePrivilege(privilegeName: String,
-                                        dbScope: GraphScope,
+                                        dbScope: List[GraphScope],
                                         qualifier: PrivilegeQualifier,
                                         preposition: String,
                                         roleNames: Seq[Either[String, Parameter]]): String = {
-    val (dbName, default) = Prettifier.extractDbScope(dbScope)
-    val db = if (default) s"DEFAULT DATABASE" else s"DATABASE $dbName"
+    val (dbName, default, multiple) = Prettifier.extractDbScope(dbScope)
+    val db = if (default) {
+      s"DEFAULT DATABASE"
+    } else if (multiple) {
+      s"DATABASES $dbName"
+    } else {
+      s"DATABASE $dbName"
+    }
+
     qualifier match {
       case _: AllQualifier =>
         s"$privilegeName ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
@@ -738,11 +745,11 @@ object Prettifier {
     case _                             => "<unknown>"
   }
 
-  def extractDbScope(dbScope: GraphScope): (String, Boolean) = dbScope match {
-    case NamedGraphScope(name)  => (escapeName(name), false)
-    case AllGraphsScope()       => ("*", false)
-    case DefaultDatabaseScope() => ("DEFAULT", true)
-    case _                      => ("<unknown>", false)
+  def extractDbScope(dbScope: List[GraphScope]): (String, Boolean, Boolean) = dbScope match {
+    case NamedGraphScope(name) :: Nil => (escapeName(name), false, false)
+    case AllGraphsScope() :: Nil => ("*", false, false)
+    case DefaultDatabaseScope() :: Nil => ("DEFAULT", true, false)
+    case namedGraphScopes => (escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name }), false, true)
   }
 
   /*
