@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
@@ -47,6 +50,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -261,6 +265,27 @@ class PushToCloudCommandTest
     }
 
     @Test
+    public void shouldAcceptPasswordViaEnvAndPromptForUsername() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+
+        PushToCloudCommand command = command().copier( targetCommunicator ).console( PushToCloudConsole.fakeConsole( username, "tomte" ) ).build();
+
+        Path dump = this.dump;
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", SOME_EXAMPLE_BOLT_URI
+        };
+        var environment = Map.of( "NEO4J_USERNAME", "", "NEO4J_PASSWORD", "pass" );
+        new CommandLine( command ).setResourceBundle( new MapResourceBundle( environment ) ).execute( args );
+
+        verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "neo4j" ), eq( "pass".toCharArray() ), anyBoolean() );
+    }
+
+    @Test
     public void shouldAcceptUsernameViaArgAndPromptForPassword() throws IOException, CommandFailedException
     {
         // given
@@ -274,13 +299,36 @@ class PushToCloudCommandTest
 
         Path dump = this.dump;
         // when
-        // when
         String[] args = {
                 "--dump", dump.toString(),
                 "--username", "user",
                 "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
 
         new CommandLine( command ).execute( args );
+        assertTrue( dump.toFile().exists() );
+        verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "user" ), eq( "abc".toCharArray() ), anyBoolean() );
+    }
+
+    @Test
+    public void shouldAcceptUsernameViaEnvAndPromptForPassword() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        String password = "abc";
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .build();
+
+        Path dump = this.dump;
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
+
+        var environment = Map.of( "NEO4J_USERNAME", "user", "NEO4J_PASSWORD", "" );
+        new CommandLine( command ).setResourceBundle( new MapResourceBundle( environment ) ).execute( args );
         assertTrue( dump.toFile().exists() );
         verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "user" ), eq( "abc".toCharArray() ), anyBoolean() );
     }
@@ -306,6 +354,28 @@ class PushToCloudCommandTest
         new CommandLine( command ).execute( args );
 
         verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "neo4jcli" ), eq( "passcli".toCharArray() ), anyBoolean() );
+    }
+
+    @Test
+    public void shouldAcceptOnlyUsernameAndPasswordFromEnv() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        String password = "abc";
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .build();
+
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
+        var environment = Map.of( "NEO4J_USERNAME", "neo4jenv", "NEO4J_PASSWORD", "passenv" );
+        new CommandLine( command ).setResourceBundle( new MapResourceBundle( environment ) ).execute( args );
+
+        verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "neo4jenv" ), eq( "passenv".toCharArray() ), anyBoolean() );
     }
 
     @Test
@@ -410,6 +480,30 @@ class PushToCloudCommandTest
     private Builder command()
     {
         return new Builder();
+    }
+
+    private static class MapResourceBundle extends ResourceBundle
+    {
+        private final Map<String,String> entries;
+
+        MapResourceBundle( Map<String,String> entries )
+        {
+            requireNonNull( entries );
+            this.entries = entries;
+        }
+
+        @Override
+        protected Object handleGetObject( String key )
+        {
+            requireNonNull( key );
+            return entries.get( key );
+        }
+
+        @Override
+        public Enumeration<String> getKeys()
+        {
+            return Collections.enumeration( entries.keySet() );
+        }
     }
 
     private class Builder
