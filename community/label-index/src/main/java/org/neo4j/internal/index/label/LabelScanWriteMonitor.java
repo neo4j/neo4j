@@ -41,6 +41,7 @@ import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.memory.BufferScope;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
@@ -420,7 +421,8 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 
     private static long dumpFile( FileSystemAbstraction fs, File file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ) ) )
+        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE );
+              ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.buffer ) )
         {
             long range = -1;
             int labelId = -1;

@@ -434,7 +434,22 @@ public final class UnsafeUtil
      */
     public static void freeByteBuffer( ByteBuffer byteBuffer )
     {
-        free( getDirectByteBufferAddress( byteBuffer ), byteBuffer.capacity() );
+        int bytes = byteBuffer.capacity();
+        long addr = getDirectByteBufferAddress( byteBuffer );
+        if ( addr == 0 )
+        {
+            return; // This buffer has already been freed.
+        }
+
+        // Nerf the byte buffer, causing all future accesses to get out-of-bounds.
+        unsafe.putInt( byteBuffer, directByteBufferMarkOffset, -1 );
+        unsafe.putInt( byteBuffer, directByteBufferPositionOffset, 0 );
+        unsafe.putInt( byteBuffer, directByteBufferLimitOffset, 0 );
+        unsafe.putInt( byteBuffer, directByteBufferCapacityOffset, 0 );
+        unsafe.putLong( byteBuffer, directByteBufferAddressOffset, 0 );
+
+        // Free the buffer.
+        free( addr, bytes );
     }
 
     /**
@@ -561,7 +576,7 @@ public final class UnsafeUtil
         if ( allocation == null )
         {
             StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
-            allocations.forEach( ( k, v ) -> sb.append( '\n' ).append( k ) );
+            allocations.forEach( ( k, v ) -> sb.append( '\n' ).append( "0x" ).append( Long.toHexString( k ) ) );
             throw new AssertionError( sb.toString() );
         }
         allocation.freed = true;

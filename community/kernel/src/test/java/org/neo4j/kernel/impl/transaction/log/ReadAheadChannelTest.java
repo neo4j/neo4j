@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -264,11 +263,6 @@ class ReadAheadChannelTest
     {
         StoreChannel nextChannelHook;
 
-        HookedReadAheadChannel( StoreChannel channel, int readAheadSize )
-        {
-            super( channel, readAheadSize );
-        }
-
         HookedReadAheadChannel( StoreChannel channel, ByteBuffer byteBuffer )
         {
             super( channel, byteBuffer );
@@ -310,13 +304,5 @@ class ReadAheadChannelTest
                         return new HookedReadAheadChannel( channel, allocateDirect( readAheadSize ) );
                     }
                 },
-        INNER_BUFFER
-                {
-                    @Override
-                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
-                    {
-                        return new HookedReadAheadChannel( channel, readAheadSize );
-                    }
-                }
     }
 }

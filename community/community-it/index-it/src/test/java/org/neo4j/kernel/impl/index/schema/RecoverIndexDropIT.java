@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -141,9 +141,10 @@ class RecoverIndexDropIT
             {
             }
             LogPosition position = logEntryReader.lastPosition();
-            StoreChannel writeStoreChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
-            writeStoreChannel.position( position.getByteOffset() );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( writeStoreChannel ) )
+            StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
+            storeChannel.position( position.getByteOffset() );
+            ByteBuffer buf = ByteBuffer.allocate( 1000 );
+            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buf ) )
             {
                 new LogEntryWriter( writeChannel ).serialize( dropTransaction );
             }
