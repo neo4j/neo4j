@@ -114,11 +114,6 @@ public class DumpCommand extends AbstractCommand
         }
     }
 
-    private static Path getDatabaseDirectory( Config config )
-    {
-        return config.get( databases_root_path );
-    }
-
     private Config buildConfig()
     {
         Config cfg = Config.newBuilder()
