@@ -365,6 +365,54 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // then
     runtimeResult should beColumns("prop").withRows(singleColumn(Seq(null)))
   }
+
+  test("should read property from correct entity (rel/long slot)") {
+    // given
+    val size = 100
+    val halfSize = size / 2
+    val nodes =
+      given {
+        nodePropertyGraph(size, { case i => Map("prop" -> i) })
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("longNodeProp", "refNodeProp")
+      .projection("longNode.prop AS longNodeProp", "refNode.prop AS refNodeProp")
+      .input(nodes = Seq("longNode"), variables = Seq("refNode"))
+      .build()
+
+    val input = inputColumns(1, halfSize, i => nodes(i), i => nodes(halfSize + i))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize+i))
+    runtimeResult should beColumns("longNodeProp", "refNodeProp").withRows(expected)
+  }
+
+  test("should read cached property from correct entity (rel/long slot)") {
+    // given
+    val size = 100
+    val halfSize = size / 2
+    val nodes =
+      given {
+        nodePropertyGraph(size, { case i => Map("prop" -> i) })
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("longNodeProp", "refNodeProp")
+      .projection("cache[longNode.prop] AS longNodeProp", "cache[refNode.prop] AS refNodeProp")
+      .input(nodes = Seq("longNode"), variables = Seq("refNode"))
+      .build()
+
+    val input = inputColumns(1, halfSize, i => nodes(i), i => nodes(halfSize + i))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = (0 until halfSize).map(i => Array[Any](i, halfSize+i))
+    runtimeResult should beColumns("longNodeProp", "refNodeProp").withRows(expected)
+  }
 }
 
 // Supported by all non-parallel runtimes
