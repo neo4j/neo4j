@@ -78,7 +78,7 @@ class TimeZonesTest
     void tzidsOrderMustNotChange() throws URISyntaxException, IOException
     {
         Path path = Paths.get( TimeZones.class.getResource( "/TZIDS" ).toURI() );
-        byte[] timeZonesInfo = Files.readAllBytes( path );
+        String timeZonesInfo = Files.readString( path ).replace( "\r\n", "\n" );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
         assertThat( timeZonesHash ).isEqualTo(
                 new byte[]{-9, 121, 49, -61, 86, 11, 77, -117, 77, 105, -15, -16, 4, 109, 62, 107, -118, 99, 9, -121, -58, 76, -41, 29, 43, 86, -68, 118,
