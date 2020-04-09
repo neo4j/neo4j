@@ -29,12 +29,10 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
-import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
+import org.neo4j.cypher.internal.runtime.KernelAPISupport.asKernelIndexOrder
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeValueHit
 import org.neo4j.cypher.internal.runtime.Operations
@@ -65,7 +63,6 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.TraversalDescription
 import org.neo4j.graphdb.traversal.Uniqueness
-import org.neo4j.internal
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery
@@ -967,12 +964,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
-  }
-
-  private def asKernelIndexOrder(indexOrder: IndexOrder): internal.schema.IndexOrder = indexOrder match {
-    case IndexOrderAscending => internal.schema.IndexOrder.ASCENDING
-    case IndexOrderDescending => internal.schema.IndexOrder.DESCENDING
-    case IndexOrderNone => internal.schema.IndexOrder.NONE
   }
 
   abstract class PrimitiveCursorIterator extends PrimitiveLongResourceIterator {

@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
@@ -136,7 +137,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         Sort(
           Projection(
             RollUpApply(
-              NodeByLabelScan("u", LabelName("User")(pos), Set.empty),
+              NodeByLabelScan("u", LabelName("User")(pos), Set.empty, IndexOrderNone),
               Projection(
                 Selection(
                   Seq(hasLabels("u2", "User")),

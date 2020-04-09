@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -100,7 +101,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasLabel")
       .projection("x:Other AS hasLabel")
-      .nodeByLabelScan("x", "Label")
+      .nodeByLabelScan("x", "Label", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -163,7 +164,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("x.prop AS prop")
-      .nodeByLabelScan("x", "Label")
+      .nodeByLabelScan("x", "Label", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -229,7 +230,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
       .projection("EXISTS(x.prop) AS hasProp")
-      .nodeByLabelScan("x", "Label")
+      .nodeByLabelScan("x", "Label", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -318,7 +318,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  private def labelScan(variable: String, label: String) = NodeByLabelScanPipe(variable, LazyLabel(label))()
+  private def labelScan(variable: String, label: String) = NodeByLabelScanPipe(variable, LazyLabel(label), IndexOrderNone)()
 
   private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
 

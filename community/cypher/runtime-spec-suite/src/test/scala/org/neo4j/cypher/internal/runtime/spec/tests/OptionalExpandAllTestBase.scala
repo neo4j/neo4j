@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -611,7 +612,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .|.optionalExpandAll("(a)-[:R]->(b)")
       .|.unwind("range(1, 5) AS ignored")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -643,7 +644,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .|.optionalExpandAll("(a)--(b)")
       .|.unwind("range(1, 5) AS ignored")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -677,7 +678,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .|.optionalExpandAll("(a)--(b)")
       .|.unwind("range(1, 5) AS ignored")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -817,7 +818,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .optionalExpandAll("(a)-[:R]->(b)", Some("cache[a.prop] < 10"))
       .cacheProperties("cache[a.prop]")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -846,7 +847,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .optionalExpandAll("(x)-[r]->(y)", Some("r.prop > 100"))
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -158,7 +159,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
       .filter("x > 0")
       .apply()
       .|.nodeCountFromCountStore("x", List(Some("LabelA"), Some("LabelB")))
-      .nodeByLabelScan("n", "LabelA")
+      .nodeByLabelScan("n", "LabelA", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

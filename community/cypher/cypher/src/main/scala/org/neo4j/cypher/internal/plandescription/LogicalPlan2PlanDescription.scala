@@ -280,7 +280,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case AllNodesScan(idName, _) =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(asPrettyString(idName))), variables)
 
-      case NodeByLabelScan(idName, label, _) =>
+      case NodeByLabelScan(idName, label, _, _) =>
         val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(label.name)}"
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(Details(prettyDetails)), variables)
 

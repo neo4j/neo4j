@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -257,7 +258,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      r2Types: Seq[String] = Seq.empty,
                                      r2Direction: SemanticDirection = OUTGOING,
                                      cLabels: Seq[String] = Seq.empty) = {
-    val lblScan = NodeByLabelScan("a", labelName(aLabel), Set.empty)
+    val lblScan = NodeByLabelScan("a", labelName(aLabel), Set.empty, IndexOrderNone)
     val expand1 = Expand(lblScan, "a", OUTGOING, r1Types.map(RelTypeName(_)(pos)), "b", "r1", ExpandAll)
     val expand2 = Expand(expand1, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
     val relationshipUniqueness = not(equals(varFor("r1"), varFor("r2")))

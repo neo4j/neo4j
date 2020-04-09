@@ -23,6 +23,7 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -90,7 +91,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(a)-->(b)")
       .|.argument("a")
       .optionalExpandAll("(b)-->(a)")
-      .nodeByLabelScan("b", "B")
+      .nodeByLabelScan("b", "B", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -113,7 +114,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .nestedPlanCollectExpressionProjection("x", "b.prop")
       .|.expand("(a)-->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -205,7 +206,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(a)-->(b)")
       .|.argument("a")
       .optionalExpandAll("(b)-->(a)")
-      .nodeByLabelScan("b", "B")
+      .nodeByLabelScan("b", "B", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -228,7 +229,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .nestedPlanExistsExpressionProjection("x")
       .|.expand("(a)-->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

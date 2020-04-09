@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -53,10 +54,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", labelName("X"), Set.empty),
+            NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
             "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1"),
           Expand(
-            NodeByLabelScan("c", labelName("X"), Set.empty),
+            NodeByLabelScan("c", labelName("X"), Set.empty, IndexOrderNone),
             "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")
         )
       )
@@ -91,13 +92,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set("b"),
           Expand(
             CacheProperties(
-              NodeByLabelScan("a", labelName("A"), Set.empty),
+              NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone),
               Set(cachedNodeProp("a", "prop"))
             ),
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
           Expand(
             CacheProperties(
-              NodeByLabelScan("c", labelName("C"), Set.empty),
+              NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
               Set(cachedNodeProp("c", "prop"))
             ),
             "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)

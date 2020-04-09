@@ -55,15 +55,15 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
 
     idSeekPredicates map {
-      case (predicate, idExpr@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
+      case (predicate, variable@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
 
         qg.patternRelationships.find(_.name == id) match {
           case Some(relationship) =>
             val types = relationship.types.toList
             val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
-            LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, idExpr, types, context)))
+            LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context)))
           case None =>
-            val plan = context.logicalPlanProducer.planNodeByIdSeek(id, idValues, Seq(predicate), qg.argumentIds, context)
+            val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
             LeafPlansForVariable(id, Set(plan))
         }
     }

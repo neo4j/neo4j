@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -55,8 +56,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -91,8 +92,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -128,8 +129,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R|S]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -162,8 +163,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)<-[r]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -198,8 +199,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)<-[r:R]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -235,8 +236,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)<-[r:R|S]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -269,8 +270,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -305,8 +306,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -342,8 +343,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R|S]-(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -381,7 +382,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r")
       .optionalExpandInto("(x)-[r:ME]->(x)")
-      .nodeByLabelScan("x", "X")
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -424,8 +425,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R|S]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     execute(logicalQuery, runtime) should beColumns("x", "r", "y").withRows(Seq(
@@ -478,8 +479,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r:R|S]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val executablePlan = buildPlan(logicalQuery, runtime)
@@ -530,8 +531,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .optionalExpandInto("(x)-[r]->(y)")
       .optional()
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -555,7 +556,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r]->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
       .input(variables = Seq("x"))
       .build()
 
@@ -583,7 +584,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "r")
       .optionalExpandAll("(x)-[r]->(y)")
       .apply()
-      .|.nodeByLabelScan("y", "Y", "x")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone, "x")
       .input(variables = Seq("x"))
       .build()
 
@@ -609,8 +610,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .|.unwind("range(1, 5) AS ignored")
       .|.argument("x", "y")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -646,8 +647,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .|.unwind("range(1, 5) AS ignored")
       .|.argument("x", "y")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -681,8 +682,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y")
       .optionalExpandInto("(x)-[r]->(y)", Some("r.num > 20"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -762,10 +763,10 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .optionalExpandInto("(b)-[r2]->(c)")
       .optionalExpandInto("(b)-[r1]->(a)", Some("r1.num > 2"))
       .cartesianProduct()
-      .|.nodeByLabelScan("c", "C")
+      .|.nodeByLabelScan("c", "C", IndexOrderNone)
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -797,8 +798,8 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r")
       .optionalExpandInto("(x)-[r]->(y)", Some("r.prop > 100"))
       .apply()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

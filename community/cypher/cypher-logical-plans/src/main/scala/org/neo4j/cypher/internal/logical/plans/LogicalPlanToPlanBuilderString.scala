@@ -161,8 +161,8 @@ object LogicalPlanToPlanBuilderString {
         integerString(count)
       case Skip(_, count) =>
         integerString(count)
-      case NodeByLabelScan(idName, label, argumentIds) =>
-        wrapInQuotationsAndMkString(idName +: label.name +: argumentIds.toSeq)
+      case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>
+        s""" "$idName", "${label.name}", ${objectName(indexOrder)}, ${wrapInQuotationsAndMkString(argumentIds)} """.trim
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
       case OptionalExpand(_, from, dir, _, to, relName, _, predicate, expandProperties) =>

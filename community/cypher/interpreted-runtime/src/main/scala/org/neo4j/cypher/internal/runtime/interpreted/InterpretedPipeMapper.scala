@@ -266,9 +266,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply(_)),
           RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply(_)))(id = id)
 
-      case NodeByLabelScan(ident, label, _) =>
+      case NodeByLabelScan(ident, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
+        NodeByLabelScanPipe(ident, LazyLabel(label), indexOrder)(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)

@@ -39,9 +39,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     plan._2 match {
       case NodeHashJoin(_,
       NodeHashJoin(_,
-      NodeByLabelScan(_, _, _),
-      NodeByLabelScan(_, _, _)),
-      NodeByLabelScan(_, _, _)) => ()
+      NodeByLabelScan(_, _, _, _),
+      NodeByLabelScan(_, _, _, _)),
+      NodeByLabelScan(_, _, _, _)) => ()
       case _ => fail("Not what we expected!")
     }
   }

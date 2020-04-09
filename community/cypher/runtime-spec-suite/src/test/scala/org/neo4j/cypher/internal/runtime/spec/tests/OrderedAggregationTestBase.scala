@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -395,7 +396,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .|.orderedAggregation(Seq("b AS b"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
       .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -447,7 +448,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .|.orderedAggregation(Seq("b AS b", "number AS n"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
       .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -108,10 +109,10 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan("n", labelName("Foo"), Set.empty)
+    val logicalPlan = NodeByLabelScan("n", labelName("Foo"), Set.empty, IndexOrderAscending)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByLabelScanPipe("n", LazyLabel("Foo"))())
+    pipe should equal(NodeByLabelScanPipe("n", LazyLabel("Foo"), IndexOrderAscending)())
   }
 
   test("simple node by id seek query") {

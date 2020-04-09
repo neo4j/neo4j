@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -154,9 +155,9 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .produceResults("x")
       .nodeHashJoin("x", "y")
       .|.expand("(y)--(x)")
-      .|.nodeByLabelScan("y", "Y")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
       .expand("(x)--(y)")
-      .nodeByLabelScan("x", "X")
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     // then
@@ -262,7 +263,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*2..4]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -390,8 +391,8 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .expandInto("(x)-->(y)")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "Y")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone)
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     // then
@@ -432,7 +433,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
   test("should profile memory of value hash join") {
     // given
-    val nodes = given {
+    given {
       nodePropertyGraph(SIZE, {
         case i => Map("prop" -> i)
       })

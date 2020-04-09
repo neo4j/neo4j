@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -149,7 +150,6 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
     runtimeResult should beColumns("a").withNoRows()
   }
 
@@ -245,7 +245,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .|.top(sortItems = Seq(Descending("y")), limit1)
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A")
+      .nodeByLabelScan("x","A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -308,7 +308,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .|.top(Seq(Descending("y")), limit1)
       .|.expandAll("(x)--(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

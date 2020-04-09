@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -66,8 +67,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
       )
     )
   }
@@ -85,8 +86,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
       )
     )
   }
@@ -115,8 +116,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
       )
     )
   }
@@ -145,8 +146,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
       )
     )
   }
@@ -261,7 +262,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
-    val allNodesN: LogicalPlan = NodeByLabelScan("n", labelName("X"), Set.empty)
+    val allNodesN: LogicalPlan = NodeByLabelScan("n", labelName("X"), Set.empty, IndexOrderNone)
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,

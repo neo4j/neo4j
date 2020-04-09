@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -46,7 +47,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "prop")
       .projection("cache[x.prop] AS prop")
       .expand("(x)-[r]->(y)", cacheNodeProperties = Seq("prop"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -73,7 +74,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r", "prop")
       .projection("cacheR[r.prop] AS prop")
       .expand("(x)-[r]->(y)", cacheRelProperties = Seq("prop"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -105,7 +106,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("np1", "np2", "rp1", "rp2")
       .projection("cache[x.prop1] AS np1", "cache[x.prop2] AS np2", "cacheR[r.prop1] AS rp1", "cacheR[r.prop2] AS rp2")
       .expand("(x)-[r]->(y)", cacheNodeProperties = Seq("prop1", "prop2"), cacheRelProperties = Seq("prop1", "prop2"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -132,7 +133,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "prop")
       .projection("cache[x.prop] AS prop")
       .optionalExpandAll("(x)-[r]->(y)", cacheNodeProperties = Seq("prop"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -159,7 +160,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r", "prop")
       .projection("cacheR[r.prop] AS prop")
       .optionalExpandAll("(x)-[r]->(y)", cacheRelProperties = Seq("prop"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -191,7 +192,7 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
       .produceResults("np1", "np2", "rp1", "rp2")
       .projection("cache[x.prop1] AS np1", "cache[x.prop2] AS np2", "cacheR[r.prop1] AS rp1", "cacheR[r.prop2] AS rp2")
       .optionalExpandAll("(x)-[r]->(y)", cacheNodeProperties = Seq("prop1", "prop2"), cacheRelProperties = Seq("prop1", "prop2"))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)

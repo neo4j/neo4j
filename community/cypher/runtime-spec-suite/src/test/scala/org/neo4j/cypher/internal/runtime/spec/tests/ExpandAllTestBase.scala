@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RowCount
@@ -351,7 +352,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandAll("(a)-[:R]->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -400,7 +401,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandAll("(a)-[:R]->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -514,7 +515,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .filter("cache[a.prop] < 10")
       .expandAll("(a)-[:R]->(b)")
       .cacheProperties("cache[a.prop]")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -557,7 +558,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .filter("cache[a1.prop] < 10 AND cache[b.prop] >= 0")
       .expandAll("(a1)-[:R]->(b)")
       .cacheProperties("cache[a1.prop]")
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

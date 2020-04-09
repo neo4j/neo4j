@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -181,7 +182,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .cartesianProduct()
       .|.expand("(y)--(z)")
-      .|.nodeByLabelScan("y", "RHS")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone)
       .input(nodes = Seq("x"))
       .build()
 
@@ -366,11 +367,11 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b", "c", "d")
       .cartesianProduct()
       .|.cartesianProduct()
-      .|.|.nodeByLabelScan("d", "D")
-      .|.nodeByLabelScan("c", "C")
+      .|.|.nodeByLabelScan("d", "D", IndexOrderNone)
+      .|.nodeByLabelScan("c", "C", IndexOrderNone)
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

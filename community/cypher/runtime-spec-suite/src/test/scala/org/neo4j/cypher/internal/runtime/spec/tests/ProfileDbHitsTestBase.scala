@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -71,7 +72,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByLabelScan("x", "It")
+      .nodeByLabelScan("x", "It", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -204,7 +205,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .optionalExpandAll("(x)-->(y)")
-      .nodeByLabelScan("x", "Ring")
+      .nodeByLabelScan("x", "Ring", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -243,8 +244,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       .optionalExpandInto("(x)-->(y)")
       .apply()
       .|.filter("x.prop = y.prop") // Make sure we get pairs of x/y nodes with each node only appearing once
-      .|.nodeByLabelScan("y", "Y", "x")
-      .nodeByLabelScan("x", "X")
+      .|.nodeByLabelScan("y", "Y", IndexOrderNone, "x")
+      .nodeByLabelScan("x", "X", IndexOrderNone)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -473,7 +474,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // union
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (size) or be (size + 1)) // all node scan
     result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan

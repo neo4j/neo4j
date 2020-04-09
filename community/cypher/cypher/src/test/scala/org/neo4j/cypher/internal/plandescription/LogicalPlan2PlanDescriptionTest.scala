@@ -331,11 +331,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("NodeByLabelScan") {
     assertGood(
-      attach(NodeByLabelScan("node", label("X"), Set.empty), 33.0),
+      attach(NodeByLabelScan("node", label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details("node:X")), Set("node")))
 
     assertGood(
-      attach(NodeByLabelScan("  NODE123", label("X"), Set.empty), 33.0),
+      attach(NodeByLabelScan("  NODE123", label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details(s"${anonVar("123")}:X")), Set(anonVar("123"))))
   }
 

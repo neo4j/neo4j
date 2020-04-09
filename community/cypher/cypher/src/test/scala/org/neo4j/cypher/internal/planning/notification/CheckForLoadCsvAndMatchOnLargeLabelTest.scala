@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
@@ -74,7 +75,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
 
     val plan = CartesianProduct(
       loadCsv,
-      NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty)
+      NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty, IndexOrderNone)
     )
 
     checker(plan) should equal(List(LargeLabelWithLoadCsvNotification))
@@ -95,14 +96,14 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
     val plan =
       CartesianProduct(
         loadCsv,
-        NodeByLabelScan("bar", labelName(labelUnderThreshold), Set.empty)
+        NodeByLabelScan("bar", labelName(labelUnderThreshold), Set.empty, IndexOrderNone)
       )
 
     checker(plan) should equal(List.empty)
   }
 
   test("should not notify when doing large label scan on top of LoadCSV") {
-    val start = NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty)
+    val start = NodeByLabelScan("bar", labelName(labelOverThreshold), Set.empty, IndexOrderNone)
     val plan =
       LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false,
         CSVResources.DEFAULT_BUFFER_SIZE)

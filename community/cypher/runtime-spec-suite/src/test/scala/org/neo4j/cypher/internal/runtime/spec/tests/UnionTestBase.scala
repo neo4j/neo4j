@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -637,8 +638,8 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nodeHashJoin("x")
       .|.union()
-      .|.|.nodeByLabelScan("x", "B")
-      .|.nodeByLabelScan("x", "A")
+      .|.|.nodeByLabelScan("x", "B", IndexOrderNone)
+      .|.nodeByLabelScan("x", "A", IndexOrderNone)
       .allNodeScan("x")
       .build()
 
@@ -668,9 +669,9 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
       .sort(Seq(Ascending("x")))
       .union()
       .|.sort(Seq(Ascending("x")))
-      .|.nodeByLabelScan("x", "B")
+      .|.nodeByLabelScan("x", "B", IndexOrderNone)
       .sort(Seq(Ascending("x")))
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

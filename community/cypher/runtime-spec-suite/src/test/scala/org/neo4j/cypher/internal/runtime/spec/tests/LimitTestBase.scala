@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -147,7 +148,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("x", "y")
       .expandAll("(x)-->(y)")
       .limit(9)
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -167,7 +168,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(10)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -189,7 +190,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -211,7 +212,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.sort(Seq(Ascending("y")))
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -239,7 +240,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(LIMIT)
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -263,7 +264,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .expandAll("(b1)<--(a1)")
       .limit(10)
       .expandAll("(x)-->(b1)")
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -291,7 +292,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .limit(18)
       .limit(19)
       .limit(20)
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then
@@ -351,7 +352,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.argument()
       .expand("(x)-[rel]->(y)")
       .limit(1)
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -412,7 +413,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(limit)
       .|.expand("(a1)-->(b)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -435,7 +436,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(limit)
       .|.expand("(a1)-[*]->(b)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -458,7 +459,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(limit)
       .|.optionalExpandAll("(a1)-->(b)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -486,8 +487,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(limit)
       .|.expandInto("(a1)-->(b)")
       .|.nonFuseable()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a1", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -515,8 +516,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(limit)
       .|.optionalExpandInto("(a1)-->(b)")
       .|.nonFuseable()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a1", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -537,7 +538,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeByLabelScan("a2", "A")
+      .|.nodeByLabelScan("a2", "A", IndexOrderNone)
       .allNodeScan("a1")
       .build()
 
@@ -834,7 +835,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(10)
       .|.expandAll("(a)-->(b)")
       .|.argument()
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -858,8 +859,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(nodeCount + 1)
       .|.expandAll("(a2)-->(b)")
       .|.limit(1)
-      .|.nodeByLabelScan("a2", "A")
-      .nodeByLabelScan("a1", "A")
+      .|.nodeByLabelScan("a2", "A", IndexOrderNone)
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -884,8 +885,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.limit(2)
       .|.expandAll("(a2)-->(b)")
       .|.limit(nodeCount + 1)
-      .|.nodeByLabelScan("a2", "A")
-      .nodeByLabelScan("a1", "A")
+      .|.nodeByLabelScan("a2", "A", IndexOrderNone)
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -919,7 +920,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expandAll("(a1)-->(b2)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     // then
@@ -952,7 +953,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expandAll("(a1)-->(b2)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     // then
@@ -980,7 +981,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expandAll("(a1)-->(b2)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1010,7 +1011,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expandAll("(a1)-->(b2)")
       .|.argument()
-      .nodeByLabelScan("a1", "A")
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1040,7 +1041,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expand("(a)-->(b0)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1071,7 +1072,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .|.nonFuseable()
       .|.expand("(a)-->(b0)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

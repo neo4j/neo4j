@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RowCount
@@ -358,8 +359,8 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B",  "a")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -388,8 +389,8 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .apply()
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B",  "a")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -420,8 +421,8 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .apply()
       .|.expandInto("(a)--(b)")
-      .|.nodeByLabelScan("b", "B",  "a")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -450,8 +451,8 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .expandInto("(a)-[:REL]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -478,8 +479,8 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .|.sort(Seq(Ascending("a"), Ascending("b")))
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandInto("(a)-[:R]->(b)")
-      .|.nodeByLabelScan("b", "B",  "a")
-      .nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B", IndexOrderNone,  "a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

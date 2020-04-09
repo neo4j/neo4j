@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -149,7 +150,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .expand("(x)-->(y)")
         .filter("x.prop % 2 = 0")
-        .nodeByLabelScan("x", "Honey")
+        .nodeByLabelScan("x", "Honey", IndexOrderNone)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -182,7 +183,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         Seq.fill(fillFactor)((i, i, "SELF"))
       }).reduce(_ ++ _)
 
-      val nodes = given {
+      given {
         index("Honey", "prop")
         val nodes = nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)

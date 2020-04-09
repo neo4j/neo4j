@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -239,15 +240,15 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .|.|.aggregation(Seq.empty, Seq(s"sum($x2.number) AS $sum2"))
         .|.|.filter(s"$x2.prop = i")
         .|.|.apply()
-        .|.|.|.nodeByLabelScan(x2, "X", "i")
+        .|.|.|.nodeByLabelScan(x2, "X", IndexOrderNone, "i")
         .|.|.unwind("range(0, 10) AS i")
         .|.|.argument()
         .|.projection(s"$sum1 AS $sum3")
         .|.aggregation(Seq.empty, Seq(s"sum(y.number) AS $sum1"))
-        .|.nodeByLabelScan("y", "Y")
+        .|.nodeByLabelScan("y", "Y", IndexOrderNone)
         .expand(s"($x1)-[r]->(n)")
         .filter(s"$x1.prop = 5")
-        .nodeByLabelScan(x1, "X")
+        .nodeByLabelScan(x1, "X", IndexOrderNone)
         .build()
     )
   }
@@ -440,10 +441,10 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .|.union()
         .|.|.projection(s"$a83 AS $a59", s"$b102 AS $b59")
         .|.|.projection(s"$q10 AS $b102")
-        .|.|.nodeByLabelScan(a83, "B", q10)
+        .|.|.nodeByLabelScan(a83, "B", IndexOrderNone, q10)
         .|.projection(s"$a28 AS $a59", s"$b55 AS $b59")
         .|.projection(s"1 AS $b55")
-        .|.nodeByLabelScan(a28, "A")
+        .|.nodeByLabelScan(a28, "A", IndexOrderNone)
         .projection(s"1 AS $q10")
         .argument()
         .build()

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -63,7 +64,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*..1]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -86,7 +87,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*2..4]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -113,7 +114,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*0]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -132,7 +133,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*0..1]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -154,7 +155,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*0..2]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -184,7 +185,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*2..2]-(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -228,7 +229,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*4..4]-(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -274,7 +275,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*5..5]-(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -320,7 +321,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..4]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -366,7 +367,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..2]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -393,7 +394,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)<-[*1..2]-(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -414,7 +415,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..2]-(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -446,7 +447,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[:A*1..2]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -470,7 +471,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[:B*1..2]->(y)")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -493,7 +494,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.middle.getId))
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -517,7 +518,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -536,7 +537,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .distinct("y AS y")
       .pruningVarExpand("(X)-[*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
       .projection("x AS X")
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -554,7 +555,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*1..2]->(y)", relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -579,7 +580,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .pruningVarExpand("(x)-[*2..2]-(y)",
         nodePredicate = Predicate("n", "id(n) <> "+g.sa1.getId),
         relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
-      .nodeByLabelScan("x", "START")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

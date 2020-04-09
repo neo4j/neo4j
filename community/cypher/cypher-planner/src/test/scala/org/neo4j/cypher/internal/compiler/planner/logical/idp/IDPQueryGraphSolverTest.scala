@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
@@ -134,7 +135,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrder.empty, ctx)
       plan should equal(
-        Expand(NodeByLabelScan("b", labelName("B"), Set.empty), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")
+        Expand(NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")
       )
 
       verify(monitor).initTableFor(cfg.qg)
@@ -170,7 +171,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         Selection(Seq(labelBPredicate),
           Expand(
-            NodeByLabelScan("a", labelName("A"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+            NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
         ))
 
       verify(monitor).initTableFor(cfg.qg)
@@ -212,9 +213,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         NodeHashJoin(Set("c"),
           Expand(
-            NodeByLabelScan("a", labelName("A"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1"),
+            NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1"),
           Expand(
-            NodeByLabelScan("b", labelName("B"), Set.empty), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")
+            NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")
         ))
 
       verify(monitor).initTableFor(cfg.qg)
@@ -261,9 +262,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Selection(Seq(cfg.predicate),
           NodeHashJoin(Set("c"),
             Expand(
-              NodeByLabelScan("a", labelName("A"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1"),
+              NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1"),
             Expand(
-              NodeByLabelScan("b", labelName("B"), Set.empty), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")
+              NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")
           )
         )
       )

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -54,7 +55,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
   test("should plan single merge node from a label scan") {
 
-    val labelScan = NodeByLabelScan("a", labelName("X"), Set.empty)
+    val labelScan = NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone)
     val optional = Optional(labelScan)
     val onCreate = MergeCreateNode(Argument(), "a", Seq(labelName("X")), None)
 

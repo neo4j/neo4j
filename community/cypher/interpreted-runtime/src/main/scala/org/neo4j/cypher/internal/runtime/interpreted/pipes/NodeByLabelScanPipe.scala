@@ -19,20 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel.UNKNOWN
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
+case class NodeByLabelScanPipe(ident: String, label: LazyLabel, indexOrder: IndexOrder)
                               (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
 
     val id = label.getId(state.query)
     if (id != UNKNOWN) {
-      // TODO use order provided by the LogicalPlan (follow-up PR)
-      val nodes = state.query.getNodesByLabel(id, IndexOrderNone)
+      val nodes = state.query.getNodesByLabel(id, indexOrder)
       val baseContext = state.newExecutionContext(executionContextFactory)
       nodes.map(n => executionContextFactory.copyWith(baseContext, ident, n))
     } else {

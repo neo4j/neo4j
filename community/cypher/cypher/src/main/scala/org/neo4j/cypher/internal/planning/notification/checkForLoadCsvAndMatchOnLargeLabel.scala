@@ -48,7 +48,7 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
         case LargeLabelFound => (LargeLabelWithLoadCsvFound, Some(identity))
         case e => (e, None)
       }
-      case NodeByLabelScan(_, label, _) if cardinality(label.name) > threshold =>
+      case NodeByLabelScan(_, label, _, _) if cardinality(label.name) > threshold =>
         acc => (LargeLabelFound, Some(identity))
     }
 

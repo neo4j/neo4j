@@ -75,7 +75,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
   testPlan("nodeByLabelScan",
     new TestPlanBuilder()
       .produceResults("x")
-      .nodeByLabelScan("x", "X", "foo")
+      .nodeByLabelScan("x", "X", IndexOrderDescending, "foo")
       .build())
 
   testPlan("expandAll",

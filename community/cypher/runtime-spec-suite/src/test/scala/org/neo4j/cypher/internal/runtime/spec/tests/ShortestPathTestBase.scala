@@ -23,6 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -50,8 +51,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r*]-(y)", Some("path"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -77,8 +78,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r*]-(y)", Some("path"), all = true)
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -108,8 +109,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r:A*]->(y)", Some("path"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -138,8 +139,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r:B*]->(y)", Some("path"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -168,8 +169,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${forbidden.getId})"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -192,8 +193,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})"))
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -215,8 +216,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .shortestPath("(X)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})"))
       .projection("x AS X")
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -241,8 +242,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "r", "y", "path")
       .shortestPath("(x)-[r:A*]->(y)", Some("path"), predicates = Seq(s"All(rel in relationships(path) WHERE id(rel) <> ${forbidden.getId})")) // OBS: r != rel
       .cartesianProduct()
-      .|.nodeByLabelScan("y", "END")
-      .nodeByLabelScan("x", "START")
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

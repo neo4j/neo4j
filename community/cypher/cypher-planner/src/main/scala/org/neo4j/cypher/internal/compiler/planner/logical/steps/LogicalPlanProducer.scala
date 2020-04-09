@@ -241,7 +241,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planAllNodesScan(idName: String, argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
-    // Is this ordered by node id?
     annotate(AllNodesScan(idName, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
@@ -405,38 +404,39 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Selection(coercePredicatesWithAnds(predicates), left), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
   }
 
-  def planNodeByIdSeek(idName: String,
+  def planNodeByIdSeek(variable: Variable,
                        nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
                        argumentIds: Set[String],
                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternNodes(idName)
+      .addPatternNodes(variable.name)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val rewrittenNodeIds = nodeIds.mapValues(solver.solve(_))
     val newArguments = solver.newArguments
-    // Is this ordered by node id?
-    val leafPlan = annotate(NodeByIdSeek(idName, rewrittenNodeIds, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(NodeByIdSeek(variable.name, rewrittenNodeIds, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
     solver.rewriteLeafPlan(leafPlan)
   }
 
-  def planNodeByLabelScan(idName: String,
+  def planNodeByLabelScan(variable: Variable,
                           label: LabelName,
                           solvedPredicates: Seq[Expression],
                           solvedHint: Option[UsingScanHint] = None,
                           argumentIds: Set[String],
                           context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternNodes(idName)
+      .addPatternNodes(variable.name)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    // Is this ordered by node id?
-    annotate(NodeByLabelScan(idName, label, argumentIds), solved, ProvidedOrder.empty, context)
+    // TODO not just IndexOrderNone, doh!
+//    val providedOrder = ProvidedOrder.asc(variable)
+//    val order = toIndexOrder(providedOrder)
+    annotate(NodeByLabelScan(variable.name, label, argumentIds, IndexOrderNone), solved, ProvidedOrder.empty, context)
   }
 
   def planNodeIndexSeek(idName: String,

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -62,7 +63,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Seq(
-      NodeByLabelScan(idName, labelName("Awesome"), Set.empty))
+      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone))
     )
   }
 
@@ -90,6 +91,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(
-      Seq(NodeByLabelScan(idName, labelName("Awesome"), Set.empty)))
+      Seq(NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone)))
   }
 }

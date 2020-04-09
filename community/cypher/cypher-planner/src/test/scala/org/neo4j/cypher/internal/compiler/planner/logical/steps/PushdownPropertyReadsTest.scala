@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -525,8 +526,8 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .produceResults("x")
       .projection("n.prop AS x").withCardinality(100)
       .union().withCardinality(100)
-      .|.nodeByLabelScan("n", "A").withCardinality(90)
-      .nodeByLabelScan("n", "B").withCardinality(10)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withCardinality(90)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withCardinality(10)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
@@ -538,8 +539,8 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .produceResults("x")
       .projection("n.prop AS x").withCardinality(100)
       .union().withCardinality(100)
-      .|.nodeByLabelScan("n", "A").withCardinality(10)
-      .nodeByLabelScan("n", "B").withCardinality(90)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withCardinality(10)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)

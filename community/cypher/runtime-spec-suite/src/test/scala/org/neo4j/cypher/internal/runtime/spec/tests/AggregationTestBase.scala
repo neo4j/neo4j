@@ -26,6 +26,7 @@ import java.util.Collections
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -95,7 +96,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .|.limit(limit)
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -163,7 +164,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .|.limit(limit)
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -745,7 +746,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .|.limit(limit)
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
-      .nodeByLabelScan("x","A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -767,7 +768,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x","A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -788,7 +789,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x","A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -815,7 +816,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .|.aggregation(Seq("id(y) % 4 AS outerKey"), Seq("collect(y) AS ys"))
       .|.expandAll("(x)--(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -935,7 +936,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .cacheProperties("cache[a.name]")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
@@ -44,7 +45,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should plan simple expand") {
-    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val expand = Expand(nodeByLabelScan, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
 
     val optional = Optional(expand)
@@ -63,7 +64,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   test("should plan simple expand with argument dependency") {
     val leaf = Argument()
     val projection = Projection(leaf, Map("arg" -> literalInt(42)))
-    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set("arg"))
+    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set("arg"), IndexOrderNone)
     val selection = Selection(Seq(equals(prop("a", "p"), varFor("arg"))), nodeByLabelScan)
     val expand = Expand(selection, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
 

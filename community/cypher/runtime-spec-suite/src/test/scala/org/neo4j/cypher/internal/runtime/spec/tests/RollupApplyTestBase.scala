@@ -24,6 +24,7 @@ import java.util.Collections
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -218,7 +219,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .|.|.expandAll("(x)-->(y)")
       .|.|.argument()
       .|.allNodeScan("x")
-      .nodeByLabelScan("x", "A")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 
     // then

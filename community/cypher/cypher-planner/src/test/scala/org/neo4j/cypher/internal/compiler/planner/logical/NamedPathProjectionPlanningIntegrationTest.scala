@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -36,7 +37,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p")._2 should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+        Expand( NodeByLabelScan("a",  labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
         projectExpressions = Map(
           "p" -> PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
         )
@@ -55,7 +56,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
           function("head", function("nodes", pathExpr)),
           varFor("a")
         )),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
   }
@@ -77,7 +78,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             literalInt(10)
           )
         ),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
   }

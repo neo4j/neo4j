@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -94,7 +95,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   }
 
   test("NodeByLabelScan") {
-    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty)
+    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty, IndexOrderNone)
     val labelCardinality = Cardinality(321)
     val labelIds = Map("Label" -> 1)
     val stats = new TestGraphStatistics {
@@ -109,7 +110,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   }
 
   test("NodeByLabelScan under Apply") {
-    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty)
+    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty, IndexOrderNone)
     val multiplier = Cardinality(10)
     val labelCardinality = Cardinality(321)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)

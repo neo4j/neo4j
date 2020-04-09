@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -274,7 +275,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
       .produceResults("bar")
       .distinct("b.foo AS bar")
       .expandAll("(a)--(b)")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -302,7 +303,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
       .aggregation(Seq("b.foo AS group"),Seq("count(b) AS c"))
       .expandAll("(a)--(b)")
       .distinct("a AS a")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -328,7 +329,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
       .produceResults("bar")
       .distinct("bar AS bar")
       .distinct("a.foo AS bar")
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

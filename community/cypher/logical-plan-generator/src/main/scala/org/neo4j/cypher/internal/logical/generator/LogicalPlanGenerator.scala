@@ -49,6 +49,9 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -214,11 +217,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def nodeByLabelScan(state: State): Gen[WithState[NodeByLabelScan]] = for {
     labelName <- label
+    io <- indexOrder
     WithState(node, state) <- newVariable(state)
     state <- state.newNode(node)
     state <- state.recordLabel(node, labelName.name)
   } yield {
-    val plan = NodeByLabelScan(node, labelName, state.arguments)(state.idGen)
+    val plan = NodeByLabelScan(node, labelName, state.arguments, io)(state.idGen)
     annotate(plan, state)
   }
 
@@ -324,6 +328,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     SemanticDirection.INCOMING,
     SemanticDirection.OUTGOING,
     SemanticDirection.BOTH
+  )
+
+  private def indexOrder: Gen[IndexOrder] = Gen.oneOf(
+    IndexOrderNone,
+    IndexOrderAscending,
+    IndexOrderAscending
   )
 
   private def label: Gen[LabelName] = for {

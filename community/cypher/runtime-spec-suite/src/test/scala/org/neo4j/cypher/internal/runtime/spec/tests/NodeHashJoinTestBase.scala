@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -488,14 +489,14 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .|.expand("(x2)-->(x3)")
       .|.expand("(x1)-->(x2)")
       .|.expand("(y)-->(x1)")
-      .|.nodeByLabelScan("y", "B")
+      .|.nodeByLabelScan("y", "B", IndexOrderNone)
       .expand("(x6)-->(z)")
       .expand("(x5)-->(x6)")
       .expand("(x4)-->(x5)")
       .expand("(x3)-->(x4)")
       .expand("(x2)-->(x3)")
       .expand("(x1)-->(x2)")
-      .nodeByLabelScan("x1", "A")
+      .nodeByLabelScan("x1", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

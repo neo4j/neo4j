@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -42,7 +43,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByLabelScan("x", "Honey")
+      .nodeByLabelScan("x", "Honey", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -55,7 +56,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByLabelScan("x", "Honey")
+      .nodeByLabelScan("x", "Honey", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -72,10 +73,10 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y", "z", "x")
       .apply()
-      .|.nodeByLabelScan("x", "Honey")
+      .|.nodeByLabelScan("x", "Honey", IndexOrderNone)
       .apply()
-      .|.nodeByLabelScan("y", "Honey")
-      .nodeByLabelScan("z", "Honey")
+      .|.nodeByLabelScan("y", "Honey", IndexOrderNone)
+      .nodeByLabelScan("z", "Honey", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

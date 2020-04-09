@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -107,10 +108,10 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           NodeHashJoin(
             Set("b"),
             Expand(
-              NodeByLabelScan("a", labelName("X"), Set.empty),
+              NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
               "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll),
             Expand(
-              NodeByLabelScan("c", labelName("X"), Set.empty),
+              NodeByLabelScan("c", labelName("X"), Set.empty, IndexOrderNone),
               "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)
           )
         ),

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -218,7 +219,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
       .|.unwind("range(b.prop, 1, -1) AS c")
       .|.nodeIndexOperator("b:B(prop > 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
-      .nodeByLabelScan("a", "A")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

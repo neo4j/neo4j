@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -55,9 +56,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
     val cardinalities = new Cardinalities
     val plan = setC(NodeHashJoin(Set("a"),
-      setC(NodeByLabelScan("a", labelName("A"), Set.empty), cardinalities, 10.0),
+      setC(NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone), cardinalities, 10.0),
       setC(Expand(
-        setC(NodeByLabelScan("b", labelName("B"), Set.empty), cardinalities, 5.0),
+        setC(NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone), cardinalities, 5.0),
         "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll), cardinalities, 15.0)
     ), cardinalities, 10.0)
 
@@ -75,7 +76,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Seq(hasLabels("a2", "A")),
         setC(Expand(
           setC(Expand(
-            setC(NodeByLabelScan("a1", labelName("A"), Set.empty), lazyCardinalities, 10.0),
+            setC(NodeByLabelScan("a1", labelName("A"), Set.empty, IndexOrderNone), lazyCardinalities, 10.0),
             "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
           ), lazyCardinalities, 50.0),
           "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
@@ -87,11 +88,11 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val eagerPlan = setC(Projection(
       setC(NodeHashJoin(Set("b"),
         setC(Expand(
-          setC(NodeByLabelScan("a1", labelName("A"), Set.empty), eagerCardinalities, 10.0),
+          setC(NodeByLabelScan("a1", labelName("A"), Set.empty, IndexOrderNone), eagerCardinalities, 10.0),
           "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
         ), eagerCardinalities, 50.0),
         setC(Expand(
-          setC(NodeByLabelScan("a2", labelName("A"), Set.empty), eagerCardinalities, 10.0),
+          setC(NodeByLabelScan("a2", labelName("A"), Set.empty, IndexOrderNone), eagerCardinalities, 10.0),
           "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
         ), eagerCardinalities, 50.0)
       ), eagerCardinalities, 250.0), Map("b" -> varFor("b"))

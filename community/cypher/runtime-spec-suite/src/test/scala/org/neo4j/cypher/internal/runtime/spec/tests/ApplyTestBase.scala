@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -64,7 +65,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.expandInto("(y)--(x)")
-      .|.nodeByLabelScan("y", "RHS", "x")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
       .input(nodes = Seq("x"))
       .build()
 
@@ -87,7 +88,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.nodeByLabelScan("y", "RHS", "x")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
       .input(nodes = Seq("x"))
       .build()
 

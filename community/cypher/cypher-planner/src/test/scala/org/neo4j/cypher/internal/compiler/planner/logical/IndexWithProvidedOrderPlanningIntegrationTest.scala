@@ -231,7 +231,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             CartesianProduct(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder),
-              NodeByLabelScan("m", labelName("Awesome"), Set.empty)),
+              NodeByLabelScan("m", labelName("Awesome"), Set.empty, IndexOrderNone)),
             Map("m.prop" -> prop("m", "prop"))),
           Seq(sortOrder("m.prop")))
       )

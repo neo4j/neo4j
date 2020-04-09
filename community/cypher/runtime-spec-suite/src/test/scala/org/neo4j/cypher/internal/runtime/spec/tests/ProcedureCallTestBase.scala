@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -112,7 +113,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .procedureCall("writeVoidProc()")
-      .nodeByLabelScan("x", "OUTPROC")
+      .nodeByLabelScan("x", "OUTPROC", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -123,7 +124,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     // and when
     val verificationQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByLabelScan("x", "INPROC")
+      .nodeByLabelScan("x", "INPROC", IndexOrderNone)
       .build()
 
     val verificationResult = execute(verificationQuery, runtime)
