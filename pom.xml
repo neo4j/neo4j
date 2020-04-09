@@ -94,6 +94,7 @@
       -Djunit.jupiter.execution.parallel.mode.classes.default=${default.jupiter.test.mode}
       -XX:+UnlockExperimentalVMOptions
       -XX:+TrustFinalNonStaticFields
+      -XX:FlightRecorderOptions=stackdepth=256
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
