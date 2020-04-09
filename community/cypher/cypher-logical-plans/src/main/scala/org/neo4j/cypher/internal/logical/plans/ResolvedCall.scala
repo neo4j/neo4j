@@ -201,6 +201,7 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   override def containsNoUpdates: Boolean = signature.accessMode match {
     case ProcedureReadOnlyAccess(_) => true
+    case ProcedureDbmsAccess(_) => true
     case _ => false
   }
 }
