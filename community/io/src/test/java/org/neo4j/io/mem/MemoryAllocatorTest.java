@@ -183,7 +183,7 @@ class MemoryAllocatorTest
         {
             for ( int alloc = PageCache.PAGE_SIZE; alloc <= k512; alloc += PageCache.PAGE_SIZE )
             {
-                createAllocator( "2 MiB" );
+                createAllocator( MebiByte.toBytes( 2 ) );
                 long addr = allocator.allocateAligned( alloc, align );
                 int i = 0;
                 try
