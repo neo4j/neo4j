@@ -31,8 +31,8 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.ThreadSafeMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
@@ -108,7 +108,7 @@ public class ConfiguringPageCacheFactory
         }
         long pageCacheMaxMemory = ByteUnit.parse( pageCacheMemorySetting );
         var memoryPool = memoryPools.pool( PAGE_CACHE, PAGE_CACHE_POOL_NAME, pageCacheMaxMemory );
-        return createAllocator( pageCacheMaxMemory, new LocalMemoryTracker( memoryPool, pageCacheMaxMemory, 0 ) );
+        return createAllocator( pageCacheMaxMemory, new ThreadSafeMemoryTracker( memoryPool, pageCacheMaxMemory, 0 ) );
     }
 
     public static long defaultHeuristicPageCacheMemory()
