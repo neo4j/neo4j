@@ -24,7 +24,7 @@ import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
 
 import org.hamcrest.Matchers.greaterThan
-import org.junit.Assert.assertThat
+import org.hamcrest.MatcherAssert.assertThat
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions

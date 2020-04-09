@@ -23,7 +23,7 @@ import java.util.Optional
 
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.equalTo
-import org.junit.Assert.assertThat
+import org.hamcrest.MatcherAssert.assertThat
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException

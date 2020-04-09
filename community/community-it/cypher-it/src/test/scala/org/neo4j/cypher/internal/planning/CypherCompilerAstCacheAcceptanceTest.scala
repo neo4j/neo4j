@@ -343,7 +343,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should not find query in cache with different parameter types") {
-    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(42))
     val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
@@ -352,8 +352,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should find query in cache with same parameter types") {
-    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
-    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(43))
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(42))
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(43))
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
@@ -361,8 +361,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should find query in cache with same parameter types, ignoring unused parameters") {
-    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42), "foo" -> "bar")
-    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(43), "bar" -> new Integer(10))
+    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(42), "foo" -> "bar")
+    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> Integer.valueOf(43), "bar" -> Integer.valueOf(10))
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
