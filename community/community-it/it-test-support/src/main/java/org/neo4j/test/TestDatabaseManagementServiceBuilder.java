@@ -115,7 +115,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     {
         return Config.newBuilder()
                 .fromConfig( config )
-                .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setDefault( GraphDatabaseSettings.pagecache_memory, "16m" )
                 .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
                 .setDefault( BoltConnector.enabled, FALSE )
                 .build();
