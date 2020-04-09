@@ -351,7 +351,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   }
 
   private def checkValidTokenName(name: String): Option[String] = {
-    if (name == null || name.isEmpty || name.contains("\0") || name.contains("`")) {
+    if (name == null || name.isEmpty || name.contains("\u0000") || name.contains("`")) {
       Some(String.format("%s is not a valid token name. " + "Token names cannot be empty, or contain any null-bytes or back-ticks.",
         if (name != null) "'" + name + "'" else "Null"))
     } else {
