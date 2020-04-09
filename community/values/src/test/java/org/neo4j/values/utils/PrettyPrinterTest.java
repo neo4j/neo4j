@@ -382,7 +382,7 @@ class PrettyPrinterTest
     @Test
     void shouldHandleDateTimeWithTimeZoneId()
     {
-        DateTimeValue datetime = datetime( 2045, 2, 7, 12, 00, 40, 999888999, "Europe/London" );
+        DateTimeValue datetime = datetime( 2045, 2, 7, 12, 0, 40, 999888999, "Europe/London" );
         PrettyPrinter printer = new PrettyPrinter();
 
         datetime.writeTo( printer );
