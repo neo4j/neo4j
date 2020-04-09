@@ -22,6 +22,7 @@ package org.neo4j.memory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,7 +41,7 @@ class MemoryPoolImplTest
     @Test
     void trackHeapAndNativeMemory()
     {
-        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 1000 );
+        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 1000, true );
         memoryPool.reserveHeap( 10 );
 
         assertEquals( 0, memoryPool.usedNative() );
@@ -57,11 +58,33 @@ class MemoryPoolImplTest
     }
 
     @Test
+    void nonStrictPoolAllowAllocationsOverMax()
+    {
+        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 10, false );
+        assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
+        assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
+        assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
+
+        assertEquals( 300, memoryPool.totalUsed() );
+    }
+
+    @Test
+    void strictPoolForbidAllocationsOverMax()
+    {
+        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 100, true );
+        assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
+        assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 100 ) );
+        assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
+
+        assertEquals( 20, memoryPool.totalUsed() );
+    }
+
+    @Test
     void imposeLimit()
     {
         final long limit = 10;
         final long halfLimit = limit / 2;
-        MemoryPool memoryPool = new MemoryPoolImpl.BoundedMemoryPool( limit );
+        MemoryPool memoryPool = new MemoryPoolImpl.BoundedMemoryPool( limit, true );
         assertState( limit, limit, 0, memoryPool );
 
         memoryPool.reserveHeap( halfLimit );

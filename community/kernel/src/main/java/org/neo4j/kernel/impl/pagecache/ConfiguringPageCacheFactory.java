@@ -107,7 +107,7 @@ public class ConfiguringPageCacheFactory
             pageCacheMemorySetting = "" + heuristic;
         }
         long pageCacheMaxMemory = ByteUnit.parse( pageCacheMemorySetting );
-        var memoryPool = memoryPools.pool( PAGE_CACHE, PAGE_CACHE_POOL_NAME, pageCacheMaxMemory );
+        var memoryPool = memoryPools.pool( PAGE_CACHE, PAGE_CACHE_POOL_NAME, pageCacheMaxMemory, false );
         return createAllocator( pageCacheMaxMemory, new ThreadSafeMemoryTracker( memoryPool, pageCacheMaxMemory, 0 ) );
     }
 

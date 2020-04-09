@@ -38,7 +38,7 @@ class LocalMemoryTrackerWithPoolTest
     @BeforeEach
     void setUp()
     {
-        memoryPool = MemoryPools.fromLimit( 0 );
+        memoryPool = MemoryPools.fromLimit( 0, true );
         memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, GRAB_SIZE );
     }
 

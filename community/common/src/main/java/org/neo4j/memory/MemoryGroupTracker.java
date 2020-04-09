@@ -26,12 +26,12 @@ public class MemoryGroupTracker implements NamedMemoryPool
     private final String name;
     private final MemoryPool pool;
 
-    MemoryGroupTracker( MemoryPools pools, MemoryGroup group, String name, long limit )
+    MemoryGroupTracker( MemoryPools pools, MemoryGroup group, String name, long limit, boolean strict )
     {
         this.pools = pools;
         this.group = group;
         this.name = name;
-        this.pool = MemoryPools.fromLimit( limit );
+        this.pool = MemoryPools.fromLimit( limit, strict );
     }
 
     @Override

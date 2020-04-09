@@ -71,10 +71,12 @@ abstract class MemoryPoolImpl implements MemoryPool
     static class BoundedMemoryPool extends MemoryPoolImpl
     {
         private final long maxMemory;
+        private final boolean strict;
 
-        BoundedMemoryPool( long maxMemory )
+        BoundedMemoryPool( long maxMemory, boolean strict )
         {
             this.maxMemory = requirePositive( maxMemory );
+            this.strict = strict;
         }
 
         @Override
@@ -102,8 +104,7 @@ abstract class MemoryPoolImpl implements MemoryPool
             {
                 usedMemoryBefore = counter.get();
                 long totalUsedMemory = totalUsed();
-                long totalUsedMemoryAfter = totalUsedMemory + bytes;
-                if ( totalUsedMemoryAfter > maxMemory )
+                if ( strict && ((totalUsedMemory + bytes) > maxMemory) )
                 {
                     throw new HeapMemoryLimitExceeded( bytes, maxMemory, totalUsedMemory );
                 }

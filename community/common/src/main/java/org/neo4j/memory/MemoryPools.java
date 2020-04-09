@@ -30,7 +30,12 @@ public final class MemoryPools
 
     public NamedMemoryPool pool( MemoryGroup group, String name, long limit )
     {
-        var pool = new MemoryGroupTracker( this, group, name, limit );
+        return this.pool( group, name, limit, true );
+    }
+
+    public NamedMemoryPool pool( MemoryGroup group, String name, long limit, boolean strict )
+    {
+        var pool = new MemoryGroupTracker( this, group, name, limit, strict );
         pools.add( pool );
         return pool;
     }
@@ -49,15 +54,16 @@ public final class MemoryPools
      * Constructs a new memory pool.
      *
      * @param limit of the pool, passing 0 will result in an unbounded pool
+     * @param strict true if pool should restrict allocation to the provided limit
      * @return a new memory pool with the specified limit
      */
-    static MemoryPool fromLimit( long limit )
+    static MemoryPool fromLimit( long limit, boolean strict )
     {
         if ( limit == 0 )
         {
             return new MemoryPoolImpl.UnboundedMemoryPool();
         }
-        return new MemoryPoolImpl.BoundedMemoryPool( limit );
+        return new MemoryPoolImpl.BoundedMemoryPool( limit, strict );
     }
 
     private static class NoTrackingMemoryPool implements NamedMemoryPool
