@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -444,7 +445,7 @@ public class DetectRandomSabotageIT
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
                         RelationshipRecord before = store.getRecord( relationship.getId(), store.newRecord(), RecordLoad.NORMAL );
-                        LongSupplier rng = () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue() );
+                        LongSupplier rng = () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true );
                         switch ( random.nextInt( 4 ) )
                         {
                         case 0: // start node prev
@@ -489,7 +490,19 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), PrimitiveRecord::getNextProp,
-                                PrimitiveRecord::setNextProp );
+                                PrimitiveRecord::setNextProp, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), propertyId ->
+                                {
+                                    // For relationship properties there's a chance that the generated id will be a perfectly valid
+                                    // start of an existing property chain, therefore add some extra validation to this ID
+                                    if ( propertyId < 0 )
+                                    {
+                                        return true;
+                                    }
+
+                                    PropertyStore propertyStore = stores.getPropertyStore();
+                                    PropertyRecord record = propertyStore.getRecord( propertyId, propertyStore.newRecord(), RecordLoad.CHECK, NULL );
+                                    return !record.inUse() || !NULL_REFERENCE.is( record.getPrevProp() );
+                                } ) );
                     }
                 },
         RELATIONSHIP_TYPE
@@ -704,13 +717,7 @@ public class DetectRandomSabotageIT
                         LabelScanStore labelIndex = otherDependencies.resolveDependency( LabelScanStore.class );
                         boolean add = random.nextBoolean();
                         NodeStore store = stores.getNodeStore();
-                        NodeRecord nodeRecord;
-                        do
-                        {
-                            // If we're removing a label from the label index, make sure that the selected node has a label
-                            nodeRecord = store.getRecord( random.nextLong( store.getHighId() ), store.newRecord(), RecordLoad.CHECK );
-                        }
-                        while ( !add && (!nodeRecord.inUse() || nodeRecord.getLabelField() == NO_LABELS_FIELD.longValue()) );
+                        NodeRecord nodeRecord = randomRecord( random, store, r -> add || (r.inUse() && r.getLabelField() != NO_LABELS_FIELD.longValue()) );
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
@@ -773,7 +780,8 @@ public class DetectRandomSabotageIT
         protected <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
                 ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter )
         {
-            return loadChangeUpdate( random, store, filter, idGetter, idSetter, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue() ) );
+            return loadChangeUpdate( random, store, filter, idGetter, idSetter,
+                    () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ) );
         }
 
         protected <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
@@ -828,15 +836,26 @@ public class DetectRandomSabotageIT
             }
         }
 
-        protected long randomIdOrSometimesDefault( RandomRule random, long defaultValue )
+        protected long randomIdOrSometimesDefault( RandomRule random, long defaultValue, LongPredicate filter )
         {
-            return random.nextFloat() < 0.1 ? defaultValue : randomLargeSometimesNegative( random );
+            return random.nextFloat() < 0.1 ? defaultValue : randomLargeSometimesNegative( random, filter );
         }
 
         protected long randomLargeSometimesNegative( RandomRule random )
         {
-            long value = random.nextLong( SOME_WAY_TOO_HIGH_ID );
-            return random.nextFloat() < 0.2 ? -value : value;
+            return randomLargeSometimesNegative( random, id -> true );
+        }
+
+        protected long randomLargeSometimesNegative( RandomRule random, LongPredicate filter )
+        {
+            long value;
+            do
+            {
+                value = random.nextLong( SOME_WAY_TOO_HIGH_ID );
+                value = random.nextFloat() < 0.2 ? -value : value;
+            }
+            while ( !filter.test( value ) );
+            return value;
         }
 
         protected <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter )
