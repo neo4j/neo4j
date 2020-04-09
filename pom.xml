@@ -95,6 +95,8 @@
       -XX:+UnlockExperimentalVMOptions
       -XX:+TrustFinalNonStaticFields
       -XX:FlightRecorderOptions=stackdepth=256
+      -XX:+UnlockDiagnosticVMOptions
+      -XX:+DebugNonSafepoints
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
