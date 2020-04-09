@@ -20,6 +20,7 @@
 package org.neo4j.codegen.api
 
 import java.io.PrintStream
+import java.util
 
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
@@ -105,7 +106,22 @@ case class Constant(value: Any) extends IntermediateRepresentation
   *
   * @param values the values of the array
   */
-case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
+case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRepresentation]) extends IntermediateRepresentation {
+
+  override def canEqual(other: Any): Boolean = other.isInstanceOf[ArrayLiteral]
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ArrayLiteral =>
+        (that canEqual this) &&
+          typ == that.typ && util.Arrays.equals(values.asInstanceOf[Array[AnyRef]], that.values.asInstanceOf[Array[AnyRef]])
+      case _ => false
+    }
+
+  override def hashCode(): Int = {
+    typ.hashCode() + 31 * util.Arrays.hashCode(values.asInstanceOf[Array[AnyRef]])
+  }
+}
 
 /**
   * Load a value from an array
