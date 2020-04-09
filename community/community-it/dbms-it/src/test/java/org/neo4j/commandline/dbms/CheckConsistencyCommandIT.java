@@ -320,7 +320,8 @@ class CheckConsistencyCommandIT
                 .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
-            "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-property-owners=true" );
+                "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-relationship-type-scan-store=false",
+                "--check-property-owners=true" );
         checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
