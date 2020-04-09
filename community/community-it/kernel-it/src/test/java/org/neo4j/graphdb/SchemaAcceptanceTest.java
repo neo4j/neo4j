@@ -64,7 +64,7 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1689,7 +1689,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            tx.schema().awaitIndexOnline( indexDef, 30, SECONDS );
+            tx.schema().awaitIndexOnline( indexDef, 10, MINUTES );
         }
     }
 
