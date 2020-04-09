@@ -193,8 +193,9 @@ public interface ProcedureITBase
         result.addAll( List.of(
                 // enterprise only functions
                 proc( "dbms.listPools",
-                        "() :: (poolName :: STRING?, group :: STRING?, memoryUsed :: STRING?, memoryUsedBytes :: STRING?, " +
-                                "freeMemory :: STRING?, freeMemoryBytes :: STRING?, totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
+                        "() :: (poolName :: STRING?, group :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
+                                "nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, " +
+                                "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
                         "List all memory pools currently registered at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.listTransactions",
