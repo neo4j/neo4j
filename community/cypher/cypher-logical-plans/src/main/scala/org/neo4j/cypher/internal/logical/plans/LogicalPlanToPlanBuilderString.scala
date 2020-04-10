@@ -366,6 +366,7 @@ object LogicalPlanToPlanBuilderString {
     val idsStr = ids match {
       case SingleSeekableArg(expr) => expressionStringifier(expr)
       case ManySeekableArgs(ListLiteral(expressions)) => expressions.map(expressionStringifier(_)).mkString(", ")
+      case _ => throw new UnsupportedOperationException(s"Id string cannot be constructed from $ids.")
     }
     idsStr
   }
