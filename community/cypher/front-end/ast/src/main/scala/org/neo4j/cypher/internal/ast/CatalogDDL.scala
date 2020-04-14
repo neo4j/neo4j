@@ -216,6 +216,10 @@ final case class MatchPrivilege()(val position: InputPosition) extends Privilege
 
 final case class WritePrivilege()(val position: InputPosition) extends PrivilegeType("WRITE")
 
+final case class SetLabelPrivilege()(val position: InputPosition) extends PrivilegeType("SET LABEL")
+
+final case class RemoveLabelPrivilege()(val position: InputPosition) extends PrivilegeType("REMOVE LABEL")
+
 abstract class RevokeType(val name: String, val relType: String)
 
 final case class RevokeGrantType()(val position: InputPosition) extends RevokeType("GRANT", "GRANTED")
@@ -392,6 +396,10 @@ object GrantPrivilege {
     GrantPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
+  def setLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
+    GrantPrivilege(SetLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
+  def removeLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
+    GrantPrivilege(RemoveLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
   def write(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(WritePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
 }
@@ -407,6 +415,10 @@ object DenyPrivilege {
     DenyPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
+  def setLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
+    DenyPrivilege(SetLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
+  def removeLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
+    DenyPrivilege(RemoveLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
   def write(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(WritePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
 }
@@ -423,6 +435,10 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
   def grantedAsMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedSetLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(SetLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedRemoveLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(RemoveLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
   def grantedWrite(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
 
@@ -437,6 +453,10 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
   def deniedAsMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+  def deniedSetLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(SetLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+ def deniedRemoveLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(RemoveLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
   def deniedWrite(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
 
@@ -451,6 +471,10 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames,RevokeBothType()(InputPosition.NONE))
   def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
+  def setLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(SetLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
+  def removeLabel(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(RemoveLabelPrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
   def write(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
 }

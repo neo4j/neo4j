@@ -33,8 +33,9 @@ public enum PrivilegeAction
     /** Read properties of element */
     READ,
 
-    /** Create, update and delete elements and properties */
-    WRITE,
+    /** Set and remove labels from nodes */
+    SET_LABEL,
+    REMOVE_LABEL,
 
     /** Execute procedure/view with elevated access */
     EXECUTE,
@@ -260,6 +261,23 @@ public enum PrivilegeAction
                 }
             },
 
+    /** Create, update and delete elements and properties */
+    WRITE
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case SET_LABEL:
+                    case REMOVE_LABEL:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+    },
+
     GRAPH_ACTIONS
             {
                 @Override
@@ -271,6 +289,8 @@ public enum PrivilegeAction
                     case WRITE:
                     case TRAVERSE:
                     case MATCH:
+                    case SET_LABEL:
+                    case REMOVE_LABEL:
                         return true;
                     default:
                         return this == action;

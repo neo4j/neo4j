@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.MatchPrivilege
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadPrivilege
+import org.neo4j.cypher.internal.ast.RemoveLabelPrivilege
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.Return
@@ -55,6 +56,7 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
+import org.neo4j.cypher.internal.ast.SetLabelPrivilege
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
@@ -320,6 +322,60 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
           case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeWrite(s, graphScope, segment, roleName, r))
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // GRANT SET LABEL * ON GRAPH foo TO role
+      case c@GrantPrivilege(SetLabelPrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => plans.GrantSetLabel(source, graphScope, segment, roleName)
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // DENY SET LABEL * ON GRAPH foo TO role
+      case c@DenyPrivilege(SetLabelPrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => plans.DenySetLabel(source, graphScope, segment, roleName)
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE SET LABEL * ON GRAPH foo FROM role
+      case c@RevokePrivilege(SetLabelPrivilege(), _, graphScopes, segments, roleNames, revokeType) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeSetLabel(s, graphScope, segment, roleName, r))
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // GRANT REMOVE LABEL * ON GRAPH foo TO role
+      case c@GrantPrivilege(RemoveLabelPrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => plans.GrantRemoveLabel(source, graphScope, segment, roleName)
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // DENY REMOVE LABEL * ON GRAPH foo TO role
+      case c@DenyPrivilege(RemoveLabelPrivilege(), _, graphScopes, segments, roleNames) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => plans.DenyRemoveLabel(source, graphScope, segment, roleName)
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE REMOVE LABEL * ON GRAPH foo FROM role
+      case c@RevokePrivilege(RemoveLabelPrivilege(), _, graphScopes, segments, roleNames, revokeType) =>
+        val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
+          (roleName, segment, graphScope)
+        }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeRemoveLabel(s, graphScope, segment, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 

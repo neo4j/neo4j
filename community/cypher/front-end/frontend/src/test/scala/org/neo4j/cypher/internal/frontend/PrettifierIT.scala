@@ -749,6 +749,36 @@ class PrettifierIT extends CypherFunSuite {
           s"$action write on graph foo, $$bar elements * $preposition role" ->
             s"$action WRITE ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role",
 
+          s"$action set label label on graph * $preposition role" ->
+            s"$action SET LABEL label ON GRAPH * $preposition role",
+
+          s"$action set label label1, label2 on graph * $preposition role" ->
+            s"$action SET LABEL label1, label2 ON GRAPH * $preposition role",
+
+          s"$action set label * on graph * $preposition role" ->
+            s"$action SET LABEL * ON GRAPH * $preposition role",
+
+          s"$action set label label on graph foo $preposition role1, role2, role3" ->
+            s"$action SET LABEL label ON GRAPH foo $preposition role1, role2, role3",
+
+          s"$action set label label on graph foo, $$bar $preposition role" ->
+            s"$action SET LABEL label ON GRAPHS foo, $$bar $preposition role",
+
+          s"$action remove label label on graph * $preposition role" ->
+            s"$action REMOVE LABEL label ON GRAPH * $preposition role",
+
+          s"$action remove label label1, label2 on graph * $preposition role" ->
+            s"$action REMOVE LABEL label1, label2 ON GRAPH * $preposition role",
+
+          s"$action remove label * on graph * $preposition role" ->
+            s"$action REMOVE LABEL * ON GRAPH * $preposition role",
+
+          s"$action remove label label on graph foo $preposition role1, role2, role3" ->
+            s"$action REMOVE LABEL label ON GRAPH foo $preposition role1, role2, role3",
+
+         s"$action remove label label on graph foo, $$bar $preposition role" ->
+            s"$action REMOVE LABEL label ON GRAPHS foo, $$bar $preposition role",
+
         ) ++ Seq(
           ("access", "ACCESS"),
           ("start", "START"),
