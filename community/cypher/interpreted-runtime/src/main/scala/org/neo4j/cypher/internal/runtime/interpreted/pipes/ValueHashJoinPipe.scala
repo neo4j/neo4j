@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.mutable
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
                             (val id: Id = Id.INVALID_ID)
@@ -49,8 +50,8 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     val result = for {rhsRow <- rhsIterator
                       joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE) }
       yield {
-        val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
-        lhsRows.map { lhsRow =>
+        val lhsRows = table.get(joinKey)
+        lhsRows.asScala.map { lhsRow =>
           val outputRow = lhsRow.createClone()
           outputRow.mergeWith(rhsRow, state.query)
           outputRow
@@ -61,12 +62,11 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   }
 
   private def buildProbeTable(input: Iterator[CypherRow], state: QueryState) = {
-    val table = new mutable.HashMap[AnyValue, mutable.MutableList[CypherRow]]
+    val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTracker.memoryTrackerForOperator(id.x))
 
     for (context <- input;
          joinKey = lhsExpression(context, state) if joinKey != null) {
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
+      table.put(joinKey, context)
     }
 
     table
