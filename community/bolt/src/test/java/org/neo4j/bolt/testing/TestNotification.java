@@ -65,7 +65,7 @@ public class TestNotification implements Notification
         return new TestNotification( (String) notification.get("code"),
                 (String) notification.get("title"),
                 (String) notification.get("description"),
-                SeverityLevel.valueOf(  (String) notification.get( "severity")), position );
+                SeverityLevel.valueOf( (String) notification.get( "severity")), position );
     }
 
     @Override

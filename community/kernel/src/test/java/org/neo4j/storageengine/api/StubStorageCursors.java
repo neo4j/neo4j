@@ -441,7 +441,7 @@ public class StubStorageCursors implements StorageReader
         @Override
         public boolean scanBatch( AllNodeScan scan, int sizeHint )
         {
-            throw new UnsupportedOperationException(  );
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -587,7 +587,7 @@ public class StubStorageCursors implements StorageReader
         @Override
         public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
         {
-            throw new UnsupportedOperationException(  );
+            throw new UnsupportedOperationException();
         }
 
         @Override

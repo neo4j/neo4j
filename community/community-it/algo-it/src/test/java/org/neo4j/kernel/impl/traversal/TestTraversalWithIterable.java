@@ -49,7 +49,7 @@ class TestTraversalWithIterable extends TraversalTestBase
         {
             TraversalDescription basicTraverser = tx.traversalDescription().evaluator( Evaluators.atDepth(2) );
 
-            Collection<Node> startNodes = new ArrayList<>(  );
+            Collection<Node> startNodes = new ArrayList<>();
             startNodes.add( getNodeWithName( tx, "a" ) );
             startNodes.add( getNodeWithName( tx, "d" ) );
 

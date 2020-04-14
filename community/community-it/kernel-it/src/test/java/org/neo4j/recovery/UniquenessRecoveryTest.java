@@ -275,7 +275,7 @@ public class UniquenessRecoveryTest
     {
         if ( USE_CYPHER )
         {
-            db.executeTransactionally(  "create (:Person {name: 'Sneaky Steve'})" );
+            db.executeTransactionally( "create (:Person {name: 'Sneaky Steve'})" );
         }
         else
         {

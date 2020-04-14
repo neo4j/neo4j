@@ -70,12 +70,12 @@ class RelationshipIT extends KernelIntegrationTest
 
         long refNode = transaction.dataWrite().nodeCreate();
         long otherNode = transaction.dataWrite().nodeCreate();
-        long fromRefToOther1 = transaction.dataWrite().relationshipCreate(  refNode, relType1, otherNode );
-        long fromRefToOther2 = transaction.dataWrite().relationshipCreate(  refNode, relType2, otherNode );
-        long fromOtherToRef = transaction.dataWrite().relationshipCreate(  otherNode, relType1, refNode );
-        long fromRefToRef = transaction.dataWrite().relationshipCreate(  refNode, relType2, refNode );
+        long fromRefToOther1 = transaction.dataWrite().relationshipCreate( refNode, relType1, otherNode );
+        long fromRefToOther2 = transaction.dataWrite().relationshipCreate( refNode, relType2, otherNode );
+        long fromOtherToRef = transaction.dataWrite().relationshipCreate( otherNode, relType1, refNode );
+        long fromRefToRef = transaction.dataWrite().relationshipCreate( refNode, relType2, refNode );
         long endNode = transaction.dataWrite().nodeCreate();
-        long fromRefToThird = transaction.dataWrite().relationshipCreate(  refNode, relType2, endNode );
+        long fromRefToThird = transaction.dataWrite().relationshipCreate( refNode, relType2, endNode );
 
         // when & then
         assertRels( nodeGetRelationships( transaction, refNode, BOTH ), fromRefToOther1, fromRefToOther2,
@@ -145,7 +145,7 @@ class RelationshipIT extends KernelIntegrationTest
             // When
             transaction.dataWrite().relationshipDelete( fromRefToOther1 );
             long endNode = transaction.dataWrite().nodeCreate();
-            long localTxRel = transaction.dataWrite().relationshipCreate(  refNode, relType1, endNode );
+            long localTxRel = transaction.dataWrite().relationshipCreate( refNode, relType1, endNode );
 
             // Then
             assertRels( nodeGetRelationships( transaction, refNode, BOTH ), fromRefToOther2, localTxRel);
@@ -164,7 +164,7 @@ class RelationshipIT extends KernelIntegrationTest
 
         long refNode = transaction.dataWrite().nodeCreate();
         long otherNode = transaction.dataWrite().nodeCreate();
-        long theRel = transaction.dataWrite().relationshipCreate(  refNode, relType1, otherNode );
+        long theRel = transaction.dataWrite().relationshipCreate( refNode, relType1, otherNode );
 
         assertRels( nodeGetRelationships( transaction, refNode, OUTGOING, new int[]{relType2,relType1} ), theRel );
         commit();

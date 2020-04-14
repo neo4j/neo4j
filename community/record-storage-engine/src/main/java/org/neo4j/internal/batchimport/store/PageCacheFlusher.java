@@ -77,7 +77,7 @@ class PageCacheFlusher extends Thread
         if ( error != null )
         {
             throwIfUnchecked( error );
-            throw new RuntimeException(  error );
+            throw new RuntimeException( error );
         }
     }
 }

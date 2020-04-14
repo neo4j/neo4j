@@ -55,7 +55,7 @@ abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
         if ( !hasNext() )
         {
             close();
-            throw new NoSuchElementException(  );
+            throw new NoSuchElementException();
         }
         Node node = nodeFactory.make( next );
         next = fetchNext();

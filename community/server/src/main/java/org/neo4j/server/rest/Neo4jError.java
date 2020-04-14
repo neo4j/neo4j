@@ -89,7 +89,7 @@ public class Neo4jError
 
     public String getStackTraceAsString()
     {
-        StringWriter stringWriter = new StringWriter(  );
+        StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter( stringWriter );
         cause.printStackTrace( printWriter );
         return stringWriter.toString();

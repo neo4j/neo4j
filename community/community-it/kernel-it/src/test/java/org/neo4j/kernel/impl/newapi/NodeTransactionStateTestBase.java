@@ -564,7 +564,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     void shouldFindUpdatedNodeInInLabelScan() throws Exception
     {
         // Given
-        Node node = createNode(  );
+        Node node = createNode();
 
         try ( KernelTransaction tx = beginTransaction();
               NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )

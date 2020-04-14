@@ -164,7 +164,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
             {
                 // it is ok for index directory to be empty
                 // this can happen if it is opened and closed without any writes in between
-                if ( ArrayUtils.isNotEmpty(  directory.listAll() ) )
+                if ( ArrayUtils.isNotEmpty( directory.listAll() ) )
                 {
                     try ( CheckIndex checker = new CheckIndex( directory ) )
                     {

@@ -1015,7 +1015,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Remove key and child
         if ( leftChild )
         {
-            bTreeNode.removeKeyAndLeftChildAt(  cursor, keyPos, keyCount, stableGeneration, unstableGeneration, cursorTracer );
+            bTreeNode.removeKeyAndLeftChildAt( cursor, keyPos, keyCount, stableGeneration, unstableGeneration, cursorTracer );
         }
         else
         {

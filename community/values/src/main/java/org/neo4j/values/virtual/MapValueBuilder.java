@@ -34,7 +34,7 @@ public class MapValueBuilder
 
     public MapValueBuilder()
     {
-        this.map = new HashMap<>(  );
+        this.map = new HashMap<>();
     }
 
     public MapValueBuilder( int expectedSize )

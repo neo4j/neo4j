@@ -211,7 +211,7 @@ class DatabaseStartupTest
     {
         File directory = new File( "notAbsoluteDirectory" );
         EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
-        DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder(  directory, factory );
+        DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
         DatabaseManagementService managementService = databaseFactory.build();
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();

@@ -203,7 +203,7 @@ public class NeoStoresTest
                 neoStores.getMetaDataStore();
             }
         } );
-        assertEquals(  "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
+        assertEquals( "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
                 " as one of the stores types that should be open to be able to use it." , e.getMessage() );
     }
 

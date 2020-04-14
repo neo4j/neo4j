@@ -694,7 +694,7 @@ public class UserAggregationFunctionTest
             @UserAggregationUpdate
             public void update()
             {
-                throw new IndexOutOfBoundsException(  );
+                throw new IndexOutOfBoundsException();
             }
 
             @UserAggregationResult

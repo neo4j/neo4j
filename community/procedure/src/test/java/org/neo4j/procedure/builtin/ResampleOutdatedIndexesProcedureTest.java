@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgro
 class ResampleOutdatedIndexesProcedureTest
 {
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction(  ), indexingService );
+    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction(), indexingService );
 
     @Test
     void shouldTriggerResampling()

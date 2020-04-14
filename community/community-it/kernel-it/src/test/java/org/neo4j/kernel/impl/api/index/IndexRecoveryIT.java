@@ -454,7 +454,7 @@ class IndexRecoveryIT
                         break;
 
                     default:
-                        throw new UnsupportedOperationException(  );
+                        throw new UnsupportedOperationException();
                 }
             } );
         }

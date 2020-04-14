@@ -277,7 +277,7 @@ public final class ProcedureCompilation
             //set all static fields
             setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
 
-            return (CallableUserFunction) clazz.getConstructor(  ).newInstance();
+            return (CallableUserFunction) clazz.getConstructor().newInstance();
         }
         catch ( Throwable e )
         {
@@ -375,7 +375,7 @@ public final class ProcedureCompilation
 
             //set all static fields
             setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
-            return (CallableProcedure) clazz.getConstructor(  ).newInstance();
+            return (CallableProcedure) clazz.getConstructor().newInstance();
         }
         catch ( Throwable e )
         {
@@ -501,7 +501,7 @@ public final class ProcedureCompilation
             //set all static fields
             setAllStaticFields( signature, fieldSetters, create, clazz );
 
-            return (CallableUserAggregationFunction) clazz.getConstructor(  ).newInstance();
+            return (CallableUserAggregationFunction) clazz.getConstructor().newInstance();
         }
         catch ( Throwable e )
         {

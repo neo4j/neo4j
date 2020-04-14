@@ -111,7 +111,7 @@ class FieldInjections
     {
         if ( !field.isAnnotationPresent( Context.class ) )
         {
-            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Field `%s` on `%s` is not annotated as a @" + Context.class.getSimpleName() +
                             " and is not static. If you want to store state along with your procedure," +
                             " please use a static field.",

@@ -418,7 +418,7 @@ class ExecutionResultSerializerTest
         Map<String, Object> row3 = new HashMap<>();
         row3.put( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() )  );
         Map<String, Object> row4 = new HashMap<>();
-        row4.put(  "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) );
+        row4.put( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) );
 
         // when
         writeStatementStart( "geom");

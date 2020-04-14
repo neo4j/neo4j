@@ -196,8 +196,8 @@ class TernaryEqualityTest
     @Test
     void shouldHandleDurations()
     {
-       assertTernaryEquality(  durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 12 ) ), Equality.TRUE );
-       assertTernaryEquality(  durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 13 ) ), Equality.FALSE );
+       assertTernaryEquality( durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 12 ) ), Equality.TRUE );
+       assertTernaryEquality( durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 13 ) ), Equality.FALSE );
     }
 
     private void assertTernaryEquality( AnyValue a, AnyValue b, Equality expected )

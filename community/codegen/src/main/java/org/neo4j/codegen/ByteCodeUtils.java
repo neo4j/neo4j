@@ -96,7 +96,7 @@ public final class ByteCodeUtils
 
     public static String desc( MethodReference reference )
     {
-        StringBuilder builder = new StringBuilder(  );
+        StringBuilder builder = new StringBuilder();
         builder.append( "(" );
         for ( TypeReference parameter : reference.parameters() )
         {

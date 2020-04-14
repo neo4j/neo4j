@@ -75,7 +75,7 @@ public class TestRelationshipChain
 
     public TestRelationshipChain tail()
     {
-        return new TestRelationshipChain(  originNodeId, data.subList( 1, data.size() ) );
+        return new TestRelationshipChain( originNodeId, data.subList( 1, data.size() ) );
     }
 
     static class Data

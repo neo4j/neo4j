@@ -1329,7 +1329,7 @@ class BatchInsertTest
             var schema = tx.schema();
             IndexDefinition index = schema.getIndexes( label ).iterator().next();
             String indexFailure = schema.getIndexFailure( index );
-            assertThat( indexFailure ).contains(  "IndexEntryConflictException" );
+            assertThat( indexFailure ).contains( "IndexEntryConflictException" );
             assertThat( indexFailure ).contains( value );
             tx.commit();
         }

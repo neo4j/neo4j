@@ -120,7 +120,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     private MapValue toNeo4jValue( ObjectName name, MBeanAttributeInfo[] attributes )
             throws JMException
     {
-        MapValueBuilder out = new MapValueBuilder(  );
+        MapValueBuilder out = new MapValueBuilder();
         for ( MBeanAttributeInfo attribute : attributes )
         {
             if ( attribute.isReadable() )
@@ -205,7 +205,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     {
         // Build a new map with the same keys, but each value passed
         // through `toNeo4jValue`
-        MapValueBuilder builder = new MapValueBuilder(  );
+        MapValueBuilder builder = new MapValueBuilder();
         attributeValue.forEach( ( key, value ) -> builder.add( key.toString(), toNeo4jValue( value ) ) );
         return builder.build();
     }

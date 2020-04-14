@@ -39,7 +39,7 @@ public class DatabaseSchemaState implements SchemaState
 
     public DatabaseSchemaState( LogProvider logProvider )
     {
-        this.state = new ConcurrentHashMap<>(  );
+        this.state = new ConcurrentHashMap<>();
         this.log = logProvider.getLog( getClass() );
     }
 

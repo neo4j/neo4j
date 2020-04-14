@@ -214,7 +214,7 @@ class RelationshipCountsTest
         }
 
         // when
-        long total = numberOfRelationships(  );
+        long total = numberOfRelationships();
         long foo = numberOfRelationships( withName( "FOO" ) );
         long bar = numberOfRelationships( withName( "BAR" ) );
         long baz = numberOfRelationships( withName( "BAZ" ) );

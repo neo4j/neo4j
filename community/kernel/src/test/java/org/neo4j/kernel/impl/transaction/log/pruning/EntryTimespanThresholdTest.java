@@ -82,7 +82,7 @@ class EntryTimespanThresholdTest
         // given
         final EntryTimespanThreshold threshold = new EntryTimespanThreshold( logProvider, clock, MILLISECONDS, 100 );
 
-        final IOException ex = new IOException(  );
+        final IOException ex = new IOException();
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );
 
         // when

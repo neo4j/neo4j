@@ -117,7 +117,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
         int labelIdLocation = transaction.tokenWrite().labelGetOrCreateForName( "Location" );
         transaction.dataWrite().nodeAddLabel( nodeIdLocation, labelIdLocation );
         int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "LIVES_IN" );
-        transaction.dataWrite().relationshipCreate(  nodeIdPerson, relationshipTypeId, nodeIdLocation );
+        transaction.dataWrite().relationshipCreate( nodeIdPerson, relationshipTypeId, nodeIdLocation );
         commit();
 
         RawIterator<AnyValue[],ProcedureException> stream =

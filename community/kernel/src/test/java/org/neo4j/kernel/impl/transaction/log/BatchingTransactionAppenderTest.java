@@ -208,7 +208,7 @@ class BatchingTransactionAppenderTest
 
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
-        LogEntryStart start = new LogEntryStart(  0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED );
+        LogEntryStart start = new LogEntryStart( 0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED );
         LogEntryCommit commit = new LogEntryCommit( latestCommittedTxWhenStarted + 2, 0L, BASE_TX_CHECKSUM );
         CommittedTransactionRepresentation transaction = new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 

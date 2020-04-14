@@ -61,7 +61,7 @@ public class LogEntryParserSetV2_3 extends LogEntryParserSet.Adapter
                 return command == null ? null : new LogEntryCommand( version, command );
             }
         } );
-        register(  new LogEntryParser.Adapter( LogEntryTypeCodes.TX_COMMIT )
+        register( new LogEntryParser.Adapter( LogEntryTypeCodes.TX_COMMIT )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )

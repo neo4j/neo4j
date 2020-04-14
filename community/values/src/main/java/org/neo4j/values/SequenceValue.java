@@ -223,7 +223,7 @@ public interface SequenceValue extends Iterable<AnyValue>
             cmp = comparator.ternaryCompare( a.value( i ), b.value( i ) );
             i++;
         }
-        if (  cmp == Comparison.EQUAL )
+        if ( cmp == Comparison.EQUAL )
         {
             cmp = Comparison.from( a.length() - b.length() );
         }

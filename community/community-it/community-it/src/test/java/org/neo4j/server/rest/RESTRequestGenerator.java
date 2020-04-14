@@ -54,7 +54,7 @@ public class RESTRequestGenerator
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<Pair<String,Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
-    private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
+    private final Map<String, String> addedRequestHeaders = new TreeMap<>();
 
     private RESTRequestGenerator()
     {
