@@ -610,7 +610,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         RelationshipRecord record;
         if ( inUse )
         {
-            record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
+            record = new RelationshipRecord( id );
+            record.setLinks( channel.getLong(), channel.getLong(), channel.getInt() );
             record.setInUse( true );
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             record.setFirstPrevRel( channel.getLong() );
@@ -629,7 +630,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         }
         else
         {
-            record = new RelationshipRecord( id, -1, -1, channel.getInt() );
+            record = new RelationshipRecord( id );
+            record.setLinks( -1, -1, channel.getInt() );
             record.setInUse( false );
         }
         if ( bitFlag( flags, Record.CREATED_IN_TX ) )

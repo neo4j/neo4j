@@ -64,6 +64,7 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.concatArrays;
 import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsReferenceWithDenseMarker;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -365,8 +366,11 @@ public class RecordRelationshipTraversalCursorTest
 
     protected RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipSpec relationshipSpec )
     {
-        return new RelationshipRecord( id, true, getFirstNode( relationshipSpec.direction ), getSecondNode( relationshipSpec.direction ), relationshipSpec.type,
-                NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, false, false );
+        RelationshipRecord relationship = new RelationshipRecord( id );
+        relationship.initialize( true, NO_NEXT_PROPERTY.intValue(), getFirstNode( relationshipSpec.direction ),
+                getSecondNode( relationshipSpec.direction ), relationshipSpec.type, NO_NEXT_RELATIONSHIP.intValue(), nextRelationship,
+                NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, false, false );
+        return relationship;
     }
 
     protected long getSecondNode( RelationshipDirection direction )

@@ -40,17 +40,18 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     @Override
     protected RelationshipRecord createNullRecord( long id )
     {
-        RelationshipRecord record = new RelationshipRecord( id, false, 0, 0, 0, 0, 0, 0, 0, false, false );
-        record.setNextProp( 0 );
+        RelationshipRecord record = new RelationshipRecord( id );
+        record.initialize( false, 0, 0, 0, 0, 0, 0, 0, 0, false, false );
         return record;
     }
 
     @Override
     protected RelationshipRecord createExistingRecord( boolean light )
     {
-        return new RelationshipRecord(
-                ID, true, FIRST_NODE, SECOND_NODE, TYPE, FIRST_PREV_REL,
+        RelationshipRecord record = new RelationshipRecord( ID );
+        record.initialize( true, 0, FIRST_NODE, SECOND_NODE, TYPE, FIRST_PREV_REL,
                 FIRST_NEXT_REL, SECOND_PREV_REL, SECOND_NEXT_REL, true, true );
+        return record;
     }
 
     @Override

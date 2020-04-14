@@ -90,7 +90,8 @@ public class Commands
     {
         RelationshipRecord before = new RelationshipRecord( id );
         before.setInUse( false );
-        RelationshipRecord after = new RelationshipRecord( id, startNode, endNode, type );
+        RelationshipRecord after = new RelationshipRecord( id );
+        after.setLinks( startNode, endNode, type );
         after.setInUse( true );
         after.setCreated();
         return new RelationshipCommand( before, after );
