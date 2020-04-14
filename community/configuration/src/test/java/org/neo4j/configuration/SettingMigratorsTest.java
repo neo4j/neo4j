@@ -382,7 +382,7 @@ class SettingMigratorsTest
         assertTrue( config.get( policyConfig.trust_all ) );
 
         assertThat( logProvider ).forLevel( WARN ).forClass( Config.class )
-                .containsMessageWithArguments(  "Use of deprecated setting %s.", oldGroupnameSetting )
+                .containsMessageWithArguments( "Use of deprecated setting %s.", oldGroupnameSetting )
                 .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldFormatSetting, policyConfig.trust_all.name() );
     }
 

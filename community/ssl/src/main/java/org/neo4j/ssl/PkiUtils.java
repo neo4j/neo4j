@@ -90,7 +90,7 @@ public final class PkiUtils
         {
             passPhrase = "";
         }
-        try ( PEMParser r = new PEMParser(  Files.newBufferedReader( privateKeyFile.toPath() ) ) )
+        try ( PEMParser r = new PEMParser( Files.newBufferedReader( privateKeyFile.toPath() ) ) )
         {
             Object pemObject = r.readObject();
             final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );

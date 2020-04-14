@@ -56,9 +56,9 @@ object PatternConverters {
   }
 
   //RelationshipChain(
-  // NodePattern(Some(Variable(  UNNAMED6)),List(),Some(Variable(  UNNAMED7))),
+  // NodePattern(Some(Variable( UNNAMED6)),List(),Some(Variable( UNNAMED7))),
   // RelationshipPattern(Some(Variable(r)),List(),None,None,OUTGOING,false),
-  // NodePattern(Some(Variable(  UNNAMED8)),List(),Some(Variable(  UNNAMED9))))
+  // NodePattern(Some(Variable( UNNAMED8)),List(),Some(Variable( UNNAMED9))))
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
     def destructedRelationshipChain: DestructResult = chain match {
       // (a)->[r]->(b)

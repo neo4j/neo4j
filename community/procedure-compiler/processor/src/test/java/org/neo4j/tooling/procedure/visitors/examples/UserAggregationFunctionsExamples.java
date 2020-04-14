@@ -57,25 +57,25 @@ public class UserAggregationFunctionsExamples
     }
 
     @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithWrongUpdateParameterType updateWithWrongParameterType(  )
+    public StringAggregatorWithWrongUpdateParameterType updateWithWrongParameterType()
     {
         return new StringAggregatorWithWrongUpdateParameterType();
     }
 
     @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithMissingAnnotationOnParameterType missingParameterAnnotation(  )
+    public StringAggregatorWithMissingAnnotationOnParameterType missingParameterAnnotation()
     {
         return new StringAggregatorWithMissingAnnotationOnParameterType();
     }
 
     @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithWrongResultReturnType resultWithWrongReturnType(  )
+    public StringAggregatorWithWrongResultReturnType resultWithWrongReturnType()
     {
         return new StringAggregatorWithWrongResultReturnType();
     }
 
     @UserAggregationFunction( name = "com.acme.foobar" )
-    public StringAggregatorWithResultMethodWithParameters resultWithParams(  )
+    public StringAggregatorWithResultMethodWithParameters resultWithParams()
     {
         return new StringAggregatorWithResultMethodWithParameters();
     }
@@ -136,7 +136,7 @@ public class UserAggregationFunctionsExamples
         @UserAggregationResult
         public Thread result()
         {
-            return new Thread(  );
+            return new Thread();
         }
     }
 

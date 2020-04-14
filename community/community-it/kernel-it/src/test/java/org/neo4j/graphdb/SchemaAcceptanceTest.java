@@ -319,7 +319,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e ).hasMessageContaining(  "Unable to drop index: Index does not exist: " +
+                assertThat( e ).hasMessageContaining( "Unable to drop index: Index does not exist: " +
                         "Index( id=1, name='index_a0d2924', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), indexProvider='native-btree-1.0' )" );
             }
             tx.commit();

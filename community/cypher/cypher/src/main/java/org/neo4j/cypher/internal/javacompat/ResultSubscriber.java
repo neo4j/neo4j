@@ -82,7 +82,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public void materialize( QueryExecution execution )
     {
        this.execution = execution;
-       this.materializeResult = new ArrayList<>(  );
+       this.materializeResult = new ArrayList<>();
        fetchResults( Long.MAX_VALUE );
     }
 

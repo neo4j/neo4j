@@ -75,7 +75,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     qg.patternNodes should equal(Set("a", "b"))
   }
 
-  test("(a)-[r]->(  UNNAMED1)") {
+  test("(a)-[r]->( UNNAMED1)") {
     // Given
     val patternExpression = createPatternExpression(aNode, rRel, anonymousNode)
 

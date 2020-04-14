@@ -179,7 +179,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     @Override
     public final long until( Temporal endExclusive, TemporalUnit unit )
     {
-        if (  !(endExclusive instanceof TemporalValue) )
+        if ( !(endExclusive instanceof TemporalValue) )
         {
             throw new InvalidArgumentException( "Can only compute durations between TemporalValues." );
         }

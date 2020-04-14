@@ -258,7 +258,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
 
     private void verifyDocument( LuceneIndexWriter writer, Term eq, String documentString ) throws IOException
     {
-        verify( writer ).updateDocument(  eq(eq), argThat( doc -> documentString.equals( doc.toString() ) ) );
+        verify( writer ).updateDocument( eq(eq), argThat( doc -> documentString.equals( doc.toString() ) ) );
     }
 
     private static void verifySamplingResult( NonUniqueIndexSampler sampler, long expectedIndexSize,

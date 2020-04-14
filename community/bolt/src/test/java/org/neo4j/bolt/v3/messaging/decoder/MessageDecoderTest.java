@@ -289,7 +289,7 @@ public class MessageDecoderTest
             throws Exception
     {
         String statement = "RETURN $x";
-        MapValue parameters = VirtualValues.map(  new String[]{"x"}, new AnyValue[]{parameterValue } );
+        MapValue parameters = VirtualValues.map( new String[]{"x"}, new AnyValue[]{parameterValue } );
 
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );

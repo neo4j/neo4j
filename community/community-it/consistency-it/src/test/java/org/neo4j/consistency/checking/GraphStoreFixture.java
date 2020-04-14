@@ -605,12 +605,12 @@ public abstract class GraphStoreFixture implements AutoCloseable
             writer.create( group );
         }
 
-        public void update(  RelationshipGroupRecord before, RelationshipGroupRecord after )
+        public void update( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
             writer.update( before, after );
         }
 
-        public void delete(  RelationshipGroupRecord group )
+        public void delete( RelationshipGroupRecord group )
         {
             writer.delete( group );
         }

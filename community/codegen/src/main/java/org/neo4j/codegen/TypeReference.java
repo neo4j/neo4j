@@ -293,7 +293,7 @@ public class TypeReference
 
     List<TypeReference> declaringClasses()
     {
-        LinkedList<TypeReference> parents = new LinkedList<>(  );
+        LinkedList<TypeReference> parents = new LinkedList<>();
         TypeReference parent = declaringClass;
         while ( parent != null )
         {

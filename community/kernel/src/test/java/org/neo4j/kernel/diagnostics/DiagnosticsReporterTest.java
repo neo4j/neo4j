@@ -73,7 +73,7 @@ class DiagnosticsReporterTest
     @Test
     void shouldContinueAfterError() throws Exception
     {
-        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
         MyProvider myProvider = new MyProvider( fileSystem );
         reporter.registerOfflineProvider( myProvider );
 
@@ -134,7 +134,7 @@ class DiagnosticsReporterTest
 
     private DiagnosticsReporter setupDiagnosticsReporter() throws IOException
     {
-        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
         MyProvider myProvider = new MyProvider( fileSystem );
         reporter.registerOfflineProvider( myProvider );
 

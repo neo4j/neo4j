@@ -118,7 +118,7 @@ class DynamicIndexStoreViewIT
         {
             managementService.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-            Config config = Config.defaults(  GraphDatabaseSettings.pagecache_memory, "8m" );
+            Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
             consistencyCheckService.runFullConsistencyCheck( databaseLayout, config,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }

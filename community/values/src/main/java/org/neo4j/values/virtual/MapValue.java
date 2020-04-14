@@ -728,7 +728,7 @@ public abstract class MapValue extends VirtualValue
         }
     }
 
-    public MapValue updatedWith(  MapValue other )
+    public MapValue updatedWith( MapValue other )
     {
         return new CombinedMapValue( this, other );
     }

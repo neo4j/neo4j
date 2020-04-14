@@ -182,9 +182,9 @@ class UTF8StringValueTest
         UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
 
         // Then
-        assertSame( a.plus( a ), stringValue(  "ⲹⲹ" ) );
-        assertSame( a.plus( b ), stringValue(  "ⲹ楡" ) );
-        assertSame( b.plus( a ), stringValue(  "楡ⲹ") );
+        assertSame( a.plus( a ), stringValue( "ⲹⲹ" ) );
+        assertSame( a.plus( b ), stringValue( "ⲹ楡" ) );
+        assertSame( b.plus( a ), stringValue( "楡ⲹ") );
         assertSame( b.plus( b ), stringValue( "楡楡" ) );
     }
 

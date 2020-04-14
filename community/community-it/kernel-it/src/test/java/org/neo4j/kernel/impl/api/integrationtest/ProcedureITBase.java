@@ -99,7 +99,7 @@ public interface ProcedureITBase
                 proc( "dbms.queryJmx", "(query :: STRING?) :: (name :: STRING?, " + "description :: STRING?, attributes :: MAP?)",
                         "Query JMX management data by domain and name." + " For instance, \"org.neo4j:*\"",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "db.createLabel", "(newLabel :: STRING?) :: VOID", "Create a label", stringArray(  "publisher", "architect", "admin" ), "WRITE",
+                proc( "db.createLabel", "(newLabel :: STRING?) :: VOID", "Create a label", stringArray( "publisher", "architect", "admin" ), "WRITE",
                         false ),
                 proc( "db.createProperty", "(newProperty :: STRING?) :: VOID", "Create a Property", stringArray( "publisher", "architect", "admin" ),
                         "WRITE", false ), proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType",

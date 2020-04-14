@@ -87,15 +87,15 @@ class LruCacheTest
         cache.put( key3, s3 );
         cache.get( key2 );
 
-        assertEquals( new HashSet<>(  Arrays.asList(key1, key2, key3) ), cache.keySet());
+        assertEquals( new HashSet<>( Arrays.asList(key1, key2, key3) ), cache.keySet());
 
         cache.put( key4, s4 );
 
-        assertEquals( new HashSet<>(  Arrays.asList(key2, key3, key4) ), cache.keySet());
+        assertEquals( new HashSet<>( Arrays.asList(key2, key3, key4) ), cache.keySet());
 
         cache.put( key5, s5 );
 
-        assertEquals( new HashSet<>(  Arrays.asList(key2, key4, key5) ), cache.keySet());
+        assertEquals( new HashSet<>( Arrays.asList(key2, key4, key5) ), cache.keySet());
 
         int size = cache.size();
 

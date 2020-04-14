@@ -178,7 +178,7 @@ class NaiveQuerySubscriptionTest
 
     ResultRecord record( AnyValue...fields )
     {
-        return new ResultRecord(  fields );
+        return new ResultRecord( fields );
     }
 
     private class ResultRecord implements QueryResult.Record

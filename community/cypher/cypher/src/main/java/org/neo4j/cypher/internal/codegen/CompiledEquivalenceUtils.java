@@ -40,7 +40,7 @@ public final class CompiledEquivalenceUtils
      */
     private CompiledEquivalenceUtils()
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     /**

@@ -40,7 +40,7 @@ class RecordMessageEncoderTest
         RecordMessageEncoder encoder = new RecordMessageEncoder();
 
         // When
-        encoder.encode( packer, new RecordMessage(  new AnyValue[0] ) );
+        encoder.encode( packer, new RecordMessage( new AnyValue[0] ) );
 
         // Then
         verify( packer ).packStructHeader( anyInt(), eq( RecordMessage.SIGNATURE ) );

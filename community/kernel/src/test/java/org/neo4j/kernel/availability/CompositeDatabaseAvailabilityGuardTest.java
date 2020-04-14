@@ -117,7 +117,7 @@ class CompositeDatabaseAvailabilityGuardTest
     void availabilityTimeoutSharedAcrossAllGuards()
     {
         compositeGuard.require( requirement );
-        MutableLong counter = new MutableLong(  );
+        MutableLong counter = new MutableLong();
 
         when( mockClock.millis() ).thenAnswer( (Answer<Long>) invocation ->
         {
@@ -139,7 +139,7 @@ class CompositeDatabaseAvailabilityGuardTest
     void awaitCheckTimeoutSharedAcrossAllGuards()
     {
         compositeGuard.require( requirement );
-        MutableLong counter = new MutableLong(  );
+        MutableLong counter = new MutableLong();
 
         when( mockClock.millis() ).thenAnswer( (Answer<Long>) invocation ->
         {

@@ -342,7 +342,7 @@ public class ProcedureCompilationTest
     void shouldCallSimpleProcedure() throws ProcedureException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .in( "in", NTInteger )
                 .out( singletonList( inputField( "name", NTInteger ) ) ).build();
         // When
@@ -360,7 +360,7 @@ public class ProcedureCompilationTest
     void shouldExposeProcedureSignature() throws ProcedureException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .in( "in", NTInteger )
                 .out( singletonList( inputField( "name", NTInteger ) ) ).build();
         // When
@@ -375,7 +375,7 @@ public class ProcedureCompilationTest
     void procedureShouldAccessContext() throws ProcedureException, NoSuchFieldException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .in( "in", NTString )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
         FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::internalTransaction );
@@ -399,7 +399,7 @@ public class ProcedureCompilationTest
     {
         // Given
         ResourceTracker tracker = mock( ResourceTracker.class );
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .in( "in", NTString )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
 
@@ -416,7 +416,7 @@ public class ProcedureCompilationTest
     void shouldCallVoidProcedure() throws ProcedureException, NoSuchFieldException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" ).build();
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" ).build();
         // When
         FieldSetter setter = createSetter( InnerClass.class, "transaction", Context::internalTransaction );
         CallableProcedure voidMethod =
@@ -433,7 +433,7 @@ public class ProcedureCompilationTest
     void shouldHandleNonStaticInnerClasses() throws ProcedureException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
         // When
         CallableProcedure stringStream =
@@ -450,7 +450,7 @@ public class ProcedureCompilationTest
     void shouldCheckAccessOnAdminProcedures() throws ProcedureException
     {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
                 .admin( true )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
         SecurityContext securityContext = mock( SecurityContext.class );
@@ -641,7 +641,7 @@ public class ProcedureCompilationTest
 
         public class Aggregator
         {
-            StringBuilder aggregator = new StringBuilder(  );
+            StringBuilder aggregator = new StringBuilder();
             private boolean first = true;
 
             public void update( String in )

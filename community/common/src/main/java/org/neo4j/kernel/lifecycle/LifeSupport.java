@@ -349,7 +349,7 @@ public class LifeSupport implements Lifecycle
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder(  );
+        StringBuilder sb = new StringBuilder();
         toString( 0, sb );
         return sb.toString();
     }

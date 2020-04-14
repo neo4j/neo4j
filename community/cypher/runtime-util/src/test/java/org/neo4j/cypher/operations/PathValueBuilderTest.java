@@ -61,7 +61,7 @@ class PathValueBuilderTest
     {
         // Given
         NodeValue node = node( 42 );
-        PathValueBuilder builder = builder(  node );
+        PathValueBuilder builder = builder( node );
 
         // When
         builder.addNode( node );
@@ -212,7 +212,7 @@ class PathValueBuilderTest
     {
         DbAccess dbAccess = mock( DbAccess.class );
         RelationshipScanCursor cursors = mock( RelationshipScanCursor.class );
-        Map<Long, RelationshipValue> relMap = new HashMap<>(  );
+        Map<Long, RelationshipValue> relMap = new HashMap<>();
         for ( AnyValue value : values )
         {
             if ( value instanceof NodeValue )

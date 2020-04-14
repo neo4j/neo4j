@@ -329,7 +329,7 @@ class NodeRecordCheckTest
             @Override
             public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
             {
-                return putSorted(  node, labelIds, nodeStore, allocator, cursorTracer );
+                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
             }
         }.put( new long[]{3, 1, 2}, null, null, NULL );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );

@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue;
 
 public class RecordingQuerySubscriber implements QuerySubscriber
 {
-    private List<AnyValue[]> all = new ArrayList<>(  );
+    private List<AnyValue[]> all = new ArrayList<>();
     private AnyValue[] current;
     private Throwable throwable;
     private QueryStatistics statistics;

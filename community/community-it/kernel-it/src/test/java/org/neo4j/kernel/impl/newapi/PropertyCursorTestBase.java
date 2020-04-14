@@ -392,7 +392,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
 
             int expected = supportsBigProperties() ? 18 : 15;
-            assertEquals(  expected, values.size(), "number of values" );
+            assertEquals( expected, values.size(), "number of values" );
         }
     }
 
@@ -438,7 +438,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
 
             int expected = supportsBigProperties() ? 18 : 15;
-            assertEquals(  expected, values.size(), "number of values" );
+            assertEquals( expected, values.size(), "number of values" );
         }
     }
 
@@ -461,7 +461,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
             read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
             assertTrue( props.next(), "has properties via property ref" );
-            assertEquals(  expectedValue, props.propertyValue(), "correct value" );
+            assertEquals( expectedValue, props.propertyValue(), "correct value" );
             assertFalse( props.next(), "single property" );
         }
     }
@@ -486,7 +486,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
             read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), props );
             assertTrue( props.next(), "has properties via property ref" );
-            assertEquals(  expectedValue, props.propertyValue(), "correct value" );
+            assertEquals( expectedValue, props.propertyValue(), "correct value" );
             assertFalse( props.next(), "single property" );
         }
     }

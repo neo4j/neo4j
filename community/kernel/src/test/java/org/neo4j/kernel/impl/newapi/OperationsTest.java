@@ -433,7 +433,7 @@ class OperationsTest
         when( nodeCursor.labels() ).thenReturn( TokenSet.NONE );
 
         // WHEN
-        operations.nodeDelete(  123 );
+        operations.nodeDelete( 123 );
 
         //THEN
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );

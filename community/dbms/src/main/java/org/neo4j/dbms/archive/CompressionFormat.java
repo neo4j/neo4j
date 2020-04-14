@@ -124,14 +124,14 @@ public enum CompressionFormat
             {
                 return decompress( streamSupplier, ZSTD );
             }
-            catch (  IOException zstdIOe )
+            catch ( IOException zstdIOe )
             {
                 //It failed, lets try GZIP
                 try
                 {
                     return decompress( streamSupplier, GZIP );
                 }
-                catch (  IOException gzipIOe )
+                catch ( IOException gzipIOe )
                 {
                     throw Exceptions.chain( zstdIOe, gzipIOe );
                 }
