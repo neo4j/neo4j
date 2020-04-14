@@ -187,8 +187,10 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42, -1, -1, -1 );
-        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord before = new RelationshipRecord( 42 );
+        before.setLinks( -1, -1, -1 );
+        RelationshipRecord after = new RelationshipRecord( 42 );
+        after.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
         after.setCreated();
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
@@ -207,9 +209,11 @@ class PhysicalLogCommandReaderV4_0Test
     void readRelationshipCommandWithSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord before = new RelationshipRecord( 42 );
+        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
         before.setSecondaryUnitIdOnLoad( 47 );
-        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord after = new RelationshipRecord( 42 );
+        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
         BaseCommandReader reader = createReader();
@@ -224,9 +228,11 @@ class PhysicalLogCommandReaderV4_0Test
     void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord before = new RelationshipRecord( 42 );
+        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
         before.setSecondaryUnitIdOnLoad( 52 );
-        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord after = new RelationshipRecord( 42 );
+        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
         BaseCommandReader reader = createReader();
@@ -241,9 +247,11 @@ class PhysicalLogCommandReaderV4_0Test
     void readRelationshipCommandWithFixedReferenceFormat() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord before = new RelationshipRecord( 42 );
+        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
         before.setUseFixedReferences( true );
-        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
+        RelationshipRecord after = new RelationshipRecord( 42 );
+        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         after.setUseFixedReferences( true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 

@@ -85,7 +85,8 @@ class DuplicatePropertyTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        RelationshipRecord master = records.add( inUse( new RelationshipRecord( 1, 2, 3, 4 ) ) );
+        RelationshipRecord master = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        master.setLinks( 2, 3, 4 );
         master.setNextProp( 1 );
 
         PropertyRecord firstRecord = inUse( new PropertyRecord( 1 ) );
@@ -137,7 +138,8 @@ class DuplicatePropertyTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        RelationshipRecord master = records.add( inUse( new RelationshipRecord( 1, 2, 3, 4 ) ) );
+        RelationshipRecord master = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        master.setLinks( 2, 3, 4 );
         master.setNextProp( 1 );
 
         PropertyRecord firstRecord = inUse( new PropertyRecord( 1 ) );

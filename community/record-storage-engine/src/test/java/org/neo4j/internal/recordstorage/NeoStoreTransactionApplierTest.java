@@ -249,7 +249,8 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( false );
         RelationshipRecord before = new RelationshipRecord( 12 );
-        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        RelationshipRecord record = new RelationshipRecord( 12 );
+        record.setLinks( 3, 4, 5 );
         record.setInUse( true );
 
         Command command = new Command.RelationshipCommand( before, record );
@@ -268,7 +269,8 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( false );
         RelationshipRecord before = new RelationshipRecord( 12 );
-        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        RelationshipRecord record = new RelationshipRecord( 12 );
+        record.setLinks( 3, 4, 5 );
         record.setInUse( false );
 
         Command command = new Command.RelationshipCommand( before, record );
@@ -288,7 +290,8 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( true );
         RelationshipRecord before = new RelationshipRecord( 12 );
-        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        RelationshipRecord record = new RelationshipRecord( 12 );
+        record.setLinks( 3, 4, 5 );
         record.setInUse( true );
         Command command = new Command.RelationshipCommand( before, record );
 

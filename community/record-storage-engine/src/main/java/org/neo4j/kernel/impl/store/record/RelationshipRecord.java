@@ -36,31 +36,6 @@ public class RelationshipRecord extends PrimitiveRecord
     private boolean firstInFirstChain;
     private boolean firstInSecondChain;
 
-    @Deprecated
-    public RelationshipRecord( long id, long firstNode, long secondNode, int type )
-    {
-        this( id );
-        this.firstNode = firstNode;
-        this.secondNode = secondNode;
-        this.type = type;
-    }
-
-    @Deprecated
-    public RelationshipRecord( long id, boolean inUse, long firstNode, long secondNode, int type,
-                               long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
-                               boolean firstInFirstChain, boolean firstInSecondChain )
-    {
-        this( id, firstNode, secondNode, type );
-        setInUse( inUse );
-        this.firstPrevRel = firstPrevRel;
-        this.firstNextRel = firstNextRel;
-        this.secondPrevRel = secondPrevRel;
-        this.secondNextRel = secondNextRel;
-        this.firstInFirstChain = firstInFirstChain;
-        this.firstInSecondChain = firstInSecondChain;
-
-    }
-
     public RelationshipRecord( long id )
     {
         super( id );

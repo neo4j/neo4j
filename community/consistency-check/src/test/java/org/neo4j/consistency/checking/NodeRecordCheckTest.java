@@ -89,7 +89,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
-        add( inUse( new RelationshipRecord( 7, 42, 0, 0 ) ) );
+        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 42,  0, 0 );
         add( inUse( new PropertyRecord( 11 ) ) );
 
         // when
@@ -104,7 +105,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
-        RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 7, 0, 0, 0 ) ) );
+        RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 0, 0, 0 );
         add( inUse( new PropertyRecord( 11 ) ) );
 
         // when
@@ -151,7 +153,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
-        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 1, 2, 0 ) ) );
+        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 1, 2, 0 );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
@@ -166,7 +169,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
-        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 0, 0 ) ) );
+        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 42, 0, 0 );
         relationship.setFirstPrevRel( 6 );
         relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );
@@ -185,7 +189,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
-        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 0, 42, 0 ) ) );
+        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 0, 42, 0 );
         relationship.setFirstPrevRel( 6 );
         relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );
@@ -204,7 +209,8 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
-        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 42, 0 ) ) );
+        RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7 ) ) );
+        relationship.setLinks( 42, 42, 0 );
         relationship.setFirstPrevRel( 8 );
         relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );

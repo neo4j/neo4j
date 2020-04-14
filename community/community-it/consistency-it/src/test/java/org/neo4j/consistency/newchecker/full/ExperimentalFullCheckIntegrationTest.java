@@ -98,8 +98,12 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                     GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
+                RelationshipRecord relationshipA = new RelationshipRecord( next.relationship() );
+                relationshipA.setLinks(1, 2, C );
+                tx.create( relationshipA );
+                RelationshipRecord relationshipB = new RelationshipRecord( next.relationship() );
+                relationshipB.setLinks(1, 2, C );
+                tx.create( relationshipB );
             }
         } );
         extraSettings.put( experimental_consistency_checker_stop_threshold, 1 );
@@ -136,7 +140,9 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
                 long rel = next.relationship();
                 tx.create( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
-                tx.create( new RelationshipRecord( rel, otherNode, otherNode, C ) );
+                RelationshipRecord relationship = new RelationshipRecord( rel );
+                relationship.setLinks( otherNode, otherNode, C );
+                tx.create( relationship );
                 tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, C ),
                         rel, rel, rel ), node ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
@@ -168,7 +174,8 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
                 tx.create( new NodeRecord( node, false, rel, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
 
-                RelationshipRecord relationship = new RelationshipRecord( rel, node, otherNode, C );
+                RelationshipRecord relationship = new RelationshipRecord( rel );
+                relationship.setLinks( node, otherNode, C );
                 relationship.setFirstNextRel( -3 ); //Set some negative pointers
                 relationship.setFirstPrevRel( -4 );
                 relationship.setSecondNextRel( -5 );
@@ -221,7 +228,9 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                     GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), -2, -3, C ) );
+                RelationshipRecord relationship = new RelationshipRecord( next.relationship() );
+                relationship.setLinks( -2, -3, C );
+                tx.create( relationship );
 
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
                 tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );

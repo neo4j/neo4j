@@ -276,7 +276,9 @@ class ConsistencyReporterTest
             }
             if ( type == RelationshipRecord.class )
             {
-                return new RelationshipRecord( 0, 1, 2, 3 );
+                RelationshipRecord relationship = new RelationshipRecord( 0 );
+                relationship.setLinks( 1, 2, 3 );
+                return relationship;
             }
             if ( type == PropertyRecord.class )
             {

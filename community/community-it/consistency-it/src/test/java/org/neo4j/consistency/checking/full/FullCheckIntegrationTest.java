@@ -609,7 +609,8 @@ public class FullCheckIntegrationTest
                         NO_LABELS_FIELD.intValue() );
 
                 // structurally correct, but does not have the 'mandatory' property with the 'M' rel type
-                RelationshipRecord relationship = new RelationshipRecord( relId, true, nodeId1, nodeId2, M,
+                RelationshipRecord relationship = new RelationshipRecord( relId );
+                relationship.initialize( true, 0, nodeId1, nodeId2, M,
                         1, NO_NEXT_RELATIONSHIP.intValue(), 1, NO_NEXT_RELATIONSHIP.intValue(), true, true );
                 relationship.setNextProp( propId );
 
@@ -815,7 +816,9 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
+                RelationshipRecord relationship = new RelationshipRecord( next.relationship() );
+                relationship.setLinks( 1, 2, C );
+                tx.create( relationship );
             }
         } );
 
@@ -841,7 +844,10 @@ public class FullCheckIntegrationTest
                 long node1 = next.node();
                 long node2 = next.node();
                 long rel = next.relationship();
-                tx.create( inUse( new RelationshipRecord( rel, node1, node2, 0 ) ) );
+
+                RelationshipRecord relationship = new  RelationshipRecord( rel );
+                relationship.setLinks( node1, node2, 0 );
+                tx.create( inUse( relationship ) );
                 tx.create( inUse( new NodeRecord( node1, false, rel + 1, -1 ) ) );
                 tx.create( inUse( new NodeRecord( node2, false, rel + 2, -1 ) ) );
             }
@@ -1398,8 +1404,13 @@ public class FullCheckIntegrationTest
                 long relB = next.relationship();
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
                 tx.create( inUse( new NodeRecord( otherNode, false, relA, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withNext( inUse( new RelationshipRecord( relA, otherNode, node, C ) ), relB ) );
-                tx.create( withPrev( inUse( new RelationshipRecord( relB, node, otherNode, C ) ), relA ) );
+
+                RelationshipRecord relationshipA = new RelationshipRecord( relA );
+                relationshipA.setLinks( otherNode, node, C );
+                tx.create( withNext( inUse( relationshipA ), relB ) );
+                RelationshipRecord relationshipB = new RelationshipRecord( relB );
+                relationshipB.setLinks( node , otherNode, C);
+                tx.create( withPrev( inUse( relationshipB ), relA ) );
                 tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( group, C ) ), relB, relB, relB ), node ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 2 );
                 tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 2 );
@@ -1569,7 +1580,9 @@ public class FullCheckIntegrationTest
                 long rel = next.relationship();
                 tx.create( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
-                tx.create( new RelationshipRecord( rel, node, otherNode, T ) );
+                RelationshipRecord relationship = new RelationshipRecord( rel );
+                relationship.setLinks( node, otherNode, T );
+                tx.create( relationship );
                 tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, C ),
                         rel, rel, rel ), node ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
@@ -1612,7 +1625,9 @@ public class FullCheckIntegrationTest
 
                 tx.create( new NodeRecord( nodeA, true, groupA, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( nodeB, false, rel, NO_NEXT_PROPERTY.intValue() ) );
-                tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, C ), 1 ) );
+                RelationshipRecord relationship = new RelationshipRecord( rel );
+                relationship.setLinks( nodeA, nodeB, C );
+                tx.create( firstInChains( relationship, 1 ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
                 tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );
 

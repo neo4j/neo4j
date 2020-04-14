@@ -130,9 +130,11 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        RelationshipRecord relationship1 = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
+        RelationshipRecord relationship1 = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        relationship1.setLinks( 0, 1, 0 );
         relationship1.setNextProp( 7 );
-        RelationshipRecord relationship2 = records.add( inUse( new RelationshipRecord( 2, 0, 1, 0 ) ) );
+        RelationshipRecord relationship2 = records.add( inUse( new RelationshipRecord( 2 ) ) );
+        relationship2.setLinks( 0, 1, 0 );
         relationship2.setNextProp( 8 );
 
         // when
@@ -182,9 +184,11 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        RelationshipRecord relationship1 = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
+        RelationshipRecord relationship1 = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        relationship1.setLinks( 0, 1, 0 );
         relationship1.setNextProp( 7 );
-        RelationshipRecord relationship2 = records.add( inUse( new RelationshipRecord( 2, 0, 1, 0 ) ) );
+        RelationshipRecord relationship2 = records.add( inUse( new RelationshipRecord( 2 ) ) );
+        relationship2.setLinks( 0, 1, 0 );
         relationship2.setNextProp( relationship1.getNextProp() );
 
         // when
@@ -213,7 +217,8 @@ class OwnerCheckTest
         RecordAccessStub records = new RecordAccessStub();
 
         NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
+        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        relationship.setLinks( 0, 1, 0 );
         relationship.setNextProp( node.getNextProp() );
 
         // when
@@ -241,7 +246,8 @@ class OwnerCheckTest
         RecordAccessStub records = new RecordAccessStub();
 
         NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
+        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1 ) ) );
+        relationship.setLinks( 0, 1, 0 );
         relationship.setNextProp( node.getNextProp() );
 
         // when
@@ -317,7 +323,8 @@ class OwnerCheckTest
                 check( ConsistencyReport.PropertyConsistencyReport.class,
                        decorator.decoratePropertyChecker( dummyPropertyChecker() ),
                        record, records );
-        RelationshipRecord relationship = inUse( new RelationshipRecord( 10, 1, 1, 0 ) );
+        RelationshipRecord relationship = inUse( new RelationshipRecord( 10 ) );
+        relationship.setLinks( 1, 1, 0 );
         relationship.setNextProp( 42 );
         ConsistencyReport.RelationshipConsistencyReport relationshipReport =
                 check( ConsistencyReport.RelationshipConsistencyReport.class,
