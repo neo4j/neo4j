@@ -57,6 +57,12 @@ class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryP
     }
 
     @Override
+    public String databaseName()
+    {
+        return null;
+    }
+
+    @Override
     public void close()
     {
         checkState( subPools.isEmpty(), "All sub pools must be closed before closing top pool" );
@@ -64,9 +70,9 @@ class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryP
     }
 
     @Override
-    public NamedMemoryPool newSubPool( String name, long limit, boolean strict )
+    public NamedMemoryPool newSubPool( String name, long limit )
     {
-        SubMemoryGroupTracker subTracker = new SubMemoryGroupTracker( this, name, limit, strict );
+        SubMemoryGroupTracker subTracker = new SubMemoryGroupTracker( this, name, limit, true );
         subPools.add( subTracker );
         return subTracker;
     }

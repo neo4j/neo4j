@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 public final class MemoryPools
 {
     public static final NamedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
@@ -75,6 +77,12 @@ public final class MemoryPools
         public String name()
         {
             return NO_TRACKING_POOL_NAME;
+        }
+
+        @Override
+        public String databaseName()
+        {
+            return EMPTY;
         }
 
         @Override
@@ -133,7 +141,7 @@ public final class MemoryPools
         }
 
         @Override
-        public NamedMemoryPool newSubPool( String name, long limit, boolean strict )
+        public NamedMemoryPool newSubPool( String name, long limit )
         {
             return this;
         }

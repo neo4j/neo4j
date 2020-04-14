@@ -52,13 +52,19 @@ public class BoltNettyMemoryPool implements NamedMemoryPool
     }
 
     @Override
+    public String databaseName()
+    {
+        return null;
+    }
+
+    @Override
     public void close()
     {
 
     }
 
     @Override
-    public NamedMemoryPool newSubPool( String name, long limit, boolean strict )
+    public NamedMemoryPool newSubPool( String name, long limit )
     {
         return this;
     }

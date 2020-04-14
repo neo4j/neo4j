@@ -34,11 +34,17 @@ public interface NamedMemoryPool extends MemoryPool, AutoCloseable
     String name();
 
     /**
-     * Close and de-registed specific memory pool
+     * Database name for non global pools, otherwise empty
+     * @return name of the database this pool belongs or empty if global
+     */
+    String databaseName();
+
+    /**
+     * Close and de-register specific memory pool
      */
     void close();
 
-    NamedMemoryPool newSubPool( String name, long limit, boolean strict );
+    NamedMemoryPool newSubPool( String name, long limit );
 
     List<NamedMemoryPool> getSubPools();
 }

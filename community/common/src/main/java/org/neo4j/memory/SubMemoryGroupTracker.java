@@ -46,6 +46,12 @@ public class SubMemoryGroupTracker extends DelegatingMemoryPool  implements Name
     }
 
     @Override
+    public String databaseName()
+    {
+        return null;
+    }
+
+    @Override
     public void close()
     {
         parent.releasePool( this );
@@ -96,7 +102,7 @@ public class SubMemoryGroupTracker extends DelegatingMemoryPool  implements Name
     }
 
     @Override
-    public NamedMemoryPool newSubPool( String name, long limit, boolean strict )
+    public NamedMemoryPool newSubPool( String name, long limit )
     {
         throw new UnsupportedOperationException();
     }

@@ -55,7 +55,7 @@ class SubMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void allocateOnParent( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10, true );
+        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
         assertEquals( 2, methods.used( topPool ) );
@@ -69,7 +69,7 @@ class SubMemoryGroupTrackerTest
     void ownPoolFromTracking( AllocationFacade methods )
     {
         methods.reserve( topPool, 2 );
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10, true );
+        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
         assertEquals( 4, methods.used( topPool ) );
@@ -83,7 +83,7 @@ class SubMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void respectLocalLimit( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10, true );
+        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
         assertThrows( HeapMemoryLimitExceeded.class, () -> methods.reserve( subPool, 11 ) );
         subPool.close();
     }
@@ -92,7 +92,7 @@ class SubMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void respectParentLimit( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 102, true );
+        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 102 );
         assertThrows( HeapMemoryLimitExceeded.class, () -> methods.reserve( subPool, 101 ) );
         subPool.close();
     }
