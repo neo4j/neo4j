@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -42,7 +41,6 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private static final int NODE = -2;
     private Read read;
     private StoragePropertyCursor storeCursor;
-    private final PageCursorTracer cursorTracer;
     private final FullAccessNodeCursor nodeCursor;
     private final FullAccessRelationshipScanCursor relCursor;
     private EntityState propertiesState;
@@ -56,12 +54,11 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     //stores relationship type or NODE if not a relationship
     private int type = NO_TOKEN;
 
-    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor, PageCursorTracer cursorTracer,
+    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor,
                            FullAccessNodeCursor nodeCursor, FullAccessRelationshipScanCursor relCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
-        this.cursorTracer = cursorTracer;
         this.nodeCursor = nodeCursor;
         this.relCursor = relCursor;
     }

@@ -112,7 +112,7 @@ class CompositeStringLengthValidationIT
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
             {
                 IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
                 ktx.dataRead().nodeIndexSeek( indexReadSession,

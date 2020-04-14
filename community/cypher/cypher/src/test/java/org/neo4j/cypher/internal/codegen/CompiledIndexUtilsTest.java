@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CompiledIndexUtilsTest
 {
@@ -46,7 +47,7 @@ class CompiledIndexUtilsTest
         IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( 13 );
 
         // WHEN
-        CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
+        CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello", NULL );
 
         // THEN
         verify( read ).nodeIndexSeek( any(), any(), any(), any() );
@@ -60,7 +61,7 @@ class CompiledIndexUtilsTest
         IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( 13 );
 
         // WHEN
-        NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );
+        NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null, NULL );
 
         // THEN
         verify( read, never() ).nodeIndexSeek( any(), any(), any() );

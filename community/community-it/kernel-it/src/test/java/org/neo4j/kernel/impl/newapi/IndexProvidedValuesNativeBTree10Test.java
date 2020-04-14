@@ -48,6 +48,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
@@ -119,7 +120,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     void shouldGetAllSinglePropertyValues() throws Exception
     {
         IndexReadSession index = read.indexReadSession( indexNodeProp );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             read.nodeIndexScan( index, node, unorderedValues() );
 
@@ -141,7 +142,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     void shouldGetAllDoublePropertyValues() throws Exception
     {
         IndexReadSession index = read.indexReadSession( indexNodePropPrip );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             read.nodeIndexScan( index, node, unorderedValues() );
 

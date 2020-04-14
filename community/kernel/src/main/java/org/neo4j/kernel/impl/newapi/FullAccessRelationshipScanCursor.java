@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 public class FullAccessRelationshipScanCursor extends DefaultRelationshipScanCursor
 {
-    FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool,
-            StorageRelationshipScanCursor storeCursor, PageCursorTracer cursorTracer, FullAccessNodeCursor nodeCursor )
+    FullAccessRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor,
+                                      FullAccessNodeCursor nodeCursor )
     {
-        super( pool, storeCursor, cursorTracer, nodeCursor );
+        super( pool, storeCursor, nodeCursor );
     }
 
     @Override

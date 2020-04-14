@@ -207,7 +207,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( OnLabelScan( barId ) );
 
-        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -228,7 +228,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             int p1 = token.propertyKey( "p1" );
             IndexReadSession session = read.indexReadSession( index );

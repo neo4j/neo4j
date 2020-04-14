@@ -187,11 +187,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( indexDescriptor ) == ONLINE, 1, MINUTES );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
 
-        NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor();
+        NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor( NULL );
         read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
         c1.close();
 
-        NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor();
+        NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }
@@ -201,11 +201,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
-            NodeLabelIndexCursor c1 = tx.cursors().allocateNodeLabelIndexCursor();
+            NodeLabelIndexCursor c1 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
             tx.dataRead().nodeLabelScan( 1, c1 );
             c1.close();
 
-            NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor();
+            NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
             assertEquals( c1, c2 );
             c2.close();
         }
@@ -237,11 +237,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( index ) == ONLINE, 1, MINUTES );
 
-        RelationshipIndexCursor c1 = cursors.allocateRelationshipIndexCursor();
+        RelationshipIndexCursor c1 = cursors.allocateRelationshipIndexCursor( NULL );
         read.relationshipIndexSeek( index, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
         c1.close();
 
-        RelationshipIndexCursor c2 = cursors.allocateRelationshipIndexCursor();
+        RelationshipIndexCursor c2 = cursors.allocateRelationshipIndexCursor( NULL );
         assertEquals( c1, c2 );
         c2.close();
     }

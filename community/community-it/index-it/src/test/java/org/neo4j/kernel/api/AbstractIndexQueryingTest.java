@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<S>
 {
@@ -59,7 +60,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
     {
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
                     read.nodeIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
@@ -70,7 +71,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     void relationshipIndexSeekMustThrowOnWrongIndexEntityType()
     {
         IndexDescriptor index = schemaRead.indexGetForName( "ftsNodes" );
-        try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor() )
+        try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor( NULL ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
                     read.relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );

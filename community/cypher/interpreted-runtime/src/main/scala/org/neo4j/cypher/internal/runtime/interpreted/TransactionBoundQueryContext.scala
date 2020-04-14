@@ -348,7 +348,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
-    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     try {
       indexSearchMonitor.lockingUniqueIndexSeek(index, queries)
       if (queries.exists(q => q.value() eq Values.NO_VALUE))
@@ -959,13 +959,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   private def allocateAndTraceNodeValueIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceNodeLabelIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor()
+    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     cursor
   }

@@ -49,11 +49,11 @@ public interface CursorFactory
 
     // schema indexes
 
-    NodeValueIndexCursor allocateNodeValueIndexCursor();
+    NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer );
 
-    NodeLabelIndexCursor allocateNodeLabelIndexCursor();
+    NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer );
 
-    RelationshipIndexCursor allocateRelationshipIndexCursor();
+    RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer );
 
     RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor();
 }

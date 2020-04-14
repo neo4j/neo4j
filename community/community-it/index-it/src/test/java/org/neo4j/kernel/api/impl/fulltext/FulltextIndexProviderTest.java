@@ -1158,7 +1158,7 @@ class FulltextIndexProviderTest
     {
         List<Long> expectedResult = Arrays.asList( expectedResultArray );
         IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NAME ) );
-        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
         {
             List<Long> actualResult = new ArrayList<>();
             ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), query );
@@ -1286,7 +1286,7 @@ class FulltextIndexProviderTest
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
             {
                 ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value" ) );
                 assertTrue( cursor.next() );
@@ -1318,7 +1318,7 @@ class FulltextIndexProviderTest
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
-            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
+            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor( ktx.pageCursorTracer() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );

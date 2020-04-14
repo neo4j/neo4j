@@ -69,7 +69,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 while ( scan.reserveBatch( cursor, 23 ) )
@@ -109,7 +109,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                 tx.dataWrite().nodeDelete( delete );
             }
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
@@ -138,7 +138,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         {
             MutableLongSet added = LongSets.mutable.withAll( createNodesWithLabel( tx.dataWrite(), label, size ) );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
@@ -167,7 +167,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             createNodesWithLabel( tx.dataWrite(), label, 11 );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 assertTrue( scan.reserveBatch( cursor, 5 ) );
@@ -203,7 +203,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
 
             // when
-            Supplier<NodeLabelIndexCursor> allocateCursor = cursors::allocateNodeLabelIndexCursor;
+            Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( tx.pageCursorTracer() );
             Future<LongList> future1 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
             Future<LongList> future2 =
@@ -253,7 +253,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
-                        service.submit( randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.pageCursorTracer() ), NODE_GET ) ) );
             }
 
             // then
@@ -298,7 +298,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                     {
                         futures.add(
                                 threadPool.submit(
-                                        randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+                                        randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.pageCursorTracer() ), NODE_GET ) ) );
                     }
 
                     List<LongList> lists =

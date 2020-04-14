@@ -531,7 +531,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label" );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
@@ -549,7 +549,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label" );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
@@ -567,7 +567,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode(  );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
         {
             // when
             int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
@@ -588,7 +588,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node1.node, node1.labels[0] );

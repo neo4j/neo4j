@@ -372,7 +372,7 @@ class RecoveryIT
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
             IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
             int relationshipsInIndex = 0;
-            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
+            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor( ktx.pageCursorTracer() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "*" ) );
                 while ( cursor.next() )

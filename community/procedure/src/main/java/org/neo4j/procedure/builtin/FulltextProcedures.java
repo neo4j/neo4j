@@ -226,7 +226,7 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for nodes." );
         }
-        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
+        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
         tx.dataRead().nodeIndexSeek( indexSession, cursor, constraints, IndexQuery.fulltextSearch( query ) );
@@ -293,7 +293,7 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
         }
-        RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor();
+        RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor( tx.pageCursorTracer() );
         IndexQueryConstraints constraints = queryConstraints( options );
         tx.dataRead().relationshipIndexSeek( indexReference, cursor, constraints, IndexQuery.fulltextSearch( query ) );
 

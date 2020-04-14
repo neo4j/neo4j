@@ -70,7 +70,7 @@ class ReadTracingIT
             assertZeroCursor( cursorTracer );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor() )
+            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
             {
                 dataRead.nodeIndexSeek( indexSession, cursor, unconstrained(), stringContains( propertyId, stringValue( testPropertyValue ) ) );
 
@@ -104,7 +104,7 @@ class ReadTracingIT
 
             assertZeroCursor( cursorTracer );
 
-            try ( var cursor = kernelTransaction.cursors().allocateRelationshipIndexCursor() )
+            try ( var cursor = kernelTransaction.cursors().allocateRelationshipIndexCursor( kernelTransaction.pageCursorTracer() ) )
             {
                 dataRead.relationshipIndexSeek( indexDescriptor, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
 
@@ -131,7 +131,7 @@ class ReadTracingIT
             assertZeroCursor( cursorTracer );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor() )
+            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
             {
                 dataRead.nodeIndexScan( indexSession, cursor, unconstrained() );
 

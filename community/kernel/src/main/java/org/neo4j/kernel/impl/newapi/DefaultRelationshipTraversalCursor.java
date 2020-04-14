@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -38,7 +37,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         implements RelationshipTraversalCursor
 {
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
-    private final PageCursorTracer cursorTracer;
     private final DefaultNodeCursor nodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
@@ -46,11 +44,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private AccessMode mode;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
-            PageCursorTracer cursorTracer, DefaultNodeCursor nodeCursor )
+            DefaultNodeCursor nodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
-        this.cursorTracer = cursorTracer;
         this.nodeCursor = nodeCursor;
     }
 

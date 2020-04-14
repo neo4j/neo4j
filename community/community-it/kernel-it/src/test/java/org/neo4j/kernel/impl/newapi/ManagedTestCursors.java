@@ -117,25 +117,25 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor()
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
     {
-        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor();
+        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
-        NodeLabelIndexCursor n = cursors.allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor n = cursors.allocateNodeLabelIndexCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    public RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer )
     {
-        RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor();
+        RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }

@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
@@ -108,7 +109,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldScanASubsetOfNodes()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
             for ( int label : ALL_LABELS )
             {
@@ -145,7 +146,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
@@ -166,7 +167,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
             // given
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
@@ -180,7 +181,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     void shouldScanAllNodesInBatches()
     {
         // given
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
@@ -211,7 +212,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         try
         {
             // when
-            Supplier<NodeLabelIndexCursor> allocateCursor = cursors::allocateNodeLabelIndexCursor;
+            Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( NULL );
             Future<LongList> future1 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
             Future<LongList> future2 =
@@ -252,7 +253,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
-                        service.submit( randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( NULL ), NODE_GET ) ) );
             }
 
             // then

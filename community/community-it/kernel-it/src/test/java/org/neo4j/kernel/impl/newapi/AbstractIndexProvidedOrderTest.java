@@ -53,6 +53,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
@@ -172,7 +173,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                 boolean toInclusive = randomValues.nextBoolean();
                 IndexQuery.RangePredicate<?> range = IndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
 
-                try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+                try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
                 {
                     read.nodeIndexSeek( index, node, constrained( indexOrder, false ), range );
 

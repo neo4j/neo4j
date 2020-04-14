@@ -76,7 +76,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
             int prop = tx.tokenRead().propertyKey( "prop" );
             IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
 
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ) )
             {
                 nodeWithProp( tx, "allow" );
                 expected.add( nodeWithProp( tx, "now" ) );
@@ -118,7 +118,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
             int prop = tx.tokenRead().propertyKey( "prop" );
             IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
 
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ) )
             {
                 nodeWithProp( tx, "allow" );
                 expected.add( nodeWithProp( tx, "bastard" ) );

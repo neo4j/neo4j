@@ -88,7 +88,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         KernelTransaction transaction = newTransaction();
         Read read = transaction.dataRead();
         int propertyId = index.schema().getPropertyIds()[0];
-        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor()  )
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() )  )
         {
             long foundId = read.lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId, value ) );
 
@@ -108,7 +108,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         KernelTransaction transaction = newTransaction();
-        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() ) )
         {
             long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
 
@@ -129,7 +129,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         KernelTransaction transaction = newTransaction();
-        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() ) )
         {
             long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
                                                                               cursor, exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
@@ -151,7 +151,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         KernelTransaction transaction = newTransaction();
-        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() ) )
         {
             long foundId =  transaction.dataRead().lockingNodeUniqueIndexSeek( index,
                                                                                cursor, exact( propertyId1, value1 ),
@@ -198,7 +198,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             latch.waitForAllToStart();
             try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
             {
-                try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+                try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ) )
                 {
                     tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
                 }

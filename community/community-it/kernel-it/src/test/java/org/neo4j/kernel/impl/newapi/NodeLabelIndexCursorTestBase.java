@@ -66,7 +66,7 @@ abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestSupport>
         {
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
@@ -122,7 +122,7 @@ abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestSupport>
 
             Read read = tx.dataRead();
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 

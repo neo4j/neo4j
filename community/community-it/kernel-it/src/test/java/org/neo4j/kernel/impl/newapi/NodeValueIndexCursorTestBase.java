@@ -227,7 +227,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // given
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( NODE_PROP_INDEX_NAME ) );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -336,7 +336,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -358,7 +358,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -380,7 +380,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -401,7 +401,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -423,7 +423,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -470,7 +470,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability numberCapability = index.reference().getCapability().valueCapability( ValueCategory.NUMBER );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -509,7 +509,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability temporalCapability = index.reference().getCapability().valueCapability( ValueCategory.TEMPORAL );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -552,7 +552,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability spatialCapability = index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -591,7 +591,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.BOOLEAN.category() );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -618,7 +618,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.TEXT_ARRAY.category() );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -642,7 +642,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // given
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability wildcardCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -663,7 +663,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.NUMBER );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -684,7 +684,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -705,7 +705,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEMPORAL );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -727,7 +727,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.GEOMETRY );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -748,7 +748,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT_ARRAY );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -771,7 +771,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.UNKNOWN );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
             {
@@ -794,7 +794,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( WHAT_EVER_INDEX_NAME ) );
         assertEquals( IndexValueCapability.YES, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ) );
 
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -817,7 +817,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         IndexValueCapability valueCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
         assertEquals( IndexValueCapability.YES, valueCapability );
 
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -990,7 +990,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         IndexValueCapability wildcardCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             MutableLongSet uniqueIds = new LongHashSet();
 
@@ -1014,7 +1014,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
@@ -1034,7 +1034,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1053,7 +1053,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1072,7 +1072,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1093,7 +1093,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1114,7 +1114,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
@@ -1137,7 +1137,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1159,7 +1159,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1181,7 +1181,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1202,7 +1202,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1224,7 +1224,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
@@ -1244,7 +1244,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1263,7 +1263,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1282,7 +1282,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
@@ -1303,7 +1303,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
@@ -1325,7 +1325,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeDelete( jackDalton );
@@ -1347,7 +1347,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( joeDalton, label );
@@ -1367,7 +1367,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
@@ -1389,7 +1389,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
@@ -1413,7 +1413,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int surname = token.propertyKey( "surname" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( COMPOSITE_INDEX_NAME ) );
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( joeDalton, label );

@@ -639,7 +639,7 @@ public class TransactionImpl implements InternalTransaction
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
@@ -678,7 +678,7 @@ public class TransactionImpl implements InternalTransaction
     {
         KernelTransaction transaction = kernelTransaction();
 
-        NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
         NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() );
         PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer() );
 
@@ -709,7 +709,7 @@ public class TransactionImpl implements InternalTransaction
         {
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
@@ -750,7 +750,7 @@ public class TransactionImpl implements InternalTransaction
             return Iterators.emptyResourceIterator();
         }
 
-        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
     }

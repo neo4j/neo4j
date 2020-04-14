@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;
@@ -52,9 +53,10 @@ public final class CompiledIndexUtils
      * @param cursors Used for cursor allocation
      * @param index A reference to an index
      * @param value The value to seek for
+     * @param cursorTracer underlying page cursor tracer
      * @return A cursor positioned at the data found in index.
      */
-    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexDescriptor index, Object value )
+    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexDescriptor index, Object value, PageCursorTracer cursorTracer )
             throws KernelException
     {
         assert index.schema().getPropertyIds().length == 1;
@@ -64,7 +66,7 @@ public final class CompiledIndexUtils
         }
         else
         {
-            NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor();
+            NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( cursorTracer );
             IndexQuery.ExactPredicate query = exact( index.schema().getPropertyIds()[0], makeValueNeoSafe( value ) );
             IndexReadSession indexSession = read.indexReadSession( index );
             read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );

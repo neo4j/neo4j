@@ -26,8 +26,6 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.StorageReader;
@@ -62,28 +60,28 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public DefaultRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultRelationshipScanCursor( DefaultRelationshipScanCursor::release,
-                storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer , allocateNodeCursor( cursorTracer ) ) );
+                storageReader.allocateRelationshipScanCursor( cursorTracer ), allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
     public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return trace( new FullAccessRelationshipScanCursor( DefaultRelationshipScanCursor::release,
-                storageReader.allocateRelationshipScanCursor( cursorTracer ), cursorTracer, allocateFullAccessNodeCursor( cursorTracer ) ) );
+                storageReader.allocateRelationshipScanCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ) ) );
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release,
-                storageReader.allocateRelationshipTraversalCursor( cursorTracer ), cursorTracer, allocateNodeCursor( cursorTracer ) ) );
+                storageReader.allocateRelationshipTraversalCursor( cursorTracer ), allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
     public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorTracer ), cursorTracer, allocateFullAccessNodeCursor( cursorTracer ),
+                storageReader.allocatePropertyCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ),
                 allocateFullAccessRelationshipScanCursor( cursorTracer ) ) );
     }
 
@@ -91,27 +89,27 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
     {
         return trace( new FullAccessPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorTracer ), cursorTracer, allocateFullAccessNodeCursor( cursorTracer ),
+                storageReader.allocatePropertyCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ),
                 allocateFullAccessRelationshipScanCursor( cursorTracer ) ) );
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor()
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultNodeValueIndexCursor(
-                DefaultNodeValueIndexCursor::release, allocateNodeCursor( PageCursorTracer.NULL ) ) );
+                DefaultNodeValueIndexCursor::release, allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new DefaultNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release, allocateNodeCursor( PageCursorTracer.NULL ) ) );
+        return trace( new DefaultNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release, allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
-    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    public RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new DefaultRelationshipIndexCursor( DefaultRelationshipIndexCursor::release, allocateRelationshipScanCursor( PageCursorTracer.NULL ) ) );
+        return trace( new DefaultRelationshipIndexCursor( DefaultRelationshipIndexCursor::release, allocateRelationshipScanCursor( cursorTracer ) ) );
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -37,15 +36,12 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private long single;
     private LongIterator addedRelationships;
     private CursorPool<DefaultRelationshipScanCursor> pool;
-    private final PageCursorTracer cursorTracer;
     private final DefaultNodeCursor nodeCursor;
 
-    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, PageCursorTracer cursorTracer,
-                                   DefaultNodeCursor nodeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, DefaultNodeCursor nodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
-        this.cursorTracer = cursorTracer;
         this.nodeCursor = nodeCursor;
     }
 

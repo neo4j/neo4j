@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
@@ -97,7 +98,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( NULL ) )
         {
             int barId = tx.tokenWrite().labelGetOrCreateForName( "Bar" );
             long n = tx.dataWrite().nodeCreate();
@@ -125,7 +126,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         String indexName = createIndex( "User", "name" );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL ) )
         {
             int name = tx.token().propertyKey( "name" );
             int user = tx.token().nodeLabel( "User" );
@@ -287,7 +288,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor() )
+              RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor( NULL ) )
         {
             cursor.setTracer( tracer );
             tx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "transformational" ) );

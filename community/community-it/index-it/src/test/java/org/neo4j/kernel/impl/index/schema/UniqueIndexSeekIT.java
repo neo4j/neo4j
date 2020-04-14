@@ -126,7 +126,7 @@ class UniqueIndexSeekIT
 
             int propertyId = tokenRead.propertyKey( nameProperty );
             IndexDescriptor indexReference = kernelTransaction.schemaRead().indexGetForName( CONSTRAINT_NAME );
-            try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor()  )
+            try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
             {
                 dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
             }

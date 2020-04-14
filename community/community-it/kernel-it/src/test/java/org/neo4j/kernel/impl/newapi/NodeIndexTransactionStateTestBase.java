@@ -371,7 +371,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
     {
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
             tx.dataRead().nodeIndexSeek( indexSession, nodes, unordered( needsValues ), queries );
@@ -395,7 +395,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ) )
         {
             tx.dataRead().nodeIndexScan( indexSession, nodes, unordered( needsValues ) );
             assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
