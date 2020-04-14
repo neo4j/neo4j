@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -101,6 +102,6 @@ class SocketTransportTest
         return new SocketTransport( "bolt", new SocketAddress( "localhost", 7687 ), null, false,
                 NullLogProvider.getInstance(), throttleGroup,
                 mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
-                -1 );
+                -1, PooledByteBufAllocator.DEFAULT );
     }
 }

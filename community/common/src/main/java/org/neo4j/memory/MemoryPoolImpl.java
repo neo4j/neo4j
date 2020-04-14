@@ -56,12 +56,6 @@ class MemoryPoolImpl implements MemoryPool
     }
 
     @Override
-    public long totalUsed()
-    {
-        return usedHeap() + usedNative();
-    }
-
-    @Override
     public long free()
     {
         return totalSize() - totalUsed();

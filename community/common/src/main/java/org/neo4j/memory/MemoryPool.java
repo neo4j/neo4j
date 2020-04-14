@@ -87,7 +87,10 @@ public interface MemoryPool
      *
      * @return the total number or reserved bytes.
      */
-    long totalUsed();
+    default long totalUsed()
+    {
+        return Math.addExact( usedHeap(), usedNative() );
+    }
 
     /**
      * Returns the number of bytes that can still be reserved from this pool.

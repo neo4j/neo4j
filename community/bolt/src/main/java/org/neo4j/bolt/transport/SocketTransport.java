@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslContext;
@@ -47,11 +47,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final NetworkConnectionTracker connectionTracker;
     private final Duration channelTimeout;
     private final long maxMessageSize;
+    private final ByteBufAllocator allocator;
 
     public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired,
             LogProvider logging, TransportThrottleGroup throttleGroup,
             BoltProtocolFactory boltProtocolFactory, NetworkConnectionTracker connectionTracker,
-            Duration channelTimeout, long maxMessageSize )
+            Duration channelTimeout, long maxMessageSize, ByteBufAllocator allocator )
     {
         this.connector = connector;
         this.address = address;
@@ -63,6 +64,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.connectionTracker = connectionTracker;
         this.channelTimeout = channelTimeout;
         this.maxMessageSize = maxMessageSize;
+        this.allocator = allocator;
     }
 
     @Override
@@ -73,7 +75,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             @Override
             public void initChannel( Channel ch )
             {
-                ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+                ch.config().setAllocator( allocator );
 
                 BoltChannel boltChannel = newBoltChannel( ch );
                 connectionTracker.add( boltChannel );

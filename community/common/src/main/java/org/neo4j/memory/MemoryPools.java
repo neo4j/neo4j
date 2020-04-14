@@ -41,6 +41,16 @@ public final class MemoryPools
         return pool;
     }
 
+    public void registerPool( TopMemoryGroupTracker pool )
+    {
+        pools.add( pool );
+    }
+
+    public boolean unregisterPool( TopMemoryGroupTracker pool )
+    {
+        return pools.remove( pool );
+    }
+
     public List<NamedMemoryPool> getPools()
     {
         return new ArrayList<>( pools );

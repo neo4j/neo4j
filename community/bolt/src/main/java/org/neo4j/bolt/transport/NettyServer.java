@@ -66,7 +66,7 @@ public class NettyServer extends LifecycleAdapter
     private final Log internalLog;
 
     private EventLoopGroup eventLoopGroup;
-    private List<Channel> serverChannels;
+    private final List<Channel> serverChannels;
 
     /**
      * Describes how to initialize new channels for a protocol, and which address the protocol should be bolted into.
@@ -83,8 +83,7 @@ public class NettyServer extends LifecycleAdapter
      * @param initializer function for bolt connector map to bootstrap configured protocol
      * @param connectorRegister register to keep local address information on all configured connectors
      */
-    public NettyServer( ThreadFactory tf, ProtocolInitializer initializer,
-            ConnectorPortRegister connectorRegister, LogService logService )
+    public NettyServer( ThreadFactory tf, ProtocolInitializer initializer, ConnectorPortRegister connectorRegister, LogService logService )
     {
         this.initializer = initializer;
         this.tf = tf;
@@ -96,7 +95,7 @@ public class NettyServer extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Exception
+    public void init()
     {
         eventLoopGroup = configurationProvider.createEventLoopGroup( tf );
     }
@@ -137,7 +136,7 @@ public class NettyServer extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Exception
+    public void shutdown()
     {
         shutdownEventLoopGroup();
     }

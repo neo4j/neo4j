@@ -301,12 +301,12 @@ public class DatabaseManagementServiceFactory
         return globalProcedures;
     }
 
-    private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
+    private static BoltServer createBoltServer( GlobalModule globalModule, AbstractEditionModule edition,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, DatabaseIdRepository databaseIdRepository )
     {
-        return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
-                edition.getConnectionTracker(), databaseIdRepository, platform.getGlobalConfig(), platform.getGlobalClock(),
-                platform.getGlobalMonitors(), platform.getLogService(), platform.getGlobalDependencies(),
-                edition.getBoltAuthManager( platform.getGlobalDependencies() ) );
+        return new BoltServer( boltGraphDatabaseManagementServiceSPI, globalModule.getJobScheduler(), globalModule.getConnectorPortRegister(),
+                edition.getConnectionTracker(), databaseIdRepository, globalModule.getGlobalConfig(), globalModule.getGlobalClock(),
+                globalModule.getGlobalMonitors(), globalModule.getLogService(), globalModule.getGlobalDependencies(),
+                edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), globalModule.getMemoryPools() );
     }
 }

@@ -47,4 +47,20 @@ class MemoryPoolsTest
         pool.close();
         assertThat( pools.getPools() ).isEmpty();
     }
+
+    @Test
+    void registerAndDeregisterExternalPool()
+    {
+        var pools = new MemoryPools();
+        assertThat( pools.getPools() ).isEmpty();
+
+        var externalPool = new MemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, "test", 0, true );
+        pools.registerPool( externalPool );
+
+        assertThat( pools.getPools() ).hasSize( 1 );
+        assertThat( pools.getPools() ).contains( externalPool );
+
+        pools.unregisterPool( externalPool );
+        assertThat( pools.getPools() ).isEmpty();
+    }
 }
