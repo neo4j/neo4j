@@ -767,4 +767,68 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
     consume(result)
   }
+
+  test("should kill node left outer hash join query before it runs out of memory") {
+    // given
+    val nodes = given { nodeGraph(1) }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .leftOuterHashJoin("x")
+      .|.allNodeScan("x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill node right outer hash join query before it runs out of memory") {
+    // given
+    val nodes = given { nodeGraph(1) }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .rightOuterHashJoin("x")
+      .|.allNodeScan("x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill value hash join query before it runs out of memory") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(1, {
+        case i => Map("prop" -> i)
+      })
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .valueHashJoin("a.prop=b.prop")
+      .|.allNodeScan("b")
+      .input(nodes = Seq("a"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+
+    // then
+    a[HeapMemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
 }
