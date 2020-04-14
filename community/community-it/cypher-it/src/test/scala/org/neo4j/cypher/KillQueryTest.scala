@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.neo4j.cypher.internal.ExecutionEngine
@@ -36,92 +37,117 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class KillQueryTest extends ExecutionEngineFunSuite {
   /*
-  This test creates 10 threads that run a Cypher query over and over again for 10 seconds.
+  This test creates threads that run a Cypher query over and over again for some time.
   Concurrently, another thread tries to terminate all running queries. This should not lead to weird behaviour - only
   well known and expected exceptions should be produced.
    */
-  val emptyMap = new util.HashMap[String, AnyRef]
   val NODE_COUNT = 1000
   val THREAD_COUNT: Int = Runtime.getRuntime.availableProcessors() * 2
   val SECONDS_TO_RUN = 5
 
   test("run queries and kill them left and right") {
-    val contextFactory = Neo4jTransactionalContextFactory.create(graph)
 
+    // given
     (1 to NODE_COUNT) foreach { x =>
       createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
     }
 
+    // when
+    val contextFactory = Neo4jTransactionalContextFactory.create(graph)
     val engine = ExecutionEngineHelper.createEngine(graph)
 
     val query = "MATCH (n:Label) WHERE n.x > 12 RETURN n.name"
 
     val continue = new AtomicBoolean(true)
-    var exceptionsThrown = List.empty[Throwable]
+    val exceptionsThrown = new ConcurrentLinkedQueue[Throwable]()
 
-    val tcs = new ArrayBlockingQueue[TransactionalContext](1000)
-    val queryRunner = createQueryRunner(continue, contextFactory, query, tcs, engine, e => exceptionsThrown = exceptionsThrown :+ e)
+    val queryRunners =
+      for (i <- 0 until THREAD_COUNT)
+        yield new QueryRunner(continue, contextFactory, query, engine, exceptionsThrown.add)
 
+    val queryKiller = new QueryKiller(continue, queryRunners, exceptionsThrown.add)
 
-    val queryKiller = createQueryKiller(continue, tcs, e => exceptionsThrown = exceptionsThrown :+ e)
-
-    val threads: Seq[Thread] = (0 until THREAD_COUNT map (x => new Thread(queryRunner))) :+ new Thread(queryKiller)
-
+    val threads: Seq[Thread] = queryRunners.map(new Thread(_)) :+ new Thread(queryKiller)
     threads.foreach(_.start())
     threads.foreach(_.join())
-    exceptionsThrown.foreach(throw _)
-  }
 
-  private def createQueryKiller(continue: AtomicBoolean, tcs: ArrayBlockingQueue[TransactionalContext], exLogger: Throwable => Unit) = {
-    new Runnable {
-      override def run(): Unit =
-        try {
-          val start = System.currentTimeMillis()
-          while ((System.currentTimeMillis() - start) < SECONDS_TO_RUN * 1000 && continue.get()) {
-            val transactionalContext = tcs.poll()
-            if (transactionalContext != null)
-              try {
-                transactionalContext.terminate()
-              } catch {
-                case e: Throwable =>
-                  exLogger(e)
-                  continue.set(false)
-              }
-          }
-        } finally {
-          continue.set(false)
-        }
+    // then
+    val e = collectExceptions(exceptionsThrown)
+    if (e != null) {
+      throw e
     }
   }
 
-  private def createQueryRunner(continue: AtomicBoolean, contextFactory: TransactionalContextFactory, query: String, tcs: ArrayBlockingQueue[TransactionalContext], engine: ExecutionEngine, exLogger: Throwable => Unit) = {
-    new Runnable {
-      def run() {
-        while (continue.get()) {
-          val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
-          try {
-            val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
-            tcs.put(transactionalContext)
-            val result = engine.execute(query,
-                                        EMPTY_MAP,
-                                        transactionalContext,
-                                        profile = false,
-                                        prePopulate = false,
-                                        DO_NOTHING_SUBSCRIBER)
-            result.request(Long.MaxValue)
-            result.await()
-          }
-          catch {
-            // These are the acceptable exceptions
-            case _: TransactionTerminatedException =>
-            case _: TransientTransactionFailureException =>
+  private def collectExceptions(exceptionsThrown: ConcurrentLinkedQueue[Throwable]): Throwable = {
+    val exceptions = exceptionsThrown.iterator()
+    var e: Throwable = null
+    while (exceptions.hasNext) {
+      if (e == null) e = exceptions.next()
+      else e.addSuppressed(exceptions.next())
+    }
+    e
+  }
 
-            case e: Throwable =>
-              continue.set(false)
-              exLogger(e)
-          } finally {
-            tx.close()
+  class QueryKiller(continue: AtomicBoolean,
+                    runners: IndexedSeq[QueryRunner],
+                    exLogger: Throwable => Unit) extends Runnable {
+
+    override def run(): Unit =
+      try {
+        val start = System.currentTimeMillis()
+        var i = 0
+        while ((System.currentTimeMillis() - start) < SECONDS_TO_RUN * 1000 && continue.get()) {
+          val transactionalContext = runners(i).tc
+          if (transactionalContext != null) {
+            try {
+              transactionalContext.terminate()
+            } catch {
+              case e: Throwable =>
+                exLogger(e)
+                continue.set(false)
+            }
           }
+          i = (i+1) % runners.size
+        }
+      } finally {
+        continue.set(false)
+      }
+  }
+
+  class QueryRunner(continue: AtomicBoolean,
+                    contextFactory: TransactionalContextFactory,
+                    query: String,
+                    engine: ExecutionEngine,
+                    exLogger: Throwable => Unit) extends Runnable {
+
+    @volatile var tc: TransactionalContext = _
+
+    override def run() {
+      while (continue.get()) {
+        val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
+        try {
+          val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
+          tc = transactionalContext
+          val result = engine.execute(query,
+            EMPTY_MAP,
+            transactionalContext,
+            profile = false,
+            prePopulate = false,
+            DO_NOTHING_SUBSCRIBER)
+          result.request(Long.MaxValue)
+          result.await()
+        }
+        catch {
+          // These are the acceptable exceptions
+          case _: TransactionTerminatedException =>
+          case _: TransientTransactionFailureException =>
+
+          case e: Throwable =>
+            continue.set(false)
+            exLogger(e)
+        } finally {
+          tc.close()
+          tx.close()
         }
       }
     }
