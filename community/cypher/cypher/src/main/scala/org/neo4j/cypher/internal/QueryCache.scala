@@ -34,16 +34,6 @@ import org.neo4j.values.virtual.MapValue
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
- * The result of one cache lookup.
- */
-sealed trait CacheLookup[EXECUTABLE_QUERY] {
-  def executableQuery: EXECUTABLE_QUERY
-}
-case class CacheHit[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
-case class CacheMiss[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
-case class CacheDisabled[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
-
-/**
  * Tracer for cache activity.
  */
 trait CacheTracer[QUERY_KEY] {
@@ -121,9 +111,9 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                              compile: () => EXECUTABLE_QUERY,
                              recompile: Int => Option[EXECUTABLE_QUERY],
                              metaData: String = ""
-                            ): CacheLookup[EXECUTABLE_QUERY] = {
+                            ): EXECUTABLE_QUERY = {
     if (maximumSize == 0)
-      CacheDisabled(compile())
+      compile()
     else {
       inner.getIfPresent(queryKey) match {
         case NOT_PRESENT =>
@@ -185,7 +175,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                               compile: () => EXECUTABLE_QUERY,
                               metaData: String,
                               hitCache: Boolean = false
-                             ): CacheLookup[EXECUTABLE_QUERY] = {
+                             ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {
       val cachedValue = new CachedValue(newExecutableQuery, recompiled = false)
@@ -196,7 +186,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
         miss(queryKey, newExecutableQuery, metaData)
     } else {
       tracer.queryCacheMiss(queryKey, metaData)
-      CacheDisabled(newExecutableQuery)
+      newExecutableQuery
     }
   }
 
@@ -204,14 +194,14 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                   executableQuery: CachedValue,
                   metaData: String) = {
     tracer.queryCacheHit(queryKey, metaData)
-    CacheHit(executableQuery.value)
+    executableQuery.value
   }
 
   private def miss(queryKey: QUERY_KEY,
                    newExecutableQuery: EXECUTABLE_QUERY,
                    metaData: String) = {
     tracer.queryCacheMiss(queryKey, metaData)
-    CacheMiss(newExecutableQuery)
+    newExecutableQuery
   }
 
   /**

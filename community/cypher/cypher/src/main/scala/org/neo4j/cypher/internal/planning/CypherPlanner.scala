@@ -69,9 +69,9 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
@@ -309,7 +309,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           transactionalContext,
           () => createPlan(shouldBeCached = true),
           _ => None,
-          syntacticQuery.queryText).executableQuery
+          syntacticQuery.queryText)
       } else if (!enoughParametersSupplied) {
         createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
       } else {

@@ -281,12 +281,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val (primaryCompiler, secondaryCompiler) = compilers(inputQuery, tracer, tc, params)
-        val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
+        val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
           primaryCompiler,
           secondaryCompiler,
           inputQuery.description)
-        val executableQuery = cacheLookup.executableQuery
 
         if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
           return executableQuery

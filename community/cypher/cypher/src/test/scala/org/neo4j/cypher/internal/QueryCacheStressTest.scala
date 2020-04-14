@@ -55,7 +55,8 @@ class QueryCacheStressTest extends CypherFunSuite {
 
   test("should hit at least once when running from multiple threads") {
     // Given
-    val cache = newCache()
+    val tracer = newTracer()
+    val cache = newCache(tracer)
     val key = newKey("foo")
 
     // When
@@ -64,13 +65,9 @@ class QueryCacheStressTest extends CypherFunSuite {
     }))
 
     // Then
-    val (hits, misses) = Await.result(futures, 60.seconds).partition {
-      case _: CacheHit[_] => true
-      case _: CacheMiss[_] => false
-      case _ => fail("we only expect hits and misses")
-    }
+    Await.result(futures, 60.seconds)
 
-    misses.size should be >= 1
-    hits.size should be >= 1
+    verify(tracer, atLeastOnce()).queryCacheHit(key, "")
+    verify(tracer, atLeastOnce()).queryCacheMiss(key, "")
   }
 }

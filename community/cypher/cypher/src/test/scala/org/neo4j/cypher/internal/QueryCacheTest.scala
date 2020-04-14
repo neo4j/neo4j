@@ -25,19 +25,19 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCacheTest.TC
+import org.neo4j.cypher.internal.QueryCacheTest.alwaysStale
+import org.neo4j.cypher.internal.QueryCacheTest.compileKey
+import org.neo4j.cypher.internal.QueryCacheTest.newCache
+import org.neo4j.cypher.internal.QueryCacheTest.newKey
+import org.neo4j.cypher.internal.QueryCacheTest.newTracer
+import org.neo4j.cypher.internal.QueryCacheTest.recompile
+import org.neo4j.cypher.internal.QueryCacheTest.valueFromKey
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.mockito.MockitoSugar
-import QueryCacheTest.newTracer
-import QueryCacheTest.newKey
-import QueryCacheTest.alwaysStale
-import QueryCacheTest.compileKey
-import QueryCacheTest.recompile
-import QueryCacheTest.newCache
-import QueryCacheTest.valueFromKey
-import QueryCacheTest.TC
 
 class QueryCacheTest extends CypherFunSuite {
 
@@ -51,8 +51,8 @@ class QueryCacheTest extends CypherFunSuite {
     // When
     val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
     // Then
-    valueFromCache should equal(CacheMiss(valueFromKey(key)))
-    valueFromCache.executableQuery.recompiled should equal(false)
+    valueFromCache should equal(valueFromKey(key))
+    valueFromCache.recompiled should equal(false)
     verify(tracer).queryCacheMiss(key, "")
     verifyNoMoreInteractions(tracer)
   }
@@ -67,15 +67,17 @@ class QueryCacheTest extends CypherFunSuite {
 
     // When
     val value1FromCache = cache.computeIfAbsentOrStale(key1, TC, compileKey(key1), recompile(key1))
-    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compileKey(key2), recompile(key2))
-
     // Then
-    value1FromCache should equal(CacheMiss(valueFromKey(key1)))
-    value2FromCache should equal(CacheMiss(valueFromKey(key2)))
-    value1FromCache.executableQuery.recompiled should equal(false)
-    value2FromCache.executableQuery.recompiled should equal(false)
-
+    value1FromCache should equal(valueFromKey(key1))
+    value1FromCache.recompiled should equal(false)
     verify(tracer).queryCacheMiss(key1, "")
+    verifyNoMoreInteractions(tracer)
+
+    // When
+    val value2FromCache = cache.computeIfAbsentOrStale(key2, TC, compileKey(key2), recompile(key2))
+    // Then
+    value2FromCache should equal(valueFromKey(key2))
+    value2FromCache.recompiled should equal(false)
     verify(tracer).queryCacheMiss(key2, "")
     verifyNoMoreInteractions(tracer)
   }
@@ -85,15 +87,18 @@ class QueryCacheTest extends CypherFunSuite {
     val tracer = newTracer()
     val cache = newCache(tracer)
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+
+    // When
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+    // Then
+    verify(tracer).queryCacheMiss(key, "")
+    verifyNoMoreInteractions(tracer)
 
     // When
     val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
-
     // Then
-    valueFromCache should equal(CacheHit(valueFromKey(key)))
-    valueFromCache.executableQuery.recompiled should equal(false)
-    verify(tracer).queryCacheMiss(key, "")
+    valueFromCache should equal(valueFromKey(key))
+    valueFromCache.recompiled should equal(false)
     verify(tracer).queryCacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
@@ -104,14 +109,18 @@ class QueryCacheTest extends CypherFunSuite {
     val secondsSinceReplan = 17
     val cache = newCache(tracer, alwaysStale(secondsSinceReplan))
     val key = newKey("foo")
-    val _ = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+
+    // When
+    cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+    // Then
+    verify(tracer).queryCacheMiss(key, "")
+    verifyNoMoreInteractions(tracer)
 
     // When
     val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
-
     // Then
-    valueFromCache should equal(CacheMiss(valueFromKey(key)))
-    valueFromCache.executableQuery.recompiled should equal(false)
+    valueFromCache should equal(valueFromKey(key))
+    valueFromCache.recompiled should equal(false)
 
     verify(tracer, times(2)).queryCacheMiss(key, "")
     verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
@@ -131,8 +140,8 @@ class QueryCacheTest extends CypherFunSuite {
     val valueFromCache = cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
 
     // Then
-    valueFromCache should equal(CacheHit(valueFromKey(key)))
-    valueFromCache.executableQuery.recompiled should equal(true)
+    valueFromCache should equal(valueFromKey(key))
+    valueFromCache.recompiled should equal(true)
 
     verify(tracer).queryCacheMiss(key, "")
     verify(tracer, times(3)).queryCacheHit(key, "")
