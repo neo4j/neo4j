@@ -60,6 +60,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "Cleaner",
             "PageCacheRule",                    //Ignoring page cache
             "MuninnPageCache",                  //Ignoring page cache
+            "neo4j.FileIOHelper",               //Ignoring page cache
             "Attach Listener",                  //IDE thread
             "process reaper",                   //Unix system thread
             "neo4j.BoltNetworkIO",              //Bolt threads use non-blocking exit
