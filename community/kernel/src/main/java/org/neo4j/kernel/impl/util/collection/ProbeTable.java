@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util.collection;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
@@ -74,6 +75,11 @@ public class ProbeTable<K,V extends Measurable> implements AutoCloseable
     public boolean isEmpty()
     {
         return map.isEmpty();
+    }
+
+    public Set<K> keySet()
+    {
+        return map.keySet();
     }
 
     @Override

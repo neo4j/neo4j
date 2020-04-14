@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.values.storable.LongArray
 
+import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.mutable
 
 case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
@@ -36,17 +39,17 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
     if (input.isEmpty)
       return Iterator.empty
 
-    val probeTable = buildProbeTableAndFindNullRows(input, withNulls = true)
+    val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTracker.memoryTrackerForOperator(id.x), withNulls = true)
 
-    val rhsKeys = mutable.Set[IndexedSeq[Long]]()
-    val lhsKeys = probeTable.keySet
+    val rhsKeys = mutable.Set[LongArray]()
+    val lhsKeys: collection.Set[LongArray] = probeTable.keySet.asScala
     val joinedRows = (
       for {rhsRow <- rhs.createResults(state)
            joinKey <- computeKey(rhsRow)}
         yield {
           val lhsRows = probeTable(joinKey)
           rhsKeys.add(joinKey)
-          lhsRows.map { lhsRow =>
+          lhsRows.asScala.map { lhsRow =>
             val outputRow = executionContextFactory.copyWith(lhsRow)
             outputRow.mergeWith(rhsRow, state.query)
             outputRow
@@ -55,7 +58,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
 
     def rowsWithoutRhsMatch: Iterator[CypherRow] = {
       (lhsKeys -- rhsKeys).iterator.flatMap {
-        x => probeTable(x).map(addNulls)
+        x => probeTable(x).asScala.map(addNulls)
       }
     }
 

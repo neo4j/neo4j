@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.kernel.impl.util.collection
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.MutableList
 
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
@@ -36,7 +37,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
 
-  protected def computeKey(context: CypherRow): Option[IndexedSeq[Long]] = {
+  protected def computeKey(context: CypherRow): Option[LongArray] = {
     val key = new Array[Long](myVariables.length)
 
     for (idx <- myVariables.indices) {
@@ -45,7 +46,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
         case _ => return None
       }
     }
-    Some(key.toIndexedSeq)
+    Some(Values.longArray(key))
   }
 
   protected def addNulls(in: CypherRow): CypherRow = {
@@ -54,8 +55,8 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     withNulls
   }
 
-  protected def buildProbeTableAndFindNullRows(input: Iterator[CypherRow], withNulls: Boolean): ProbeTable = {
-    val probeTable = new ProbeTable()
+  protected def buildProbeTableAndFindNullRows(input: Iterator[CypherRow], memoryTracker: MemoryTracker, withNulls: Boolean): ProbeTable = {
+    val probeTable = new ProbeTable(memoryTracker)
 
     for (context <- input) {
       val key = computeKey(context)
@@ -71,25 +72,21 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 }
 
 //noinspection ReferenceMustBePrefixed
-class ProbeTable() {
-  private val table: mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]] =
-    // TODO: Use memory tracking ProbeTable
-    new mutable.HashMap[IndexedSeq[Long], MutableList[CypherRow]]
+class ProbeTable(memoryTracker: MemoryTracker) {
+  private val table: collection.ProbeTable[LongArray, CypherRow] =
+    collection.ProbeTable.createProbeTable[LongArray, CypherRow](memoryTracker)
 
   private val rowsWithNullInKey: ListBuffer[CypherRow] = new ListBuffer[CypherRow]()
 
-  def addValue(key: IndexedSeq[Long], newValue: CypherRow) {
-    val values = table.getOrElseUpdate(key, MutableList.empty)
-    values += newValue
+  def addValue(key: LongArray, newValue: CypherRow) {
+    table.put(key, newValue)
   }
 
   def addNull(context: CypherRow): Unit = rowsWithNullInKey += context
 
-  private val EMPTY: MutableList[CypherRow] = MutableList.empty
+  def apply(key: LongArray): java.util.Iterator[CypherRow] = table.get(key)
 
-  def apply(key: IndexedSeq[Long]): MutableList[CypherRow] = table.getOrElse(key, EMPTY)
-
-  def keySet: collection.Set[IndexedSeq[Long]] = table.keySet
+  def keySet: java.util.Set[LongArray] = table.keySet
 
   def nullRows: Iterator[CypherRow] = rowsWithNullInKey.iterator
 }
