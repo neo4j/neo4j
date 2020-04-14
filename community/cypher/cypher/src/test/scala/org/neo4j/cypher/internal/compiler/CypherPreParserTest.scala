@@ -33,15 +33,19 @@ import org.neo4j.cypher.internal.InterpretedExpressionOption
 import org.neo4j.cypher.internal.InterpretedRuntimeOption
 import org.neo4j.cypher.internal.PreParsedStatement
 import org.neo4j.cypher.internal.ProfileOption
+import org.neo4j.cypher.internal.ReplanDefaultOption
+import org.neo4j.cypher.internal.ReplanForceOption
+import org.neo4j.cypher.internal.ReplanSkipOption
 import org.neo4j.cypher.internal.SlottedRuntimeOption
 import org.neo4j.cypher.internal.VersionOption
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor2
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  val queries = Table(
+  val queries: TableFor2[String, PreParsedStatement] = Table(
     ("query", "expected"),
     ("CYPHER 2.0 THAT", PreParsedStatement("THAT", Seq(ConfigurationOptions(Some(VersionOption("2.0")), Seq.empty)), (1, 12, 11))),
     ("CYPHER 2.1 YO", PreParsedStatement("YO", Seq(ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 12, 11))),
@@ -77,7 +81,10 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
     ("CYPHER debug=one debug=two RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(DebugOption("one"), DebugOption("two")))), (1, 28, 27))),
     ("CYPHER runtime=slotted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(SlottedRuntimeOption))), (1, 24, 23))),
     ("CYPHER expressionEngine=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(InterpretedExpressionOption))), (1, 37, 36))),
-    ("CYPHER expressionEngine=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledExpressionOption))), (1, 34, 33)))
+    ("CYPHER expressionEngine=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledExpressionOption))), (1, 34, 33))),
+    ("CYPHER replan=force RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(ReplanForceOption))), (1, 21, 20))),
+    ("CYPHER replan=skip RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(ReplanSkipOption))), (1, 20, 19))),
+    ("CYPHER replan=default RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(ReplanDefaultOption))), (1, 23, 22))),
   )
 
   test("run the tests") {

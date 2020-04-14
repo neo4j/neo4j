@@ -24,6 +24,7 @@ import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
@@ -173,6 +174,7 @@ object PreParser {
     val operatorEngine: PPOption[CypherOperatorEngineOption] = new PPOption(configuredOperatorEngine)
     val interpretedPipesFallback: PPOption[CypherInterpretedPipesFallbackOption] = new PPOption(configuredInterpretedPipesFallback)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
+    val replan: PPOption[CypherReplanOption] = new PPOption(CypherReplanOption.default)
     var debugOptions: Set[String] = Set()
 
     def parseOptions(options: Seq[PreParserOption]): Unit =
@@ -189,7 +191,7 @@ object PreParser {
           case r: RuntimePreParserOption =>
             runtime.selectOrThrow(CypherRuntimeOption(r.name), "Can't specify multiple conflicting Cypher runtimes")
           case u: UpdateStrategyOption =>
-            updateStrategy.selectOrThrow( CypherUpdateStrategy(u.name), "Can't specify multiple conflicting update strategies")
+            updateStrategy.selectOrThrow(CypherUpdateStrategy(u.name), "Can't specify multiple conflicting update strategies")
           case DebugOption(debug) =>
             debugOptions = debugOptions + debug.toLowerCase()
           case engine: ExpressionEnginePreParserOption =>
@@ -198,6 +200,8 @@ object PreParser {
             operatorEngine.selectOrThrow(CypherOperatorEngineOption(o.name), "Can't specify multiple conflicting operator execution modes")
           case i: InterpretedPipesFallbackPreParserOption =>
             interpretedPipesFallback.selectOrThrow(CypherInterpretedPipesFallbackOption(i.name), "Can't specify multiple conflicting interpreted pipes fallback modes")
+          case r: ReplanPreParserOption =>
+            replan.selectOrThrow(CypherReplanOption(r.name), "Can't specify multiple conflicting replan strategies")
 
           case ConfigurationOptions(versionOpt, innerOptions) =>
             for (v <- versionOpt)
@@ -236,6 +240,7 @@ object PreParser {
       expressionEngine.pick,
       operatorEngine.pick,
       interpretedPipesFallback.pick,
+      replan.pick,
       debugOptions)
   }
 }

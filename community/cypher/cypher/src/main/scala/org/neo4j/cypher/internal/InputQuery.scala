@@ -25,6 +25,7 @@ import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.CypherOption
 import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
@@ -95,6 +96,7 @@ case class QueryOptions(offset: InputPosition,
                         expressionEngine: CypherExpressionEngineOption,
                         operatorEngine: CypherOperatorEngineOption,
                         interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
+                        replan: CypherReplanOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -152,6 +154,7 @@ case class QueryOptions(offset: InputPosition,
       option("expressionEngine", expressionEngine, CypherExpressionEngineOption.default),
       option("operatorEngine", operatorEngine, CypherOperatorEngineOption.default),
       option("interpretedPipesFallback", interpretedPipesFallback, CypherInterpretedPipesFallbackOption.default),
+      option("replan", replan, CypherReplanOption.default),
       debugOptions.map(flag => s"debug=$flag"),
     ).flatten
 
@@ -172,7 +175,7 @@ object QueryOptions {
                       debugFlags: String)
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
-    false,
+    isPeriodicCommit = false,
     CypherVersion.default,
     CypherExecutionMode.default,
     CypherPlannerOption.default,
@@ -181,5 +184,6 @@ object QueryOptions {
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
     CypherInterpretedPipesFallbackOption.default,
+    CypherReplanOption.default,
     Set())
 }

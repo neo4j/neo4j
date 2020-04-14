@@ -27,6 +27,7 @@ sealed abstract class ExpressionEnginePreParserOption(val name: String) extends 
 sealed abstract class UpdateStrategyOption(val name: String) extends PreParserOption
 sealed abstract class OperatorEnginePreParserOption(val name: String) extends PreParserOption
 sealed abstract class InterpretedPipesFallbackPreParserOption(val name: String) extends PreParserOption
+sealed abstract class ReplanPreParserOption(val name: String) extends PreParserOption
 
 case class VersionOption(version: String) extends PreParserOption
 case object ProfileOption extends ExecutionModePreParserOption("profile")
@@ -49,5 +50,8 @@ case object InterpretedOperatorEngineOption extends OperatorEnginePreParserOptio
 case object DisabledInterpretedPipesFallbackOption extends InterpretedPipesFallbackPreParserOption("disabled")
 case object DefaultInterpretedPipesFallbackOption extends InterpretedPipesFallbackPreParserOption("default")
 case object AllInterpretedPipesFallbackOption extends InterpretedPipesFallbackPreParserOption("all")
+case object ReplanForceOption extends ReplanPreParserOption("force")
+case object ReplanSkipOption extends ReplanPreParserOption("skip")
+case object ReplanDefaultOption extends ReplanPreParserOption("default")
 
 case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

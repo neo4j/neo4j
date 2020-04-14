@@ -235,8 +235,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     public enum CypherRuntime
     {
-        DEFAULT, INTERPRETED, COMPILED, SLOTTED,
-        PIPELINED
+        DEFAULT, INTERPRETED, COMPILED, SLOTTED, PIPELINED
     }
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal

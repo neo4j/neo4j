@@ -44,7 +44,7 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorEngine | InterpretedPipesFallback | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorEngineOption | InterpretedPipesFallbackOption | ReplanOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -79,15 +79,21 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
       | option("expressionEngine", "compiled") ~ push(CompiledExpressionOption)
   )
 
-  def OperatorEngine: Rule1[OperatorEnginePreParserOption] = rule("operator engine mode options") (
+  def OperatorEngineOption: Rule1[OperatorEnginePreParserOption] = rule("operator engine mode options") (
     option("operatorEngine", "compiled") ~ push(CompiledOperatorEngineOption)
       | option("operatorEngine", "interpreted") ~ push(InterpretedOperatorEngineOption)
   )
 
-  def InterpretedPipesFallback: Rule1[InterpretedPipesFallbackPreParserOption] = rule("interpreted pipes fallback options") (
+  def InterpretedPipesFallbackOption: Rule1[InterpretedPipesFallbackPreParserOption] = rule("interpreted pipes fallback options") (
     option("interpretedPipesFallback", "disabled") ~ push(DisabledInterpretedPipesFallbackOption)
       | option("interpretedPipesFallback", "default") ~ push(DefaultInterpretedPipesFallbackOption)
       | option("interpretedPipesFallback", "all") ~ push(AllInterpretedPipesFallbackOption)
+  )
+
+  def ReplanOption: Rule1[ReplanPreParserOption] = rule("replan strategy options") (
+    option("replan", "force") ~ push(ReplanForceOption)
+      | option("replan", "skip") ~ push(ReplanSkipOption)
+      | option("replan", "default") ~ push(ReplanDefaultOption)
   )
 
   def Digits: Rule0 = oneOrMore("0" - "9")

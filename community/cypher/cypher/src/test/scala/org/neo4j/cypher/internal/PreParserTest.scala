@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -53,6 +54,16 @@ class PreParserTest extends CypherFunSuite {
 
   test("should accept just one operator execution mode") {
     preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
+  }
+
+  test("should accept just one replan strategy") {
+    preParser.preParseQuery("CYPHER replan=force RETURN 42").options.replan should equal(CypherReplanOption.force)
+    preParser.preParseQuery("CYPHER replan=skip RETURN 42").options.replan should equal(CypherReplanOption.skip)
+    preParser.preParseQuery("CYPHER replan=default RETURN 42").options.replan should equal(CypherReplanOption.default)
+  }
+
+  test("should not allow multiple conflicting replan strategies") {
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER replan=force replan=skip RETURN 42"))
   }
 
   test("should accept just one interpreted pipes fallback mode") {
