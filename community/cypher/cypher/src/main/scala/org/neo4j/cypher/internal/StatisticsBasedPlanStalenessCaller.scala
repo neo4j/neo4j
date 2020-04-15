@@ -35,14 +35,14 @@ import org.neo4j.logging.Log
  *                   statistics, and how much time has passed.
  * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
  */
-class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
-                                            divergenceCalculator: StatsDivergenceCalculator,
-                                            lastCommittedTxIdProvider: () => Long,
-                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
-                                            log: Log) {
+class StatisticsBasedPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
+                                                           divergenceCalculator: StatsDivergenceCalculator,
+                                                           lastCommittedTxIdProvider: () => Long,
+                                                           reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
+                                                           log: Log) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
 
-  def staleness(transactionalContext: TransactionalContext,
-                cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
+  override def staleness(transactionalContext: TransactionalContext,
+                         cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
     val reusability = reusabilityInfo(cachedExecutableQuery, transactionalContext)
     reusability match {
       case MaybeReusable(ref) =>
@@ -54,7 +54,7 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
     }
   }
 
-  def staleness(ref: PlanFingerprintReference, statistics: => GraphStatistics): Staleness = {
+  private[internal] def staleness(ref: PlanFingerprintReference, statistics: => GraphStatistics): Staleness = {
     val f = ref.fingerprint
     lazy val currentTimeMillis = clock.millis()
     // TODO: remove this tx-id stuff.
@@ -86,7 +86,3 @@ sealed trait ReusabilityState
 case class NeedsReplan(secondsSincePlan: Int) extends ReusabilityState
 case class MaybeReusable(fingerprint: PlanFingerprintReference) extends ReusabilityState
 case object FineToReuse extends ReusabilityState
-
-sealed trait Staleness
-case object NotStale extends Staleness
-case class Stale(secondsSincePlan: Int, maybeReason: Option[String]) extends Staleness

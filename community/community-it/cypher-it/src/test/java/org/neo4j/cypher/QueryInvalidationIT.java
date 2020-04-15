@@ -67,7 +67,7 @@ public class QueryInvalidationIT
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
-        executeDistantFriendsCountQuery( USERS );
+        executeDistantFriendsCountQuery( USERS, "default" );
 
         long replanTime = System.currentTimeMillis() + 1_800;
 
@@ -83,11 +83,60 @@ public class QueryInvalidationIT
         // WHEN
         monitor.reset();
         // - execute the query again -
-        executeDistantFriendsCountQuery( USERS );
+        executeDistantFriendsCountQuery( USERS, "default" );
 
         // THEN
         assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
         assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( 1L ) );
+    }
+
+    @Test
+    public void shouldScheduleRePlansWithForceAndSkip() throws Exception
+    {
+        // GIVEN
+        TestMonitor monitor = new TestMonitor();
+        db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        // - setup schema -
+        createIndex();
+        // - execute the query without the existence data -
+        executeDistantFriendsCountQuery( USERS, "force" );
+
+        long replanTime = System.currentTimeMillis() + 1_800;
+
+        // - create data -
+        createData( 0, USERS, CONNECTIONS );
+
+        // - after the query TTL has expired -
+        while ( System.currentTimeMillis() < replanTime )
+        {
+            Thread.sleep( 100 );
+        }
+
+        // WHEN
+        monitor.reset();
+        // - execute the query again, with replan=skip -
+        executeDistantFriendsCountQuery( USERS, "skip" );
+
+        // THEN
+        assertEquals( "Query should not have been compiled.", 0, monitor.compilations.get() );
+        assertEquals( "Query should not have been discarded.", 0, monitor.discards.get() );
+
+        // AND WHEN
+        monitor.reset();
+        // - execute the query again, with replan=force -
+        executeDistantFriendsCountQuery( USERS, "force" );
+
+        // THEN
+        assertEquals( "Query should have been replanned.", 1, monitor.compilations.get() );
+
+        // WHEN
+        monitor.reset();
+        // - execute the query again, with replan=default -
+        executeDistantFriendsCountQuery( USERS, "default" );
+
+        // THEN should use the entry cached with "replan=force" instead of replanning again
+        assertEquals( "Query should not have been compiled.", 0, monitor.compilations.get() );
+        assertEquals( "Query should not have been discarded.", 0, monitor.discards.get() );
     }
 
     @Test
@@ -104,12 +153,12 @@ public class QueryInvalidationIT
         createIndex();
         //create some data
         createData( 0, USERS, CONNECTIONS );
-        executeDistantFriendsCountQuery( USERS );
+        executeDistantFriendsCountQuery( USERS, "default" );
 
         long replanTime = System.currentTimeMillis() + replanInterval;
 
         assertTrue( "Test does not work with edge setting for query_statistics_divergence_threshold: " + divergenceThreshold,
-                divergenceThreshold > 0.0 && divergenceThreshold < 1.0 );
+                    divergenceThreshold > 0.0 && divergenceThreshold < 1.0 );
 
         int usersToCreate = ((int) (Math.ceil( ((double) USERS) / (1.0 - divergenceThreshold) ))) - USERS + 1;
 
@@ -125,7 +174,7 @@ public class QueryInvalidationIT
         // WHEN
         monitor.reset();
         // - execute the query again -
-        executeDistantFriendsCountQuery( USERS );
+        executeDistantFriendsCountQuery( USERS, "default" );
 
         // THEN
         assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
@@ -172,14 +221,18 @@ public class QueryInvalidationIT
         }
     }
 
-    private void executeDistantFriendsCountQuery( int userId )
+    private void executeDistantFriendsCountQuery( int userId, String replanStrategy )
     {
         try ( Transaction transaction = db.beginTx() )
         {
             Map<String,Object> params = singletonMap( "userId", (long) randomInt( userId ) );
 
             try ( Result result = transaction.execute(
-                    "MATCH (user:User { userId: $userId } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " + "RETURN COUNT(distinct distantFriend)", params ) )
+                    String.format(
+                            "CYPHER replan=%s MATCH (user:User { userId: $userId } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +
+                            "RETURN COUNT(distinct distantFriend)",
+                            replanStrategy
+                    ), params ) )
             {
                 while ( result.hasNext() )
                 {
@@ -195,28 +248,28 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Pair<String,scala.collection.immutable.Map<String, Class<?>>>>
+    private static class TestMonitor implements CypherCacheHitMonitor<Pair<String,scala.collection.immutable.Map<String,Class<?>>>>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
         private final AtomicInteger discards = new AtomicInteger();
-        private final AtomicInteger recompilations = new AtomicInteger();
+        private final AtomicInteger compilations = new AtomicInteger();
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key )
+        public void cacheHit( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key )
+        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key, String ignored, int secondsSinceReplan,
+        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key, String ignored, int secondsSinceReplan,
                                   Option<String> maybeReason )
         {
             discards.incrementAndGet();
@@ -224,24 +277,30 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheCompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
         {
-            recompilations.incrementAndGet();
+            compilations.incrementAndGet();
+        }
+
+        @Override
+        public void cacheJitCompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        {
+            compilations.incrementAndGet();
         }
 
         @Override
         public String toString()
         {
-            return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + ", waitTime=" +
-                   waitTime + ", recompilations=" + recompilations +  "}";
+            return String.format( "TestMonitor{hits=%s, misses=%s, discards=%s, compilations=%s, waitTime=%s}",
+                                  hits, misses, discards, compilations, waitTime );
         }
 
         public void reset()
         {
             hits.set( 0 );
-            recompilations.set( 0 );
             misses.set( 0 );
             discards.set( 0 );
+            compilations.set( 0 );
             waitTime.set( 0 );
         }
     }

@@ -27,6 +27,7 @@ import java.time.ZoneOffset
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher
+import org.neo4j.cypher.CacheCounts
 import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.CypherOperatorEngineOption
@@ -68,7 +69,8 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
-  private def plannerConfig(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5,
+  private def plannerConfig(queryCacheSize: Int = 128,
+                            statsDivergenceThreshold: Double = 0.5,
                             queryPlanTTL: Long = 1000): CypherPlannerConfiguration = {
     CypherPlannerConfiguration(
       queryCacheSize,
@@ -85,7 +87,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     )
   }
 
-  private def createCompiler(config: CypherPlannerConfiguration, clock: Clock = Clock.systemUTC(),
+  private def createCompiler(config: CypherPlannerConfiguration,
+                             clock: Clock = Clock.systemUTC(),
                              log: Log = NullLog.getInstance): CypherCurrentCompiler[RuntimeContext] = {
     val planner = CypherPlanner(config,
       clock,
@@ -95,10 +98,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherUpdateStrategy.default,
       () => 1,
       compatibilityMode = Compatibility4_1)
-    createCompiler(planner, log, config)
+    createCompiler(planner, log)
   }
 
-  private def createCompiler(planner: CypherPlanner, log: Log, config: CypherPlannerConfiguration):
+  private def createCompiler(planner: CypherPlanner, log: Log):
   CypherCurrentCompiler[RuntimeContext] = {
     CypherCurrentCompiler(
       planner,
@@ -108,41 +111,27 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   }
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, recompiled: Int = 0) {
-    override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
-  }
-
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
-    override def queryCacheHit(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
-      counts = counts.copy(hits = counts.hits + 1)
-    }
-
-    override def queryCacheMiss(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
-      counts = counts.copy(misses = counts.misses + 1)
-    }
-
-    override def queryCacheFlush(sizeBeforeFlush: Long) {
-      counts = counts.copy(flushes = counts.flushes + 1)
-    }
-
-    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit = {
+  class ASTCacheCounter() extends CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
+    var counts: CacheCounts = CacheCounts()
+    override def queryCacheHit(key: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(hits = counts.hits + 1)
+    override def queryCacheMiss(key: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(misses = counts.misses + 1)
+    override def queryCacheFlush(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
+    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
       counts = counts.copy(evicted = counts.evicted + 1)
-    }
-
-    override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap],
-                                     metaData: String): Unit = {
-      counts = counts.copy(recompiled = counts.recompiled + 1)
+    override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(compilations = counts.compilations + 1)
+    override def queryJitCompile(queryKey: Pair[AnyRef, ParameterTypeMap],
+                                 metaData: String): Unit = {counts = counts.copy(jitCompilations = counts.jitCompilations + 1)
     }
   }
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
-  var counter: CacheCounter = _
+  var counter: ASTCacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    counter = new CacheCounter()
+    counter = new ASTCacheCounter()
     compiler = createCompiler(plannerConfig())
     kernelMonitors.addMonitorListener(counter)
   }
@@ -172,14 +161,14 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should monitor cache misses") {
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should monitor cache hits") {
     runQuery("return 42")
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("Constant values in query should use same plan") {
@@ -187,7 +176,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return 53 AS a")
     runQuery("return 76 AS a")
 
-    counter.counts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should fold to constants and use the same plan") {
@@ -197,7 +186,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return 7 / 6 AS a")
     runQuery("return 7 * 6 AS a")
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 4, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should keep different cache entries for different literal types") {
@@ -212,21 +201,21 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("WITH [1,2] as x RETURN x")  // miss
     runQuery("WITH [3] as x RETURN x")    // hit
 
-    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
 
   test("should not care about white spaces") {
     runQuery("return 42")
     runQuery("\treturn          42")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should cache easily parametrized queries") {
     runQuery("return 42 as result")
     runQuery("return 43 as result")
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should monitor cache flushes") {
@@ -234,13 +223,13 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.createUniqueConstraint("Person", "id")
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 2))
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 2, compilations = 2))
   }
 
   test("should monitor cache remove") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CacheCounter()
+    counter = new ASTCacheCounter()
     compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
@@ -254,7 +243,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1, evicted = 1))
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, evicted = 1, compilations = 2))
   }
 
   // This test is only added to communicate that we're aware of this behaviour and consider it
@@ -264,7 +253,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("it's ok to evict query because of total nodes change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CacheCounter()
+    counter = new ASTCacheCounter()
     compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "MATCH (n:Person) RETURN n"
@@ -275,7 +264,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1, evicted = 0))
+    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
 
     // when
     // we create enough nodes for NodesAllCardinality to trigger a replan
@@ -283,13 +272,13 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1, evicted = 1))
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, evicted = 1, compilations = 2))
   }
 
   test("should not evict query because of unrelated statistics change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new CacheCounter()
+    counter = new ASTCacheCounter()
     compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "MATCH (n:Person) RETURN n"
@@ -299,7 +288,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1, evicted = 0))
+    counter.counts should equal(CacheCounts(misses = 1, flushes = 1, compilations = 1))
 
     // when
     // we create enough nodes for NodesLabelCardinality("Dog") to trigger a replan
@@ -308,7 +297,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 0))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should log on cache remove") {
@@ -348,7 +337,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1))
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
   }
 
   test("should find query in cache with same parameter types") {
@@ -357,7 +346,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should find query in cache with same parameter types, ignoring unused parameters") {
@@ -366,7 +355,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return $number", params = map1)
     runQuery("return $number", params = map2)
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
   test("should clear all compiler library caches") {
@@ -386,7 +375,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       runQuery("return 42", cypherCompiler = compiler) // Misses
     }
 
-    counter.counts should equal(CacheCounts(hits = compilers.size, misses = 2 * compilers.size, flushes = 2 * compilers.size))
+    counter.counts should equal(CacheCounts(hits = compilers.size, misses = 2 * compilers.size, flushes = 2 * compilers.size, compilations = 2 * compilers.size))
   }
 
   private def createCompilerLibrary(): CompilerLibrary = {

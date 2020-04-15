@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.PlanStalenessCaller
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.ReusabilityState
+import org.neo4j.cypher.internal.StatisticsBasedPlanStalenessCaller
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -70,7 +71,9 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
 
       override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
 
-      override def queryCacheRecompile(queryKey: STATEMENT, metaData: String): Unit = {}
+      override def queryCompile(queryKey: STATEMENT, metaData: String): Unit = {}
+
+      override def queryJitCompile(queryKey: STATEMENT, metaData: String): Unit = {}
     }
 }
 
@@ -79,7 +82,7 @@ object AstLogicalPlanCache {
                       divergence: StatsDivergenceCalculator,
                       txIdProvider: () => Long,
                       log: Log): PlanStalenessCaller[CacheableLogicalPlan] = {
-    new PlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
+    new StatisticsBasedPlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
   }
 }
 

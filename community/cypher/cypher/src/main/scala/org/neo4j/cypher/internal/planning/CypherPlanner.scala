@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.JitCompiler
 import org.neo4j.cypher.internal.MaybeReusable
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
@@ -302,13 +303,19 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
 
+    val jitCompiler = new JitCompiler[CacheableLogicalPlan] {
+      override def compile(): CacheableLogicalPlan = createPlan(shouldBeCached = true)
+      override def jitCompile(): CacheableLogicalPlan = compile()
+      override def maybeJitCompile(hitCount: Int): Option[CacheableLogicalPlan] = None
+    }
+
     val cacheableLogicalPlan =
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
           transactionalContext,
-          () => createPlan(shouldBeCached = true),
-          _ => None,
+          jitCompiler,
+          options.replan,
           syntacticQuery.queryText)
       } else if (!enoughParametersSupplied) {
         createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
@@ -410,17 +417,22 @@ case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
                              queryObfuscator: QueryObfuscator)
 
 trait CypherCacheFlushingMonitor {
-  def cacheFlushDetected(sizeBeforeFlush: Long) {}
+  def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {}
 }
 
 trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T) {}
+  def cacheHit(key: T): Unit = {}
 
-  def cacheMiss(key: T) {}
+  def cacheMiss(key: T): Unit = {}
 
-  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int, maybeReason: Option[String]) {}
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {}
 
-  def cacheRecompile(key: T) {}
+  def cacheCompile(key: T): Unit = {}
+
+  def cacheJitCompile(key: T): Unit = {}
 }
 
+/**
+ * See comment in MonitoringCacheTracer for justification of the existence of this type.
+ */
 trait CypherCacheMonitor[T] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor

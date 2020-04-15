@@ -27,7 +27,16 @@ import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.internal.helpers.collection.Pair;
 
 /**
- * Adapter for passing CacheTraces into the Monitoring infrastructure.
+ * Adapter from StringCacheMonitor to CacheTracer.
+ *
+ * The reason why we
+ * a) need an adapter and
+ * b) tracers for the ExpressionEngine query cache and the CypherPlanner query cache need to implement two different
+ *    interfaces (StringCacheMonitor and CacheTracer respectively)
+ *
+ *  is that kernel monitors work by interface methods. If tracers for those two caches shared the abstract methods
+ *  in the same superclass, the monitor callbacks would always be invoked from both caches. So we need this
+ *  awful mumbo-jumbo in order to monitor specifically one of the two caches only.
  */
 public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.collection.immutable.Map<String, Class<?>>>>
 {
@@ -51,9 +60,15 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.coll
     }
 
     @Override
-    public void queryCacheRecompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    public void queryCompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
     {
-        monitor.cacheRecompile( queryKey );
+        monitor.cacheCompile( queryKey );
+    }
+
+    @Override
+    public void queryJitCompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    {
+        monitor.cacheJitCompile( queryKey );
     }
 
     @Override

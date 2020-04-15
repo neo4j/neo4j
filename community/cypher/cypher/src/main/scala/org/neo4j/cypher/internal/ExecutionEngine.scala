@@ -23,9 +23,6 @@ import java.lang
 import java.time.Clock
 
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.ExecutionEngine.JitCompilation
-import org.neo4j.cypher.internal.ExecutionEngine.NEVER_COMPILE
-import org.neo4j.cypher.internal.ExecutionEngine.QueryCompilation
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
@@ -48,6 +45,9 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
+/**
+ * See comment in MonitoringCacheTracer for justification of the existence of this type.
+ */
 trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
 
 /**
@@ -89,7 +89,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   })
 
   private val planStalenessCaller =
-    new PlanStalenessCaller[ExecutableQuery](clock,
+    new StatisticsBasedPlanStalenessCaller[ExecutableQuery](clock,
       config.statsDivergenceCalculator,
       lastCommittedTxIdProvider,
       planReusabilitiy,
@@ -106,8 +106,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     override def queryCacheMiss(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
       cacheTracer.queryCacheMiss(str(queryKey), metaData)
 
-    override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryCacheRecompile(str(queryKey), metaData)
+    override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+      cacheTracer.queryCompile(str(queryKey), metaData)
+
+    override def queryJitCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+      cacheTracer.queryJitCompile(str(queryKey), metaData)
 
     override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
       cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData, maybeReason)
@@ -119,7 +122,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery] =
     new QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, toStringCacheTracer)
 
-  private val masterCompiler: MasterCompiler = new MasterCompiler(config, compilerLibrary)
+  private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 
   private val schemaHelper = new SchemaHelper(queryCache)
 
@@ -239,28 +242,37 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   /*
-   * Return the primary and secondary compile to be used
-   *
-   * The primary compiler is the main compiler and the secondary compiler is used for compiling expressions for hot queries.
+   * Return the JIT compiler to be used.
    */
-  private def compilers(inputQuery: InputQuery,
-                        tracer: QueryCompilationEvent,
-                        transactionalContext: TransactionalContext,
-                        params: MapValue): (QueryCompilation, JitCompilation) = {
-
+  private def jitCompiler(inputQuery: InputQuery,
+                          tracer: QueryCompilationEvent,
+                          transactionalContext: TransactionalContext,
+                          params: MapValue): JitCompiler[ExecutableQuery] = {
     val compiledExpressionCompiler = () => masterCompiler.compile(inputQuery.withRecompilationLimitReached,
       tracer, transactionalContext, params)
     val interpretedExpressionCompiler = () => masterCompiler.compile(inputQuery, tracer, transactionalContext, params)
-    //check if we need to jit compiling of queries
-    if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0) {
-      //compile if hot enough
-      (interpretedExpressionCompiler, count => if (count >= config.recompilationLimit) Some(compiledExpressionCompiler()) else None)
-    } else if (inputQuery.options.compileWhenHot) {
-      //We have recompilationLimit == 0, go to compiled directly
-      (compiledExpressionCompiler, NEVER_COMPILE)
-    } else {
-      //In the other cases we have no recompilation step
-      (interpretedExpressionCompiler, NEVER_COMPILE)
+
+    new JitCompiler[ExecutableQuery] {
+      override def compile(): ExecutableQuery ={
+        if (inputQuery.options.compileWhenHot && config.recompilationLimit == 0) {
+          //We have recompilationLimit == 0, go to compiled directly
+          compiledExpressionCompiler()
+        } else {
+          interpretedExpressionCompiler()
+        }
+      }
+
+      override def jitCompile(): ExecutableQuery = compiledExpressionCompiler()
+
+      override def maybeJitCompile(hitCount: Int): Option[ExecutableQuery] = {
+        //check if we need to do jit compiling of queries and if hot enough
+        if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit) {
+          Some(compiledExpressionCompiler())
+        } else {
+          //In the other case we have no recompilation step
+          None
+        }
+      }
     }
   }
 
@@ -280,11 +292,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
 
         val schemaToken = schemaHelper.readSchemaToken(tc)
-        val (primaryCompiler, secondaryCompiler) = compilers(inputQuery, tracer, tc, params)
+        val compiler = jitCompiler(inputQuery, tracer, tc, params)
         val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
-          primaryCompiler,
-          secondaryCompiler,
+          compiler,
+          inputQuery.options.replan,
           inputQuery.description)
 
         if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
@@ -346,8 +358,4 @@ case class FunctionWithInformation(f: FunctionInfo) extends FunctionInformation 
 
 object ExecutionEngine {
   val PLAN_BUILDING_TRIES: Int = 20
-  type QueryCompilation = () => ExecutableQuery
-  type JitCompilation = Int => Option[ExecutableQuery]
-
-  private val NEVER_COMPILE: JitCompilation = _ => None
 }

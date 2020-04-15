@@ -39,9 +39,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
                                                                GraphDatabaseSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
 
-  // The reason we _always_ get a hit after a miss is that ExecuteEngine, on a cache miss,
-  // asks the cache again. This protects against schema changes that may have invalidated
-  // the plan in the meantime.
+  private val empty_parameters = "Map()"
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
@@ -53,7 +51,6 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
     val explainQuery = s"EXPLAIN $query"
-    val empty_parameters = "Map()"
 
     val modeCombinations = Table(
       ("firstQuery", "secondQuery"),
@@ -86,15 +83,16 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val expected = List(
           s"cacheFlushDetected",
           s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
-          s"cacheRecompile: (CYPHER 4.1 $query, $empty_parameters)",
-          s"cacheHit: (CYPHER 4.1 $query, $empty_parameters)")
+          s"cacheCompile: (CYPHER 4.1 $query, $empty_parameters)",
+          s"cacheHit: (CYPHER 4.1 $query, $empty_parameters)",
+          s"cacheJitCompile: (CYPHER 4.1 $query, $empty_parameters)",
+        )
 
         actual should equal(expected)
     }
   }
 
   test("repeating query with same parameters should hit the cache") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -112,14 +110,39 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+    )
 
     actual should equal(expected)
   }
 
-  test("repeating query with same parameter types but different values should hit the cache") {
+  test("repeating query with replan=force should not hit the cache") {
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
 
+    val query = "RETURN 42"
+
+    graph.withTx(tx => {
+      tx.execute(query).resultAsString()
+    })
+    graph.withTx(tx => {
+      tx.execute(s"CYPHER replan=force $query").resultAsString()
+    })
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
+      s"cacheCompile: (CYPHER 4.1 $query, $empty_parameters)",
+      s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
+      s"cacheJitCompile: (CYPHER 4.1 $query, $empty_parameters)",
+    )
+    actual should equal(expected)
+  }
+
+  test("repeating query with same parameter types but different values should hit the cache") {
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -133,14 +156,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+    )
 
     actual should equal(expected)
   }
 
   test("repeating query with different parameters types should not hit the cache") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -155,13 +179,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))")
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
+    )
 
     actual should equal(expected)
   }
 
   test("Query with missing parameters should not be cached") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -177,13 +203,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+    )
 
     actual should equal(expected)
   }
 
   test("EXPLAIN Query with missing parameters should not be cached") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -205,13 +232,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.1 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: (CYPHER 4.1 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+    )
 
     actual should equal(expected)
   }
 
   test("EXPLAIN Query with enough parameters should be cached") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -225,6 +253,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
     )
 
     actual should equal(expected)
@@ -243,7 +272,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.1 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.1 expressionEngine=compiled RETURN 42 AS a, Map())"
+      "cacheCompile: (CYPHER 4.1 expressionEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.1 expressionEngine=compiled RETURN 42 AS a, Map())",
+      "cacheCompile: (CYPHER 4.1 expressionEngine=compiled RETURN 42 AS a, Map())",
     )
 
     actual should equal(expected)
@@ -262,7 +293,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.1 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.1 RETURN 42 AS a, Map())"
+      "cacheCompile: (CYPHER 4.1 operatorEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.1 RETURN 42 AS a, Map())",
+      "cacheCompile: (CYPHER 4.1 RETURN 42 AS a, Map())",
     )
 
     actual should equal(expected)
@@ -281,14 +314,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.1 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.1 runtime=slotted RETURN 42 AS a, Map())"
+      "cacheCompile: (CYPHER 4.1 runtime=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.1 runtime=slotted RETURN 42 AS a, Map())",
+      "cacheCompile: (CYPHER 4.1 runtime=slotted RETURN 42 AS a, Map())",
     )
 
     actual should equal(expected)
   }
 
   test("should cache plans when same parameter appears multiple times") {
-
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -301,13 +335,13 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
     )
 
     actual should equal(expected)
   }
 
-  test("No recompilation on first attempt") {
-
+  test("No jit compilation on first attempt") {
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -320,13 +354,13 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
     )
 
     actual should equal(expected)
   }
 
-  test("One and only one recompilation after several attempts") {
-
+  test("One and only one jit compilation after several attempts") {
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -345,8 +379,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
@@ -357,7 +392,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   private class LoggingStringCacheListener extends StringCacheMonitor {
     private var log: mutable.Builder[String, List[String]] = List.newBuilder
 
-    def trace = log.result()
+    def trace: Seq[String] = log.result()
 
     def clear(): Unit = {
       log.clear()
@@ -379,8 +414,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheDiscard: $key"
     }
 
-    override def cacheRecompile(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheRecompile: $key"
+    override def cacheCompile(key: Pair[String, ParameterTypeMap]): Unit = {
+      log += s"cacheCompile: $key"
+    }
+
+    override def cacheJitCompile(key: Pair[String, ParameterTypeMap]): Unit = {
+      log += s"cacheJitCompile: $key"
     }
   }
 }

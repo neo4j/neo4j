@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
@@ -108,26 +109,19 @@ abstract class ExecutionEngineFunSuite
     graph = new GraphDatabaseCypherService(graphOps)
     eengine = ExecutionEngineHelper.createEngine(graph)
   }
+}
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
-    override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
-  }
+case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, compilations: Int = 0, jitCompilations: Int =0) {
+  override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, jitCompilations = $jitCompilations"
+}
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends StringCacheMonitor {
-    override def cacheMiss(key: Pair[String, ParameterTypeMap]) {
-      counts = counts.copy(misses = counts.misses + 1)
-    }
-
-    override def cacheHit(key: Pair[String, ParameterTypeMap]) {
-      counts = counts.copy(hits = counts.hits + 1)
-    }
-
-    override def cacheFlushDetected(sizeBeforeFlush: Long) {
-      counts = counts.copy(flushes = counts.flushes + 1)
-    }
-
-    override def cacheDiscard(key: Pair[String, ParameterTypeMap], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
-      counts = counts.copy(evicted = counts.evicted + 1)
-    }
-  }
+class ExecutionEngineCacheCounter() extends StringCacheMonitor with CypherCacheMonitor[Pair[String, ParameterTypeMap]] {
+  var counts: CacheCounts = CacheCounts()
+  override def cacheMiss(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(misses = counts.misses + 1)
+  override def cacheHit(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(hits = counts.hits + 1)
+  override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
+  override def cacheDiscard(key: Pair[String, ParameterTypeMap], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit =
+    counts = counts.copy(evicted = counts.evicted + 1)
+  override def cacheCompile(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(compilations = counts.compilations + 1)
+  override def cacheJitCompile(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(jitCompilations = counts.jitCompilations + 1)
 }

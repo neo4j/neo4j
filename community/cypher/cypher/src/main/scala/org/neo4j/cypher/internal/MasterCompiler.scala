@@ -45,8 +45,7 @@ object MasterCompiler {
 /**
  * Selects the correct cypher implementation based on a pre-parsed query.
  */
-class MasterCompiler(config: CypherConfiguration,
-                     compilerLibrary: CompilerLibrary) {
+class MasterCompiler(compilerLibrary: CompilerLibrary) {
 
   /**
    * Clear all compiler caches.
@@ -58,7 +57,7 @@ class MasterCompiler(config: CypherConfiguration,
   }
 
   /**
-   * Compile submitted query into executable query. TODO where is this used from?
+   * Compile submitted query into executable query.
    *
    * @param query                   query to convert
    * @param tracer                  compilation tracer to which events of the compilation process are reported

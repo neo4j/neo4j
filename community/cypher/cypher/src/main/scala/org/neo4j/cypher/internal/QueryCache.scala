@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
@@ -37,15 +38,79 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
  * Tracer for cache activity.
  */
 trait CacheTracer[QUERY_KEY] {
+  /**
+   * The item was found in the cache and was not stale.
+   */
   def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit
 
+  /**
+   * The item was not found in the cache or was stale, or a miss was forced by replan=force.
+   */
   def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit
 
-  def queryCacheRecompile(queryKey: QUERY_KEY, metaData: String): Unit
+  /**
+   * The compiler was invoked to compile a key to a query, avoiding JIT compilation.
+   */
+  def queryCompile(queryKey: QUERY_KEY, metaData: String): Unit
 
+  /**
+   * The compiler was invoked to compile a key to a query, requesting JIT compilation.
+   */
+  def queryJitCompile(queryKey: QUERY_KEY, metaData: String): Unit
+
+  /**
+   * The item was found in the cache but has become stale.
+   * @param secondsSincePlan how long the last replan was ago
+   * @param maybeReason maybe a reason clarifying why the item was stale.
+   */
   def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit
 
+  /**
+   * The query cache was flushed.
+   */
   def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit
+}
+
+/**
+ * A compiler with jit-compilation capabilities.
+ */
+trait JitCompiler[EXECUTABLE_QUERY] {
+  /**
+   * Compile a query, avoiding any jit-compilation.
+   * If the settings enforce a certain expression engine,
+   * this engine is going to be in both compile and jitCompile.
+   */
+  def compile(): EXECUTABLE_QUERY
+
+  /**
+   * Compile a query with jit-compilation.
+   * If the settings enforce a certain expression engine,
+   * this engine is going to be in both compile and jitCompile.
+   */
+  def jitCompile(): EXECUTABLE_QUERY
+
+  /**
+   * Decide wheter a previously compiled query should be jit-compiled now,
+   * and do the jit-compilation in that case.
+   * @param hitCount the number of cache hits for that query
+   * @return `Some(jit-compiled-query)` if jit-compilation was deemed useful,
+   *         `None` otherwise.
+   */
+  def maybeJitCompile(hitCount: Int): Option[EXECUTABLE_QUERY]
+}
+
+
+sealed trait Staleness
+case object NotStale extends Staleness
+case class Stale(secondsSincePlan: Int, maybeReason: Option[String]) extends Staleness
+
+/**
+ * Callback interface to find out if a query has become stale
+ * and should be evicted from the cache.
+ */
+trait PlanStalenessCaller[EXECUTABLE_QUERY] {
+  def staleness(transactionalContext: TransactionalContext,
+                cachedExecutableQuery: EXECUTABLE_QUERY): Staleness
 }
 
 /**
@@ -59,8 +124,12 @@ trait CacheTracer[QUERY_KEY] {
  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
  * @param tracer Traces cache activity
  */
-class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
-                                                                                                                             val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+class QueryCache[QUERY_REP <: AnyRef,
+                 QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap],
+                 EXECUTABLE_QUERY <: CacheabilityInfo](
+                                                       val maximumSize: Int,
+                                                       val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
+                                                       val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
   private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
 
@@ -101,66 +170,103 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
    *
    * @param queryKey the queryKey to retrieve the execution plan for
    * @param tc TransactionalContext in which to compile and compute staleness
-   * @param compile Compiler to use if the query is not cached or stale
-   * @param recompile Recompile function to use if the query is deemed hot
+   * @param compiler Compiler
    * @param metaData String which will be passed to the CacheTracer
    * @return A CacheLookup with an CachedExecutionPlan
    */
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
-                             compile: () => EXECUTABLE_QUERY,
-                             recompile: Int => Option[EXECUTABLE_QUERY],
+                             compiler: JitCompiler[EXECUTABLE_QUERY],
+                             replanStrategy: CypherReplanOption,
                              metaData: String = ""
                             ): EXECUTABLE_QUERY = {
-    if (maximumSize == 0)
-      compile()
-    else {
+    if (maximumSize == 0) {
+      val result = compiler.compile()
+      tracer.queryCompile(queryKey, metaData)
+      result
+    } else {
       inner.getIfPresent(queryKey) match {
         case NOT_PRESENT =>
-          compileAndCache(queryKey, tc, compile, metaData)
+          if (replanStrategy == CypherReplanOption.force)
+            jitCompileAndCache(queryKey, compiler, metaData)
+          else
+            compileAndCache(queryKey, compiler, metaData)
 
         case cachedValue =>
           //mark as seen from cache
           cachedValue.markHit()
 
-          stalenessCaller.staleness(tc, cachedValue.value) match {
-            case NotStale =>
-              //check if query is up for recompilation:
-              //either because it hasn't been recompiled in "a while" or because certain warnings are not valid anymore
-              val invalidNotificationExisting = cachedValue.value.notifications.exists {
-                case notification: MissingLabelNotification =>
-                  tc.kernelTransaction().tokenRead().nodeLabel(notification.label) != TokenRead.NO_TOKEN
-                case notification: MissingRelTypeNotification =>
-                  tc.kernelTransaction().tokenRead().relationshipType(notification.relType) != TokenRead.NO_TOKEN
-                case notification: MissingPropertyNameNotification =>
-                  tc.kernelTransaction().tokenRead().propertyKey(notification.name) != TokenRead.NO_TOKEN
-                case _ => false
-              }
-
-              if(invalidNotificationExisting) {
-                compileAndCache(queryKey, tc, compile, metaData, hitCache = true)
+          (stalenessCaller.staleness(tc, cachedValue.value), replanStrategy) match {
+            case (_, CypherReplanOption.force) =>
+              jitCompileAndCache(queryKey, compiler, metaData)
+            case (_, CypherReplanOption.skip) =>
+              hit(queryKey, cachedValue, metaData)
+            case (NotStale, _) =>
+              if(invalidNotificationExisting(cachedValue, tc)) {
+                compileAndCache(queryKey, compiler, metaData, hitCache = true)
               } else {
-                val newCachedValue = if (!cachedValue.recompiled ) {
-                  recompile(cachedValue.numberOfHits) match {
-                    case Some(recompiledQuery) =>
-                      tracer.queryCacheRecompile(queryKey, metaData)
-                      val recompiled = new CachedValue(recompiledQuery, recompiled = true)
-                      inner.put(queryKey, recompiled)
-                      recompiled
-                    case None => cachedValue
-                  }
-                } else cachedValue
-
-                hit(queryKey, newCachedValue, metaData)
+                recompileOrGet(cachedValue, compiler, queryKey, metaData)
               }
-            case Stale(secondsSincePlan, maybeReason) =>
+            case (Stale(secondsSincePlan, maybeReason), _) =>
               tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
-
-              compileAndCache(queryKey, tc, compile, metaData)
+              if (cachedValue.recompiled) jitCompileAndCache(queryKey, compiler, metaData)
+              else compileAndCache(queryKey, compiler, metaData)
           }
       }
     }
   }
+
+  /**
+   * Check if certain warnings are not valid anymore.
+   */
+  def invalidNotificationExisting(cachedValue: CachedValue, tc: TransactionalContext): Boolean = {
+    cachedValue.value.notifications.exists {
+      case notification: MissingLabelNotification =>
+        tc.kernelTransaction().tokenRead().nodeLabel(notification.label) != TokenRead.NO_TOKEN
+      case notification: MissingRelTypeNotification =>
+        tc.kernelTransaction().tokenRead().relationshipType(notification.relType) != TokenRead.NO_TOKEN
+      case notification: MissingPropertyNameNotification =>
+        tc.kernelTransaction().tokenRead().propertyKey(notification.name) != TokenRead.NO_TOKEN
+      case _ => false
+    }
+  }
+
+  /**
+   * JIT recompile a query if needed. Otherwise return the cached value.
+   */
+  def recompileOrGet(cachedValue: CachedValue,
+                     compiler: JitCompiler[EXECUTABLE_QUERY],
+                     queryKey: QUERY_KEY,
+                     metaData: String
+                    ): EXECUTABLE_QUERY = {
+    tracer.queryCacheHit(queryKey, metaData)
+    val newCachedValue = if (!cachedValue.recompiled ) {
+      compiler.maybeJitCompile(cachedValue.numberOfHits) match {
+        case Some(recompiledQuery) =>
+          tracer.queryJitCompile(queryKey, metaData)
+          val recompiled = new CachedValue(recompiledQuery, recompiled = true)
+          inner.put(queryKey, recompiled)
+          recompiled
+        case None => cachedValue
+      }
+    } else cachedValue
+
+    newCachedValue.value
+  }
+
+  private def compileAndCache(queryKey: QUERY_KEY,
+                              compiler: JitCompiler[EXECUTABLE_QUERY],
+                              metaData: String,
+                              hitCache: Boolean = false
+                             ): EXECUTABLE_QUERY =
+    compileOrJitCompileAndCache(queryKey, () => compiler.compile(), () => tracer.queryCompile(queryKey, metaData), metaData, hitCache)
+
+  private def jitCompileAndCache(queryKey: QUERY_KEY,
+                                 compiler: JitCompiler[EXECUTABLE_QUERY],
+                                 metaData: String,
+                                 hitCache: Boolean = false
+                                ): EXECUTABLE_QUERY =
+    compileOrJitCompileAndCache(queryKey, () => compiler.jitCompile(), () => tracer.queryJitCompile(queryKey, metaData), metaData, hitCache)
 
   /**
    * Ensure this query is recompiled and put it in the cache.
@@ -170,14 +276,14 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
    * take a long time. The only exception is if hitCache is true, which should only happen
    * when we are forced to recompile due to previously present warnings not being valid anymore
    */
-  private def compileAndCache(queryKey: QUERY_KEY,
-                              tc: TransactionalContext,
-                              compile: () => EXECUTABLE_QUERY,
-                              metaData: String,
-                              hitCache: Boolean = false
-                             ): EXECUTABLE_QUERY = {
+  private def compileOrJitCompileAndCache(queryKey: QUERY_KEY,
+                                          compile: () => EXECUTABLE_QUERY,
+                                          trace: () => Unit,
+                                          metaData: String,
+                                          hitCache: Boolean = false
+                                         ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
-    if (newExecutableQuery.shouldBeCached) {
+    val result = if (newExecutableQuery.shouldBeCached) {
       val cachedValue = new CachedValue(newExecutableQuery, recompiled = false)
       inner.put(queryKey, cachedValue)
       if (hitCache)
@@ -185,21 +291,24 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
       else
         miss(queryKey, newExecutableQuery, metaData)
     } else {
-      tracer.queryCacheMiss(queryKey, metaData)
-      newExecutableQuery
+      miss(queryKey, newExecutableQuery, metaData)
     }
+    trace()
+    result
   }
 
   private def hit(queryKey: QUERY_KEY,
                   executableQuery: CachedValue,
-                  metaData: String) = {
+                  metaData: String
+                 ): EXECUTABLE_QUERY = {
     tracer.queryCacheHit(queryKey, metaData)
     executableQuery.value
   }
 
   private def miss(queryKey: QUERY_KEY,
                    newExecutableQuery: EXECUTABLE_QUERY,
-                   metaData: String) = {
+                   metaData: String
+                  ): EXECUTABLE_QUERY = {
     tracer.queryCacheMiss(queryKey, metaData)
     newExecutableQuery
   }

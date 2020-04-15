@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal
 
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.verify
+import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.internal.QueryCacheTest.TC
-import org.neo4j.cypher.internal.QueryCacheTest.compileKey
+import org.neo4j.cypher.internal.QueryCacheTest.jitCompiler
 import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
-import org.neo4j.cypher.internal.QueryCacheTest.recompile
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await
@@ -45,12 +45,12 @@ class QueryCacheStressTest extends CypherFunSuite {
 
     // When
     val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+      cache.computeIfAbsentOrStale(key, TC, jitCompiler(key), CypherReplanOption.default)
     }))
 
     // Then
     Await.ready(futures, 60.seconds)
-    verify(tracer, atLeastOnce()).queryCacheRecompile(key, "")
+    verify(tracer, atLeastOnce()).queryJitCompile(key, "")
   }
 
   test("should hit at least once when running from multiple threads") {
@@ -61,7 +61,7 @@ class QueryCacheStressTest extends CypherFunSuite {
 
     // When
     val futures = Future.sequence((1 to 100).map(_ => Future {
-      cache.computeIfAbsentOrStale(key, TC, compileKey(key), recompile(key))
+      cache.computeIfAbsentOrStale(key, TC, jitCompiler(key), CypherReplanOption.default)
     }))
 
     // Then
