@@ -32,6 +32,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -68,6 +69,8 @@ class RelationshipCheckerIT
     private PageCache pageCache;
     @Inject
     private LabelScanStore labelScanStore;
+    @Inject
+    private RelationshipTypeScanStore relationshipTypeScanStore;
     @Inject
     private TokenHolders tokenHolders;
     private long relationshipId;
@@ -120,11 +123,10 @@ class RelationshipCheckerIT
     {
         var neoStores = storageEngine.testAccessNeoStores();
         var indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL );
-        context = new CheckerContext( neoStores, indexAccessors, labelScanStore, execution,
-                mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY, tokenHolders,
-                mock( RecordLoading.class ), mock( CountsState.class ),
-                mock( NodeBasedMemoryLimiter.class ), ProgressMonitorFactory.NONE.multipleParts( "test" ),
-                pageCache, pageCacheTracer, false, ConsistencyFlags.DEFAULT );
+        context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore,
+                execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
+                tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( NodeBasedMemoryLimiter.class ),
+                ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, false, ConsistencyFlags.DEFAULT );
         context.initialize();
     }
 }

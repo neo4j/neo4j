@@ -112,6 +112,8 @@ public interface ConsistencyReport
 
         LabelScanConsistencyReport forNodeLabelScan( TokenScanDocument document );
 
+        RelationshipTypeScanConsistencyReport forRelationshipTypeScan( TokenScanDocument document );
+
         IndexConsistencyReport forIndexEntry( IndexEntry entry );
 
         RelationshipGroupConsistencyReport forRelationshipGroup( RelationshipGroupRecord group );
@@ -810,6 +812,12 @@ public interface ConsistencyReport
         public LabelScanConsistencyReport forNodeLabelScan( TokenScanDocument document )
         {
             return (LabelScanConsistencyReport) proxy;
+        }
+
+        @Override
+        public RelationshipTypeScanConsistencyReport forRelationshipTypeScan( TokenScanDocument document )
+        {
+            return (RelationshipTypeScanConsistencyReport) proxy;
         }
 
         @Override

@@ -52,6 +52,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -117,6 +118,7 @@ class CheckerTestBase
 {
     static final int NUMBER_OF_THREADS = 4;
     static final long NULL = NULL_REFERENCE.longValue();
+    static final int IDS_PER_CHUNK = 100;
 
     @Inject
     PageCache pageCache;
@@ -133,6 +135,7 @@ class CheckerTestBase
     RelationshipStore relationshipStore;
     SchemaStore schemaStore;
     LabelScanStore labelIndex;
+    RelationshipTypeScanStore relationshipTypeIndex;
     ConsistencyReporter reporter;
     ConsistencyReporter.Monitor monitor;
     SchemaStorage schemaStorage;
@@ -146,7 +149,9 @@ class CheckerTestBase
     @BeforeEach
     void setUpDb() throws Exception
     {
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.homeDir() );
+        configure( builder );
+        dbms = builder.build();
         db = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
         // Create our tokens
@@ -167,6 +172,7 @@ class CheckerTestBase
         tokenHolders = dependencies.resolveDependency( TokenHolders.class );
         schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
         labelIndex = dependencies.resolveDependency( LabelScanStore.class );
+        relationshipTypeIndex = dependencies.resolveDependency( RelationshipTypeScanStore.class );
         cacheAccess = new DefaultCacheAccess( NumberArrayFactory.HEAP.newDynamicByteArray( 10_000, new byte[ByteArrayBitsManipulator.MAX_BYTES] ),
                 Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
@@ -179,16 +185,30 @@ class CheckerTestBase
         dbms.shutdown();
     }
 
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {   // no-op
+    }
+
     void initialData( KernelTransaction tx ) throws KernelException
     {
     }
 
     CheckerContext context() throws Exception
     {
-        return context( NUMBER_OF_THREADS );
+        return context( NUMBER_OF_THREADS, ConsistencyFlags.DEFAULT );
+    }
+
+    CheckerContext context( ConsistencyFlags consistencyFlags ) throws Exception
+    {
+        return context( NUMBER_OF_THREADS, consistencyFlags );
     }
 
     CheckerContext context( int numberOfThreads ) throws Exception
+    {
+        return context( numberOfThreads, ConsistencyFlags.DEFAULT );
+    }
+
+    CheckerContext context( int numberOfThreads, ConsistencyFlags consistencyFlags ) throws Exception
     {
         if ( context != null )
         {
@@ -211,9 +231,9 @@ class CheckerTestBase
         NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
-        ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, 100 );
-        context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders, new RecordLoading( neoStores ),
-                countsState, limiter, progress, pageCache, PageCacheTracer.NULL, false, ConsistencyFlags.DEFAULT );
+        ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
+        context = new CheckerContext( neoStores, indexAccessors, labelIndex, relationshipTypeIndex, execution, reporter, cacheAccess, tokenHolders,
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, false, consistencyFlags );
         context.initialize();
         return context;
     }

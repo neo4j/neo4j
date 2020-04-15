@@ -187,8 +187,9 @@ public class FullCheck
             else
             {
                 try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
-                        directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(), indexes, report, progressFactory,
-                        config, threads, verbose, flags, memoryLimit, pageCacheTracer ) )
+                        directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(),
+                        directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
+                        pageCacheTracer ) )
                 {
                     checker.check();
                 }

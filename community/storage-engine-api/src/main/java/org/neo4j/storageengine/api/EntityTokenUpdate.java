@@ -67,9 +67,9 @@ public class EntityTokenUpdate
                 ", tokensAfter:" + Arrays.toString( tokensAfter ) + "]";
     }
 
-    public static EntityTokenUpdate tokenChanges( long tokenId, long[] tokensBeforeChange, long[] tokensAfterChange )
+    public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange )
     {
-        return tokenChanges( tokenId, tokensBeforeChange, tokensAfterChange, -1 );
+        return tokenChanges( entityId, tokensBeforeChange, tokensAfterChange, -1 );
     }
 
     public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange, long txId )

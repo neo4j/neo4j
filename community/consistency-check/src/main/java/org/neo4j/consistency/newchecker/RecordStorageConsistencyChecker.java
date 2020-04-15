@@ -40,6 +40,7 @@ import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -81,8 +82,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final ProgressMonitorFactory.MultiPartBuilder progress;
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts, LabelScanStore labelScanStore,
-            IndexAccessors indexAccessors, InconsistencyReport report, ProgressMonitorFactory progressFactory, Config config, int numberOfThreads,
-            boolean debug, ConsistencyFlags consistencyFlags, NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer )
+            RelationshipTypeScanStore relationshipTypeScanStore, IndexAccessors indexAccessors, InconsistencyReport report,
+            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, boolean debug, ConsistencyFlags consistencyFlags,
+            NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer )
     {
         this.pageCache = pageCache;
         this.neoStores = neoStores;
@@ -117,8 +119,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.cacheAccess = new DefaultCacheAccess( defaultByteArray( limiter.rangeSize() ), Counts.NONE, numberOfThreads );
         this.observedCounts = new CountsState( neoStores, cacheAccess );
         this.progress = progressFactory.multipleParts( "Consistency check" );
-        this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, reporter,
-                cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, debug, consistencyFlags );
+        this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution,
+                reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, debug, consistencyFlags );
     }
 
     public void check() throws ConsistencyCheckIncompleteException

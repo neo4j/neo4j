@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -31,12 +32,17 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.index.label.AllEntriesTokenScanReader;
+import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -47,6 +53,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.consistency.newchecker.NodeChecker.compareTwoSortedLongArrays;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -69,6 +76,7 @@ class RelationshipChecker implements Checker
     private final MutableIntObjectMap<MutableIntSet> mandatoryProperties;
     private final List<IndexDescriptor> indexes;
     private final ProgressListener progress;
+    private final RelationshipTypeScanStore relationshipTypeScanStore;
 
     RelationshipChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties )
     {
@@ -83,37 +91,43 @@ class RelationshipChecker implements Checker
         this.mandatoryProperties = mandatoryProperties;
         this.indexes = context.indexAccessors.onlineRules( RELATIONSHIP );
         this.progress = context.progressReporter( this, "Relationships", neoStores.getRelationshipStore().getHighId() );
+        this.relationshipTypeScanStore = context.relationshipTypeScanStore;
     }
 
     @Override
     public boolean shouldBeChecked( ConsistencyFlags flags )
     {
-        return flags.isCheckGraph() || !indexes.isEmpty() && flags.isCheckIndexes();
+        return flags.isCheckGraph() || !indexes.isEmpty() && flags.isCheckIndexes() || flags.isCheckRelationshipTypeScanStore();
     }
 
     @Override
     public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         execution.run( getClass().getSimpleName() + "-relationships", execution.partition( neoStores.getRelationshipStore(),
-                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to ) ) );
+                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to, lastRange && last ) ) );
         // Let's not report progress for this since it's so much faster than store checks, it's just scanning the cache
         execution.run( getClass().getSimpleName() + "-unusedRelationships", execution.partition( nodeIdRange,
                 ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to, context.pageCacheTracer ) ) );
     }
 
-    private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId )
+    private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId, boolean last ) throws Exception
     {
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG );
               RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
+              AllEntriesTokenScanReader relationshipTypeReader = relationshipTypeScanStore
+                      .allEntityTokenRanges( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId, cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = cacheAccess.client();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
+            Iterator<EntityTokenRange> relationshipTypeRangeIterator = relationshipTypeReader.iterator();
+            EntityTokenIndexCheckState typeIndexState = new EntityTokenIndexCheckState( null, fromRelationshipId - 1 );
+
             for ( long relationshipId = fromRelationshipId; relationshipId < toRelationshipId && !context.isCancelled(); relationshipId++ )
             {
                 localProgress.add( 1 );
@@ -180,11 +194,116 @@ class RelationshipChecker implements Checker
                             neoStores.getRelationshipTypeTokenStore(), ( rel, token ) -> reporter.forRelationship( rel ).illegalRelationshipType(),
                             ( rel, token ) -> reporter.forRelationship( rel ).relationshipTypeNotInUse( token ), cursorTracer );
                     observedCounts.incrementRelationshipTypeCounts( counter, relationshipCursor );
+
+                    // Relationship type index
+                    if ( context.consistencyFlags.isCheckRelationshipTypeScanStore() )
+                    {
+                        checkRelationshipVsRelationshipTypeIndex( relationshipCursor, relationshipTypeRangeIterator, typeIndexState, relationshipId,
+                                relationshipCursor.type(), fromRelationshipId, cursorTracer );
+                    }
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
             }
+            if ( !context.isCancelled() )
+            {
+                reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
+                        cursorTracer );
+            }
             localProgress.done();
         }
+    }
+
+    private void checkRelationshipVsRelationshipTypeIndex( RecordRelationshipScanCursor relationshipCursor,
+            Iterator<EntityTokenRange> relationshipTypeRangeIterator, EntityTokenIndexCheckState relationshipTypeIndexState,
+            long relationshipId, int type, long fromRelationshipId, PageCursorTracer cursorTracer )
+    {
+        // Detect relationship-type combinations that exists in the relationship type index, but not in the store
+        while ( relationshipTypeIndexState.needToMoveRangeForwardToReachEntity( relationshipId ) && !context.isCancelled() )
+        {
+            if ( relationshipTypeRangeIterator.hasNext() )
+            {
+                if ( relationshipTypeIndexState.currentRange != null )
+                {
+                    for ( long relationshipIdMissingFromStore = relationshipTypeIndexState.lastCheckedEntityId + 1;
+                          relationshipIdMissingFromStore < relationshipId & relationshipTypeIndexState.currentRange.covers( relationshipIdMissingFromStore );
+                          relationshipIdMissingFromStore++ )
+                    {
+                        if ( relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
+                        {
+                            reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
+                                    .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                        }
+                    }
+                }
+                relationshipTypeIndexState.currentRange = relationshipTypeRangeIterator.next();
+                relationshipTypeIndexState.lastCheckedEntityId = Math.max( fromRelationshipId, relationshipTypeIndexState.currentRange.entities()[0] ) - 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if ( relationshipTypeIndexState.currentRange != null && relationshipTypeIndexState.currentRange.covers( relationshipId ) )
+        {
+            for ( long relationshipIdMissingFromStore = relationshipTypeIndexState.lastCheckedEntityId + 1; relationshipIdMissingFromStore < relationshipId;
+                  relationshipIdMissingFromStore++ )
+            {
+                if ( relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
+                {
+                    reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
+                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                }
+            }
+            long[] relationshipTypesInTypeIndex = relationshipTypeIndexState.currentRange.tokens( relationshipId );
+            validateTypeIds( relationshipCursor, type, relationshipTypesInTypeIndex, relationshipTypeIndexState.currentRange, cursorTracer );
+            relationshipTypeIndexState.lastCheckedEntityId = relationshipId;
+        }
+        else
+        {
+            TokenScanDocument document = new TokenScanDocument( new EntityTokenRange( relationshipId / Long.SIZE, EntityTokenRange.NO_TOKENS, RELATIONSHIP ) );
+            reporter.forRelationshipTypeScan( document ).relationshipTypeNotInIndex( recordLoader.relationship( relationshipId, cursorTracer ), type );
+        }
+    }
+
+    private void reportRemainingRelationshipTypeIndexEntries( Iterator<EntityTokenRange> relationshipTypeRangeIterator,
+            EntityTokenIndexCheckState relationshipTypeIndexState, long toRelationshipId, PageCursorTracer cursorTracer )
+    {
+        if ( relationshipTypeIndexState.currentRange == null && relationshipTypeRangeIterator.hasNext() )
+        {
+            // Seems that nobody touched this iterator before, i.e. no nodes in this whole range
+            relationshipTypeIndexState.currentRange = relationshipTypeRangeIterator.next();
+        }
+
+        while ( relationshipTypeIndexState.currentRange != null && !context.isCancelled() )
+        {
+            for ( long relationshipIdMissingFromStore = relationshipTypeIndexState.lastCheckedEntityId + 1;
+                  relationshipIdMissingFromStore < toRelationshipId &&
+                          !relationshipTypeIndexState.needToMoveRangeForwardToReachEntity( relationshipIdMissingFromStore );
+                  relationshipIdMissingFromStore++ )
+            {
+                if ( relationshipTypeIndexState.currentRange.covers( relationshipIdMissingFromStore ) &&
+                        relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
+                {
+                    reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
+                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                }
+                relationshipTypeIndexState.lastCheckedEntityId = relationshipIdMissingFromStore;
+            }
+            relationshipTypeIndexState.currentRange = relationshipTypeRangeIterator.hasNext() ? relationshipTypeRangeIterator.next() : null;
+        }
+    }
+
+    private void validateTypeIds( RecordRelationshipScanCursor relationshipCursor, int typeInStore, long[] relationshipTypesInTypeIndex,
+            EntityTokenRange entityTokenRange, PageCursorTracer cursorTracer )
+    {
+        compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, new long[]{typeInStore}, relationshipTypesInTypeIndex,
+                indexType -> reporter.forRelationshipTypeScan( new TokenScanDocument( entityTokenRange ) )
+                        .relationshipDoesNotHaveExpectedRelationshipType( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
+                                indexType ),
+                storeType -> reporter.forRelationshipTypeScan( new TokenScanDocument( entityTokenRange ) )
+                        .relationshipTypeNotInIndex( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), storeType )
+        );
     }
 
     private void checkRelationshipVsNode( CacheAccess.Client client, RecordRelationshipScanCursor relationshipCursor, long node, boolean firstInChain,

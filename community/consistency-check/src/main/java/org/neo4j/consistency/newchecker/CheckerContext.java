@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,6 +51,7 @@ class CheckerContext
     final ConsistencyFlags consistencyFlags;
     final IndexSizes indexSizes;
     final LabelScanStore labelScanStore;
+    final RelationshipTypeScanStore relationshipTypeScanStore;
     final ParallelExecution execution;
     final ConsistencyReport.Reporter reporter;
     final CacheAccess cacheAccess;
@@ -69,6 +71,7 @@ class CheckerContext
             NeoStores neoStores,
             IndexAccessors indexAccessors,
             LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -82,14 +85,15 @@ class CheckerContext
             boolean debug,
             ConsistencyFlags consistencyFlags )
     {
-        this( neoStores, indexAccessors, labelScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader, observedCounts, limiter, progress,
-                pageCache, pageCacheTracer, debug, new AtomicBoolean(), consistencyFlags );
+        this( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
+                observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, new AtomicBoolean(), consistencyFlags );
     }
 
     private CheckerContext(
             NeoStores neoStores,
             IndexAccessors indexAccessors,
             LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -111,6 +115,7 @@ class CheckerContext
         this.consistencyFlags = consistencyFlags;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
         this.labelScanStore = labelScanStore;
+        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -127,8 +132,8 @@ class CheckerContext
 
     CheckerContext withoutReporting()
     {
-        return new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess, tokenHolders,
-                recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, cancelled, consistencyFlags );
+        return new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception

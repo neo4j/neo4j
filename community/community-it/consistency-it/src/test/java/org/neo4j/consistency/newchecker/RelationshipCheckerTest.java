@@ -21,15 +21,18 @@ package org.neo4j.consistency.newchecker;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class RelationshipCheckerTest extends CheckerTestBase
 {
@@ -246,8 +249,53 @@ class RelationshipCheckerTest extends CheckerTestBase
         expect( RelationshipConsistencyReport.class, report -> report.relationshipTypeNotInUse( any() ) );
     }
 
+    @Test
+    void shouldNotFailConsistencyCheckIfRelationshipTypeScanStoreNotConfigured() throws Exception
+    {
+        // given
+        try ( AutoCloseable ignored = tx() )
+        {
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        }
+
+        // when
+        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true, false, true );
+        check( context( consistencyFlags ) );
+
+        // then
+        verifyNoMoreInteractions( monitor );
+    }
+
+    @Test
+    void shouldFailConsistencyCheckIfRelationshipTypeScanStoreNotConfigured() throws Exception
+    {
+        // given
+        try ( AutoCloseable ignored = tx() )
+        {
+            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
+            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
+        }
+
+        // when
+        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true, true, true );
+        check( context( consistencyFlags ) );
+
+        // then
+        expect( ConsistencyReport.RelationshipTypeScanConsistencyReport.class, report -> report.relationshipTypeNotInIndex( any(), anyLong() ) );
+    }
+
     private void check() throws Exception
     {
-        new RelationshipChecker( context(), noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
+        check( context() );
+    }
+
+    private void check( CheckerContext checkerContext ) throws Exception
+    {
+        new RelationshipChecker( checkerContext, noMandatoryProperties ).check( LongRange.range( 0, nodeStore.getHighId() ), true, true );
     }
 }

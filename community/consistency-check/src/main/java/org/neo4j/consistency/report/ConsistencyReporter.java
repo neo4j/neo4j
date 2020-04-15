@@ -561,6 +561,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
+    public RelationshipTypeScanConsistencyReport forRelationshipTypeScan( TokenScanDocument document )
+    {
+        return report( RELATIONSHIP_TYPE_SCAN_REPORT, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, document );
+    }
+
+    @Override
     public IndexConsistencyReport forIndexEntry( IndexEntry entry )
     {
         return report( INDEX_REPORT, RecordType.INDEX, entry );
