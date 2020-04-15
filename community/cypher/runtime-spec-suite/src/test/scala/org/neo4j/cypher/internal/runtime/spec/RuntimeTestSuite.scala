@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -190,6 +191,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                        runtime: CypherRuntime[CONTEXT],
                        inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery, runtime, inputDataStream)
 
+  override def profileNonRecording(logicalQuery: LogicalQuery,
+                                   runtime: CypherRuntime[CONTEXT],
+                                   inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult =
+    runtimeTestSupport.profileNonRecording(logicalQuery, runtime, inputDataStream)
+
   override def executeAndContext(logicalQuery: LogicalQuery,
                                  runtime: CypherRuntime[CONTEXT],
                                  input: InputValues
@@ -283,6 +289,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     seq
   }
 
+  def consumeNonRecording(left: NonRecordingRuntimeResult): Long = {
+    val count = left.awaitAll()
+    left.runtimeResult.close()
+    count
+  }
+
   def inOrder(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
     EqualInOrder(anyValues, listInAnyOrder)
@@ -339,4 +351,17 @@ case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySu
   def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
 
 }
+
+case class NonRecordingRuntimeResult(runtimeResult: RuntimeResult, nonRecordingQuerySubscriber: NonRecordingQuerySubscriber) {
+  def awaitAll(): Long = {
+    runtimeResult.consumeAll()
+    runtimeResult.close()
+    nonRecordingQuerySubscriber.assertNoErrors()
+    nonRecordingQuerySubscriber.recordCount()
+  }
+
+  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
+  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+}
+
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)

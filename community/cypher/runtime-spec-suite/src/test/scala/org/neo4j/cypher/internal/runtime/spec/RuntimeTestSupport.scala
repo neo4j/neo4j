@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -156,6 +157,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val subscriber = new RecordingQuerySubscriber
     val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
     RecordingRuntimeResult(result, subscriber)
+  }
+
+  override def profileNonRecording(logicalQuery: LogicalQuery,
+                                   runtime: CypherRuntime[CONTEXT],
+                                   inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult = {
+    val subscriber = new NonRecordingQuerySubscriber
+    val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
+    NonRecordingRuntimeResult(result, subscriber)
   }
 
   override def executeAndContext(logicalQuery: LogicalQuery,
