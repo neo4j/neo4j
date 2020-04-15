@@ -367,20 +367,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int size()
         {
-            if ( length != -1 )
-            {
-                return length;
-            }
-            else
+            if ( length == -1 )
             {
                 long l = ((end - start) / step) + 1;
                 if ( l > ArrayUtil.MAX_ARRAY_SIZE )
                 {
                     throw new OutOfMemoryError( "Cannot index an collection of size " + l );
                 }
-                length = (int) l;
-                return Math.max( length, 0 );
+                length = Math.max( (int) l, 0 );
             }
+            return length;
         }
 
         @Override
