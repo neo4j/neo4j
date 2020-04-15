@@ -37,12 +37,12 @@ public abstract class ReferenceEntityValueWriter<E extends Exception> implements
     @Override
     public final void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E
     {
-        throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
+        throw new IllegalStateException( "Cannot write full node to ReferenceEntityValueWriter" );
     }
 
     @Override
     public final void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties ) throws E
     {
-        throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
+        throw new IllegalStateException( "Cannot write full node to ReferenceEntityValueWriter" );
     }
 }

@@ -70,7 +70,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 RelationshipEntity proxy = (RelationshipEntity) relationship;
                 if ( !proxy.initializeData() )
                 {
-                    // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
+                    // If the relationship has been deleted since it was found by the query,
+                    // then we'll have to tell the client that their transaction conflicted,
                     // and that they need to retry it.
                     throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ) );
                 }

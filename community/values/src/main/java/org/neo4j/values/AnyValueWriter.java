@@ -31,7 +31,11 @@ import org.neo4j.values.virtual.RelationshipValue;
  */
 public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 {
-    enum EntityMode { REFERENCE, FULL };
+    enum EntityMode
+    {
+        REFERENCE,
+        FULL
+    }
 
     /**
      * Returns the wanted EntityMode of this AnyValueWriter.

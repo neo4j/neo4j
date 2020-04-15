@@ -940,7 +940,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             newBuilder( "dbms.logs.query.parameter_logging_enabled", BOOL, true ).dynamic().build();
 
-    @Description( "Log complete parameter entities including id, labels or relationship type, and properties. If false, only the entity id will be logged. This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`." )
+    @Description( "Log complete parameter entities including id, labels or relationship type, and properties. If false, " +
+                  "only the entity id will be logged. This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`." )
     public static final Setting<Boolean> log_queries_parameter_full_entities =
             newBuilder( "dbms.logs.query.parameter_full_entities", BOOL, false ).dynamic().build();
 
