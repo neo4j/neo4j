@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
+import scala.util.Random
+
 abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
@@ -52,185 +54,119 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
   test("simple top n if sorted column only has one value") {
     // when
-    val input = inputValues(
-      Array("A", 2),
-      Array("A", 1),
-      Array("A", 3),
-      Array("A", 0),
-      Array("A", 4),
-      Array("A", 2)
-    )
+    val topLimit = sizeHint / 10
+    val sortedInput = for (x <- 1 to sizeHint) yield Array[Any]("A", x)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 2)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array("A", 0),
-      Array("A", 1)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
   test("simple top n for chunk size 1") {
     // when
-    val input = inputValues(
-      Array("A", 2),
-      Array("B", 1),
-      Array("C", 3),
-      Array("D", 0),
-      Array("E", 4),
-      Array("F", 2)
-    )
+    val topLimit = sizeHint / 10
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i, i)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 4)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array("A", 2),
-      Array("B", 1),
-      Array("C", 3),
-      Array("D", 0)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(input.take(topLimit)))
   }
 
   test("simple top n if sorted column has more values - return subset of first block") {
     // when
-    val input = inputValues(
-      Array("A", 2),
-      Array("A", 1),
-      Array("A", 3),
-      Array("B", 0)
-    )
+    val chunkSize = sizeHint / 10
+    val topLimit = chunkSize / 2
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 2)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array("A", 1),
-      Array("A", 2)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
   test("simple top n if sorted column has more values - return whole first block") {
     // when
-    val input = inputValues(
-      Array("A", 2),
-      Array("A", 1),
-      Array("A", 3),
-      Array("B", 0)
-    )
+    val chunkSize = sizeHint / 10
+    val topLimit = chunkSize
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 3)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array("A", 1),
-      Array("A", 2),
-      Array("A", 3)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
   test("simple top n if results from two blocks must be returned - one from second block") {
     // when
-    val input = inputValues(
-      Array(1, 5),
-      Array(1, 5),
-      Array(1, 2),
-      Array(1, 2),
-      Array(2, 4),
-      Array(2, 3),
-      Array(2, 5),
-      Array(3, 1),
-      Array(3, 0)
-    )
+    val chunkSize = sizeHint / 10
+    val topLimit = chunkSize + 1
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array(1, 2),
-      Array(1, 2),
-      Array(1, 5),
-      Array(1, 5),
-      Array(2, 3)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
   test("simple top n if results from two blocks must be returned - two from second block") {
     // when
-    val input = inputValues(
-      Array(1, 5),
-      Array(1, 5),
-      Array(1, 2),
-      Array(1, 2),
-      Array(2, 4),
-      Array(2, 3),
-      Array(2, 5),
-      Array(3, 1),
-      Array(3, 0)
-    )
+    val chunkSize = sizeHint / 10
+    val topLimit = chunkSize + 2
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 6)
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array(1, 2),
-      Array(1, 2),
-      Array(1, 5),
-      Array(1, 5),
-      Array(2, 3),
-      Array(2, 4)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
   test("Top n with limit > Integer.Max works") {
     // when
-    val input = inputValues(
-      Array(1, 5),
-      Array(1, 5),
-      Array(1, 2),
-      Array(1, 2),
-      Array(2, 4),
-      Array(2, 3),
-      Array(2, 5),
-      Array(3, 1),
-      Array(3, 0)
-    )
+    val chunkSize = sizeHint / 10
+    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -238,20 +174,10 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(
-      Array(1, 2),
-      Array(1, 2),
-      Array(1, 5),
-      Array(1, 5),
-      Array(2, 3),
-      Array(2, 4),
-      Array(2, 5),
-      Array(3, 0),
-      Array(3, 1)
-    ))
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput))
   }
 
   test("partial top should not exhaust input when limit is lower then the input size") {
