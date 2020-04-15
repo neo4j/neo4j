@@ -29,9 +29,11 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -60,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CursorProperty
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
@@ -72,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.ExpandCursorProperties
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -284,15 +288,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
              expandMode: ExpansionMode = ExpandAll,
              projectedDir: SemanticDirection = OUTGOING,
              nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+             cacheNodeProperties: Seq[String] = Seq.empty,
+             cacheRelProperties: Seq[String] = Seq.empty): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
     }
+
+    val expandProperties =
+      if (cacheNodeProperties.isEmpty && cacheRelProperties.isEmpty) None
+      else Some(
+        ExpandCursorProperties(
+          nodeProperties = cacheNodeProperties.map(prop => CursorProperty(p.from, NODE_TYPE, PropertyKeyName(prop)(NONE))),
+          relProperties = cacheRelProperties.map(prop => CursorProperty(p.relName, RELATIONSHIP_TYPE, PropertyKeyName(prop)(NONE)))
+        ))
     p.length match {
       case SimplePatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode, expandProperties)(_)))
       case varPatternLength: VarPatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp,
                                                             p.from,
@@ -828,9 +842,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 }
 
 object AbstractLogicalPlanBuilder {
-  val pos = new InputPosition(0, 1, 0)
+  val pos: InputPosition = new InputPosition(0, 1, 0)
+  val NO_PREDICATE: Predicate = Predicate("", "")
 
-  val NO_PREDICATE = Predicate("", "")
   case class Predicate(entity: String, predicate: String) {
     def asVariablePredicate: Option[VariablePredicate] = {
       if (entity == "") {

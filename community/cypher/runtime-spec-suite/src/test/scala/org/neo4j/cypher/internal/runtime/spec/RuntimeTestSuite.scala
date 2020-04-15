@@ -44,6 +44,7 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -99,7 +100,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
-    managementService = edition.newGraphManagementService()
+    managementService = edition.newGraphManagementService(additionalConfigs:_*)
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
     logProvider.clear()
@@ -108,6 +109,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     runtimeTestSupport.startTx()
     super.beforeEach()
   }
+
+  protected def additionalConfigs: Seq[(Setting[_], Object)] = Seq.empty
 
   override protected def afterEach(): Unit = {
     runtimeTestSupport.stopTx()
@@ -279,8 +282,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       } else {
         val rows = consume(left)
         rowsMatcher.matches(columns, rows) match {
-          case RowsMatch => MatchResult(true, "", "")
-          case RowsDontMatch(msg) => MatchResult(false, msg, "")
+          case RowsMatch => MatchResult(matches = true, "", "")
+          case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
         }
       }
     }
@@ -320,7 +323,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def singleRow(values: Any*): RowsMatcher = {
     val anyValues = Array(values.toArray.map(ValueUtils.asAnyValue))
-    EqualInAnyOrder(anyValues, listInAnyOrder = false)
+    EqualInAnyOrder(anyValues)
   }
 
   def rowCount(value: Int): RowsMatcher = {

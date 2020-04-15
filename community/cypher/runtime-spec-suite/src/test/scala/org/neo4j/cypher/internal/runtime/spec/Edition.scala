@@ -42,9 +42,12 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
                                          configs: (Setting[_], Object)*) {
 
 
-  def newGraphManagementService(): DatabaseManagementService = {
+  def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent
     configs.foreach {
+      case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
+    }
+    additionalConfigs.foreach {
       case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
     }
     graphBuilder.build()
