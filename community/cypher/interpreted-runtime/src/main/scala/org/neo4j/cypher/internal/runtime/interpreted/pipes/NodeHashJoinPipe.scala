@@ -61,6 +61,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
   }
 
   private def buildProbeTable(input: Iterator[CypherRow]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[CypherRow]] = {
+    // TODO: Use heap tracking ProbeTable in community edition?
     val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[CypherRow]]
 
     for {context <- input

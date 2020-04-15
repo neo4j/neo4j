@@ -39,7 +39,7 @@ class ProbeTableTest
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
 
-    private final ProbeTable<Long,LongValue> table = ProbeTable.createProbeTable( memoryTracker );
+    private final ProbeTable<LongValue,LongValue> table = ProbeTable.createProbeTable( memoryTracker );
 
     @AfterEach
     void tearDown()
@@ -59,24 +59,23 @@ class ProbeTableTest
     void countInternalStructure()
     {
         // We avoid key 0 and 1 since they are sentinel values and we don't track them
-        table.put( 0L, Values.longValue( 2L ) );
-        table.put( 0L, Values.longValue( 3L ) );
-        table.put( 1L, Values.longValue( 4L ) );
+        table.put( Values.longValue( 0L ), Values.longValue( 2L ) );
+        table.put( Values.longValue( 0L ), Values.longValue( 3L ) );
+        table.put( Values.longValue( 1L ), Values.longValue( 4L ) );
 
         // Validate size
-        long itemSize = meter.measure( Values.longValue( 1L ) ) * 3; // We have 5 unique elements
-        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker ) - itemSize;
+        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
         assertEquals( actualSize, memoryTracker.estimatedHeapMemory() );
 
         // Validate content
-        Iterator<LongValue> iterator2 = table.get( 0L );
+        Iterator<LongValue> iterator2 = table.get( Values.longValue( 0L ) );
         assertTrue( iterator2.hasNext() );
         assertEquals( 2, iterator2.next().longValue() );
         assertTrue( iterator2.hasNext() );
         assertEquals( 3, iterator2.next().longValue() );
         assertFalse( iterator2.hasNext() );
 
-        Iterator<LongValue> iterator3 = table.get( 1L );
+        Iterator<LongValue> iterator3 = table.get( Values.longValue( 1L ) );
         assertTrue( iterator3.hasNext() );
         assertEquals( 4, iterator3.next().longValue() );
         assertFalse( iterator3.hasNext() );
@@ -90,13 +89,12 @@ class ProbeTableTest
         memoryTracker.allocateHeap( externalAllocation );
 
         // We avoid key 0 and 1 since they are sentinel values and we don't track them
-        table.put( 0L, Values.longValue( 2L ) );
-        table.put( 0L, Values.longValue( 3L ) );
-        table.put( 1L, Values.longValue( 4L ) );
+        table.put( Values.longValue( 0L ), Values.longValue( 2L ) );
+        table.put( Values.longValue( 0L ), Values.longValue( 3L ) );
+        table.put( Values.longValue( 1L ), Values.longValue( 4L ) );
 
         // Validate size
-        long itemSize = meter.measure( Values.longValue( 1L ) ) * 3; // We have 5 unique elements
-        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker ) - itemSize;
+        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
         assertEquals( actualSize + externalAllocation, memoryTracker.estimatedHeapMemory() );
 
         // Close should release everything related to the table

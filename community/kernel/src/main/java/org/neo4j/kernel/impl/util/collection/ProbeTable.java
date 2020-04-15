@@ -37,13 +37,13 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
  * @param <K> key type
  * @param <V> value type
  */
-public class ProbeTable<K,V extends Measurable> implements AutoCloseable
+public class ProbeTable<K extends Measurable,V extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
     private final ScopedMemoryTracker scopedMemoryTracker;
     private final UnifiedMap<K,HeapTrackingAppendList<V>> map;
 
-    public static <K,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
+    public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
     {
         ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
@@ -58,7 +58,11 @@ public class ProbeTable<K,V extends Measurable> implements AutoCloseable
 
     public void put( K key, V value )
     {
-        map.getIfAbsentPutWith( key, HeapTrackingAppendList::newAppendList, scopedMemoryTracker ).add( value );
+        map.getIfAbsentPutWith( key, p ->
+        {
+            p.allocateHeap( key.estimatedHeapUsage() );
+            return HeapTrackingAppendList.newAppendList( p );
+        }, scopedMemoryTracker ).add( value );
         scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
     }
 
