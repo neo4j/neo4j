@@ -59,6 +59,13 @@ public interface Profiler
     void reset();
 
     /**
+     * Count the number of samples or data-points collected so far.
+     * This method may run in linear time, and the result may be out of date by the time it is returned.
+     * @return A non-atomic count of the number of samples or data-points collected so far.
+     */
+    long countSamples();
+
+    /**
      * Set the sampling interval, as the desired nanoseconds between samples.
      * @param nanos The desired nanoseconds between profiling samples.
      */

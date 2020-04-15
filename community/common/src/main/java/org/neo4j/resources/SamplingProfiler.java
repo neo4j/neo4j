@@ -66,7 +66,7 @@ class SamplingProfiler implements Profiler
         out.println( "### " + profileTitle );
         if ( underSampling.get() > 0 )
         {
-            long allSamplesTotal = samples.reduceToLong( Long.MAX_VALUE, ( thread, sample ) -> sample.get(), 0, Long::sum );
+            long allSamplesTotal = countSamples();
             out.println( "Info: Did not achieve target sampling frequency. " + underSampling + " of " + allSamplesTotal + " samples were delayed." );
         }
         for ( Map.Entry<Thread,Sample> entry : samples.entrySet() )
@@ -78,6 +78,12 @@ class SamplingProfiler implements Profiler
             double total = rootSample.get();
             printSampleTree( out, total, rootSample.orderedChildren, 2 );
         }
+    }
+
+    @Override
+    public long countSamples()
+    {
+        return samples.reduceToLong( Long.MAX_VALUE, ( thread, sample ) -> sample.get(), 0, Long::sum );
     }
 
     @Override

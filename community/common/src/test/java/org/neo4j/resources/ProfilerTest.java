@@ -19,16 +19,16 @@
  */
 package org.neo4j.resources;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfilerTest
 {
-    private static final int COMPUTE_WORK_MILLIS = 1000;
+    private static final int COMPUTE_WORK_MILLIS = 40;
 
     @Test
     void profilerMustNoticeWhereTimeGoes() throws Exception
@@ -36,7 +36,11 @@ class ProfilerTest
         Profiler profiler = Profiler.profiler();
         try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
-            expensiveComputation();
+            do
+            {
+                expensiveComputation();
+            }
+            while ( profiler.countSamples() < 5 );
         }
         String output = getProfilerOutput( profiler );
         assertThat( output ).contains( "expensiveComputation" );
@@ -48,7 +52,11 @@ class ProfilerTest
         Profiler profiler = Profiler.profiler();
         try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
-            expensiveComputation();
+            do
+            {
+                expensiveComputation();
+            }
+            while ( profiler.countSamples() < 5 );
         }
         otherIntenseWork();
         String output = getProfilerOutput( profiler );

@@ -29,6 +29,12 @@ class NullProfiler implements Profiler
     }
 
     @Override
+    public long countSamples()
+    {
+        return 0;
+    }
+
+    @Override
     public void setSampleIntervalNanos( long nanos )
     {
     }
