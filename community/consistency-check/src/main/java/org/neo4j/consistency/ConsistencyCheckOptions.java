@@ -50,7 +50,7 @@ public class ConsistencyCheckOptions
 
     @Option( names = "--check-relationship-type-scan-store", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
             description = "Perform consistency checks on the relationship type scan store." )
-    private boolean checkRelationshipTypeScanStore = true;
+    private boolean checkRelationshipTypeScanStore;
 
     @Option( names = "--check-property-owners", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
             description = "Perform additional consistency checks on property ownership. This check is @|bold,red very|@ expensive in time and memory." )

@@ -139,7 +139,7 @@ class CheckConsistencyCommandIT
                 "      --check-relationship-type-scan-store=<true/false>%n" +
                 "                            Perform consistency checks on the relationship type%n" +
                 "                              scan store.%n" +
-                "                              Default: true%n" +
+                "                              Default: false%n" +
                 "      --check-property-owners=<true/false>%n" +
                 "                            Perform additional consistency checks on property%n" +
                 "                              ownership. This check is very expensive in time%n" +

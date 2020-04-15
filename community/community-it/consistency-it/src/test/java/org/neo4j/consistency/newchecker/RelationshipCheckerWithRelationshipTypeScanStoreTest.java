@@ -287,7 +287,8 @@ class RelationshipCheckerWithRelationshipTypeScanStoreTest extends CheckerTestBa
         }
 
         // when
-        check();
+        ConsistencyFlags flags = new ConsistencyFlags( true, true, true, true, true, true );
+        check( context( flags ) );
 
         // then
         if ( expectedCalls != null )
