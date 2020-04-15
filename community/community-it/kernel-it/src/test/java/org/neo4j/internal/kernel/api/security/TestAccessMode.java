@@ -143,6 +143,18 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsSetLabel( long labelId )
+    {
+        return allowWrite;
+    }
+
+    @Override
+    public boolean allowsRemoveLabel( long labelId )
+    {
+        return allowWrite;
+    }
+
+    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         return new AuthorizationViolationException( "Forbidden in testAccessMode" );

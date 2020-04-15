@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -176,6 +177,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long nodeCreate()
     {
+        assertAllowsWrites();
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
@@ -186,6 +188,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long nodeCreateWithLabels( int[] labels ) throws ConstraintValidationException
     {
+        assertAllowsWrites();
         if ( labels == null || labels.length == 0 )
         {
             return nodeCreate();
@@ -226,6 +229,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean nodeDelete( long node )
     {
+        assertAllowsWrites();
         ktx.assertOpen();
         return nodeDelete( node, true );
     }
@@ -233,6 +237,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public int nodeDetachDelete( final long nodeId )
     {
+        assertAllowsWrites();
         ktx.assertOpen();
         var deleter = new DetachingRelationshipDeleter( relId -> relationshipDelete( relId, false ) );
 
@@ -246,6 +251,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
+        assertAllowsWrites();
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
@@ -263,6 +269,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean relationshipDelete( long relationship )
     {
+        assertAllowsWrites();
         ktx.assertOpen();
         return relationshipDelete( relationship, true );
     }
@@ -281,6 +288,7 @@ public class Operations implements Write, SchemaWrite
             //label already there, nothing to do
             return false;
         }
+        assertAllowsSetLabel(nodeLabel);
 
         checkConstraintsAndAddLabelToNode( node, nodeLabel );
         return true;
@@ -551,6 +559,7 @@ public class Operations implements Write, SchemaWrite
             //the label wasn't there, nothing to do
             return false;
         }
+        assertAllowsRemoveLabel(labelId);
 
         sharedSchemaLock( ResourceTypes.LABEL, labelId );
         ktx.txState().nodeDoRemoveLabel( labelId, node );
@@ -565,6 +574,7 @@ public class Operations implements Write, SchemaWrite
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException
     {
+        assertAllowsWrites();
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
@@ -615,6 +625,7 @@ public class Operations implements Write, SchemaWrite
     public Value nodeRemoveProperty( long node, int propertyKey )
             throws EntityNotFoundException
     {
+        assertAllowsWrites();
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
         singleNode( node );
@@ -637,6 +648,7 @@ public class Operations implements Write, SchemaWrite
     public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
             throws EntityNotFoundException
     {
+        assertAllowsWrites();
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
@@ -660,6 +672,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public Value relationshipRemoveProperty( long relationship, int propertyKey ) throws EntityNotFoundException
     {
+        assertAllowsWrites();
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
@@ -1481,4 +1494,34 @@ public class Operations implements Write, SchemaWrite
 
         return constraint;
     }
+
+    private void assertAllowsWrites()
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsWrites() )
+        {
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsSetLabel( long labelId )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsSetLabel( labelId ) )
+        {
+            throw accessMode.onViolation( format( "Set label for label '%s' is not allowed for %s.", token.labelGetName( (int) labelId),
+                                                  ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsRemoveLabel( long labelId )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsRemoveLabel( labelId ) )
+        {
+            throw accessMode.onViolation( format( "Remove label for label '%s' is not allowed for %s.", token.labelGetName( (int) labelId),
+                                                  ktx.securityContext().description() ) );
+        }
+    }
+
 }

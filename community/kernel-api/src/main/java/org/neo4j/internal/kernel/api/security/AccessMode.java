@@ -186,6 +186,18 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsSetLabel( long labelId )
+        {
+            return write;
+        }
+
+        @Override
+        public boolean allowsRemoveLabel( long labelId )
+        {
+            return write;
+        }
+
+        @Override
         public AuthorizationViolationException onViolation( String msg )
         {
             return new AuthorizationViolationException( msg );
@@ -240,6 +252,10 @@ public interface AccessMode
      * encoding permission
      */
     boolean allowsProcedureWith( String[] allowed );
+
+    boolean allowsSetLabel( long labelId );
+
+    boolean allowsRemoveLabel( long labelId );
 
     AuthorizationViolationException onViolation( String msg );
     String name();

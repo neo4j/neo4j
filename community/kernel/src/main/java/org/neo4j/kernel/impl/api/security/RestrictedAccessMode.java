@@ -140,6 +140,18 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsSetLabel( long labelId )
+    {
+        return original.allowsSetLabel( labelId ) && wrapping.allowsSetLabel( labelId );
+    }
+
+    @Override
+    public boolean allowsRemoveLabel( long labelId )
+    {
+        return original.allowsRemoveLabel( labelId ) && wrapping.allowsRemoveLabel( labelId );
+    }
+
+    @Override
     public String name()
     {
         return original.name() + " restricted to " + wrapping.name();

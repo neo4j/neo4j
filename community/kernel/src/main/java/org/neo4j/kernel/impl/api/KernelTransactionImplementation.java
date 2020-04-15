@@ -798,7 +798,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        assertAllowsWrites();
         upgradeToDataWrites();
         return operations;
     }
@@ -914,15 +913,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
-    }
-
-    private void assertAllowsWrites()
-    {
-        AccessMode accessMode = securityContext().mode();
-        if ( !accessMode.allowsWrites() )
-        {
-            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", securityContext().description() ) );
-        }
     }
 
     private void assertAllowsSchemaWrites()

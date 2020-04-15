@@ -140,6 +140,18 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsSetLabel( long labelId )
+    {
+        return wrapping.allowsSetLabel( labelId );
+    }
+
+    @Override
+    public boolean allowsRemoveLabel( long labelId )
+    {
+        return wrapping.allowsRemoveLabel( labelId );
+    }
+
+    @Override
     public String name()
     {
         return original.name() + " overridden by " + wrapping.name();
