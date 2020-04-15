@@ -152,13 +152,13 @@ object BoundedMemoryTracker {
     protected[this] var _allocatedBytes = 0L
     private var _highWaterMark = 0L
 
-    override def usedDirectMemory(): Long = transactionMemoryTracker.usedDirectMemory()
+    override def usedNativeMemory(): Long = transactionMemoryTracker.usedNativeMemory()
 
     override def estimatedHeapMemory(): Long = transactionMemoryTracker.estimatedHeapMemory()
 
-    override def allocateDirect(bytes: Long): Unit = transactionMemoryTracker.allocateDirect(bytes)
+    override def allocateNative(bytes: Long): Unit = transactionMemoryTracker.allocateNative(bytes)
 
-    override def releaseDirect(bytes: Long): Unit = transactionMemoryTracker.releaseDirect(bytes)
+    override def releaseNative(bytes: Long): Unit = transactionMemoryTracker.releaseNative(bytes)
 
     override def allocateHeap(bytes: Long): Unit = {
       _allocatedBytes += bytes
