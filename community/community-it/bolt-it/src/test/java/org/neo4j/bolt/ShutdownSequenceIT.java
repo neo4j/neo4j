@@ -184,7 +184,7 @@ public class ShutdownSequenceIT
         Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals( stringValue( "0" ) ), "Equal record" );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) );
+                msgFailure( Status.General.UnknownError, "Unable to complete transaction." ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
