@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -33,6 +34,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -45,7 +47,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
 
     public KernelDiagnosticsOfflineReportProvider()
     {
-        super( "logs", "plugins", "tree", "tx" );
+        super( "logs", "plugins", "tree", "tx", "version" );
     }
 
     @Override
@@ -76,8 +78,18 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         {
             getTransactionLogFiles( sources );
         }
+        if ( classifiers.contains( "version" ) )
+        {
+            getVersion( sources );
+        }
 
         return sources;
+    }
+
+    private void getVersion( List<DiagnosticsReportSource> sources )
+    {
+        Supplier<String> neo4jVersion = () -> "neo4j " + Version.getNeo4jVersion() + System.lineSeparator();
+        sources.add( DiagnosticsReportSources.newDiagnosticsString( "version.txt", neo4jVersion ) );
     }
 
     /**

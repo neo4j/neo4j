@@ -143,7 +143,7 @@ public class DiagnosticsReportCommandTest
                 "PARAMETERS%n" +
                 "%n" +
                 "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,%n" +
-                "                            sysprop, threads, tree]%n" +
+                "                            sysprop, threads, tree, version]%n" +
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
@@ -226,7 +226,8 @@ public class DiagnosticsReportCommandTest
                             "  plugins    include a view of the plugin directory%n" +
                             "  ps         include a list of running processes%n" +
                             "  tree       include a view of the tree structure of the data directory%n" +
-                            "  tx         include transaction logs%n" ) );
+                            "  tx         include transaction logs%n" +
+                            "  version    include version of neo4j%n" ) );
         }
     }
 

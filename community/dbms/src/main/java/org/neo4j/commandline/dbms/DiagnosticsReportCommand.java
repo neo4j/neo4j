@@ -68,7 +68,7 @@ import static picocli.CommandLine.Parameters;
 )
 public class DiagnosticsReportCommand extends AbstractCommand
 {
-    static final String[] DEFAULT_CLASSIFIERS = {"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps"};
+    static final String[] DEFAULT_CLASSIFIERS = {"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"};
     private static final DateTimeFormatter filenameDateTimeFormatter = new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
     private static final long NO_PID = 0;
 
@@ -270,6 +270,8 @@ public class DiagnosticsReportCommand extends AbstractCommand
             return "include the current cluster state";
         case "ps":
             return "include a list of running processes";
+        case "version":
+            return "include version of neo4j";
         default:
         }
         throw new IllegalArgumentException( "Unknown classifier: " + classifier );
