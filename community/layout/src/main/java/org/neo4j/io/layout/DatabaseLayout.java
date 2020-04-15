@@ -73,9 +73,7 @@ public class DatabaseLayout
 
     protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
     {
-        var database = new NormalizedDatabaseName( databaseName );
-        validateInternalDatabaseName( database );
-        var normalizedName = database.name();
+        var normalizedName = new NormalizedDatabaseName( databaseName ).name();
         this.neo4jLayout = neo4jLayout;
         this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), normalizedName ) );
         this.databaseName = normalizedName;
