@@ -151,7 +151,7 @@ class PrettyPrinterTest
     }
 
     @Test
-    void shouldHandleEdgeReference()
+    void shouldHandleRelationshipReference()
     {
         // Given
         RelationshipReference rel = VirtualValues.relationship( 42L );
@@ -165,7 +165,7 @@ class PrettyPrinterTest
     }
 
     @Test
-    void shouldHandleEdgeValue()
+    void shouldHandleRelationshipValue()
     {
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -182,7 +182,7 @@ class PrettyPrinterTest
     }
 
     @Test
-    void shouldHandleEdgeValueAsReference()
+    void shouldHandleRelationshipValueAsReference()
     {
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -199,7 +199,7 @@ class PrettyPrinterTest
     }
 
     @Test
-    void shouldHandleEdgeValueWithoutProperties()
+    void shouldHandleRelationshipValueWithoutProperties()
     {
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
@@ -215,7 +215,7 @@ class PrettyPrinterTest
     }
 
     @Test
-    void shouldHandleEdgeValueWithoutLabelsNorProperties()
+    void shouldHandleRelationshipValueWithoutLabelsNorProperties()
     {
         // Given
         NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(), EMPTY_MAP );
