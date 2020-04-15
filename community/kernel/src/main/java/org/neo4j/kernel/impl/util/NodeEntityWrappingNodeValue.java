@@ -64,11 +64,6 @@ public class NodeEntityWrappingNodeValue extends NodeValue
         }
         else
         {
-            if ( id() < 0 )
-            {
-                writer.writeVirtualNodeHack( node );
-            }
-
             TextArray l;
             MapValue p;
             try
@@ -84,6 +79,11 @@ public class NodeEntityWrappingNodeValue extends NodeValue
             catch ( StoreFailureException e )
             {
                 throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            }
+
+            if ( id() < 0 )
+            {
+                writer.writeVirtualNodeHack( node );
             }
 
             writer.writeNode( node.getId(), l, p );

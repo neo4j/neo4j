@@ -65,11 +65,6 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
         }
         else
         {
-            if ( id() < 0 )
-            {
-                writer.writeVirtualRelationshipHack( relationship );
-            }
-
             if ( relationship instanceof RelationshipEntity )
             {
                 RelationshipEntity proxy = (RelationshipEntity) relationship;
@@ -93,6 +88,11 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
             catch ( IllegalStateException e )
             {
                 throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
+            }
+
+            if ( id() < 0 )
+            {
+                writer.writeVirtualRelationshipHack( relationship );
             }
 
             writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
