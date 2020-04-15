@@ -38,12 +38,16 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
     }
 
     /**
-     * Returns the wanted EntityMode of this AnyValueWriter.
+     * Returns the wanted {@link EntityMode} of this AnyValueWriter.
      *
-     * EntityMode.REFERENCE signals to all entity-values that they should callback using `write*Reference()`,
-     * even if the whole entity is available.
+     * A returned {@link EntityMode#REFERENCE} signals to all entity-values that they should callback using {@link #writeNodeReference(long)} or
+     * {@link #writeRelationshipReference(long)} even if the whole entity is available.
      *
-     * EntityMode.FULL signals to all entity-values that they can callback using either `write*` or `write*Reference`
+     * A returned {@link EntityMode#FULL} signals to all entity-values that they can callback using either
+     *      {@link #writeNodeReference(long)},
+     *      {@link #writeNode(long, TextArray, MapValue)},
+     *      {@link #writeRelationshipReference(long)}
+     *   or {@link #writeRelationship(long, long, long, TextValue, MapValue)}
      * depending on how much information is available to the value instance.
      */
     EntityMode entityMode();
