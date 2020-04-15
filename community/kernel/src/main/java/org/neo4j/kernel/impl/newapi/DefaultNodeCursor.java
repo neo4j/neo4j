@@ -28,6 +28,7 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -250,7 +251,14 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
         if ( currentAddedInTx == NO_ID )
         {
-            storeCursor.degrees( selection, degrees );
+            if ( accessMode.allowsTraverseAllRelTypes() )
+            {
+                storeCursor.degrees( selection, degrees );
+            }
+            else
+            {
+                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees );
+            }
         }
         if ( nodeTxState != null )
         {
@@ -384,5 +392,80 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     void release()
     {
         storeCursor.close();
+    }
+
+    private class SecureRelationshipSelection extends RelationshipSelection
+    {
+        private final long previousReference;
+        private final RelationshipSelection inner;
+
+        SecureRelationshipSelection( RelationshipSelection selection )
+        {
+            inner = selection;
+            previousReference = nodeReference();
+        }
+
+        @Override
+        public boolean test( int type, long sourceReference, long targetReference )
+        {
+            try
+            {
+                if ( accessMode.allowsTraverseRelType( type ) )
+                {
+                    if ( sourceReference == targetReference )
+                    {
+                        return inner.test( type );
+                    }
+                    long otherReference = sourceReference == previousReference ? targetReference : sourceReference;
+                    storeCursor.single( otherReference );
+                    return storeCursor.next() && accessMode.allowsTraverseNode( storeCursor.labels() ) && inner.test( type );
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                storeCursor.single( previousReference );
+                storeCursor.next();
+            }
+        }
+
+        @Override
+        public boolean denseEnabled()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean test( int type )
+        {
+            return inner.test( type );
+        }
+
+        @Override
+        public boolean test( RelationshipDirection direction )
+        {
+            return inner.test( direction );
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return inner.direction();
+        }
+
+        @Override
+        public boolean test( int type, RelationshipDirection direction )
+        {
+            return inner.test( type, direction );
+        }
+
+        @Override
+        public LongIterator addedRelationship( NodeState transactionState )
+        {
+            return inner.addedRelationship( transactionState );
+        }
     }
 }

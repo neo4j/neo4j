@@ -231,7 +231,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
     {
-        if ( !isDense() )
+        if ( !isDense() || !selection.denseEnabled() )
         {
             if ( relationshipCursor == null )
             {
@@ -240,7 +240,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )
             {
-                if ( selection.test( relationshipCursor.type() ) )
+                if ( selection.test( relationshipCursor.type(), relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() ) )
                 {
                     int outgoing = 0;
                     int incoming = 0;
