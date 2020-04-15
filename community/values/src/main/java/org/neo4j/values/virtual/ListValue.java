@@ -41,6 +41,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
@@ -119,7 +120,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         ArrayListValue( AnyValue[] values, long payloadSize )
         {
-            this.payloadSize = payloadSize;
+            this.payloadSize = shallowSizeOfObjectArray( values.length ) + payloadSize;
             assert values != null;
             assert !containsNull( values );
 
