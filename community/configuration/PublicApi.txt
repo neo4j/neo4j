@@ -175,6 +175,7 @@ org.neo4j.configuration.GraphDatabaseSettings::log_queries_early_raw_logging_ena
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_filename org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_page_detail_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::log_queries_parameter_full_entities org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_parameter_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_runtime_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
