@@ -24,6 +24,10 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
+import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
+import org.neo4j.kernel.internal.Version;
+import org.neo4j.logging.PrintStreamLogger;
+
 import static java.util.Objects.requireNonNull;
 
 @CommandLine.Command(
@@ -54,6 +58,10 @@ public abstract class AbstractCommand implements Command
     @Override
     public Integer call() throws Exception
     {
+        if ( verbose )
+        {
+            printVerboseHeader();
+        }
         try
         {
             execute();
@@ -71,5 +79,12 @@ public abstract class AbstractCommand implements Command
             return e.getExitCode();
         }
         return 0;
+    }
+
+    private void printVerboseHeader()
+    {
+        PrintStreamLogger logger = new PrintStreamLogger( ctx.out() );
+        logger.log( "neo4j " + Version.getNeo4jVersion() );
+        SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump( logger );
     }
 }
