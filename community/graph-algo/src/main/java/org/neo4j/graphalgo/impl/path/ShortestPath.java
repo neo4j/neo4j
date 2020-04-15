@@ -173,7 +173,7 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     // Few long-lived instances
-    private static class Hit
+    private static class Hit // TODO: Extend Measurable? Not if above comment about few is correct?
     {
         private final DirectionData start;
         private final DirectionData end;
@@ -321,7 +321,7 @@ public class ShortestPath implements PathFinder<Path>
         private int currentDepth;
         private ResourceIterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<>();
-        private final Map<Node,LevelData> visitedNodes = new HashMap<>();
+        private final Map<Node,LevelData> visitedNodes = new HashMap<>(); // TODO: Heap tracking collection?
         private final DirectionDataPath lastPath;
         private final MutableInt sharedFrozenDepth;
         private final MutableBoolean sharedStop;
@@ -533,7 +533,7 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     // Many long-lived instances
-    public static class LevelData
+    public static class LevelData // TODO: Extend Measurable?
     {
         private long[] relsToHere;
         public final int depth;
@@ -567,7 +567,7 @@ public class ShortestPath implements PathFinder<Path>
     // One long lived instance
     private static class Hits
     {
-        private final MutableIntObjectMap<Collection<Hit>> hits = new IntObjectHashMap<>();
+        private final MutableIntObjectMap<Collection<Hit>> hits = new IntObjectHashMap<>(); // TODO: Heap tracking collection?
         private int lowestDepth;
         private int totalHitCount;
 
