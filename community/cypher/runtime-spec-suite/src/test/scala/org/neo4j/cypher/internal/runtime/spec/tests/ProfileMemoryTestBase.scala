@@ -195,6 +195,34 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
+  test("should profile memory of partial top n, where n < max array size") {
+    val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+  }
+
+  test("should profile memory of partial top n, where n > max array size") {
+    val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+  }
+
   test("should profile memory of ordered distinct") {
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 

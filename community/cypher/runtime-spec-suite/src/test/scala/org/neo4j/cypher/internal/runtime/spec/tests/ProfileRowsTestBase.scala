@@ -1070,4 +1070,30 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint // partial sort
     queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
   }
+
+  test("should profile rows with partial top") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val input = for (n <- nodes) yield Array[Any](nodes.head, n)
+
+    val limit = 123
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), limit)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe limit // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe limit // partial top
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
+  }
 }
