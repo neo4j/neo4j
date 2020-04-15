@@ -500,7 +500,7 @@ public class DetectRandomSabotageIT
                                     }
 
                                     PropertyStore propertyStore = stores.getPropertyStore();
-                                    PropertyRecord record = propertyStore.getRecord( propertyId, propertyStore.newRecord(), RecordLoad.CHECK, NULL );
+                                    PropertyRecord record = propertyStore.getRecord( propertyId, propertyStore.newRecord(), RecordLoad.CHECK );
                                     return !record.inUse() || !NULL_REFERENCE.is( record.getPrevProp() );
                                 } ) );
                     }
