@@ -89,6 +89,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
+    public EntityMode entityMode()
+    {
+        return EntityMode.FULL;
+    }
+
+    @Override
     public void writeNodeReference( long nodeId )
     {
         throw new UnsupportedOperationException( "Cannot write a raw node reference" );
@@ -112,7 +118,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     @Override
     public void writeRelationshipReference( long relId )
     {
-        throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
+        throw new UnsupportedOperationException( "Cannot write a raw relationship reference" );
     }
 
     @Override

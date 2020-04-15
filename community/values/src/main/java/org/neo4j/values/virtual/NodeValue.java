@@ -24,6 +24,7 @@ import org.neo4j.values.storable.TextArray;
 
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
 public abstract class NodeValue extends VirtualNodeValue
 {
@@ -41,7 +42,14 @@ public abstract class NodeValue extends VirtualNodeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writeNode( id, labels(), properties() );
+        if ( writer.entityMode() == REFERENCE )
+        {
+            writer.writeNodeReference( id );
+        }
+        else
+        {
+            writer.writeNode( id, labels(), properties() );
+        }
     }
 
     @Override

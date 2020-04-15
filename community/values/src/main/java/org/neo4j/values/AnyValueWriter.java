@@ -31,6 +31,19 @@ import org.neo4j.values.virtual.RelationshipValue;
  */
 public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 {
+    enum EntityMode { REFERENCE, FULL };
+
+    /**
+     * Returns the wanted EntityMode of this AnyValueWriter.
+     *
+     * EntityMode.REFERENCE signals to all entity-values that they should callback using `write*Reference()`,
+     * even if the whole entity is available.
+     *
+     * EntityMode.FULL signals to all entity-values that they can callback using either `write*` or `write*Reference`
+     * depending on how much information is available to the value instance.
+     */
+    EntityMode entityMode();
+
     void writeNodeReference( long nodeId ) throws E;
 
     void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E;

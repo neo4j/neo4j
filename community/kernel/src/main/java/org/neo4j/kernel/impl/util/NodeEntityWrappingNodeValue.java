@@ -34,6 +34,7 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
 public class NodeEntityWrappingNodeValue extends NodeValue
 {
@@ -57,29 +58,36 @@ public class NodeEntityWrappingNodeValue extends NodeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        TextArray l;
-        MapValue p;
-        try
+        if ( writer.entityMode() == REFERENCE )
         {
-            l = labels();
-            p = properties();
+            writer.writeNodeReference( id() );
         }
-        catch ( NotFoundException e )
+        else
         {
-            l = Values.stringArray();
-            p = VirtualValues.EMPTY_MAP;
-        }
-        catch ( StoreFailureException e )
-        {
-            throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
-        }
+            if ( id() < 0 )
+            {
+                writer.writeVirtualNodeHack( node );
+            }
 
-        if ( id() < 0 )
-        {
-            writer.writeVirtualNodeHack( node );
-        }
+            TextArray l;
+            MapValue p;
+            try
+            {
+                l = labels();
+                p = properties();
+            }
+            catch ( NotFoundException e )
+            {
+                l = Values.stringArray();
+                p = VirtualValues.EMPTY_MAP;
+            }
+            catch ( StoreFailureException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
+            }
 
-        writer.writeNode( node.getId(), l, p );
+            writer.writeNode( node.getId(), l, p );
+        }
     }
 
     public void populate()

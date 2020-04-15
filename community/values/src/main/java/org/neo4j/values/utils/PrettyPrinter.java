@@ -56,17 +56,30 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     private final Deque<Writer> stack = new ArrayDeque<>();
     private final String quoteMark;
     private final StringBuilder builder;
+    private final EntityMode entityMode;
 
     public PrettyPrinter()
     {
-        this( "\"" );
+        this( EntityMode.FULL );
     }
 
-    public PrettyPrinter( String quoteMark )
+    public PrettyPrinter( EntityMode entityMode )
+    {
+        this( "\"", entityMode );
+    }
+
+    public PrettyPrinter( String quoteMark, EntityMode entityMode )
     {
         this.quoteMark = quoteMark;
+        this.entityMode = entityMode;
         builder = new StringBuilder( 64 );
         stack.push( new ValueWriter( builder, quoteMark ) );
+    }
+
+    @Override
+    public EntityMode entityMode()
+    {
+        return entityMode;
     }
 
     @Override

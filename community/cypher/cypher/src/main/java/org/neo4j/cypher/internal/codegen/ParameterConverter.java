@@ -39,13 +39,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
-import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ReferenceEntityValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.TextArray;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -55,7 +52,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 /**
  * Used for turning parameters into appropriate types in the compiled runtime
  */
-class ParameterConverter implements AnyValueWriter<RuntimeException>
+class ParameterConverter extends ReferenceEntityValueWriter<RuntimeException>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
     private final TransactionalEntityFactory proxySpi;
@@ -86,19 +83,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties )
-    {
-        writeValue( VirtualValues.node( nodeId ) );
-    }
-
-    @Override
     public void writeRelationshipReference( long relId )
-    {
-        writeValue( VirtualValues.relationship( relId ) );
-    }
-
-    @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
         writeValue( VirtualValues.relationship( relId ) );
     }

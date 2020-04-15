@@ -116,6 +116,12 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
+        public EntityMode entityMode()
+        {
+            return EntityMode.FULL;
+        }
+
+        @Override
         public void writeNodeReference( long nodeId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw node reference" );

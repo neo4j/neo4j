@@ -33,6 +33,7 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
 public class RelationshipEntityWrappingValue extends RelationshipValue
 {
@@ -58,37 +59,44 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        if ( relationship instanceof RelationshipEntity )
+        if ( writer.entityMode() == REFERENCE )
         {
-            RelationshipEntity proxy = (RelationshipEntity) relationship;
-            if ( !proxy.initializeData() )
+            writer.writeRelationshipReference( id() );
+        }
+        else
+        {
+            if ( id() < 0 )
             {
-                // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
-                // and that they need to retry it.
-                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ) );
+                writer.writeVirtualRelationshipHack( relationship );
             }
-        }
 
-        MapValue p;
-        try
-        {
-            p = properties();
-        }
-        catch ( NotFoundException e )
-        {
-            p = VirtualValues.EMPTY_MAP;
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
-        }
+            if ( relationship instanceof RelationshipEntity )
+            {
+                RelationshipEntity proxy = (RelationshipEntity) relationship;
+                if ( !proxy.initializeData() )
+                {
+                    // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
+                    // and that they need to retry it.
+                    throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ) );
+                }
+            }
 
-        if ( id() < 0 )
-        {
-            writer.writeVirtualRelationshipHack( relationship );
-        }
+            MapValue p;
+            try
+            {
+                p = properties();
+            }
+            catch ( NotFoundException e )
+            {
+                p = VirtualValues.EMPTY_MAP;
+            }
+            catch ( IllegalStateException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
+            }
 
-        writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
+            writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
+        }
     }
 
     @Override

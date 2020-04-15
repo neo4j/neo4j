@@ -88,6 +88,12 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
+    public EntityMode entityMode()
+    {
+        return EntityMode.FULL;
+    }
+
+    @Override
     public void writeNodeReference( long nodeId )
     {
         buffer.add( Specials.writeNodeReference( nodeId ) );

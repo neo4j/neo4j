@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.AnyValue
-import org.neo4j.values.AnyValueWriter
+import org.neo4j.values.ReferenceEntityValueWriter
 import org.neo4j.values.storable.ArrayValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.ByteValue
@@ -48,13 +48,11 @@ import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.ShortValue
-import org.neo4j.values.storable.TextArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.ValueWriter
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -189,7 +187,7 @@ object CastSupport {
   }
 
   private class ArrayConverterWriter(typ: Class[_], transformer: AnyRef => ArrayValue)
-    extends AnyValueWriter[RuntimeException] {
+    extends ReferenceEntityValueWriter[RuntimeException] {
 
     private var _array: AnyRef = _
     private var index = 0
@@ -209,13 +207,7 @@ object CastSupport {
 
     override def writeNodeReference(nodeId: Long): Unit = fail()
 
-    override def writeNode(nodeId: Long, labels: TextArray,
-                           properties: MapValue): Unit = fail()
-
     override def writeRelationshipReference(relId: Long): Unit = fail()
-
-    override def writeRelationship(relId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
-                                   properties: MapValue): Unit = fail()
 
     override def beginMap(size: Int): Unit = fail()
 
