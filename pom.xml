@@ -110,6 +110,7 @@
     <scala-maven-plugin.version>4.0.1</scala-maven-plugin.version>
     <scala.version>2.12.7</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
+    <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <asm.version>7.2</asm.version>
     <metrics.version>4.1.0</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
@@ -504,6 +505,7 @@
           <configuration>
             <scalaVersion>${scala.version}</scalaVersion>
             <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+            <recompileMode>${scala.plugin.recompileMode}</recompileMode>
             <args>
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
@@ -925,20 +927,9 @@
 
     <profile>
       <id>zinc</id>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>net.alchim31.maven</groupId>
-              <artifactId>scala-maven-plugin</artifactId>
-              <version>${scala-maven-plugin.version}</version>
-              <configuration>
-                <recompileMode>incremental</recompileMode>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
+      <properties>
+        <scala.plugin.recompileMode>incremental</scala.plugin.recompileMode>
+      </properties>
     </profile>
   </profiles>
 
