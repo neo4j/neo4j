@@ -28,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfilerTest
 {
-    private static final int COMPUTE_WORK_MILLIS = 100;
-    public static final String METHOD = "expensiveComputation";
+    private static final int COMPUTE_WORK_MILLIS = 10;
+    private static final String METHOD = "expensiveComputation";
 
     @Test
     void profilerMustNoticeWhereTimeGoes() throws Exception
@@ -37,11 +37,7 @@ class ProfilerTest
         Profiler profiler = Profiler.profiler();
         try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
-            do
-            {
-                expensiveComputation();
-            }
-            while ( tryGettingMoreSamples( profiler ) );
+            expensiveComputation( profiler );
         }
         profiler.finish();
         String output = getProfilerOutput( profiler );
@@ -54,22 +50,13 @@ class ProfilerTest
         Profiler profiler = Profiler.profiler();
         try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
-            do
-            {
-                expensiveComputation();
-            }
-            while ( tryGettingMoreSamples( profiler ) );
+            expensiveComputation( profiler );
         }
         otherIntenseWork();
         profiler.finish();
         String output = getProfilerOutput( profiler );
         assertThat( output ).contains( METHOD );
         assertThat( output ).doesNotContain( "otherIntensiveWork" );
-    }
-
-    private boolean tryGettingMoreSamples( Profiler profiler )
-    {
-        return !getProfilerOutput( profiler ).contains( METHOD ) && profiler.countSamples() < 100;
     }
 
     private static String getProfilerOutput( Profiler profiler )
@@ -83,9 +70,13 @@ class ProfilerTest
         return buffer.toString();
     }
 
-    private static void expensiveComputation() throws InterruptedException
+    private void expensiveComputation( Profiler profiler ) throws InterruptedException
     {
-        Thread.sleep( COMPUTE_WORK_MILLIS );
+        do
+        {
+            Thread.sleep( COMPUTE_WORK_MILLIS );
+        }
+        while ( !getProfilerOutput( profiler ).contains( METHOD ) );
     }
 
     private static void otherIntenseWork() throws InterruptedException
