@@ -82,7 +82,7 @@ class Neo4jAdapter(var managementService: DatabaseManagementService,
       case Failure(exception) =>
         tx.close()
         tx = database.beginTx()
-        val explainedResult = Try(tx.execute(explainPrefix + queryToExecute))
+        val explainedResult = Try(tx.execute(explainPrefix + queryToExecute, neo4jParams))
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
           case Success(_) => Phase.runtime
