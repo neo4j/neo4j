@@ -76,12 +76,12 @@ public class TokenRegistry
         reg = reg.copy();
         if ( token.isInternal() )
         {
-            checkNameUniqueness( reg.internalNameToId, token );
+            checkNameUniqueness( reg.internalNameToId, token, reg );
             reg.internalNameToId.put( token.name(), token.id() );
         }
         else
         {
-            checkNameUniqueness( reg.publicNameToId, token );
+            checkNameUniqueness( reg.publicNameToId, token, reg );
             reg.publicNameToId.put( token.name(), token.id() );
         }
         reg.idToToken.put( token.id(), token );
@@ -170,14 +170,14 @@ public class TokenRegistry
         {
             if ( token.isInternal() )
             {
-                checkNameUniqueness( uniqueInternalNames, token );
-                checkNameUniqueness( registries.internalNameToId, token );
+                checkNameUniqueness( uniqueInternalNames, token, registries );
+                checkNameUniqueness( registries.internalNameToId, token, registries );
                 uniqueInternalNames.put( token.name(), token.id() );
             }
             else
             {
-                checkNameUniqueness( uniquePublicNames, token );
-                checkNameUniqueness( registries.publicNameToId, token );
+                checkNameUniqueness( uniquePublicNames, token, registries );
+                checkNameUniqueness( registries.publicNameToId, token, registries );
                 uniquePublicNames.put( token.name(), token.id() );
             }
             if ( !uniqueIds.add( token.id() ) || registries.idToToken.containsKey( token.id() ) )
@@ -185,17 +185,13 @@ public class TokenRegistry
                 NamedToken existingToken = registries.idToToken.get( token.id() );
                 throw new NonUniqueTokenException( tokenType, token, existingToken );
             }
-        }
-
-        for ( NamedToken token : tokens )
-        {
             insertUnchecked( token, registries );
         }
 
         return registries;
     }
 
-    private void checkNameUniqueness( MutableObjectIntMap<String> namesToId, NamedToken token )
+    private void checkNameUniqueness( MutableObjectIntMap<String> namesToId, NamedToken token, Registries registries )
     {
         if ( namesToId.containsKey( token.name() ) )
         {
