@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.InitialState
@@ -44,24 +43,24 @@ import org.neo4j.cypher.internal.logical.plans.CursorProperty
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandCursorProperties
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.ExpandCursorProperties
-import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.symbols.TypeSpec
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
@@ -438,7 +437,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Selection(
         Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
         Expand(Argument(),
-          "x", OUTGOING, Seq.empty, "m", "n", readProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
+          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
             nodeProperties = Seq(CursorProperty("x", NODE_TYPE, prop)))))
       )
     )
@@ -460,7 +459,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Selection(
         Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
         Expand(indexSeek("x", "L", "prop", GetValue),
-          "x", OUTGOING, Seq.empty, "m", "n", readProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)))))
+          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)))))
       )
     )
     newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))

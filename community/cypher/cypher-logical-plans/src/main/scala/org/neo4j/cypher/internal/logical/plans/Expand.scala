@@ -19,18 +19,11 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.expressions.CachedProperty
-import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NODE_TYPE
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -45,7 +38,7 @@ case class Expand(source: LogicalPlan,
                   to: String,
                   relName: String,
                   mode: ExpansionMode = ExpandAll,
-                  readProperties: Option[ExpandCursorProperties] = None)
+                  expandProperties: Option[ExpandCursorProperties] = None)
                  (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -54,13 +47,13 @@ case class Expand(source: LogicalPlan,
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 
   def withNodeProperties(props: CursorProperty*): Expand =
-    copy(readProperties =
-      readProperties
+    copy(expandProperties =
+      expandProperties
         .map(_.withNodeProperties(props:_*))
         .orElse(Some(ExpandCursorProperties(nodeProperties = props))))
   def withRelationshipProperties(props: CursorProperty*): Expand =
-    copy(readProperties =
-      readProperties
+    copy(expandProperties =
+      expandProperties
         .map(_.withRelationshipProperties(props:_*))
         .orElse(Some(ExpandCursorProperties(relProperties = props))))
 }
