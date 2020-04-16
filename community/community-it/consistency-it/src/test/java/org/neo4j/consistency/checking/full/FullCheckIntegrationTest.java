@@ -66,6 +66,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -2292,7 +2293,8 @@ public class FullCheckIntegrationTest
             throws ConsistencyCheckIncompleteException
     {
         Config config = config();
-        final var consistencyFlags = new ConsistencyFlags( true, true, true, true, true, true );
+        boolean checkRelationshipTypeScanStore = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
+        final var consistencyFlags = new ConsistencyFlags( true, true, true, true, checkRelationshipTypeScanStore, true );
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, FormattedLog.toOutputStream( System.out ) );
