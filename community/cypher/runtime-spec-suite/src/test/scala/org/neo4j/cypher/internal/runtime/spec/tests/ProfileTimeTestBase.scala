@@ -409,9 +409,12 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(1).time() should be > 0L // procedure call
-    result.runtimeResult.queryProfile().operatorProfile(2).time() should be > 0L // unwind
-    result.runtimeResult.queryProfile().operatorProfile(3).time() should be > 0L // argument
+    val queryProfile = result.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).time() should be > 0L // procedure call
+    queryProfile.operatorProfile(2).time() should be > 0L // unwind
+    queryProfile.operatorProfile(3).time() should be > 0L // argument
+    // Should not attribute anything to the invalid id
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
 
   test("should profile time of ordered distinct") {
@@ -436,6 +439,34 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
     queryProfile.operatorProfile(1).time() should be > 0L // orderedDistinct
     queryProfile.operatorProfile(2).time() should be > 0L // input
+    // Should not attribute anything to the invalid id
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+  }
+
+  test("should profile time of ordered aggregation") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val input = for (n <- nodes) yield Array[Any](nodes.head, n)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).time() should be > 0L // produce results
+    queryProfile.operatorProfile(1).time() should be > 0L // orderedAggregation
+    queryProfile.operatorProfile(2).time() should be > 0L // input
+    // Should not attribute anything to the invalid id
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
 
   test("should profile time of partial sort") {

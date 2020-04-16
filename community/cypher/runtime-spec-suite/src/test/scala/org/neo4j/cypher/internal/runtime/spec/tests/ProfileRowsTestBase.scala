@@ -1027,6 +1027,30 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
   }
 
+  test("should profile rows with ordered aggregation") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val input = for (n <- nodes) yield Array[Any](nodes.head, n)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // orderedAggregation
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
+  }
+
   test("should profile rows of partial sort") {
     val input = for (i <- 0 until sizeHint) yield Array[Any](1, i)
 

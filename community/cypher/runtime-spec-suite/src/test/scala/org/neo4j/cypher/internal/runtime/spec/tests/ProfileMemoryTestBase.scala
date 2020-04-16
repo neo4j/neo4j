@@ -209,6 +209,22 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
   }
 
+  test("should profile memory of ordered aggregation") {
+    val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+  }
+
   //noinspection SameParameterValue
   protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
     val runtimeResult = profile(logicalQuery, runtime, input.stream())
