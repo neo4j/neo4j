@@ -122,6 +122,95 @@ abstract class CacheFromCursorTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).dbHits() should equal(0L) //projection
   }
 
+  test("should cache node properties in optionalExpand") {
+    // given
+    val nodes = given {
+      val (ns, _) = circleGraph(sizeHint, "A")
+      for (n <- ns) {
+        n.setProperty("prop", n.getId)
+      }
+      ns
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "prop")
+      .projection("cache[x.prop] AS prop")
+      .nonFuseable()
+      .optionalExpandAll("(x)-[r]->(y)", cacheNodeProperties = Seq("prop"))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n.getId))
+    runtimeResult should beColumns("x", "prop").withRows(expected)
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should equal(0L) //projection
+  }
+
+  test("should cache relationship properties in optionalRxpand") {
+    // given
+    val relationships = given {
+      val (_, rs) = circleGraph(sizeHint, "A")
+      for (r <- rs) {
+        r.setProperty("prop", r.getId)
+      }
+      rs
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "prop")
+      .projection("cacheR[r.prop] AS prop")
+      .nonFuseable()
+      .optionalExpandAll("(x)-[r]->(y)", cacheRelProperties = Seq("prop"))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.map(r => Array(r, r.getId))
+    runtimeResult should beColumns("r", "prop").withRows(expected)
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should equal(0L) //projection
+  }
+
+  test("should cache multiple node properties and relationship cursors in optionalExpand") {
+    // given
+    val nodes = given {
+      val (ns, rs) = circleGraph(sizeHint, "A")
+      for (n <- ns) {
+        n.setProperty("prop1", "nodeProp1")
+        n.setProperty("prop2", "nodeProp2")
+      }
+      for (r <- rs) {
+        r.setProperty("prop1", "relProp1")
+        r.setProperty("prop2", "relProp2")
+      }
+      ns
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("np1", "np2", "rp1", "rp2")
+      .projection("cache[x.prop1] AS np1", "cache[x.prop2] AS np2", "cacheR[r.prop1] AS rp1", "cacheR[r.prop2] AS rp2")
+      .nonFuseable()
+      .optionalExpandAll("(x)-[r]->(y)", cacheNodeProperties = Seq("prop1", "prop2"), cacheRelProperties = Seq("prop1", "prop2"))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array("nodeProp1", "nodeProp2", "relProp1", "relProp2"))
+    runtimeResult should beColumns("np1", "np2", "rp1", "rp2").withRows(expected)
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should equal(0L) //projection
+  }
+
   override protected def additionalConfigs: Seq[(Setting[_], Object)] = Seq(
     GraphDatabaseSettings.cypher_read_properties_from_cursor -> java.lang.Boolean.TRUE
   )

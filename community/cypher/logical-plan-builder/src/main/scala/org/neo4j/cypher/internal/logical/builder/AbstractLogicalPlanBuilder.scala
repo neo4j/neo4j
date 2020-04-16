@@ -297,13 +297,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       newNode(varFor(p.to))
     }
 
-    val expandProperties =
-      if (cacheNodeProperties.isEmpty && cacheRelProperties.isEmpty) None
-      else Some(
-        ExpandCursorProperties(
-          nodeProperties = cacheNodeProperties.map(prop => CursorProperty(p.from, NODE_TYPE, PropertyKeyName(prop)(NONE))),
-          relProperties = cacheRelProperties.map(prop => CursorProperty(p.relName, RELATIONSHIP_TYPE, PropertyKeyName(prop)(NONE)))
-        ))
+    val expandProperties = getExpandProperties(p.from, p.relName, cacheNodeProperties, cacheRelProperties)
     p.length match {
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode, expandProperties)(_)))
@@ -323,7 +317,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
     self
   }
-
   def shortestPath(pattern: String,
                    pathName: Option[String] = None,
                    all: Boolean = false,
@@ -381,12 +374,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
-  def optionalExpandAll(pattern: String, predicate: Option[String] = None): IMPL = {
+  def optionalExpandAll(pattern: String,
+                        predicate: Option[String] = None,
+                        cacheNodeProperties: Seq[String] = Seq.empty,
+                        cacheRelProperties: Seq[String] = Seq.empty): IMPL = {
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
         val pred = predicate.map(Parser.parseExpression)
-        appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp =>
+          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred, getExpandProperties(p.from, p.relName, cacheNodeProperties, cacheRelProperties)
+    )(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }
@@ -839,6 +837,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
+  private def getExpandProperties(from: String,
+                                  rel: String,
+                                  cacheNodeProperties: Seq[String],
+                                  cacheRelProperties: Seq[String]): Option[ExpandCursorProperties] = {
+    if (cacheNodeProperties.isEmpty && cacheRelProperties.isEmpty) {
+      None
+    } else {
+      Some(
+        ExpandCursorProperties(
+          nodeProperties = cacheNodeProperties.map(prop => CursorProperty(from, NODE_TYPE, PropertyKeyName(prop)(NONE))),
+          relProperties = cacheRelProperties.map(prop => CursorProperty(rel, RELATIONSHIP_TYPE, PropertyKeyName(prop)(NONE)))
+        ))
+    }
+  }
 }
 
 object AbstractLogicalPlanBuilder {
