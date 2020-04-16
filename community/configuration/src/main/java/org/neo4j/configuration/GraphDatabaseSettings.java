@@ -985,6 +985,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> log_queries_max_archives =
             newBuilder( "dbms.logs.query.rotation.keep_number", INT, 7 ).addConstraint( min( 1 ) ).dynamic().build();
 
+    @Description( "Create a heap dump just before the end of each query execution. " +
+            "The heap dump will be placed in log directory and the file name will contain the query id, to be correlated with an entry in the query log. " +
+            "Only live objects will be included to minimize the file size. " )
+    @Internal
+    public static final Setting<Boolean> log_queries_heap_dump_enabled =
+            newBuilder( "dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
+
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
             "flushing data into underlying storage." )
     @Internal
