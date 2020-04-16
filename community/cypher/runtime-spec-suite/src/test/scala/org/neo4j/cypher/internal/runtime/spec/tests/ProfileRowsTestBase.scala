@@ -126,26 +126,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() shouldBe sizeHint // all node scan
   }
 
-  test("should profile rows of partial sort") {
-    val input = for (i <- 0 until sizeHint) yield Array[Any](1, i)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input: _*))
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
-    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // partial sort
-    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
-  }
-
   test("should profile rows of limit") {
     given { nodeGraph(sizeHint) }
 
@@ -1044,6 +1024,26 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint // orderedDistinct
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
+  }
+
+  test("should profile rows of partial sort") {
+    val input = for (i <- 0 until sizeHint) yield Array[Any](1, i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input: _*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // partial sort
     queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
   }
 }
