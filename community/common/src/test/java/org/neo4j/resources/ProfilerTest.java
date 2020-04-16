@@ -28,7 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfilerTest
 {
-    private static final int COMPUTE_WORK_MILLIS = 40;
+    private static final int COMPUTE_WORK_MILLIS = 100;
+    public static final String METHOD = "expensiveComputation";
 
     @Test
     void profilerMustNoticeWhereTimeGoes() throws Exception
@@ -40,10 +41,11 @@ class ProfilerTest
             {
                 expensiveComputation();
             }
-            while ( profiler.countSamples() < 5 );
+            while ( tryGettingMoreSamples( profiler ) );
         }
+        profiler.finish();
         String output = getProfilerOutput( profiler );
-        assertThat( output ).contains( "expensiveComputation" );
+        assertThat( output ).contains( METHOD );
     }
 
     @Test
@@ -56,17 +58,22 @@ class ProfilerTest
             {
                 expensiveComputation();
             }
-            while ( profiler.countSamples() < 5 );
+            while ( tryGettingMoreSamples( profiler ) );
         }
         otherIntenseWork();
+        profiler.finish();
         String output = getProfilerOutput( profiler );
-        assertThat( output ).contains( "expensiveComputation" );
+        assertThat( output ).contains( METHOD );
         assertThat( output ).doesNotContain( "otherIntensiveWork" );
     }
 
-    private static String getProfilerOutput( Profiler profiler ) throws InterruptedException
+    private boolean tryGettingMoreSamples( Profiler profiler )
     {
-        profiler.finish();
+        return !getProfilerOutput( profiler ).contains( METHOD ) && profiler.countSamples() < 100;
+    }
+
+    private static String getProfilerOutput( Profiler profiler )
+    {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try ( PrintStream out = new PrintStream( buffer ) )
         {
