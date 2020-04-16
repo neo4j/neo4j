@@ -25,7 +25,6 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -61,15 +60,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
     }
 
     @Test
-    void shouldNotAllowWritesInAccessMode()
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.access() );
-
-        assertThrows( AuthorizationViolationException.class, tx::dataWrite );
-    }
-
-    @Test
     void shouldNotAllowSchemaWritesInAccessMode()
     {
         // Given
@@ -89,15 +79,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
 
         // Then
         assertNotNull( reads );
-    }
-
-    @Test
-    void shouldNotAllowWriteAccessInReadMode()
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.read() );
-
-        assertThrows( AuthorizationViolationException.class, tx::dataWrite );
     }
 
     @Test
@@ -137,19 +118,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
     }
 
     @Test
-    void shouldAllowWriteAccessInWriteOnlyMode() throws Throwable
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
-
-        // When
-        Write writes = tx.dataWrite();
-
-        // Then
-        assertNotNull( writes );
-    }
-
-    @Test
     void shouldNotAllowSchemaWriteAccessInWriteOnlyMode()
     {
         // Given
@@ -172,19 +140,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
     }
 
     @Test
-    void shouldAllowWritesInWriteMode() throws Throwable
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.write() );
-
-        // When
-        Write writes = tx.dataWrite();
-
-        // Then
-        assertNotNull( writes );
-    }
-
-    @Test
     void shouldNotAllowSchemaWriteAccessInWriteMode()
     {
         // Given
@@ -204,19 +159,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
 
         // Then
         assertNotNull( reads );
-    }
-
-    @Test
-    void shouldAllowWritesInFullMode() throws Throwable
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AUTH_DISABLED );
-
-        // When
-        Write writes = tx.dataWrite();
-
-        // Then
-        assertNotNull( writes );
     }
 
     @Test

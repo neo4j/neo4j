@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.platform.commons.util.BlacklistedExceptions;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.opentest4j.AssertionFailedError;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +37,7 @@ import java.util.Optional;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -43,7 +47,9 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -1029,9 +1035,12 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingNodeIdInBareCreateMethod()
     {
         // given
+        SecurityContext sctx = mock( SecurityContext.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        when( ktx.securityContext() ).thenReturn( sctx );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
@@ -1050,15 +1059,18 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingNodeIdInCreateWithLabelsMethod() throws ConstraintValidationException
     {
         // given
+        SecurityContext sctx = mock(SecurityContext.class);
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
         StatementLocks statementLocks = mock( StatementLocks.class );
         when( ktx.statementLocks() ).thenReturn( statementLocks );
+        when( ktx.securityContext() ).thenReturn( sctx );
         when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
         when( cursors.allocateFullAccessPropertyCursor( NULL ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
+        when( sctx.mode()).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
@@ -1079,18 +1091,22 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingRelationshipId() throws EntityNotFoundException
     {
         // given
+        SecurityContext sctx = mock( SecurityContext.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
         StatementLocks statementLocks = mock( StatementLocks.class );
         when( ktx.statementLocks() ).thenReturn( statementLocks );
+        when( ktx.securityContext() ).thenReturn( sctx );
         when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
         when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
+                                                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
+                                                mock( ConstraintIndexCreator.class ),
+                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL );
 
         // when
         operations.relationshipCreate( 0, 1, 2 );
@@ -1220,6 +1236,227 @@ class OperationsTest
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
         assertThat( e.getUserMessage( tokenHolders ) ).containsIgnoringCase( "index prototype" ).containsIgnoringCase( "not unique" );
+    }
+
+    @Test
+    void readOnlyModeShouldNotAllowWrites() throws Exception
+    {
+        // given
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.READ );
+
+        // when
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreate() );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDetachDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipCreate( 1L, 2, 3L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipRemoveProperty( 0L, 1 ) );
+    }
+
+    @Test
+    void accessModeShouldNotAllowWrites() throws Exception
+    {
+        // given
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.ACCESS );
+
+        // when
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreate() );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDetachDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipCreate( 1L, 2, 3L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipDelete( 0L ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipRemoveProperty( 0L, 1 ) );
+    }
+
+    @Test
+    void writeOnlyModeShouldAllowWrites() throws Exception
+    {
+        // given
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.WRITE_ONLY );
+
+        // We're testing security so no nodes exist
+        when( transaction.dataRead() ).thenReturn( new StubRead() );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( storageReader.nodeExists( anyLong(), any() ) ).thenReturn( false );
+
+        // then
+        assertAuthorized( () -> operations.nodeCreate() );
+        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
+        assertAuthorized( () -> operations.nodeDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
+        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
+        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
+        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
+    }
+
+    @Test
+    void writeModeShouldAllowWrites() throws Exception
+    {
+        // given
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.WRITE );
+        when( transaction.dataRead() ).thenReturn( new StubRead() );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+
+        // then
+        assertAuthorized( () -> operations.nodeCreate() );
+        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
+        assertAuthorized( () -> operations.nodeDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
+        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
+        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
+        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
+    }
+
+    @Test
+    void fullModeShouldAllowWrites() throws Exception
+    {
+        // given
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
+        when( transaction.dataRead() ).thenReturn( new StubRead() );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+
+        // then
+        assertAuthorized( () -> operations.nodeCreate() );
+        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
+        assertAuthorized( () -> operations.nodeDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
+        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
+        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
+        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
+        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
+        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
+    }
+
+    @Test
+    void nodeAddLabelShouldFailReadOnly() throws Exception
+    {
+        String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.READ, false);
+        assertThat( message).contains("Set label for label 'Label' is not allowed");
+    }
+
+    @Test
+    void nodeAddLabelShouldFailAccess() throws Exception
+    {
+        String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.ACCESS, false);
+        assertThat( message).contains("Set label for label 'Label' is not allowed");
+    }
+
+    @Test
+    void nodeAddLabelShouldSucceedWriteOnly() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.WRITE_ONLY, true);
+    }
+
+    @Test
+    void nodeAddLabelShouldSucceedWrite() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.WRITE, true);
+    }
+
+    @Test
+    void nodeAddLabelShouldSucceedWriteFull() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.FULL, true);
+    }
+
+    @Test
+    void nodeRemoveLabelShouldFailReadOnly() throws Exception
+    {
+        String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.READ, false);
+        assertThat( message).contains("Remove label for label 'Label' is not allowed");
+    }
+
+    @Test
+    void nodeRemoveLabelShouldFailAccess() throws Exception
+    {
+        String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.ACCESS, false);
+        assertThat( message).contains("Remove label for label 'Label' is not allowed");
+    }
+
+    @Test
+    void nodeRemoveLabelShouldSucceedWriteOnly() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.WRITE_ONLY, true);
+    }
+
+    @Test
+    void nodeRemoveLabelShouldSucceedWrite() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.WRITE, true);
+    }
+
+    @Test
+    void nodeRemoveLabelShouldSucceedWriteFull() throws Exception
+    {
+        runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.FULL, true);
+    }
+
+    private String runForSecurityLevel( Executable executable, AccessMode mode, boolean shoudldBeAuthorized ) throws Exception
+    {
+        SecurityContext sctx = mock( SecurityContext.class );
+        when( transaction.securityContext() ).thenReturn( sctx );
+        when( sctx.mode() ).thenReturn( mode );
+
+        when( nodeCursor.next() ).thenReturn( true );
+        when( nodeCursor.hasLabel( 2 ) ).thenReturn( false );
+        when( nodeCursor.hasLabel( 3 ) ).thenReturn( true );
+        when( tokenHolders.labelTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "Label", 2 ) );
+        if ( shoudldBeAuthorized )
+        {
+            assertAuthorized( executable );
+            return null;
+        }
+        else
+        {
+            AuthorizationViolationException exception = assertThrows( AuthorizationViolationException.class, executable );
+            return exception.getMessage();
+        }
+    }
+
+    private void assertAuthorized( Executable executable ) throws Exception
+    {
+        try
+        {
+            executable.execute();
+        }
+        catch ( AuthorizationViolationException e )
+        {
+            throw new AssertionFailedError( e.getMessage(), e );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // Don't care about this
+        }
+        catch ( Throwable t )
+        {
+            BlacklistedExceptions.rethrowIfBlacklisted( t );
+            throw new AssertionFailedError( "Unexpected exception thrown: " + t.getMessage(), t );
+        }
     }
 
     private static Iterator<ConstraintDescriptor> asIterator( ConstraintDescriptor constraint )
