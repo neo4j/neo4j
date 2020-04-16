@@ -21,7 +21,7 @@ package org.neo4j.memory;
 
 import java.util.List;
 
-public class SubMemoryGroupTracker extends DelegatingMemoryPool  implements NamedMemoryPool
+public class SubMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
 {
     private final TopMemoryGroupTracker parent;
     private final String name;
@@ -48,7 +48,7 @@ public class SubMemoryGroupTracker extends DelegatingMemoryPool  implements Name
     @Override
     public String databaseName()
     {
-        return null;
+        return name;
     }
 
     @Override

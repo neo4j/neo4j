@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.util.Preconditions.checkState;
 
 class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
@@ -59,7 +60,7 @@ class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryP
     @Override
     public String databaseName()
     {
-        return null;
+        return EMPTY;
     }
 
     @Override

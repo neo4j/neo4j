@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.NamedMemoryPool;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.memory.MemoryGroup.NETTY;
 
 public class BoltNettyMemoryPool implements NamedMemoryPool
@@ -54,7 +55,7 @@ public class BoltNettyMemoryPool implements NamedMemoryPool
     @Override
     public String databaseName()
     {
-        return null;
+        return EMPTY;
     }
 
     @Override
