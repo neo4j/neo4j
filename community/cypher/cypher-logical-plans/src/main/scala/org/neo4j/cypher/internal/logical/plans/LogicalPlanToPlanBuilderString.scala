@@ -162,7 +162,7 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(idName +: label.name +: argumentIds.toSeq)
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
-      case OptionalExpand(_, from, dir, _, to, relName, _, predicate) =>
+      case OptionalExpand(_, from, dir, _, to, relName, _, predicate, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
         s""" "($from)$dirStrA[$relName]$dirStrB($to)"$predStr """.trim

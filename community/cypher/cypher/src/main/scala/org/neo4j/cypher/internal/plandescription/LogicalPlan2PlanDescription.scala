@@ -527,7 +527,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LockNodes(_, nodesToLock) =>
         PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables)
 
-      case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
+      case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates, _) =>
         val predicate = predicates.map(p => s" WHERE ${PlanDescriptionArgumentSerializer.asPrettyString(p)}").getOrElse("")
         val details = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1)) + predicate)
         val modeText = mode match {
