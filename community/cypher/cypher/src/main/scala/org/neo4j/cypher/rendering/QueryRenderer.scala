@@ -49,9 +49,21 @@ object QueryRenderer {
     }
   }
 
-  private val expressionsPretty = ExpressionStringifier(extension = exprExtension, alwaysParens = false, alwaysBacktick = false, preferSingleQuotes = false)
-  private val expressionsStrict = ExpressionStringifier(extension = exprExtension, alwaysParens = true, alwaysBacktick = true, preferSingleQuotes = false)
-  private val renderer = Prettifier(expressionsStrict, extension = clauseExtension)
+  private val renderStrict = Prettifier(
+    expr = ExpressionStringifier(
+      extension = exprExtension,
+      alwaysParens = true,
+      alwaysBacktick = true,
+      preferSingleQuotes = false
+    ),
+    extension = clauseExtension
+  )
+  private val renderPretty = renderStrict.copy(
+    expr = renderStrict.expr.copy(
+      alwaysParens = false,
+      alwaysBacktick = false
+    )
+  )
 
   private val pos = InputPosition.NONE
 
@@ -61,21 +73,23 @@ object QueryRenderer {
     render(Query(None, SingleQuery(clauses)(pos))(pos))
 
   def render(statement: Statement): String =
-    renderer.asString(statement)
+    renderStrict.asString(statement)
 
-  def render(statement: Statement, options: QueryOptions): String = {
-    val executionMode = renderExecutionMode(options.executionMode)
-    val cypher = options.render.map(_ + NL).getOrElse("")
-    val query = renderer.asString(statement)
-    executionMode + cypher + query
-  }
+  def addOptions(statement: String, options: QueryOptions): String =
+    renderOptions(options) + statement
+
+  def renderOptions(options: QueryOptions): String =
+    renderExecutionMode(options.executionMode) + options.render.map(_ + NL).getOrElse("")
 
   private def renderExecutionMode(executionMode: CypherExecutionMode): String = executionMode match {
-    case CypherExecutionMode.explain => "EXPLAIN "
-    case CypherExecutionMode.profile => "PROFILE "
+    case CypherExecutionMode.explain => "EXPLAIN " + NL
+    case CypherExecutionMode.profile => "PROFILE " + NL
     case _                           => ""
   }
 
   def pretty(expression: Expression): String =
-    expressionsPretty.apply(expression)
+    renderPretty.expr.apply(expression)
+
+  def pretty(statement: Statement): String =
+    renderPretty.asString(statement)
 }
