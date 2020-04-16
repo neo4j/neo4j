@@ -104,7 +104,14 @@ public interface Read
      */
     void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
 
-    void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
+    /**
+     * Scan all nodes with a label.
+     *
+     * @param label the label
+     * @param cursor the cursor to use for consuming the results.
+     * @param order the requested order on the query result.
+     */
+    void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order );
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 

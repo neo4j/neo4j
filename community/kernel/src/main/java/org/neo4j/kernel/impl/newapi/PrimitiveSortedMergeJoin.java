@@ -20,20 +20,14 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
-
-import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
- * A sort merge join that sorts nodes by their values (properties).
+ * A sort merge join that sorts nodes by their ids
  */
-final class SortedMergeJoin
+final class PrimitiveSortedMergeJoin
 {
     private long nextFromA = -1;
     private long nextFromB = -1;
-    private Value[] valuesFromA;
-    private Value[] valuesFromB;
     private int indexOrder;
 
     void initialize( IndexOrder indexOrder )
@@ -41,8 +35,6 @@ final class SortedMergeJoin
         this.indexOrder = indexOrder == IndexOrder.DESCENDING ? 1 : -1;
         this.nextFromA = -1;
         this.nextFromB = -1;
-        this.valuesFromA = null;
-        this.valuesFromB = null;
     }
 
     boolean needsA()
@@ -55,49 +47,38 @@ final class SortedMergeJoin
         return nextFromB == -1;
     }
 
-    void setA( long nodeId, Value[] values )
+    void setA( long nodeId )
     {
         nextFromA = nodeId;
-        valuesFromA = values;
     }
 
-    void setB( long nodeId, Value[] values )
+    void setB( long nodeId )
     {
         nextFromB = nodeId;
-        valuesFromB = values;
     }
 
     void next( Sink sink )
     {
-        int c = 0;
-        if ( valuesFromA != null && valuesFromB != null )
+        long c = 0;
+        if ( nextFromA != -1 && nextFromB != -1 )
         {
-            checkArgument( valuesFromA.length == valuesFromB.length,
-                           "Expected index and txState values to have same dimensions, but got %d values from index and %d from txState",
-                           valuesFromB.length, valuesFromA.length );
-
-            for ( int i = 0; c == 0 && i < valuesFromA.length; i++ )
-            {
-                c = Values.COMPARATOR.compare( valuesFromA[i], valuesFromB[i] );
-            }
+            c = nextFromA - nextFromB;
         }
 
-        if ( nextFromB == -1 || Integer.signum( c ) == indexOrder )
+        if ( nextFromB == -1 || Long.signum( c ) == indexOrder )
         {
-            sink.acceptSortedMergeJoin( nextFromA, valuesFromA );
+            sink.acceptSortedMergeJoin( nextFromA );
             nextFromA = -1;
-            valuesFromA = null;
         }
         else
         {
-            sink.acceptSortedMergeJoin( nextFromB, valuesFromB );
+            sink.acceptSortedMergeJoin( nextFromB );
             nextFromB = -1;
-            valuesFromB = null;
         }
     }
 
     interface Sink
     {
-        void acceptSortedMergeJoin( long nodeId, Value[] values );
+        void acceptSortedMergeJoin( long nodeId );
     }
 }

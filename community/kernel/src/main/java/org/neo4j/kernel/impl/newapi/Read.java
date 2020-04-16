@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -243,14 +244,14 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
+    public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order )
     {
         ktx.assertOpen();
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-        indexCursor.scan( labelScan.initialize( indexCursor.nodeLabelClient(), cursorTracer ), label );
+        indexCursor.scan( labelScan.initialize( indexCursor.nodeLabelClient(), order, cursorTracer ), label, order );
     }
 
     @Override
@@ -320,7 +321,7 @@ abstract class Read implements TxStateHolder,
 
             TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
             TokenScan relationshipTypeScan = relationshipTypeScanReader.entityTokenScan( type, cursorTracer );
-            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.relationshipTypeClient(), cursorTracer );
+            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.relationshipTypeClient(), IndexOrder.NONE, cursorTracer );
 
             cursor.scan( progressor, type );
         }

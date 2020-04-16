@@ -62,6 +62,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -1168,7 +1169,7 @@ public class Operations implements Write, SchemaWrite
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
         {
-            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
+            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
             constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
         }
 
@@ -1185,7 +1186,7 @@ public class Operations implements Write, SchemaWrite
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
         {
-            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
+            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
             constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
         }
 

@@ -139,9 +139,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
 
-  def getNodesByLabel(id: Int): Iterator[NodeValue]
+  def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue]
 
-  def getNodesByLabelPrimitive(id: Int): LongIterator
+  def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit

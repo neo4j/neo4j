@@ -32,6 +32,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -250,7 +251,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
         static final TokenScan INSTANCE = new EmptyTokenScan();
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer )
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, PageCursorTracer cursorTracer )
         {
             return IndexProgressor.EMPTY;
         }

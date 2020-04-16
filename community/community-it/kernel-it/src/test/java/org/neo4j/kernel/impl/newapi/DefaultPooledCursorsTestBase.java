@@ -37,11 +37,11 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.storageengine.api.RelationshipSelection;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -202,7 +202,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         try ( KernelTransaction tx = beginTransaction() )
         {
             NodeLabelIndexCursor c1 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
-            tx.dataRead().nodeLabelScan( 1, c1 );
+            tx.dataRead().nodeLabelScan( 1, c1, IndexOrder.NONE );
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor( NULL );

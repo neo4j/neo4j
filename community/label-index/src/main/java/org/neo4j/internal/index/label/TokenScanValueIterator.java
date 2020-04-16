@@ -27,10 +27,11 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexOrder;
 
-import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.offsetOf;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
@@ -129,7 +130,7 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
             }
 
             //noinspection AssertWithSideEffects
-            assert keysInOrder( key );
+            assert keysInOrder( key, IndexOrder.ASCENDING );
         }
     }
 }

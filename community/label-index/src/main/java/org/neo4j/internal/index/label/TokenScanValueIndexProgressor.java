@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
@@ -35,11 +36,13 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource
 {
     private final EntityTokenClient client;
+    private final IndexOrder indexOrder;
 
-    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client )
+    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client, IndexOrder indexOrder )
     {
         super( cursor );
         this.client = client;
+        this.indexOrder = indexOrder;
     }
 
     /**
@@ -56,9 +59,24 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
         {
             while ( bits != 0 )
             {
-                int delta = Long.numberOfTrailingZeros( bits );
-                bits &= bits - 1;
-                if ( client.acceptEntity( baseEntityId + delta, null ) )
+                long idForClient;
+                if (indexOrder != IndexOrder.DESCENDING)
+                {
+                    int delta = Long.numberOfTrailingZeros( bits );
+
+                    bits &= bits - 1;
+                    idForClient = baseEntityId + delta;
+                }
+                else
+                {
+                    int delta = Long.numberOfLeadingZeros( bits );
+
+                    long bitToZeroe = 1L << (Long.SIZE - delta - 1);
+                    bits &= ~bitToZeroe;
+                    idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
+                }
+
+                if ( client.acceptEntity( idForClient, null ) )
                 {
                     return true;
                 }
@@ -67,7 +85,6 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             {
                 if ( !cursor.next() )
                 {
-                    close();
                     return false;
                 }
             }
@@ -81,7 +98,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             bits = cursor.value().bits;
 
             //noinspection AssertWithSideEffects
-            assert keysInOrder( key );
+            assert keysInOrder( key, indexOrder );
         }
     }
 

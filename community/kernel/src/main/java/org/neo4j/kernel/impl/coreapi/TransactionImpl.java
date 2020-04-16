@@ -69,6 +69,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -682,7 +683,7 @@ public class TransactionImpl implements InternalTransaction
         NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() );
         PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer() );
 
-        transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
+        transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor, IndexOrder.NONE );
 
         return new NodeLabelPropertyIterator( transaction.dataRead(),
                 nodeLabelCursor,
@@ -751,7 +752,7 @@ public class TransactionImpl implements InternalTransaction
         }
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
-        ktx.dataRead().nodeLabelScan( labelId, cursor );
+        ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
         return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
     }
 

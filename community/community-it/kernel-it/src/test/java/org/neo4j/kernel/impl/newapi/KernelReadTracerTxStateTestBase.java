@@ -106,7 +106,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
 
             // when
             cursor.setTracer( tracer );
-            tx.dataRead().nodeLabelScan( barId, cursor );
+            tx.dataRead().nodeLabelScan( barId, cursor, IndexOrder.NONE );
             tracer.assertEvents( OnLabelScan( barId ) );
 
             assertTrue( cursor.next() );

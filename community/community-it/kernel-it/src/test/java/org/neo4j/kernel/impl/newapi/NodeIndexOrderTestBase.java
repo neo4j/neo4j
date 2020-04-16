@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexOrder;
@@ -50,7 +51,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     private final String indexName = "myIndex";
 
     @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING"} )
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldRangeScanInOrder( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
@@ -63,7 +64,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
             expected.add( nodeWithProp( tx, "low" ) );
             expected.add( nodeWithProp( tx, "trello" ) );
             nodeWithProp( tx, "yellow" );
-            expected.add( nodeWithProp( tx, "low" ) );
+            expected.add( nodeWithProp( tx, "loww" ) );
             nodeWithProp( tx, "below" );
             tx.commit();
         }
@@ -92,7 +93,61 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING"} )
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldLabelScanInOrder( IndexOrder indexOrder ) throws Exception
+    {
+        List<Long> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            nodeWithLabel( tx, "OUTSIDE1" );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            nodeWithLabel( tx, "OUTSIDE2" );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            nodeWithLabel( tx, "OUTSIDE1" );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            nodeWithLabel( tx, "OUTSIDE1" );
+            nodeWithLabel( tx, "OUTSIDE1" );
+            nodeWithLabel( tx, "OUTSIDE2" );
+            expected.add( nodeWithLabel( tx, "INSIDE" ) );
+            nodeWithLabel( tx, "OUTSIDE2" );
+            tx.commit();
+        }
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            int label = tx.tokenRead().nodeLabel( "INSIDE" );
+            tx.dataRead().prepareForLabelScans();
+
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
+            {
+                nodeWithLabel( tx, "OUTSIDE1" );
+                nodeWithLabel( tx, "OUTSIDE1" );
+                expected.add( nodeWithLabel( tx, "INSIDE" ) );
+                nodeWithLabel( tx, "OUTSIDE1" );
+                nodeWithLabel( tx, "OUTSIDE2" );
+                expected.add( nodeWithLabel( tx, "INSIDE" ) );
+                expected.add( nodeWithLabel( tx, "INSIDE" ) );
+                expected.add( nodeWithLabel( tx, "INSIDE" ) );
+                nodeWithLabel( tx, "OUTSIDE2" );
+                expected.add( nodeWithLabel( tx, "INSIDE" ) );
+
+                tx.dataRead().nodeLabelScan( label, cursor, indexOrder );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldPrefixScanInOrder( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
@@ -133,8 +188,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         }
     }
 
-    private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor,
-            IndexOrder indexOrder )
+    private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor, IndexOrder indexOrder )
     {
         Comparator<Pair<Long,Value>> comparator = indexOrder == IndexOrder.ASCENDING ? ( a, b ) -> Values.COMPARATOR.compare( a.other(), b.other() )
                                                                                      : ( a, b ) -> Values.COMPARATOR.compare( b.other(), a.other() );
@@ -143,13 +197,29 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         Iterator<Pair<Long,Value>> expectedRows = expected.iterator();
         while ( cursor.next() && expectedRows.hasNext() )
         {
-            Pair<Long, Value> expectedRow = expectedRows.next();
+            Pair<Long,Value> expectedRow = expectedRows.next();
             assertThat( cursor.nodeReference() ).isEqualTo( expectedRow.first() );
             for ( int i = 0; i < cursor.numberOfProperties(); i++ )
             {
                 Value value = cursor.propertyValue( i );
                 assertThat( value ).isEqualTo( expectedRow.other() );
             }
+        }
+
+        assertFalse( expectedRows.hasNext() );
+        assertFalse( cursor.next() );
+    }
+
+    private void assertResultsInOrder( List<Long> expected, NodeLabelIndexCursor cursor, IndexOrder indexOrder )
+    {
+
+        Comparator<Long> c = indexOrder == IndexOrder.ASCENDING ? Comparator.naturalOrder() : Comparator.reverseOrder();
+        expected.sort( c );
+        Iterator<Long> expectedRows = expected.iterator();
+        while ( cursor.next() && expectedRows.hasNext() )
+        {
+            long expectedRow = expectedRows.next();
+            assertThat( cursor.nodeReference() ).isEqualTo( expectedRow );
         }
 
         assertFalse( expectedRows.hasNext() );
@@ -168,6 +238,14 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
+    }
+
+    private long nodeWithLabel( KernelTransaction tx, String label ) throws Exception
+    {
+        Write write = tx.dataWrite();
+        long node = write.nodeCreate();
+        write.nodeAddLabel( node, tx.tokenWrite().labelGetOrCreateForName( label ) );
+        return node;
     }
 
     private Pair<Long,Value> nodeWithProp( KernelTransaction tx, Object value ) throws Exception

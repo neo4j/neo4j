@@ -26,6 +26,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -86,7 +87,7 @@ class KernelAPIParallelLabelScanStressIT
     {
         return () ->
         {
-            read.nodeLabelScan( label, cursor );
+            read.nodeLabelScan( label, cursor, IndexOrder.NONE );
 
             int n = 0;
             while ( cursor.next() )

@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.TestAccessMode;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -535,7 +535,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
-            tx.dataRead().nodeLabelScan( node.labels[0], cursor );
+            tx.dataRead().nodeLabelScan( node.labels[0], cursor, IndexOrder.NONE );
 
             // then
             assertFalse( cursor.next() );
@@ -553,7 +553,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
-            tx.dataRead().nodeLabelScan( node.labels[0], cursor );
+            tx.dataRead().nodeLabelScan( node.labels[0], cursor, IndexOrder.NONE );
 
             // then
             assertFalse( cursor.next() );
@@ -572,7 +572,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
             tx.dataWrite().nodeAddLabel( node.node, label );
-            tx.dataRead().nodeLabelScan( label, cursor );
+            tx.dataRead().nodeLabelScan( label, cursor, IndexOrder.NONE );
 
             // then
             assertTrue( cursor.next() );
@@ -593,7 +593,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeRemoveLabel( node1.node, node1.labels[0] );
             tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
-            tx.dataRead().nodeLabelScan( node1.labels[0], cursor );
+            tx.dataRead().nodeLabelScan( node1.labels[0], cursor, IndexOrder.NONE );
 
             // then
             assertTrue( cursor.next() );

@@ -22,24 +22,29 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityTokenClient;
+import org.neo4j.kernel.impl.util.collection.ArrayBackedLongIterator;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implements NodeLabelIndexCursor
+class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implements NodeLabelIndexCursor, PrimitiveSortedMergeJoin.Sink
 {
     private Read read;
     private long node;
     private TokenSet labels;
     private LongIterator added;
     private LongSet removed;
+    private IndexOrder indexOrder;
+    private boolean useMergeSort;
+    private PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
 
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
     private final DefaultNodeCursor nodeCursor;
@@ -53,15 +58,40 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
         this.node = NO_ID;
     }
 
-    public void scan( IndexProgressor progressor, int label )
+    public void scan( IndexProgressor progressor, int label, IndexOrder order )
     {
         super.initialize( progressor );
+        this.indexOrder = order;
         if ( read.hasTxStateWithChanges() )
         {
             final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
-            added = changes.getAdded().freeze().longIterator();
+            LongSet frozenAdded = changes.getAdded().freeze();
+            if ( indexOrder == IndexOrder.NONE )
+            {
+                useMergeSort = false;
+                added = frozenAdded.longIterator();
+            }
+            else
+            {
+                useMergeSort = true;
+                sortedMergeJoin.initialize( indexOrder );
+                long[] addedSortedArray = frozenAdded.toSortedArray();
+                if (indexOrder == IndexOrder.ASCENDING)
+                {
+                    added = new ArrayBackedLongIterator( addedSortedArray, false );
+                }
+                else
+                {
+                    added = new ArrayBackedLongIterator( addedSortedArray, true );
+                }
+            }
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
+        else
+        {
+            useMergeSort = false;
+        }
+
         if ( tracer != null )
         {
             tracer.onLabelScan( label );
@@ -72,6 +102,8 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     public void scan( IndexProgressor progressor, LongIterator added, LongSet removed, int label )
     {
         super.initialize( progressor );
+        indexOrder = IndexOrder.NONE;
+        useMergeSort = false;
         this.added = added;
         this.removed = removed;
         initSecurity( label );
@@ -121,6 +153,18 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     @Override
     public boolean next()
     {
+        if ( useMergeSort )
+        {
+            return nextWithOrdering();
+        }
+        else
+        {
+            return nextWithoutOrder();
+        }
+    }
+
+    private boolean nextWithoutOrder()
+    {
         if ( added != null && added.hasNext() )
         {
             this.node = added.next();
@@ -139,6 +183,34 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
             }
             return hasNext;
         }
+    }
+
+    private boolean nextWithOrdering()
+    {
+        if ( sortedMergeJoin.needsA() && added.hasNext() )
+        {
+            long node = added.next();
+            sortedMergeJoin.setA( node );
+        }
+
+        if ( sortedMergeJoin.needsB() && innerNext() )
+        {
+            sortedMergeJoin.setB( this.node );
+        }
+
+        sortedMergeJoin.next( this );
+        boolean next = this.node != -1;
+        if ( tracer != null && next )
+        {
+            tracer.onNode( this.node );
+        }
+        return next;
+    }
+
+    @Override
+    public void acceptSortedMergeJoin( long nodeId )
+    {
+        this.node = nodeId;
     }
 
     public void setRead( Read read )

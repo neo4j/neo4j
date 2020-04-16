@@ -30,11 +30,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link TokenScanReader} for reading data from {@link NativeTokenScanStore}.
@@ -119,17 +120,23 @@ class NativeTokenScanReader implements TokenScanReader
 
     private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
     {
-        TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
-        TokenScanKey to = new TokenScanKey( tokenId, Long.MAX_VALUE );
-        return index.seek( from, to, cursorTracer );
+        return seekerForToken( startId, Long.MAX_VALUE, tokenId, IndexOrder.NONE, cursorTracer );
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer ) throws IOException
     {
-        TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
-        TokenScanKey to = new TokenScanKey( tokenId, rangeOf( stopId ) );
-
-        return index.seek( from, to, cursorTracer );
+        if (indexOrder != IndexOrder.DESCENDING)
+        {
+            TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
+            TokenScanKey to = new TokenScanKey( tokenId, rangeOf( stopId ) );
+            return index.seek( from, to, cursorTracer );
+        }
+        else
+        {
+            TokenScanKey from = new TokenScanKey( tokenId, rangeOf( stopId ) );
+            TokenScanKey to = new TokenScanKey( tokenId, rangeOf( startId ) );
+            return index.seek( from, to, cursorTracer );
+        }
     }
 
     private class NativeTokenScan implements TokenScan
@@ -146,9 +153,9 @@ class NativeTokenScanReader implements TokenScanReader
         }
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer )
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, PageCursorTracer cursorTracer )
         {
-            return init( client, 0L, Long.MAX_VALUE, cursorTracer );
+            return init( client, Long.MIN_VALUE, Long.MAX_VALUE, indexOrder, cursorTracer );
         }
 
         @Override
@@ -165,22 +172,22 @@ class NativeTokenScanReader implements TokenScanReader
             {
                 return IndexProgressor.EMPTY;
             }
-            return init( client, start, stop, cursorTracer );
+            return init( client, start, stop, IndexOrder.NONE, cursorTracer );
         }
 
-        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, PageCursorTracer cursorTracer )
+        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, IndexOrder indexOrder, PageCursorTracer cursorTracer )
         {
             Seeker<TokenScanKey,TokenScanValue> cursor;
             try
             {
-                cursor = seekerForToken( start, stop, tokenId, cursorTracer );
+                cursor = seekerForToken( start, stop, tokenId, indexOrder, cursorTracer );
             }
             catch ( IOException e )
             {
                 throw new UncheckedIOException( e );
             }
 
-            return new TokenScanValueIndexProgressor( cursor, client );
+            return new TokenScanValueIndexProgressor( cursor, client, indexOrder );
         }
 
         private long roundUp( long sizeHint )

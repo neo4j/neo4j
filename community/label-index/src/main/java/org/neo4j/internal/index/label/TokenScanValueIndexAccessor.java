@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexOrder;
 
 /**
  * Base class for iterator and index-progressor of token scans.
@@ -60,12 +61,26 @@ abstract class TokenScanValueIndexAccessor
         this.cursor = cursor;
     }
 
-    boolean keysInOrder( TokenScanKey key )
+    boolean keysInOrder( TokenScanKey key, IndexOrder order )
     {
-        assert key.tokenId >= prevToken : "Expected to get ordered results, got " + key +
-                " where previous token was " + prevToken;
-        assert key.idRange > prevRange : "Expected to get ordered results, got " + key +
-                " where previous range was " + prevRange;
+        if ( order == IndexOrder.NONE )
+        {
+            return true;
+        }
+        else if ( prevToken != -1 && prevRange != -1 && order == IndexOrder.ASCENDING )
+        {
+            assert key.tokenId >= prevToken : "Expected to get ascending ordered results, got " + key +
+                                              " where previous token was " + prevToken;
+            assert key.idRange > prevRange : "Expected to get ascending ordered results, got " + key +
+                                             " where previous range was " + prevRange;
+        }
+        else if ( prevToken != -1 && prevRange != -1 && order == IndexOrder.DESCENDING )
+        {
+            assert key.tokenId <= prevToken : "Expected to get descending ordered results, got " + key +
+                                              " where previous token was " + prevToken;
+            assert key.idRange < prevRange : "Expected to get descending ordered results, got " + key +
+                                             " where previous range was " + prevRange;
+        }
         prevToken = key.tokenId;
         prevRange = key.idRange;
         // Made as a method returning boolean so that it can participate in an assert-call.

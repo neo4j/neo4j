@@ -69,6 +69,7 @@ import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
@@ -80,7 +81,6 @@ import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.TokenRead
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
@@ -372,9 +372,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (transactionalContext.kernelTransaction.dataWrite().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
-  override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
+  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue] = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
-    reads().nodeLabelScan(id, cursor)
+    reads().nodeLabelScan(id, cursor, asKernelIndexOrder(indexOrder))
     new CursorIterator[NodeValue] {
       override protected def fetchNext(): NodeValue = {
         if (cursor.next()) fromNodeEntity(entityAccessor.newNodeEntity(cursor.nodeReference()))
@@ -414,9 +414,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getNodesByLabelPrimitive(id: Int): LongIterator = {
+  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
-    reads().nodeLabelScan(id, cursor)
+    reads().nodeLabelScan(id, cursor, asKernelIndexOrder(indexOrder))
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 

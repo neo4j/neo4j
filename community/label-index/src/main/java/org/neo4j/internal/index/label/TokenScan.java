@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
@@ -32,9 +33,10 @@ public interface TokenScan
      *
      * @param client the client used for consuming data
      * @param cursorTracer underlying page cursor tracer
+     * @param indexOrder the order in which to obtain results
      * @return a progressor used for reading data
      */
-    IndexProgressor initialize( IndexProgressor.EntityTokenClient client, PageCursorTracer cursorTracer );
+    IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, PageCursorTracer cursorTracer );
 
     /**
      * Initialize the client for reading a batch of tokens.

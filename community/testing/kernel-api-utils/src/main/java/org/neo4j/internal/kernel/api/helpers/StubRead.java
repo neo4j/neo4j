@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
@@ -76,7 +77,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
+    public void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order )
     {
         ((StubNodeLabelIndexCursor) cursor).initialize( label );
     }

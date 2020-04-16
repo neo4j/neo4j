@@ -24,10 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.PrimitiveIterator;
+import java.util.stream.LongStream;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -41,44 +46,101 @@ import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
+@SuppressWarnings( "StatementWithEmptyBody" )
 @Execution( CONCURRENT )
 class NativeTokenScanReaderTest
 {
     private static final int LABEL_ID = 1;
+    private long[] keys = {0, 1, 3};
+    private long[] bitsets = {0b1000_1000__1100_0010L,
+                              0b0000_0010__0000_1000L,
+                              0b0010_0000__1010_0001L};
+    private long[] expected = {
+            // base 0*64 = 0
+            1, 6, 7, 11, 15,
+            // base 1*64 = 64
+            64 + 3, 64 + 9,
+            // base 3*64 = 192
+            192 + 0, 192 + 5, 192 + 7, 192 + 13};
+
+    private Seeker<TokenScanKey,TokenScanValue> cursor( boolean ascending ) throws Exception
+    {
+        Seeker<TokenScanKey,TokenScanValue> cursor = mock( Seeker.class );
+        when( cursor.next() ).thenReturn( true, true, true, false );
+        when( cursor.key() ).thenReturn(
+                key( ascending ? keys[0] : keys[2] ),
+                key( keys[1] ),
+                key( ascending ? keys[2] : keys[0] ) );
+        when( cursor.value() ).thenReturn(
+                value( ascending ? bitsets[0] : bitsets[2] ),
+                value( bitsets[1] ),
+                value( ascending ? bitsets[2] : bitsets[0] ),
+                null );
+        return cursor;
+    }
+
+    private GBPTree<TokenScanKey,TokenScanValue> setupMockIndex( boolean ascending ) throws Exception
+    {
+
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
+                .thenAnswer( ignored -> cursor( ascending ) );
+        return index;
+    }
 
     @SuppressWarnings( "unchecked" )
     @Test
     void shouldFindMultipleNodesInEachRange() throws Exception
     {
         // GIVEN
-        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
-        Seeker<TokenScanKey,TokenScanValue> cursor = mock( Seeker.class );
-        when( cursor.next() ).thenReturn( true, true, true, false );
-        when( cursor.key() ).thenReturn(
-                key( 0 ),
-                key( 1 ),
-                key( 3 ) );
-        when( cursor.value() ).thenReturn(
-                value( 0b1000_1000__1100_0010L ),
-                value( 0b0000_0010__0000_1000L ),
-                value( 0b0010_0000__1010_0001L ),
-                null );
-        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
-                .thenReturn( cursor );
+        GBPTree<TokenScanKey,TokenScanValue> index = setupMockIndex( true );
+
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator iterator = reader.entitiesWithToken( LABEL_ID, NULL ) )
         {
             // THEN
-            assertArrayEquals( new long[]{
-                            // base 0*64 = 0
-                            1, 6, 7, 11, 15,
-                            // base 1*64 = 64
-                            64 + 3, 64 + 9,
-                            // base 3*64 = 192
-                            192 + 0, 192 + 5, 192 + 7, 192 + 13},
+            assertArrayEquals( expected, closingAsArray( iterator ) );
+        }
+    }
 
-                    closingAsArray( iterator ) );
+    @Test
+    void shouldFindMultipleWithProgressorAscending() throws Exception
+    {
+        // GIVEN
+        GBPTree<TokenScanKey,TokenScanValue> index = setupMockIndex( true );
+
+        // WHEN
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
+        TokenScan tokenScan = reader.entityTokenScan( LABEL_ID, NULL );
+        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient( LongStream.of( expected ).iterator() );
+        IndexProgressor progressor = tokenScan.initialize( client, IndexOrder.ASCENDING, NULL );
+
+        while ( progressor.next() )
+        {
+        }
+    }
+
+    @Test
+    void shouldFindMultipleWithProgressorDescending() throws Exception
+    {
+        // GIVEN
+        GBPTree<TokenScanKey,TokenScanValue> index = setupMockIndex( false );
+
+        // WHEN
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
+        TokenScan tokenScan = reader.entityTokenScan( LABEL_ID, NULL );
+        PrimitiveIterator.OfLong iterator = LongStream.of( expected )
+                                                      .boxed()
+                                                      .sorted( Collections.reverseOrder() )
+                                                      .mapToLong( l -> l )
+                                                      .iterator();
+        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient( iterator );
+        IndexProgressor progressor = tokenScan.initialize( client, IndexOrder.DESCENDING, NULL );
+
+        while ( progressor.next() )
+        {
         }
     }
 
