@@ -352,20 +352,6 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
     assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
   }
 
-  test("should profile memory of ordered distinct") {
-    val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
-  }
-
   test("should profile memory of node left outer hash join") {
     given {
       nodeGraph(SIZE)
