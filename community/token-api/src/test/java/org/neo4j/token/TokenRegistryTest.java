@@ -80,10 +80,7 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
-        assertThrows( NonUniqueTokenException.class, () ->
-        {
-            registry.put( new NamedToken( INBOUND1_TYPE, 3 ) );
-        } );
+        assertThrows( NonUniqueTokenException.class, () -> registry.put( new NamedToken( INBOUND1_TYPE, 3 ) ) );
 
         assertEquals( 1, registry.getId( INBOUND1_TYPE ).intValue() );
         assertEquals( 2, registry.getId( INBOUND2_TYPE ).intValue() );
@@ -97,10 +94,7 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2, true ) );
 
-        assertThrows( NonUniqueTokenException.class, () ->
-        {
-            registry.put( new NamedToken( INBOUND1_TYPE, 3, true ) );
-        } );
+        assertThrows( NonUniqueTokenException.class, () -> registry.put( new NamedToken( INBOUND1_TYPE, 3, true ) ) );
 
         assertEquals( 1, registry.getIdInternal( INBOUND1_TYPE ).intValue() );
         assertEquals( 2, registry.getIdInternal( INBOUND2_TYPE ).intValue() );
@@ -144,8 +138,11 @@ class TokenRegistryTest
     @Test
     void setInitialTokensMustThrowOnDuplicateNameInTokensAdded()
     {
-        assertThrows( NonUniqueTokenException.class,
-                () -> registry.setInitialTokens( asList( new NamedToken( INBOUND1_TYPE, 1 ), new NamedToken( INBOUND1_TYPE, 2 ) ) ) );
+        var first = new NamedToken( INBOUND1_TYPE, 1 );
+        var second = new NamedToken( INBOUND1_TYPE, 2 );
+        var e = assertThrows( NonUniqueTokenException.class,
+                () -> registry.setInitialTokens( asList( first, second ) ) );
+        assertThat( e.getMessage(), containsString( first.toString() ) );
     }
 
     @Test
