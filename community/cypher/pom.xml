@@ -48,6 +48,7 @@
                 <module>compatibility-spec-suite</module>
                 <module>spec-suite-tools</module>
                 <module>logical-plan-builder</module>
+                <module>ast-factory</module>
                 <module>logical-plan-generator</module>
                 <module>runtime-spec-suite</module>
                 <module>expression-evaluator</module>
