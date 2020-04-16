@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -61,7 +60,6 @@ public class RecordStorageReader implements StorageReader
     private final RelationshipGroupStore relationshipGroupStore;
     private final PropertyStore propertyStore;
     private final CountsAccessor counts;
-    private final MetaDataStore metaDataStore;
     private final SchemaCache schemaCache;
 
     private boolean closed;
@@ -74,7 +72,6 @@ public class RecordStorageReader implements StorageReader
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.counts = counts;
-        this.metaDataStore = neoStores.getMetaDataStore();
         this.schemaCache = schemaCache;
     }
 
