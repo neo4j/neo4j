@@ -24,7 +24,7 @@
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.planner.spi</moduleName>
+        <moduleName>org.neo4j.cypher.internal.ast.factory</moduleName>
     </properties>
 
     <licenses>
@@ -53,4 +53,23 @@
         <!-- shared versions are defined in the parent pom -->
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- disable scala-maven-plugin, because we have no scala -->
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
