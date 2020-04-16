@@ -182,6 +182,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       "x",
       _,
       _,
+      _,
       _
       ) => ()
     }

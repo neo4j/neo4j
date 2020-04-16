@@ -35,8 +35,9 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
-import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -166,6 +167,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
       case expand: Expand if readPropertiesFromCursor => acc =>
           val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
           (newAcc, Some(identity))
+
+      case expand: OptionalExpand if readPropertiesFromCursor => acc =>
+        val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
+        (newAcc, Some(identity))
     }
 
     var currentTypes = from.semanticTable().types
@@ -205,13 +210,26 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
           }
         }
 
-      case e@Expand(_, from, _, _, _, rel, _, _) if readPropertiesFromCursor =>
+      case e:Expand if readPropertiesFromCursor =>
         val nodePropsToCache = acc.properties.collect {
-          case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == from & usages >= 1 =>
+          case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == e.from & usages >= 1 =>
             CursorProperty(n, NODE_TYPE, prop)
         }
         val relPropsToCache = acc.properties.collect {
-          case (Property(Variable(r), prop), PropertyUsages(_, true, usages, RELATIONSHIP_TYPE)) if r == rel & usages >= 1 =>
+          case (Property(Variable(r), prop), PropertyUsages(_, true, usages, RELATIONSHIP_TYPE)) if r == e.relName & usages >= 1 =>
+            CursorProperty(r, RELATIONSHIP_TYPE, prop)
+        }
+
+        e.withNodeProperties(nodePropsToCache.toList:_*)
+          .withRelationshipProperties(relPropsToCache.toList:_*)
+
+      case e:OptionalExpand if readPropertiesFromCursor =>
+        val nodePropsToCache = acc.properties.collect {
+          case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == e.from & usages >= 1 =>
+            CursorProperty(n, NODE_TYPE, prop)
+        }
+        val relPropsToCache = acc.properties.collect {
+          case (Property(Variable(r), prop), PropertyUsages(_, true, usages, RELATIONSHIP_TYPE)) if r == e.relName & usages >= 1 =>
             CursorProperty(r, RELATIONSHIP_TYPE, prop)
         }
 

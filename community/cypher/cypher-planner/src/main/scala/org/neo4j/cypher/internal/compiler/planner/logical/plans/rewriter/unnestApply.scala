@@ -130,7 +130,7 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
       res
 
     // L Ax (OEX Arg) => OEX L
-    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
+    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _, _)) =>
       val res = oex.copy(source = lhs)(attributes.copy(oex.id))
       solveds.copy(apply.id, res.id)
       res

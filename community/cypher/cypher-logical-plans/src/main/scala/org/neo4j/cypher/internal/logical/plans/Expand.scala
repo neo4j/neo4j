@@ -70,13 +70,25 @@ case class OptionalExpand(source: LogicalPlan,
                           to: String,
                           relName: String,
                           mode: ExpansionMode = ExpandAll,
-                          predicate: Option[Expression] = None)
+                          predicate: Option[Expression] = None,
+                          expandProperties: Option[ExpandCursorProperties] = None)
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
+
+  def withNodeProperties(props: CursorProperty*): OptionalExpand =
+    copy(expandProperties =
+      expandProperties
+        .map(_.withNodeProperties(props:_*))
+        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))
+  def withRelationshipProperties(props: CursorProperty*): OptionalExpand =
+    copy(expandProperties =
+      expandProperties
+        .map(_.withRelationshipProperties(props:_*))
+        .orElse(Some(ExpandCursorProperties(relProperties = props))))
 }
 
 /**
