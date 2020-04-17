@@ -30,6 +30,11 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
  */
 public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,Object,Object,Object,NULL,NULL>
 {
+
+    public static final String LONG_MIN_VALUE_DECIMAL_STRING = Long.toString( Long.MIN_VALUE ).substring( 1 );
+    public static final String LONG_MIN_VALUE_HEXADECIMAL_STRING = Long.toString( Long.MIN_VALUE, 16 ).substring( 1 );
+    public static final String LONG_MIN_VALUE_OCTAL_STRING = Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
+
     @Override
     public NULL newSingleQuery( List<NULL> nulls )
     {
@@ -279,6 +284,11 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public Object newDecimalInteger( NULL p, String image, boolean negated )
     {
+        if ( negated && LONG_MIN_VALUE_DECIMAL_STRING.equals( image ) )
+        {
+            return Long.MIN_VALUE;
+        }
+
         long x = Long.parseLong( image );
         return negated ? -x : x;
     }
@@ -286,6 +296,11 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public Object newHexInteger( NULL p, String image, boolean negated )
     {
+        if ( negated && LONG_MIN_VALUE_HEXADECIMAL_STRING.equals( image ) )
+        {
+            return Long.MIN_VALUE;
+        }
+
         long x = Long.parseLong( image.substring( 2 ), 16 );
         return negated ? -x : x;
     }
@@ -293,6 +308,11 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public Object newOctalInteger( NULL p, String image, boolean negated )
     {
+        if ( negated && LONG_MIN_VALUE_OCTAL_STRING.equals( image ) )
+        {
+            return Long.MIN_VALUE;
+        }
+
         long x = Long.parseLong( image.substring( 1 ), 8 );
         return negated ? -x : x;
     }
@@ -637,6 +657,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public NULL inputPosition( int offset, int line, int column )
     {
-        throw new UnsupportedOperationException( "inputPosition is not a literal" );
+        return null;
     }
 }

@@ -41,13 +41,15 @@ public class LiteralInterpreterTest
         assertEquals( 12345L, x.newDecimalInteger( POS, "12345", false ) );
         assertEquals( -12345L, x.newDecimalInteger( POS, "12345", true ) );
         assertEquals( Long.MAX_VALUE, x.newDecimalInteger( POS, Long.toString( Long.MAX_VALUE ), false ) );
-        assertEquals( Long.MIN_VALUE, x.newDecimalInteger( POS, Long.toString( Long.MIN_VALUE ), false ) );
+        assertEquals( Long.MIN_VALUE, x.newDecimalInteger( POS, Long.toString( Long.MIN_VALUE ).substring( 1 ), true ) );
 
         assertEquals( 8L, x.newOctalInteger( POS, "010", false ) );
         assertEquals( -8L, x.newOctalInteger( POS, "010", true ) );
+        assertEquals( Long.MIN_VALUE, x.newOctalInteger( POS, Long.toString( Long.MIN_VALUE, 8 ).substring( 1 ), true ) );
 
         assertEquals( 255L, x.newHexInteger( POS, "0xff", false ) );
         assertEquals( -255L, x.newHexInteger( POS, "0xff", true ) );
+        assertEquals( Long.MIN_VALUE, x.newHexInteger( POS, Long.toString( Long.MIN_VALUE, 16 ).substring( 1 ), true ) );
 
         assertEquals( 0.0d, x.newDouble( POS, "0.0" ) );
         assertEquals( 0.0d, x.newDouble( POS, "0.0e0" ) );
