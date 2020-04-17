@@ -78,9 +78,9 @@ trait Command extends Parser
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
     group(keyword("CREATE CONSTRAINT") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None)) |
+      ((variable, labels, property) => ast.CreateUniquePropertyConstraint(variable, labels, Seq(property), None)) |
     group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueConstraintSyntax) ~~>>
-      ((name, variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name)))
+      ((name, variable, labels, property) => ast.CreateUniquePropertyConstraint(variable, labels, Seq(property), Some(name)))
   }
 
   def CreateUniqueCompositeConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
@@ -109,7 +109,7 @@ trait Command extends Parser
 
   def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
     group(keyword("DROP CONSTRAINT") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.DropUniquePropertyConstraint(variable, label, Seq(property)))
+      ((variable, labels, property) => ast.DropUniquePropertyConstraint(variable, labels, Seq(property)))
   }
 
   def DropUniqueCompositeConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
@@ -135,10 +135,10 @@ trait Command extends Parser
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
-  private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntax: Rule3[Variable, Seq[LabelName], Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabels ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueCompositeConstraintSyntax: Rule3[Variable, Seq[LabelName], Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabels ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
   private def NodePropertyExistenceConstraintSyntax = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~

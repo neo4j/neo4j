@@ -68,13 +68,13 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-      case CreateUniquePropertyConstraint(node, label, props, name) =>
-        Some(plans.CreateUniquePropertyConstraint(node.name, label, props, name))
+      case CreateUniquePropertyConstraint(node, labels, props, name) =>
+        Some(plans.CreateUniquePropertyConstraint(node.name, labels, props, name))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-      case DropUniquePropertyConstraint(_, label, props) =>
-        Some(plans.DropUniquePropertyConstraint(label, props))
+      case DropUniquePropertyConstraint(_, labels, props) =>
+        Some(plans.DropUniquePropertyConstraint(labels, props))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case CreateNodePropertyExistenceConstraint(_, label, prop, name) =>

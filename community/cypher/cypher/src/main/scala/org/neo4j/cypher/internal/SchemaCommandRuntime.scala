@@ -87,20 +87,20 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-    case CreateUniquePropertyConstraint(_, label, props, name) => (_, _) =>
+    case CreateUniquePropertyConstraint(_, labels, props, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateUniqueConstraint", ctx => {
-        val labelId = ctx.getOrCreateLabelId(label.name)
+        val labelIds = labels.map( l => ctx.getOrCreateLabelId(l.name) )
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.createUniqueConstraint(labelId, propertyKeyIds, name)
+        ctx.createUniqueConstraint(labelIds, propertyKeyIds, name)
       })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-    case DropUniquePropertyConstraint(label, props) => (_, _) =>
+    case DropUniquePropertyConstraint(labels, props) => (_, _) =>
       SchemaWriteExecutionPlan("DropUniqueConstraint", ctx => {
-        val labelId = ctx.getOrCreateLabelId(label.name)
+        val labelIds = labels.map( l => ctx.getOrCreateLabelId(l.name) )
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.dropUniqueConstraint(labelId, propertyKeyIds)
+        ctx.dropUniqueConstraint(labelIds, propertyKeyIds)
       })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS

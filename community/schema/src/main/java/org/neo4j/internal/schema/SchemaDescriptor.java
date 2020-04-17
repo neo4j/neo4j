@@ -59,6 +59,13 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, new int[]{labelId}, propertyIds );
     }
 
+    static LabelSchemaDescriptor forLabels( int[] labelIds, int... propertyIds )
+    {
+        validateLabelIds( labelIds );
+        validatePropertyIds( propertyIds );
+        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, labelIds, propertyIds );
+    }
+
     static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
         validateRelationshipTypeIds( relTypeId );

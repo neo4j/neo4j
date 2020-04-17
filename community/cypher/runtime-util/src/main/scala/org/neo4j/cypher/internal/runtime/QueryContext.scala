@@ -149,9 +149,9 @@ trait QueryContext extends TokenContext with DbAccess {
   def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
+  def createUniqueConstraint(labelIds: Seq[Int], propertyKeyIds: Seq[Int], name: Option[String]): Unit
 
-  def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
+  def dropUniqueConstraint(labelId: Seq[Int], propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit

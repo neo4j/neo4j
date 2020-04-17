@@ -41,8 +41,8 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
-case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateUniquePropertyConstraint(node: String, labels: Seq[LabelName], props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropUniquePropertyConstraint(labels: Seq[LabelName], props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
 case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

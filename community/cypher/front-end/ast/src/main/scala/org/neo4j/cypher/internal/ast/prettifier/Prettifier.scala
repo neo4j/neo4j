@@ -190,22 +190,22 @@ case class Prettifier(
     case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS NODE KEY"
 
-    case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, None) =>
-      s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+    case CreateUniquePropertyConstraint(Variable(variable), labels, properties, None) =>
+      s"CREATE CONSTRAINT ON ($variable:${labels.map(_.asCanonicalStringVal).mkString("(", ", ", ")")}) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
-    case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, Some(name)) =>
-      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+    case CreateUniquePropertyConstraint(Variable(variable), labels, properties, Some(name)) =>
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:${labels.map(_.asCanonicalStringVal).mkString("(", ", ", ")")}) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
-    case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties) =>
-      s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+    case DropUniquePropertyConstraint(Variable(variable), labels, properties) =>
+      s"DROP CONSTRAINT ON ($variable:${labels.map(_.asCanonicalStringVal).mkString("(", ", ", ")")}) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
-    case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, None) =>
+    case CreateNodePropertyExistenceConstraint(Variable(variable), label, property, None) =>
       s"CREATE CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
-    case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, Some(name)) =>
+    case CreateNodePropertyExistenceConstraint(Variable(variable), label, property, Some(name)) =>
       s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
-    case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property) =>
+    case DropNodePropertyExistenceConstraint(Variable(variable), label, property) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
     case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, None) =>

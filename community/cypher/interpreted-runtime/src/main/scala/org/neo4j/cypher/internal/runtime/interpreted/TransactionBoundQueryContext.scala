@@ -775,13 +775,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE_EXISTS)
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
+  override def createUniqueConstraint(labelIds: Seq[Int], propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(
-      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).withName(name.orNull))
+      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabels(labelIds.toArray, propertyKeyIds: _*)).withName(name.orNull))
 
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+  override def dropUniqueConstraint(labelId: Seq[Int], propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE)
+      .constraintDrop(SchemaDescriptor.forLabels(labelId.toArray, propertyKeyIds: _*), ConstraintType.UNIQUE)
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(

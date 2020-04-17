@@ -111,15 +111,15 @@ class CommandParserTest
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")),
       Seq(prop("node", "prop1"), prop("node", "prop2")), None))
   }
 
@@ -161,15 +161,15 @@ class CommandParserTest
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")),
       Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint")))
   }
 
@@ -197,15 +197,15 @@ class CommandParserTest
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"),
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), Seq(labelName("Label")),
       Seq(prop("node", "prop1"), prop("node", "prop2"))))
   }
 

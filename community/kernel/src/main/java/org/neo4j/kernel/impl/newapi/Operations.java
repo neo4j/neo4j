@@ -501,14 +501,14 @@ public class Operations implements Write, SchemaWrite
             assertIndexOnline( index );
             SchemaDescriptor schema = index.schema();
             long[] labelIds = schema.lockingKeys();
-            if ( labelIds.length != 1 )
+/*            if ( labelIds.length != 1 )
             {
                 throw new UnableToValidateConstraintException( constraint, new AssertionError(
                         format( "Constraint indexes are not expected to be multi-token indexes, " +
                                         "but the constraint %s was referencing an index with the following schema: %s.",
                                 constraint.userDescription( token ), schema.userDescription( token ) ) ), token );
             }
-
+*/
             //Take a big fat lock, and check for existing node in index
             ktx.statementLocks().optimistic().acquireExclusive(
                     ktx.lockTracer(), INDEX_ENTRY,

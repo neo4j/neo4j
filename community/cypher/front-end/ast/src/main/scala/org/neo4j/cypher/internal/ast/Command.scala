@@ -109,7 +109,7 @@ trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand
 
   val entityType = CTNode
 
-  def label: LabelName
+  def labels: Seq[LabelName]
 
   override def restrictedToSingleProperty: Boolean = true
 }
@@ -134,9 +134,9 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
 
 case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends NodeKeyConstraintCommand
 
-case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class CreateUniquePropertyConstraint(variable: Variable, labels: Seq[LabelName], properties: Seq[Property], name: Option[String])(val position: InputPosition) extends UniquePropertyConstraintCommand
 
-case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class DropUniquePropertyConstraint(variable: Variable, labels: Seq[LabelName], properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
 
 case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property, name: Option[String])(val position: InputPosition) extends NodePropertyConstraintCommand
 
