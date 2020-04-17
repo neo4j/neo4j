@@ -193,6 +193,9 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
                 // Invalid graph name
                 assertFails(s"$command ${privilege.name} {*} ON $graphKeyword f:oo $nodeKeyword * $preposition role")
                 assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword f:oo $nodeKeyword * $preposition role")
+                // mixing specific graph and *
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword foo, * $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword *, foo $nodeKeyword * $preposition role")
                 // invalid property definition
                 assertFails(s"$command ${privilege.name} {b:ar} ON $graphKeyword foo $nodeKeyword * $preposition role")
                 // missing graph name

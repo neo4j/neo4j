@@ -201,6 +201,16 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationCom
           }
       }
 
+      // Mix of specific graph and *
+
+      test(s"$command TRAVERSE ON GRAPH foo, * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$command TRAVERSE ON GRAPH *, foo $preposition role") {
+        failsToParse
+      }
+
       // Database instead of graph keyword
 
       test(s"$command TRAVERSE ON DATABASES * $preposition role") {

@@ -128,6 +128,16 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
             failsToParse
           }
 
+          test(s"$command $privilege ON DATABASE foo, * $preposition role") {
+            // specific database followed by *
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASE *, foo $preposition role") {
+            // * followed by specific database
+            failsToParse
+          }
+
           test(s"$command $privilege ON DATABASE foo $preposition r:ole") {
             // invalid role name
             failsToParse
