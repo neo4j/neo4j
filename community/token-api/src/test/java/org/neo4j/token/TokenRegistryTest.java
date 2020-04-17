@@ -19,11 +19,10 @@
  */
 package org.neo4j.token;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.Collection;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
 
@@ -138,7 +137,7 @@ class TokenRegistryTest
         var second = new NamedToken( INBOUND1_TYPE, 2 );
         var e = assertThrows( NonUniqueTokenException.class,
                 () -> registry.setInitialTokens( asList( first, second ) ) );
-        assertThat( e.getMessage(), containsString( first.toString() ) );
+        assertThat( e.getMessage() ).contains( first.toString() );
     }
 
     @Test
