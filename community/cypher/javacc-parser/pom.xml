@@ -101,7 +101,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-ast-factory</artifactId>
+            <artifactId>cypher-ast-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
 
