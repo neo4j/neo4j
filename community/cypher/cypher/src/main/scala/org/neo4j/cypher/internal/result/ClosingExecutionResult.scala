@@ -58,8 +58,10 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   override def initiate(): Unit = {
     safely { inner.initiate() }
 
-    if (inner.isClosed)
+    if (inner.isClosed) {
+      monitor.beforeEnd(query, true)
       monitor.endSuccess(query)
+    }
   }
 
   override def fieldNames(): Array[String] = safely { inner.fieldNames() }

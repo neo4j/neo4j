@@ -125,8 +125,8 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // when
     intercept[TestClosingException] { x.close() }
 
-    // then
-    monitor.assertError(query, TestClosingException("close"))
+    // then (in this case the query appeared to succeed until we closed it)
+    monitor.assertError(query, TestClosingException("close"), expectedBeforeEndReason = Success)
   }
 
   // HELPERS
@@ -208,26 +208,34 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
   case class AssertableMonitor() extends QueryExecutionMonitor {
 
-    private var nCalls = 0
+    private var nEndCalls = 0
+    private var nBeforeEndCalls = 0
     private var query: ExecutingQuery = _
-    private var reason: CloseReason = _
+    private var endReason: CloseReason = _
+    private var beforeEndReason: CloseReason = _
 
     override def endFailure(query: ExecutingQuery, failure: Throwable): Unit = {
       this.query = query
-      this.reason = if (failure == null) Failure else Error(failure)
-      nCalls += 1
+      endReason = if (failure == null) Failure else Error(failure)
+      nEndCalls += 1
     }
 
     override def endFailure(query: ExecutingQuery, reason: String): Unit = {
       this.query = query
-      this.reason = Failure
-      nCalls += 1
+      endReason = Failure
+      nEndCalls += 1
     }
 
     override def endSuccess(query: ExecutingQuery): Unit = {
       this.query = query
-      this.reason = Success
-      nCalls += 1
+      endReason = Success
+      nEndCalls += 1
+    }
+
+    override def beforeEnd(query: ExecutingQuery, success: Boolean): Unit = {
+      this.query = query
+      beforeEndReason = if (success) Success else Failure
+      nBeforeEndCalls += 1
     }
 
     override def start(query: ExecutingQuery): Unit = {
@@ -235,21 +243,27 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     }
 
     def assertSuccess(query: ExecutingQuery): Unit = {
-      this.reason should equal(Success)
+      this.endReason should equal(Success)
       this.query should equal(query)
-      this.nCalls should equal(1)
+      this.nEndCalls should equal(1)
+      this.nBeforeEndCalls should equal(1)
+      beforeEndReason should equal(Success)
     }
 
     def assertFailure(query: ExecutingQuery): Unit = {
-      this.reason should equal(Failure)
+      this.endReason should equal(Failure)
       this.query should equal(query)
-      this.nCalls should equal(1)
+      this.nEndCalls should equal(1)
+      this.nBeforeEndCalls should equal(1)
+      beforeEndReason should equal(Failure)
     }
 
-    def assertError(query: ExecutingQuery, throwable: Throwable): Unit = {
-      this.reason should equal(Error(throwable))
+    def assertError(query: ExecutingQuery, throwable: Throwable, expectedBeforeEndReason: CloseReason = Failure): Unit = {
+      this.endReason should equal(Error(throwable))
       this.query should equal(query)
-      this.nCalls should equal(1)
+      this.nEndCalls should equal(1)
+      this.nBeforeEndCalls should equal(1)
+      beforeEndReason should equal(expectedBeforeEndReason)
     }
   }
 }
