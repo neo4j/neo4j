@@ -29,7 +29,6 @@ import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -41,7 +40,7 @@ sealed trait InputQuery {
 
   def description: String
 
-  def cacheKey: AnyRef
+  def cacheKey: String
 
   def withRecompilationLimitReached: InputQuery
 }
@@ -51,10 +50,8 @@ sealed trait InputQuery {
  */
 case class PreParsedQuery(statement: String, rawStatement: String, options: QueryOptions) extends InputQuery {
 
-  val statementWithVersionAndPlanner: String = {
-    val f = options.cacheKey
-    s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.operatorEngineInfo} ${f.debugFlags} $statement"
-  }
+  val statementWithVersionAndPlanner: String =
+    s"${options.cacheKey.render} $statement"
 
   override def cacheKey: String = statementWithVersionAndPlanner
 
@@ -74,13 +71,8 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 
-  override def cacheKey: FullyParsedQuery.CacheKey = FullyParsedQuery.CacheKey(statement = state.statement(), fields = options.cacheKey)
+  override val cacheKey: String = s"${options.cacheKey.render} ${state.queryText}"
 
-}
-
-object FullyParsedQuery {
-
-  case class CacheKey(statement: Statement, fields: QueryOptions.CacheKey)
 }
 
 /**
@@ -172,7 +164,10 @@ object QueryOptions {
                       expressionEngineInfo: String,
                       operatorEngineInfo: String,
                       interpretedPipesFallbackInfo: String,
-                      debugFlags: String)
+                      debugFlags: String) {
+    def render: String =
+      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $debugFlags"
+  }
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
     isPeriodicCommit = false,

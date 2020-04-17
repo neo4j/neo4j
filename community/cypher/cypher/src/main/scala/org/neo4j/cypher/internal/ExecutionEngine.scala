@@ -95,32 +95,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       planReusabilitiy,
       log)
 
-
-  private val toStringCacheTracer: CacheTracer[Pair[AnyRef, ParameterTypeMap]] = new CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
-    private def str(p: Pair[AnyRef, ParameterTypeMap]): Pair[String, ParameterTypeMap] =
-      Pair.of(p.first().toString, p.other())
-
-    override def queryCacheHit(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryCacheHit(str(queryKey), metaData)
-
-    override def queryCacheMiss(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryCacheMiss(str(queryKey), metaData)
-
-    override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryCompile(str(queryKey), metaData)
-
-    override def queryCompileWithExpressionCodeGen(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryCompileWithExpressionCodeGen(str(queryKey), metaData)
-
-    override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
-      cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData, maybeReason)
-
-    override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
-      cacheTracer.queryCacheFlush(sizeOfCacheBeforeFlush)
-  }
-
-  private val queryCache: QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery] =
-    new QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, toStringCacheTracer)
+  private val queryCache: QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery] =
+    new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 
