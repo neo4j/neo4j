@@ -1,0 +1,2234 @@
+
+options {
+  LOOKAHEAD = 1;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  STATIC = false;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = true;
+  JAVA_UNICODE_ESCAPE = true;
+  UNICODE_INPUT = true;
+  IGNORE_CASE = false;
+  USER_TOKEN_MANAGER = false;
+  USER_CHAR_STREAM = false;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  FORCE_LA_CHECK = false;
+  TOKEN_EXTENDS = "WithOffset";
+  COMMON_TOKEN_ACTION = true;
+}
+
+PARSER_BEGIN(Cypher)
+
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.parser.javacc;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.neo4j.cypher.internal.ast.factory.ASTFactory;
+
+/** Simple brace matcher. */
+public class Cypher<STATEMENT,
+                    QUERY extends STATEMENT,
+                    CLAUSE,
+                    RETURN_CLAUSE extends CLAUSE,
+                    RETURN_ITEM,
+                    ORDER_ITEM,
+                    PATTERN,
+                    NODE_PATTERN,
+                    REL_PATTERN,
+                    PATH_LENGTH,
+                    SET_CLAUSE extends CLAUSE,
+                    SET_ITEM,
+                    REMOVE_ITEM,
+                    CALL_RESULT_ITEM,
+                    HINT,
+                    EXPRESSION,
+                    VARIABLE extends EXPRESSION,
+                    PROPERTY extends EXPRESSION,
+                    MAP_PROJECTION_ITEM,
+                    POS> {
+
+    ParseExceptionFactory exceptionFactory;
+    ASTFactory<STATEMENT,
+               QUERY,
+               CLAUSE,
+               RETURN_CLAUSE,
+               RETURN_ITEM,
+               ORDER_ITEM,
+               PATTERN,
+               NODE_PATTERN,
+               REL_PATTERN,
+               PATH_LENGTH,
+               SET_CLAUSE,
+               SET_ITEM,
+               REMOVE_ITEM,
+               CALL_RESULT_ITEM,
+               HINT,
+               EXPRESSION,
+               VARIABLE,
+               PROPERTY,
+               MAP_PROJECTION_ITEM,
+               POS> astFactory;
+
+    public Cypher(ASTFactory<STATEMENT,
+                             QUERY,
+                             CLAUSE,
+                             RETURN_CLAUSE,
+                             RETURN_ITEM,
+                             ORDER_ITEM,
+                             PATTERN,
+                             NODE_PATTERN,
+                             REL_PATTERN,
+                             PATH_LENGTH,
+                             SET_CLAUSE,
+                             SET_ITEM,
+                             REMOVE_ITEM,
+                             CALL_RESULT_ITEM,
+                             HINT,
+                             EXPRESSION,
+                             VARIABLE,
+                             PROPERTY,
+                             MAP_PROJECTION_ITEM,
+                             POS> astFactory,
+                  ParseExceptionFactory exceptionFactory,
+                  java.io.Reader stream) {
+        this(stream);
+        this.astFactory = astFactory;
+        this.exceptionFactory = exceptionFactory;
+    }
+
+  private POS pos(Token t) {
+    return astFactory.inputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+  }
+}
+
+PARSER_END(Cypher)
+
+TOKEN_MGR_DECLS :
+{
+	public void CommonTokenAction(Token t)
+	{
+		/*  TODO: support position
+		t.beginOffset = input_stream.getBeginOffset();
+		t.endOffset = t.beginOffset + t.image.length();
+		 */
+	}
+}
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+/* COMMENTS */
+
+MORE :
+{
+  "//" : IN_SINGLE_LINE_COMMENT
+|
+  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+|
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  <FORMAL_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+/* LITERALS */
+
+TOKEN :
+{
+  < DECIMAL_DOUBLE: (["+","-"])? (
+                                    (["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)?
+                                  | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)?
+                                  | (["0"-"9"])+ <DECIMAL_EXPONENT>
+                                  ) >
+|
+  < #DECIMAL_EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+|
+  < UNSIGNED_DECIMAL_INTEGER:
+    ( ["1"-"9"] (["0"-"9"])* ) | "0" >
+|
+  < UNSIGNED_HEX_INTEGER: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+|
+  < UNSIGNED_OCTAL_INTEGER: "0" (["0"-"7"])+ >
+}
+
+MORE : { < STRING1_OPEN: "'" > : STRING1 }
+<STRING1> MORE: { "\\\\" }
+<STRING1> MORE: { "\\\'" { image.delete(image.length()-2, image.length()); image.append("'"); } }
+<STRING1> MORE: { "\\\"" }
+<STRING1> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
+<STRING1> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
+<STRING1> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
+<STRING1> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
+<STRING1> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
+<STRING1> MORE: { "\\u[0-7][0-7][0-7][0-7]" }
+<STRING1> MORE: { < ~["'","\\","\n","\r"] > }
+<STRING1> TOKEN: { <STRING_LITERAL1: "'"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+
+MORE : { < STRING2_OPEN: "\"" > : STRING2 }
+<STRING2> MORE: { "\\\\" }
+<STRING2> MORE: { "\\\'" }
+<STRING2> MORE: { "\\\"" }
+<STRING2> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
+<STRING2> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
+<STRING2> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
+<STRING2> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
+<STRING2> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
+<STRING2> MORE: { "\\u[0-7][0-7][0-7][0-7]" }
+<STRING2> MORE: { < ~["\"","\\","\n","\r"] > }
+<STRING2> TOKEN: { <STRING_LITERAL2: "\""> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+
+MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
+<ESC_SYMB_NAME> MORE: { < ~["`","\\"] > }
+<ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+
+
+TOKEN [IGNORE_CASE] :
+{
+  <TRUE: "true">
+| <FALSE: "false">
+| <NULL: "null">
+| < RETURN: "RETURN" >
+| < CREATE: "CREATE" >
+| < DELETE: "DELETE" >
+| < SET: "SET" >
+| < REMOVE: "REMOVE" >
+| < DETACH: "DETACH" >
+| < MATCH: "MATCH" >
+| < WITH: "WITH" >
+| < UNWIND: "UNWIND" >
+| < CALL: "CALL" >
+| < YIELD: "YIELD" >
+| < LOAD_CSV: "LOAD CSV" >
+| < PERIODIC_COMMIT: "PERIODIC COMMIT" >
+| < HEADERS: "HEADERS" >
+| < FROM: "FROM" >
+| < FIELDTERMINATOR: "FIELDTERMINATOR" >
+| < FOREACH: "FOREACH" >
+| < WHERE: "WHERE" >
+| < DISTINCT: "DISTINCT" >
+| < MERGE: "MERGE" >
+| < ON_MATCH: "ON MATCH" >
+| < ON_CREATE: "ON CREATE" >
+| < OPTIONAL: "OPTIONAL" >
+| < USING: "USING" >
+| < ORDERBY: "ORDER BY" >
+| < DESC: "DESC" ("ENDING")? >
+| < ASC: "ASC" ("ENDING")? >
+| < SKIPROWS: "SKIP" >
+| < LIMITROWS: "LIMIT" >
+| < UNION: "UNION" >
+| < UNION_ALL: "UNION ALL" >
+| < DROP: "DROP" >
+| < INDEX: "INDEX" >
+| < SEEK: "SEEK" >
+| < SCAN: "SCAN" >
+| < JOIN_ON: "JOIN ON" >
+| < CONSTRAINT: "CONSTRAINT" >
+| < ASSERT: "ASSERT" >
+| < IS_NODE_KEY: "IS NODE KEY" >
+| < IS_UNIQUE: "IS UNIQUE" >
+| < ON: "ON" >
+| < FOR: "FOR" >
+| < AS: "AS" >
+| < OR: "OR" >
+| < XOR: "XOR" >
+| < AND: "AND" >
+| < NOT: "NOT" >
+| < EQ: "=" >
+| < NEQ: "!=" >
+| < NEQ2: "<>" >
+| < LE: "<=" >
+| < GE: ">=" >
+| < LT: "<" >
+| < GT: ">" >
+| < REGEQ: "=~" >
+| < STARTSWITH: "STARTS WITH" >
+| < ENDSWITH: "ENDS WITH" >
+| < CONTAINS: "CONTAINS" >
+| < IN: "IN" >
+| < COUNT: "count" >
+| < FILTER: "FILTER" >
+| < EXTRACT: "EXTRACT" >
+| < REDUCE: "REDUCE" >
+| < EXISTS: "EXISTS" >
+| < ALL: "ALL" >
+| < ANY: "ANY" >
+| < NONE: "NONE" >
+| < SINGLE: "SINGLE" >
+| < CASE: "CASE" >
+| < ELSE: "ELSE" >
+| < WHEN: "WHEN" >
+| < THEN: "THEN" >
+| < END: "END" >
+| < SHORTEST_PATH: "shortestPath" >
+| < ALL_SHORTEST_PATH: "allShortestPaths" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < TIMES: "*" >
+| < DIVIDE: "/" >
+| < MODULO: "%" >
+| < POW: "^" >
+| < ISNULL: "IS NULL" >
+| < ISNOTNULL: "IS NOT NULL" >
+| < DOT: "." >
+| < DOTDOT: ".." >
+| < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < LCURLY: "{" >
+| < RCURLY: "}" >
+| < BAR: "|" >
+}
+
+/* IDENTIFIERS */
+
+TOKEN :
+{
+  < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
+|
+  < #LETTER:
+      [  // all chars for which Character.isIdentifierStart is true except `$`
+         "A"-"Z",
+         "_",
+         "a"-"z",
+         "\u00a2"-"\u00a5",
+         "\u00aa",
+         "\u00b5",
+         "\u00ba",
+         "\u00c0"-"\u00d6",
+         "\u00d8"-"\u00f6",
+         "\u00f8"-"\u021f",
+         "\u0222"-"\u0233",
+         "\u0250"-"\u02ad",
+         "\u02b0"-"\u02b8",
+         "\u02bb"-"\u02c1",
+         "\u02d0"-"\u02d1",
+         "\u02e0"-"\u02e4",
+         "\u02ee",
+         "\u037a",
+         "\u0386",
+         "\u0388"-"\u038a",
+         "\u038c",
+         "\u038e"-"\u03a1",
+         "\u03a3"-"\u03ce",
+         "\u03d0"-"\u03d7",
+         "\u03da"-"\u03f3",
+         "\u0400"-"\u0481",
+         "\u048c"-"\u04c4",
+         "\u04c7"-"\u04c8",
+         "\u04cb"-"\u04cc",
+         "\u04d0"-"\u04f5",
+         "\u04f8"-"\u04f9",
+         "\u0531"-"\u0556",
+         "\u0559",
+         "\u0561"-"\u0587",
+         "\u05d0"-"\u05ea",
+         "\u05f0"-"\u05f2",
+         "\u0621"-"\u063a",
+         "\u0640"-"\u064a",
+         "\u0671"-"\u06d3",
+         "\u06d5",
+         "\u06e5"-"\u06e6",
+         "\u06fa"-"\u06fc",
+         "\u0710",
+         "\u0712"-"\u072c",
+         "\u0780"-"\u07a5",
+         "\u0905"-"\u0939",
+         "\u093d",
+         "\u0950",
+         "\u0958"-"\u0961",
+         "\u0985"-"\u098c",
+         "\u098f"-"\u0990",
+         "\u0993"-"\u09a8",
+         "\u09aa"-"\u09b0",
+         "\u09b2",
+         "\u09b6"-"\u09b9",
+         "\u09dc"-"\u09dd",
+         "\u09df"-"\u09e1",
+         "\u09f0"-"\u09f3",
+         "\u0a05"-"\u0a0a",
+         "\u0a0f"-"\u0a10",
+         "\u0a13"-"\u0a28",
+         "\u0a2a"-"\u0a30",
+         "\u0a32"-"\u0a33",
+         "\u0a35"-"\u0a36",
+         "\u0a38"-"\u0a39",
+         "\u0a59"-"\u0a5c",
+         "\u0a5e",
+         "\u0a72"-"\u0a74",
+         "\u0a85"-"\u0a8b",
+         "\u0a8d",
+         "\u0a8f"-"\u0a91",
+         "\u0a93"-"\u0aa8",
+         "\u0aaa"-"\u0ab0",
+         "\u0ab2"-"\u0ab3",
+         "\u0ab5"-"\u0ab9",
+         "\u0abd",
+         "\u0ad0",
+         "\u0ae0",
+         "\u0b05"-"\u0b0c",
+         "\u0b0f"-"\u0b10",
+         "\u0b13"-"\u0b28",
+         "\u0b2a"-"\u0b30",
+         "\u0b32"-"\u0b33",
+         "\u0b36"-"\u0b39",
+         "\u0b3d",
+         "\u0b5c"-"\u0b5d",
+         "\u0b5f"-"\u0b61",
+         "\u0b85"-"\u0b8a",
+         "\u0b8e"-"\u0b90",
+         "\u0b92"-"\u0b95",
+         "\u0b99"-"\u0b9a",
+         "\u0b9c",
+         "\u0b9e"-"\u0b9f",
+         "\u0ba3"-"\u0ba4",
+         "\u0ba8"-"\u0baa",
+         "\u0bae"-"\u0bb5",
+         "\u0bb7"-"\u0bb9",
+         "\u0c05"-"\u0c0c",
+         "\u0c0e"-"\u0c10",
+         "\u0c12"-"\u0c28",
+         "\u0c2a"-"\u0c33",
+         "\u0c35"-"\u0c39",
+         "\u0c60"-"\u0c61",
+         "\u0c85"-"\u0c8c",
+         "\u0c8e"-"\u0c90",
+         "\u0c92"-"\u0ca8",
+         "\u0caa"-"\u0cb3",
+         "\u0cb5"-"\u0cb9",
+         "\u0cde",
+         "\u0ce0"-"\u0ce1",
+         "\u0d05"-"\u0d0c",
+         "\u0d0e"-"\u0d10",
+         "\u0d12"-"\u0d28",
+         "\u0d2a"-"\u0d39",
+         "\u0d60"-"\u0d61",
+         "\u0d85"-"\u0d96",
+         "\u0d9a"-"\u0db1",
+         "\u0db3"-"\u0dbb",
+         "\u0dbd",
+         "\u0dc0"-"\u0dc6",
+         "\u0e01"-"\u0e30",
+         "\u0e32"-"\u0e33",
+         "\u0e3f"-"\u0e46",
+         "\u0e81"-"\u0e82",
+         "\u0e84",
+         "\u0e87"-"\u0e88",
+         "\u0e8a",
+         "\u0e8d",
+         "\u0e94"-"\u0e97",
+         "\u0e99"-"\u0e9f",
+         "\u0ea1"-"\u0ea3",
+         "\u0ea5",
+         "\u0ea7",
+         "\u0eaa"-"\u0eab",
+         "\u0ead"-"\u0eb0",
+         "\u0eb2"-"\u0eb3",
+         "\u0ebd",
+         "\u0ec0"-"\u0ec4",
+         "\u0ec6",
+         "\u0edc"-"\u0edd",
+         "\u0f00",
+         "\u0f40"-"\u0f47",
+         "\u0f49"-"\u0f6a",
+         "\u0f88"-"\u0f8b",
+         "\u1000"-"\u1021",
+         "\u1023"-"\u1027",
+         "\u1029"-"\u102a",
+         "\u1050"-"\u1055",
+         "\u10a0"-"\u10c5",
+         "\u10d0"-"\u10f6",
+         "\u1100"-"\u1159",
+         "\u115f"-"\u11a2",
+         "\u11a8"-"\u11f9",
+         "\u1200"-"\u1206",
+         "\u1208"-"\u1246",
+         "\u1248",
+         "\u124a"-"\u124d",
+         "\u1250"-"\u1256",
+         "\u1258",
+         "\u125a"-"\u125d",
+         "\u1260"-"\u1286",
+         "\u1288",
+         "\u128a"-"\u128d",
+         "\u1290"-"\u12ae",
+         "\u12b0",
+         "\u12b2"-"\u12b5",
+         "\u12b8"-"\u12be",
+         "\u12c0",
+         "\u12c2"-"\u12c5",
+         "\u12c8"-"\u12ce",
+         "\u12d0"-"\u12d6",
+         "\u12d8"-"\u12ee",
+         "\u12f0"-"\u130e",
+         "\u1310",
+         "\u1312"-"\u1315",
+         "\u1318"-"\u131e",
+         "\u1320"-"\u1346",
+         "\u1348"-"\u135a",
+         "\u13a0"-"\u13f4",
+         "\u1401"-"\u166c",
+         "\u166f"-"\u1676",
+         "\u1681"-"\u169a",
+         "\u16a0"-"\u16ea",
+         "\u1780"-"\u17b3",
+         "\u17db",
+         "\u1820"-"\u1877",
+         "\u1880"-"\u18a8",
+         "\u1e00"-"\u1e9b",
+         "\u1ea0"-"\u1ef9",
+         "\u1f00"-"\u1f15",
+         "\u1f18"-"\u1f1d",
+         "\u1f20"-"\u1f45",
+         "\u1f48"-"\u1f4d",
+         "\u1f50"-"\u1f57",
+         "\u1f59",
+         "\u1f5b",
+         "\u1f5d",
+         "\u1f5f"-"\u1f7d",
+         "\u1f80"-"\u1fb4",
+         "\u1fb6"-"\u1fbc",
+         "\u1fbe",
+         "\u1fc2"-"\u1fc4",
+         "\u1fc6"-"\u1fcc",
+         "\u1fd0"-"\u1fd3",
+         "\u1fd6"-"\u1fdb",
+         "\u1fe0"-"\u1fec",
+         "\u1ff2"-"\u1ff4",
+         "\u1ff6"-"\u1ffc",
+         "\u203f"-"\u2040",
+         "\u207f",
+         "\u20a0"-"\u20af",
+         "\u2102",
+         "\u2107",
+         "\u210a"-"\u2113",
+         "\u2115",
+         "\u2119"-"\u211d",
+         "\u2124",
+         "\u2126",
+         "\u2128",
+         "\u212a"-"\u212d",
+         "\u212f"-"\u2131",
+         "\u2133"-"\u2139",
+         "\u2160"-"\u2183",
+         "\u3005"-"\u3007",
+         "\u3021"-"\u3029",
+         "\u3031"-"\u3035",
+         "\u3038"-"\u303a",
+         "\u3041"-"\u3094",
+         "\u309d"-"\u309e",
+         "\u30a1"-"\u30fe",
+         "\u3105"-"\u312c",
+         "\u3131"-"\u318e",
+         "\u31a0"-"\u31b7",
+         "\u3400"-"\u4db5",
+         "\u4e00"-"\u9fa5",
+         "\ua000"-"\ua48c",
+         "\uac00"-"\ud7a3",
+         "\uf900"-"\ufa2d",
+         "\ufb00"-"\ufb06",
+         "\ufb13"-"\ufb17",
+         "\ufb1d",
+         "\ufb1f"-"\ufb28",
+         "\ufb2a"-"\ufb36",
+         "\ufb38"-"\ufb3c",
+         "\ufb3e",
+         "\ufb40"-"\ufb41",
+         "\ufb43"-"\ufb44",
+         "\ufb46"-"\ufbb1",
+         "\ufbd3"-"\ufd3d",
+         "\ufd50"-"\ufd8f",
+         "\ufd92"-"\ufdc7",
+         "\ufdf0"-"\ufdfb",
+         "\ufe33"-"\ufe34",
+         "\ufe4d"-"\ufe4f",
+         "\ufe69",
+         "\ufe70"-"\ufe72",
+         "\ufe74",
+         "\ufe76"-"\ufefc",
+         "\uff04",
+         "\uff21"-"\uff3a",
+         "\uff3f",
+         "\uff41"-"\uff5a",
+         "\uff65"-"\uffbe",
+         "\uffc2"-"\uffc7",
+         "\uffca"-"\uffcf",
+         "\uffd2"-"\uffd7",
+         "\uffda"-"\uffdc",
+         "\uffe0"-"\uffe1",
+         "\uffe5"-"\uffe6"
+      ]
+  >
+|
+  < #PART_LETTER:
+      [  // all chars for which Character.isIdentifierPart is true
+         "\u0000"-"\u0008",
+         "\u000e"-"\u001b",
+         "0"-"9",
+         "A"-"Z",
+         "_",
+         "a"-"z",
+         "\u007f"-"\u009f",
+         "\u00a2"-"\u00a5",
+         "\u00aa",
+         "\u00b5",
+         "\u00ba",
+         "\u00c0"-"\u00d6",
+         "\u00d8"-"\u00f6",
+         "\u00f8"-"\u021f",
+         "\u0222"-"\u0233",
+         "\u0250"-"\u02ad",
+         "\u02b0"-"\u02b8",
+         "\u02bb"-"\u02c1",
+         "\u02d0"-"\u02d1",
+         "\u02e0"-"\u02e4",
+         "\u02ee",
+         "\u0300"-"\u034e",
+         "\u0360"-"\u0362",
+         "\u037a",
+         "\u0386",
+         "\u0388"-"\u038a",
+         "\u038c",
+         "\u038e"-"\u03a1",
+         "\u03a3"-"\u03ce",
+         "\u03d0"-"\u03d7",
+         "\u03da"-"\u03f3",
+         "\u0400"-"\u0481",
+         "\u0483"-"\u0486",
+         "\u048c"-"\u04c4",
+         "\u04c7"-"\u04c8",
+         "\u04cb"-"\u04cc",
+         "\u04d0"-"\u04f5",
+         "\u04f8"-"\u04f9",
+         "\u0531"-"\u0556",
+         "\u0559",
+         "\u0561"-"\u0587",
+         "\u0591"-"\u05a1",
+         "\u05a3"-"\u05b9",
+         "\u05bb"-"\u05bd",
+         "\u05bf",
+         "\u05c1"-"\u05c2",
+         "\u05c4",
+         "\u05d0"-"\u05ea",
+         "\u05f0"-"\u05f2",
+         "\u0621"-"\u063a",
+         "\u0640"-"\u0655",
+         "\u0660"-"\u0669",
+         "\u0670"-"\u06d3",
+         "\u06d5"-"\u06dc",
+         "\u06df"-"\u06e8",
+         "\u06ea"-"\u06ed",
+         "\u06f0"-"\u06fc",
+         "\u070f"-"\u072c",
+         "\u0730"-"\u074a",
+         "\u0780"-"\u07b0",
+         "\u0901"-"\u0903",
+         "\u0905"-"\u0939",
+         "\u093c"-"\u094d",
+         "\u0950"-"\u0954",
+         "\u0958"-"\u0963",
+         "\u0966"-"\u096f",
+         "\u0981"-"\u0983",
+         "\u0985"-"\u098c",
+         "\u098f"-"\u0990",
+         "\u0993"-"\u09a8",
+         "\u09aa"-"\u09b0",
+         "\u09b2",
+         "\u09b6"-"\u09b9",
+         "\u09bc",
+         "\u09be"-"\u09c4",
+         "\u09c7"-"\u09c8",
+         "\u09cb"-"\u09cd",
+         "\u09d7",
+         "\u09dc"-"\u09dd",
+         "\u09df"-"\u09e3",
+         "\u09e6"-"\u09f3",
+         "\u0a02",
+         "\u0a05"-"\u0a0a",
+         "\u0a0f"-"\u0a10",
+         "\u0a13"-"\u0a28",
+         "\u0a2a"-"\u0a30",
+         "\u0a32"-"\u0a33",
+         "\u0a35"-"\u0a36",
+         "\u0a38"-"\u0a39",
+         "\u0a3c",
+         "\u0a3e"-"\u0a42",
+         "\u0a47"-"\u0a48",
+         "\u0a4b"-"\u0a4d",
+         "\u0a59"-"\u0a5c",
+         "\u0a5e",
+         "\u0a66"-"\u0a74",
+         "\u0a81"-"\u0a83",
+         "\u0a85"-"\u0a8b",
+         "\u0a8d",
+         "\u0a8f"-"\u0a91",
+         "\u0a93"-"\u0aa8",
+         "\u0aaa"-"\u0ab0",
+         "\u0ab2"-"\u0ab3",
+         "\u0ab5"-"\u0ab9",
+         "\u0abc"-"\u0ac5",
+         "\u0ac7"-"\u0ac9",
+         "\u0acb"-"\u0acd",
+         "\u0ad0",
+         "\u0ae0",
+         "\u0ae6"-"\u0aef",
+         "\u0b01"-"\u0b03",
+         "\u0b05"-"\u0b0c",
+         "\u0b0f"-"\u0b10",
+         "\u0b13"-"\u0b28",
+         "\u0b2a"-"\u0b30",
+         "\u0b32"-"\u0b33",
+         "\u0b36"-"\u0b39",
+         "\u0b3c"-"\u0b43",
+         "\u0b47"-"\u0b48",
+         "\u0b4b"-"\u0b4d",
+         "\u0b56"-"\u0b57",
+         "\u0b5c"-"\u0b5d",
+         "\u0b5f"-"\u0b61",
+         "\u0b66"-"\u0b6f",
+         "\u0b82"-"\u0b83",
+         "\u0b85"-"\u0b8a",
+         "\u0b8e"-"\u0b90",
+         "\u0b92"-"\u0b95",
+         "\u0b99"-"\u0b9a",
+         "\u0b9c",
+         "\u0b9e"-"\u0b9f",
+         "\u0ba3"-"\u0ba4",
+         "\u0ba8"-"\u0baa",
+         "\u0bae"-"\u0bb5",
+         "\u0bb7"-"\u0bb9",
+         "\u0bbe"-"\u0bc2",
+         "\u0bc6"-"\u0bc8",
+         "\u0bca"-"\u0bcd",
+         "\u0bd7",
+         "\u0be7"-"\u0bef",
+         "\u0c01"-"\u0c03",
+         "\u0c05"-"\u0c0c",
+         "\u0c0e"-"\u0c10",
+         "\u0c12"-"\u0c28",
+         "\u0c2a"-"\u0c33",
+         "\u0c35"-"\u0c39",
+         "\u0c3e"-"\u0c44",
+         "\u0c46"-"\u0c48",
+         "\u0c4a"-"\u0c4d",
+         "\u0c55"-"\u0c56",
+         "\u0c60"-"\u0c61",
+         "\u0c66"-"\u0c6f",
+         "\u0c82"-"\u0c83",
+         "\u0c85"-"\u0c8c",
+         "\u0c8e"-"\u0c90",
+         "\u0c92"-"\u0ca8",
+         "\u0caa"-"\u0cb3",
+         "\u0cb5"-"\u0cb9",
+         "\u0cbe"-"\u0cc4",
+         "\u0cc6"-"\u0cc8",
+         "\u0cca"-"\u0ccd",
+         "\u0cd5"-"\u0cd6",
+         "\u0cde",
+         "\u0ce0"-"\u0ce1",
+         "\u0ce6"-"\u0cef",
+         "\u0d02"-"\u0d03",
+         "\u0d05"-"\u0d0c",
+         "\u0d0e"-"\u0d10",
+         "\u0d12"-"\u0d28",
+         "\u0d2a"-"\u0d39",
+         "\u0d3e"-"\u0d43",
+         "\u0d46"-"\u0d48",
+         "\u0d4a"-"\u0d4d",
+         "\u0d57",
+         "\u0d60"-"\u0d61",
+         "\u0d66"-"\u0d6f",
+         "\u0d82"-"\u0d83",
+         "\u0d85"-"\u0d96",
+         "\u0d9a"-"\u0db1",
+         "\u0db3"-"\u0dbb",
+         "\u0dbd",
+         "\u0dc0"-"\u0dc6",
+         "\u0dca",
+         "\u0dcf"-"\u0dd4",
+         "\u0dd6",
+         "\u0dd8"-"\u0ddf",
+         "\u0df2"-"\u0df3",
+         "\u0e01"-"\u0e3a",
+         "\u0e3f"-"\u0e4e",
+         "\u0e50"-"\u0e59",
+         "\u0e81"-"\u0e82",
+         "\u0e84",
+         "\u0e87"-"\u0e88",
+         "\u0e8a",
+         "\u0e8d",
+         "\u0e94"-"\u0e97",
+         "\u0e99"-"\u0e9f",
+         "\u0ea1"-"\u0ea3",
+         "\u0ea5",
+         "\u0ea7",
+         "\u0eaa"-"\u0eab",
+         "\u0ead"-"\u0eb9",
+         "\u0ebb"-"\u0ebd",
+         "\u0ec0"-"\u0ec4",
+         "\u0ec6",
+         "\u0ec8"-"\u0ecd",
+         "\u0ed0"-"\u0ed9",
+         "\u0edc"-"\u0edd",
+         "\u0f00",
+         "\u0f18"-"\u0f19",
+         "\u0f20"-"\u0f29",
+         "\u0f35",
+         "\u0f37",
+         "\u0f39",
+         "\u0f3e"-"\u0f47",
+         "\u0f49"-"\u0f6a",
+         "\u0f71"-"\u0f84",
+         "\u0f86"-"\u0f8b",
+         "\u0f90"-"\u0f97",
+         "\u0f99"-"\u0fbc",
+         "\u0fc6",
+         "\u1000"-"\u1021",
+         "\u1023"-"\u1027",
+         "\u1029"-"\u102a",
+         "\u102c"-"\u1032",
+         "\u1036"-"\u1039",
+         "\u1040"-"\u1049",
+         "\u1050"-"\u1059",
+         "\u10a0"-"\u10c5",
+         "\u10d0"-"\u10f6",
+         "\u1100"-"\u1159",
+         "\u115f"-"\u11a2",
+         "\u11a8"-"\u11f9",
+         "\u1200"-"\u1206",
+         "\u1208"-"\u1246",
+         "\u1248",
+         "\u124a"-"\u124d",
+         "\u1250"-"\u1256",
+         "\u1258",
+         "\u125a"-"\u125d",
+         "\u1260"-"\u1286",
+         "\u1288",
+         "\u128a"-"\u128d",
+         "\u1290"-"\u12ae",
+         "\u12b0",
+         "\u12b2"-"\u12b5",
+         "\u12b8"-"\u12be",
+         "\u12c0",
+         "\u12c2"-"\u12c5",
+         "\u12c8"-"\u12ce",
+         "\u12d0"-"\u12d6",
+         "\u12d8"-"\u12ee",
+         "\u12f0"-"\u130e",
+         "\u1310",
+         "\u1312"-"\u1315",
+         "\u1318"-"\u131e",
+         "\u1320"-"\u1346",
+         "\u1348"-"\u135a",
+         "\u1369"-"\u1371",
+         "\u13a0"-"\u13f4",
+         "\u1401"-"\u166c",
+         "\u166f"-"\u1676",
+         "\u1681"-"\u169a",
+         "\u16a0"-"\u16ea",
+         "\u1780"-"\u17d3",
+         "\u17db",
+         "\u17e0"-"\u17e9",
+         "\u180b"-"\u180e",
+         "\u1810"-"\u1819",
+         "\u1820"-"\u1877",
+         "\u1880"-"\u18a9",
+         "\u1e00"-"\u1e9b",
+         "\u1ea0"-"\u1ef9",
+         "\u1f00"-"\u1f15",
+         "\u1f18"-"\u1f1d",
+         "\u1f20"-"\u1f45",
+         "\u1f48"-"\u1f4d",
+         "\u1f50"-"\u1f57",
+         "\u1f59",
+         "\u1f5b",
+         "\u1f5d",
+         "\u1f5f"-"\u1f7d",
+         "\u1f80"-"\u1fb4",
+         "\u1fb6"-"\u1fbc",
+         "\u1fbe",
+         "\u1fc2"-"\u1fc4",
+         "\u1fc6"-"\u1fcc",
+         "\u1fd0"-"\u1fd3",
+         "\u1fd6"-"\u1fdb",
+         "\u1fe0"-"\u1fec",
+         "\u1ff2"-"\u1ff4",
+         "\u1ff6"-"\u1ffc",
+         "\u200c"-"\u200f",
+         "\u202a"-"\u202e",
+         "\u203f"-"\u2040",
+         "\u206a"-"\u206f",
+         "\u207f",
+         "\u20a0"-"\u20af",
+         "\u20d0"-"\u20dc",
+         "\u20e1",
+         "\u2102",
+         "\u2107",
+         "\u210a"-"\u2113",
+         "\u2115",
+         "\u2119"-"\u211d",
+         "\u2124",
+         "\u2126",
+         "\u2128",
+         "\u212a"-"\u212d",
+         "\u212f"-"\u2131",
+         "\u2133"-"\u2139",
+         "\u2160"-"\u2183",
+         "\u3005"-"\u3007",
+         "\u3021"-"\u302f",
+         "\u3031"-"\u3035",
+         "\u3038"-"\u303a",
+         "\u3041"-"\u3094",
+         "\u3099"-"\u309a",
+         "\u309d"-"\u309e",
+         "\u30a1"-"\u30fe",
+         "\u3105"-"\u312c",
+         "\u3131"-"\u318e",
+         "\u31a0"-"\u31b7",
+         "\u3400"-"\u4db5",
+         "\u4e00"-"\u9fa5",
+         "\ua000"-"\ua48c",
+         "\uac00"-"\ud7a3",
+         "\uf900"-"\ufa2d",
+         "\ufb00"-"\ufb06",
+         "\ufb13"-"\ufb17",
+         "\ufb1d"-"\ufb28",
+         "\ufb2a"-"\ufb36",
+         "\ufb38"-"\ufb3c",
+         "\ufb3e",
+         "\ufb40"-"\ufb41",
+         "\ufb43"-"\ufb44",
+         "\ufb46"-"\ufbb1",
+         "\ufbd3"-"\ufd3d",
+         "\ufd50"-"\ufd8f",
+         "\ufd92"-"\ufdc7",
+         "\ufdf0"-"\ufdfb",
+         "\ufe20"-"\ufe23",
+         "\ufe33"-"\ufe34",
+         "\ufe4d"-"\ufe4f",
+         "\ufe69",
+         "\ufe70"-"\ufe72",
+         "\ufe74",
+         "\ufe76"-"\ufefc",
+         "\ufeff",
+         "\uff04",
+         "\uff10"-"\uff19",
+         "\uff21"-"\uff3a",
+         "\uff3f",
+         "\uff41"-"\uff5a",
+         "\uff65"-"\uffbe",
+         "\uffc2"-"\uffc7",
+         "\uffca"-"\uffcf",
+         "\uffd2"-"\uffd7",
+         "\uffda"-"\uffdc",
+         "\uffe0"-"\uffe1",
+         "\uffe5"-"\uffe6",
+         "\ufff9"-"\ufffb"
+      ]
+  >
+}
+
+TOKEN :
+{
+  < ARROW_LINE: ["\u002d", "\u00ad", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\ufe58", "\ufe63", "\uff0d"] >
+| < ARROW_LEFT_HEAD: ["\u27e8", "\u3008", "\ufe64", "\uff1c"] >
+| < ARROW_RIGHT_HEAD: ["\u27e9", "\u3009", "\ufe65", "\uff1e"] >
+}
+
+
+/** Root production. */
+List<STATEMENT> Statements() throws Exception :
+{
+  STATEMENT x;
+  List stmts = new ArrayList();
+}
+{
+  try {
+    x=Statement() { stmts.add(x); }
+    ( LOOKAHEAD(2) ";" x=Statement() { stmts.add(x); } )* ( LOOKAHEAD(2) ";" )? <EOF>
+    { return stmts; }
+  } catch (ParseException e) {
+    throw exceptionFactory.syntaxException(e);
+  } catch (InvalidUnicodeLiteral e) {
+    throw exceptionFactory.invalidUnicodeLiteral(e.getMessage());
+  }
+}
+
+STATEMENT Statement() :
+{STATEMENT x;}
+{
+  (
+    x=Query()
+  )
+  { return x; }
+}
+
+QUERY Query() :
+{QUERY x;}
+{
+  (
+    x=PeriodicCommitQuery()
+  | x=RegularQuery()
+  )
+  { return x; }
+}
+
+QUERY PeriodicCommitQuery() :
+{
+  Token t;
+  Token batchSize = null;
+  CLAUSE loadCsv;
+  QUERY query;
+}
+{
+  <USING> t=<PERIODIC_COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
+  loadCsv=LoadCSVClause()
+  query=RegularQuery()
+  { return astFactory.periodicCommitQuery(pos(t), batchSize == null ? null : batchSize.image, loadCsv, query); }
+}
+
+QUERY RegularQuery() :
+{QUERY x;}
+{
+  x=QueryPart()
+  { return x; }
+}
+
+QUERY QueryPart() :
+{QUERY x;}
+{
+  x=SingleQuery() ( x=Union(x) )*
+  { return x; }
+}
+
+QUERY Union(QUERY lhs) :
+{
+  Token t;
+  QUERY rhs;
+  boolean all = false;
+}
+{
+  ( t=<UNION> | t=<UNION_ALL> { all = true; } ) rhs=SingleQuery()
+  { return astFactory.newUnion(pos(t), lhs, rhs, all); }
+}
+
+QUERY SingleQuery() :
+{
+  CLAUSE x;
+  List clauses = new ArrayList();
+}
+{
+  ( x=Clause() { clauses.add(x); } )+
+  { return astFactory.newSingleQuery((List<CLAUSE>)clauses); }
+}
+
+CLAUSE Clause() :
+{CLAUSE x = null;}
+{
+  (
+    x=ReturnClause()
+  | x=CreateClause() // because create index/constraint
+  | x=DeleteClause()
+  | x=SetClause()
+  | x=RemoveClause()
+  | x=MatchClause()
+  | x=MergeClause()
+  | x=WithClause()
+  | x=UnwindClause()
+  | LOOKAHEAD(2) x=CallClause() // because subqueries also start with CALL
+  | x=SubqueryClause()
+  | x=LoadCSVClause()
+  | x=ForeachClause()
+  )
+  { return x; }
+}
+
+// RETURN
+
+CLAUSE ReturnClause() :
+{
+  Token t;
+  CLAUSE clause;
+}
+{
+  t=<RETURN> clause=ReturnBody(t)
+  { return clause; }
+}
+
+RETURN_CLAUSE ReturnBody(Token t) :
+{
+  boolean distinct = false;
+  boolean returnAll = false;
+  List order = java.util.Collections.emptyList();
+  EXPRESSION skip = null;
+  EXPRESSION limit = null;
+  RETURN_ITEM x;
+  List returnItems = new ArrayList();
+}
+{
+  ( LOOKAHEAD(2) <DISTINCT> { distinct = true; } )?
+  (
+    <TIMES>        { returnAll = true; }      ( "," x=ReturnItem() { returnItems.add(x); } )*
+  | x=ReturnItem() { returnItems.add(x); } ( "," x=ReturnItem() { returnItems.add(x); } )*
+  ) ( order=Order() )? ( skip=Skip() )? ( limit=Limit() )?
+  { return astFactory.newReturnClause(pos(t), distinct, returnAll, (List<RETURN_ITEM>)returnItems, (List<ORDER_ITEM>)order, skip, limit); }
+}
+
+RETURN_ITEM ReturnItem() :
+{
+  EXPRESSION e;
+  VARIABLE v = null;
+  Token eStart;
+  Token eEnd;
+}
+{
+  { eStart = token; }
+  e=Expression() { eEnd = token; } ( <AS> v=Variable() )?
+  {
+    if (v != null) return astFactory.newReturnItem(pos(eStart), e, v);
+    else return astFactory.newReturnItem(pos(eStart), e, eStart.next.beginLine, eStart.next.beginColumn, eEnd.endLine, eEnd.endColumn );
+  }
+}
+
+List<ORDER_ITEM> Order() :
+{
+  ORDER_ITEM o;
+  List items = new ArrayList();
+}
+{
+  <ORDERBY> o=OrderItem() {items.add(o);} ( "," o=OrderItem() {items.add(o);} )*
+  { return (List<ORDER_ITEM>)items; }
+}
+
+ORDER_ITEM OrderItem() :
+{EXPRESSION e;}
+{
+  e=Expression()
+  (
+    <DESC> { return astFactory.orderDesc(e); }
+  | ( <ASC> )? { return astFactory.orderAsc(e); }
+  )
+}
+
+EXPRESSION Skip() :
+{ EXPRESSION e; }
+{
+  <SKIPROWS> e=Expression()
+  { return e; }
+}
+
+EXPRESSION Limit() :
+{ EXPRESSION e; }
+{
+  <LIMITROWS> e=Expression()
+  { return e; }
+}
+
+// WITH
+
+CLAUSE WithClause() :
+{
+  Token t;
+  RETURN_CLAUSE returnClause;
+  EXPRESSION where = null;
+}
+{
+  t=<WITH> returnClause=ReturnBody(t) ( where=Where() )?
+  { return astFactory.withClause(pos(t), returnClause, where); }
+}
+
+// CREATE
+
+CLAUSE CreateClause() :
+{ Token t; List patterns; }
+{
+  t=<CREATE> patterns=PatternList()
+  { return astFactory.createClause(pos(t), (List<PATTERN>)patterns); }
+}
+
+// SET
+
+SET_CLAUSE SetClause() :
+{
+  Token t;
+  SET_ITEM x;
+  List items = new ArrayList();
+}
+{
+  t=<SET> x=SetItem() {items.add(x);} ( "," x=SetItem() {items.add(x);} )*
+  { return astFactory.setClause(pos(t), (List<SET_ITEM>)items); }
+}
+
+SET_ITEM SetItem() :
+{EXPRESSION e; PROPERTY p; VARIABLE v; List labels; }
+{
+  LOOKAHEAD(2) e=Expression1() p=Property(e) <EQ> e=Expression() { return astFactory.setProperty(p, e); }
+| LOOKAHEAD(2) v=Variable() <EQ> e=Expression() { return astFactory.setVariable(v, e); }
+| LOOKAHEAD(2) v=Variable() "+=" e=Expression() { return astFactory.addAndSetVariable(v, e); }
+| v=Variable() labels=NodeLabels() { return astFactory.setLabels(v, (List<String>)labels); }
+}
+
+// REMOVE
+
+CLAUSE RemoveClause() :
+{
+  Token t;
+  REMOVE_ITEM x;
+  List items = new ArrayList();
+}
+{
+  t=<REMOVE> x=RemoveItem() {items.add(x);} ( "," x=RemoveItem() {items.add(x);} )*
+  { return astFactory.removeClause(pos(t), (List<REMOVE_ITEM>)items); }
+}
+
+REMOVE_ITEM RemoveItem() :
+{EXPRESSION e; PROPERTY p; VARIABLE v; List labels; }
+{
+  LOOKAHEAD(2) e=Expression1() p=Property(e) { return astFactory.removeProperty(p); }
+| v=Variable() labels=NodeLabels() { return astFactory.removeLabels(v, (List<String>)labels); }
+}
+
+// DELETE
+
+CLAUSE DeleteClause() :
+{
+  Token t;
+  boolean detach = false;
+  EXPRESSION e;
+  List list = new ArrayList();
+}
+{
+  ( <DETACH> {detach=true;} )? t=<DELETE> e=Expression() {list.add(e);} ( "," e=Expression() {list.add(e);} )*
+  { return astFactory.deleteClause(pos(t), detach, (List<EXPRESSION>)list); }
+}
+
+// MATCH
+
+CLAUSE MatchClause() :
+{
+  Token t;
+  boolean optional = false;
+  List patterns;
+  List hints;
+  EXPRESSION where = null;
+}
+{
+  ( <OPTIONAL> {optional = true;} )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=Where() )?
+  { return astFactory.matchClause(pos(t), optional, (List<PATTERN>)patterns, (List<HINT>)hints, where); }
+}
+
+List<HINT> Hints() :
+{
+  Token t;
+    boolean seek;
+    VARIABLE v;
+    Token label;
+    List propNames;
+    List joinVariables;
+  HINT h;
+  List hints = null;
+}
+{
+  ( t=<USING> (
+      <INDEX> {seek=false;} ( LOOKAHEAD(2) <SEEK> {seek=true;} )? v=Variable() label=NodeLabel()
+        <LPAREN> propNames=SymbolicNameList1() <RPAREN>
+        { h=astFactory.usingIndexHint(pos(t), v, label.image, (List<String>)propNames, seek); }
+    | <JOIN_ON> joinVariables=VariableList1() { h=astFactory.usingJoin(pos(t), (List<VARIABLE>)joinVariables); }
+    | <SCAN> v=Variable() label=NodeLabel() { h=astFactory.usingScan(pos(t), v, label.image); }
+    )
+    {if (hints == null) { hints = new ArrayList(); } hints.add(h);}
+  )*
+  { return (List<HINT>)hints; }
+}
+
+// MERGE
+
+CLAUSE MergeClause() :
+{
+  Token t;
+  PATTERN p;
+  SET_CLAUSE c;
+  List onMatch = new ArrayList();
+  List onCreate = new ArrayList();
+}
+{
+  t=<MERGE> p=Pattern()
+  (
+    <ON_MATCH> c=SetClause() {onMatch.add(c);}
+  | <ON_CREATE> c=SetClause() {onCreate.add(c);}
+  )*
+  { return astFactory.mergeClause(pos(t), p, (List<SET_CLAUSE>)onMatch, (List<SET_CLAUSE>)onCreate); }
+}
+
+// UNWIND
+
+CLAUSE UnwindClause() :
+{Token t; EXPRESSION e; VARIABLE v;}
+{
+  t=<UNWIND> e=Expression() <AS> v=Variable()
+  { return astFactory.unwindClause(pos(t), e, v); }
+}
+
+// CALL
+
+CLAUSE CallClause() :
+{
+  Token t;
+  List namespace;
+  String name;
+  EXPRESSION e;
+  List arguments = null;
+  CALL_RESULT_ITEM x;
+  List items = null;
+  EXPRESSION where = null;
+}
+{
+  t=<CALL> namespace=Namespace() name=ProcedureName()
+  ( <LPAREN> { arguments = new ArrayList(); }
+    ( LOOKAHEAD(2) e=Expression() {arguments.add(e);} )? ( "," e=Expression() {arguments.add(e);} )*
+    <RPAREN>
+  )?
+  ( <YIELD> {items = new ArrayList(); } (
+      <MINUS>
+    | x=ProcedureResultItem() {items.add(x);} ( "," x=ProcedureResultItem() {items.add(x);} )* ( where=Where() )?
+    )
+  )?
+  { return astFactory.callClause(pos(t), (List<String>)namespace, name, (List<EXPRESSION>)arguments, (List<CALL_RESULT_ITEM>)items, where); }
+}
+
+String ProcedureName() :
+{ Token t; }
+{
+  t=SymbolicNameString()
+  { return t.image; }
+}
+
+CALL_RESULT_ITEM ProcedureResultItem() :
+{
+  Token t;
+  VARIABLE v = null;
+}
+{
+  t=SymbolicNameString() ( <AS> v=Variable() )?
+  { return astFactory.callResultItem(t.image, v); }
+}
+
+// LOAD CSV
+
+CLAUSE LoadCSVClause() :
+{
+  Token t;
+  boolean headers = false;
+  EXPRESSION source;
+  VARIABLE v;
+  Token sep = null;
+}
+{
+  (
+      t=<LOAD_CSV>
+      ( <WITH> <HEADERS> {headers=true;} )?
+      <FROM> source=Expression() <AS> v=Variable()
+      ( <FIELDTERMINATOR> ( sep=<STRING_LITERAL1> | sep=<STRING_LITERAL2> ) )?
+  )
+  { return astFactory.loadCsvClause(pos(t), headers, source, v, sep == null ? null : sep.image ); }
+}
+
+// FOREACH
+
+CLAUSE ForeachClause() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION list;
+  CLAUSE c;
+  List clauses = new ArrayList();
+}
+{
+  t=<FOREACH> <LPAREN> v=Variable() <IN> list=Expression() <BAR>
+  ( c=Clause() { clauses.add(c); } )+
+  <RPAREN>
+  { return astFactory.foreachClause(pos(t), v, list, (List<CLAUSE>)clauses); }
+}
+
+CLAUSE SubqueryClause() :
+{
+  Token t;
+  QUERY q;
+}
+{
+  t=<CALL> <LCURLY> q=Query() <RCURLY>
+  { return astFactory.subqueryClause(pos(t), q); }
+}
+
+// WHERE
+
+EXPRESSION Where() :
+{ EXPRESSION e; }
+{
+  <WHERE> e=Expression()
+  { return e; }
+}
+
+// PATTERN
+
+List<PATTERN> PatternList() :
+{
+  PATTERN p;
+  List patterns = new ArrayList();
+}
+{
+  p=Pattern() {patterns.add(p);} ( "," p=Pattern() {patterns.add(p);} )*
+  { return patterns; }
+}
+
+PATTERN Pattern() :
+{
+  VARIABLE v;
+  PATTERN p;
+}
+{
+  LOOKAHEAD(2) v=Variable() <EQ> p=AnonymousPattern() { return astFactory.namedPattern(v, p); }
+| p=AnonymousPattern() { return p; }
+}
+
+PATTERN AnonymousPattern() :
+{PATTERN p;}
+{
+  (
+    p=ShortestPathPattern()
+  | LOOKAHEAD(3) p=EveryPathPattern()
+  | <LPAREN> p=AnonymousPattern() <RPAREN>
+  )
+  { return p; }
+}
+
+PATTERN ShortestPathPattern() :
+{ Token t; PATTERN p; }
+{
+  t=<SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.shortestPathPattern(pos(t), p); }
+| t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern(pos(t), p); }
+}
+
+PATTERN EveryPathPattern() :
+{
+  NODE_PATTERN n;
+  REL_PATTERN r;
+  List relationships = new ArrayList();
+  List nodes = new ArrayList();
+}
+{
+  n=NodePattern() {nodes.add(n);} ( LOOKAHEAD(2) r=RelationshipPattern() {relationships.add(r);} n=NodePattern() {nodes.add(n);} )*
+  { return astFactory.everyPathPattern((List<NODE_PATTERN>)nodes, (List<REL_PATTERN>)relationships); }
+}
+
+PATTERN EveryPathPatternNonEmpty() :
+{
+  NODE_PATTERN n;
+  REL_PATTERN r;
+  List relationships = new ArrayList();
+  List nodes = new ArrayList();
+}
+{
+  n=NodePattern() {nodes.add(n);} ( LOOKAHEAD(2) r=RelationshipPattern() {relationships.add(r);} n=NodePattern() {nodes.add(n);} )+
+  { return astFactory.everyPathPattern((List<NODE_PATTERN>)nodes, (List<REL_PATTERN>)relationships); }
+}
+
+NODE_PATTERN NodePattern() :
+{
+  Token t;
+  VARIABLE v = null;
+  List labels = java.util.Collections.emptyList();
+  EXPRESSION properties = null;
+}
+{
+  t=<LPAREN> ( v=Variable() )? ( labels=NodeLabels() )? ( properties=Properties() )? <RPAREN>
+  { return astFactory.nodePattern(pos(t), v, (List<String>)labels, properties); }
+}
+
+List<String> NodeLabels() :
+{
+  Token label;
+  List labels = new ArrayList();
+}
+{
+  ( LOOKAHEAD(2) label=NodeLabel() { labels.add(label.image); } )+
+  { return labels; }
+}
+
+EXPRESSION HasLabels(EXPRESSION subject) :
+{
+  List labels;
+}
+{
+  labels=NodeLabels()
+  { return astFactory.hasLabels(subject, (List<String>)labels); }
+}
+
+Token NodeLabel() :
+{Token t;}
+{
+  ":" t=SymbolicNameString()
+  {return t;}
+}
+
+EXPRESSION Properties() :
+{ EXPRESSION e; }
+{
+  (
+    e=MapLiteral()
+  | e=Parameter()
+  )
+  { return e; }
+}
+
+REL_PATTERN RelationshipPattern() :
+{
+  Token t = token;
+  boolean left = false;
+  boolean right = false;
+  VARIABLE v = null;
+  List relTypes = java.util.Collections.emptyList();
+  PATH_LENGTH pathLength = null;
+  EXPRESSION properties = null;
+}
+{
+  ( LeftArrow() { left = true; })? ArrowLine()
+  ( <LBRACKET> ( v=Variable() )? ( relTypes=RelationshipType() )? ( pathLength=PathLength() )? ( properties=Properties() )? <RBRACKET> )?
+  ArrowLine() ( RightArrow() { right = true; } )?
+  { return astFactory.relationshipPattern(pos(t.next), left, right, v, (List<String>)relTypes, pathLength, properties); }
+}
+
+void LeftArrow() :
+{}
+{
+  <LT> | <ARROW_LEFT_HEAD>
+}
+
+void ArrowLine() :
+{}
+{
+  <ARROW_LINE> | <MINUS>
+}
+
+void RightArrow() :
+{}
+{
+  <GT> | <ARROW_RIGHT_HEAD>
+}
+
+List<String> RelationshipType() :
+{
+  Token t;
+  List relTypes = new ArrayList();
+}
+{
+  ":" t=SymbolicNameString() {relTypes.add(t.image);} ( <BAR> ( ":" )? t=SymbolicNameString() {relTypes.add(t.image);} )*
+  { return (List<String>)relTypes; }
+}
+
+PATH_LENGTH PathLength() :
+{ Token t; PATH_LENGTH p = null; }
+{
+  t=<TIMES> (
+    p=PathLengthLiteral(t)
+  )?
+  { return p == null ? astFactory.pathLength(pos(t), null, null) : p; }
+}
+
+PATH_LENGTH PathLengthLiteral(Token t) :
+{
+  Token v1 = null;
+  Token v2 = null;
+}
+{
+  LOOKAHEAD(2) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? <DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
+    { return astFactory.pathLength(pos(t), v1 == null ? "" : v1.image, v2 == null ? "" : v2.image); }
+| v1=<UNSIGNED_DECIMAL_INTEGER>
+    { String v = v1 == null ? "" : v1.image; return astFactory.pathLength(pos(t), v, v); }
+}
+
+// EXPRESSIONS
+
+EXPRESSION Expression() :
+{EXPRESSION e;}
+{
+  e=Expression12()
+  {return e;}
+}
+
+EXPRESSION Expression12() :
+{
+  EXPRESSION e;
+  EXPRESSION temp;
+}
+{
+  e=Expression11() (<OR> temp=Expression11() { e = astFactory.or(e, temp); } )*
+  {return e;}
+}
+
+EXPRESSION Expression11() :
+{
+  EXPRESSION e;
+  EXPRESSION temp;
+}
+{
+  e=Expression10() (<XOR> temp=Expression10() { e = astFactory.xor(e, temp); } )*
+  {return e;}
+}
+
+EXPRESSION Expression10() :
+{
+  EXPRESSION e;
+  EXPRESSION temp;
+}
+{
+  e=Expression9() (<AND> temp=Expression9() { e = astFactory.and(e, temp); } )*
+  {return e;}
+}
+
+EXPRESSION Expression9() :
+{
+  EXPRESSION e;
+}
+{
+  (
+    LOOKAHEAD(3) <NOT> e=Expression9() { e = astFactory.not(e); }
+  | e=Expression8()
+  )
+  { return e; }
+}
+
+EXPRESSION Expression8() :
+{
+  EXPRESSION e;
+  EXPRESSION lhs;
+  EXPRESSION rhs;
+  List cmps = null;
+}
+{
+  e=Expression7() {lhs = e;} ( LOOKAHEAD(2)
+      <EQ>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.eq(lhs, rhs)); lhs = rhs; }
+    | <NEQ> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq(lhs, rhs)); lhs = rhs; }
+    | <NEQ2> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq2(lhs, rhs)); lhs = rhs; }
+    | <LE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lte(lhs, rhs)); lhs = rhs; }
+    | <GE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gte(lhs, rhs)); lhs = rhs; }
+    | <LT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lt(lhs, rhs)); lhs = rhs; }
+    | <GT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gt(lhs, rhs)); lhs = rhs; }
+  )*
+  {
+    if (cmps == null) return e;
+    else if (cmps.size() == 1) return ((List<EXPRESSION>)cmps).get(0);
+    else return astFactory.ands((List<EXPRESSION>)cmps);
+  }
+}
+
+EXPRESSION Expression7() :
+{
+  EXPRESSION e;
+}
+{
+  e=Expression6() ( e=ComparisonExpression6(e) )?
+  { return e; }
+}
+
+EXPRESSION ComparisonExpression6(EXPRESSION lhs) :
+{
+  EXPRESSION rhs;
+}
+{
+  LOOKAHEAD(2)
+  <REGEQ> rhs=Expression6() { return astFactory.regeq(lhs, rhs); }
+| <STARTSWITH> rhs=Expression6() { return astFactory.startsWith(lhs, rhs); }
+| <ENDSWITH> rhs=Expression6() { return astFactory.endsWith(lhs, rhs); }
+| <CONTAINS> rhs=Expression6() { return astFactory.contains(lhs, rhs); }
+| <IN> rhs=Expression6() { return astFactory.in(lhs, rhs); }
+| <ISNULL> { return astFactory.isNull(lhs); }
+| <ISNOTNULL> { return astFactory.not(astFactory.isNull(lhs)); }
+}
+
+EXPRESSION Expression6() :
+{
+  EXPRESSION lhs;
+  EXPRESSION rhs;
+}
+{
+  lhs=Expression5() (
+    <PLUS> rhs=Expression5() { lhs = astFactory.plus(lhs, rhs); }
+  | <MINUS> rhs=Expression5() { lhs = astFactory.minus(lhs, rhs); }
+  )*
+  { return lhs; }
+}
+
+EXPRESSION Expression5() :
+{
+  EXPRESSION lhs;
+  EXPRESSION rhs;
+}
+{
+  lhs=Expression4() (
+    <TIMES> rhs=Expression4() { lhs = astFactory.multiply(lhs, rhs); }
+  | <DIVIDE> rhs=Expression4() { lhs = astFactory.divide(lhs, rhs); }
+  | <MODULO> rhs=Expression4() { lhs = astFactory.modulo(lhs, rhs); }
+  )*
+  { return lhs; }
+}
+
+EXPRESSION Expression4() :
+{
+  EXPRESSION lhs;
+  EXPRESSION rhs;
+}
+{
+  lhs=Expression3() ( <POW> rhs=Expression3() { lhs = astFactory.pow(lhs, rhs); } )*
+  { return lhs; }
+}
+
+EXPRESSION Expression3() :
+{
+  EXPRESSION e;
+}
+{
+  (
+    LOOKAHEAD(3) e=Expression2()
+  | <PLUS> e=Expression2() { e = astFactory.unaryPlus(e); }
+  | <MINUS> e=Expression2() { e = astFactory.unaryMinus(e); }
+  )
+  { return e; }
+}
+
+EXPRESSION Expression2() :
+{
+  EXPRESSION e;
+}
+{
+  e=Expression1() ( e=PostFix1(e) )*
+  { return e; }
+}
+
+EXPRESSION PostFix1(EXPRESSION subject) :
+{
+  Token t;
+  EXPRESSION e1 = null;
+  EXPRESSION e2 = null;
+  EXPRESSION ret;
+}
+{
+  (
+    ret=Property(subject)
+  | ret=HasLabels(subject)
+  | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup(subject, e1); }
+  | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice(pos(t), subject, e1, e2); }
+  )
+  { return ret; }
+}
+
+PROPERTY Property(EXPRESSION subject) :
+{
+  EXPRESSION e;
+  Token propKeyName;
+}
+{
+  <DOT> propKeyName=PropertyKeyName() { return astFactory.property(subject, propKeyName.image); }
+}
+
+EXPRESSION Expression1() :
+{EXPRESSION e = null; Token t;}
+{
+  (
+    e=NumberLiteral()
+  | e=StringLiteral()
+  | e=Parameter()
+  | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
+  | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
+  | t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
+  | LOOKAHEAD(3) e=CaseExpression()
+  | LOOKAHEAD(3) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar(pos(t)); }
+  | e=MapLiteral()
+  | LOOKAHEAD(3) e=ExistsSubQuery() // `exists { match` should not be a map-projection
+  | LOOKAHEAD(2) e=MapProjection()
+  | LOOKAHEAD(3) e=ListComprehension() // before literal because it takes precedence
+  | LOOKAHEAD(3) e=PatternComprehension()
+  | LOOKAHEAD(3) e=ListLiteral()
+  | LOOKAHEAD(3) e=FilterExpression()
+  | LOOKAHEAD(3) e=ExtractExpression()
+  | LOOKAHEAD(3) e=ReduceExpression()
+  | LOOKAHEAD(3) e=AllExpression()
+  | LOOKAHEAD(3) e=AnyExpression()
+  | LOOKAHEAD(3) e=NoneExpression()
+  | LOOKAHEAD(3) e=SingleExpression()
+  | LOOKAHEAD(NodePattern() RelationshipPattern()) e=PatternExpression()
+  | LOOKAHEAD(2) e=ShortestPathExpression()
+  | <LPAREN> e=Expression() <RPAREN>
+  | LOOKAHEAD((SymbolicNameString() <DOT>)* SymbolicNameString() <LPAREN>) e=FunctionInvocation()
+  | e=Variable()
+  )
+  { return e; }
+}
+
+EXPRESSION CaseExpression() :
+{
+  Token t;
+  EXPRESSION e = null;
+  EXPRESSION x;
+  List whens = new ArrayList();
+  List thens = new ArrayList();
+  EXPRESSION elze = null;
+}
+{
+  t=<CASE> (
+    LOOKAHEAD(2) e=Expression() <WHEN>
+  | <WHEN> )
+  x=Expression() {whens.add(x);} <THEN> x=Expression() {thens.add(x);}
+  ( <WHEN> x=Expression() {whens.add(x);} <THEN> x=Expression() {thens.add(x);} )*
+  ( <ELSE> elze=Expression() )?
+  <END>
+  { return astFactory.caseExpression(pos(t), e, (List<EXPRESSION>)whens, (List<EXPRESSION>)thens, elze); }
+}
+
+EXPRESSION ListComprehension() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+  EXPRESSION projection = null;
+}
+{
+  t=<LBRACKET> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RBRACKET>
+  { return astFactory.listComprehension(pos(t), v, e, where, projection); }
+}
+
+EXPRESSION PatternComprehension() :
+{
+  Token t;
+  VARIABLE v = null;
+  PATTERN p;
+  EXPRESSION where = null;
+  EXPRESSION projection = null;
+}
+{
+  t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPattern() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
+  { return astFactory.patternComprehension(pos(t), v, p, where, projection); }
+}
+
+EXPRESSION FilterExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+}
+{
+  t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+  { return astFactory.filterExpression(pos(t), v, e, where); }
+}
+
+EXPRESSION ExtractExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+  EXPRESSION projection = null;
+}
+{
+  t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RPAREN>
+  { return astFactory.extractExpression(pos(t), v, e, where, projection); }
+}
+
+EXPRESSION ReduceExpression() :
+{
+  Token t;
+  VARIABLE acc;
+  EXPRESSION accExpr;
+  VARIABLE v;
+  EXPRESSION vExpr;
+  EXPRESSION innerExpr;
+}
+{
+  t=<REDUCE> <LPAREN>
+    acc=Variable() <EQ> accExpr=Expression()
+    "," v=Variable() <IN> vExpr=Expression()
+    <BAR> innerExpr=Expression()
+  <RPAREN>
+  { return astFactory.reduceExpression(pos(t), acc, accExpr, v, vExpr, innerExpr); }
+}
+
+EXPRESSION AllExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+}
+{
+  t=<ALL> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+  { return astFactory.allExpression(pos(t), v, e, where); }
+}
+
+EXPRESSION AnyExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+}
+{
+  t=<ANY> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+  { return astFactory.anyExpression(pos(t), v, e, where); }
+}
+
+EXPRESSION NoneExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+}
+{
+  t=<NONE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+  { return astFactory.noneExpression(pos(t), v, e, where); }
+}
+
+EXPRESSION SingleExpression() :
+{
+  Token t;
+  VARIABLE v;
+  EXPRESSION e;
+  EXPRESSION where = null;
+}
+{
+  t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+  { return astFactory.singleExpression(pos(t), v, e, where); }
+}
+
+EXPRESSION PatternExpression() :
+{ PATTERN p; }
+{
+  p=EveryPathPatternNonEmpty()
+  { return astFactory.patternExpression(p); }
+}
+
+EXPRESSION ShortestPathExpression() :
+{ PATTERN p; }
+{
+  p=ShortestPathPattern()
+  { return astFactory.patternExpression(p); }
+}
+
+EXPRESSION MapProjection() :
+{
+  Token t;
+  VARIABLE v;
+  MAP_PROJECTION_ITEM x;
+  List items = new ArrayList();
+}
+{
+  v=Variable() t=<LCURLY> ( x=MapProjectionItem() {items.add(x);} )? ( "," x=MapProjectionItem() {items.add(x);} )* <RCURLY>
+  { return astFactory.mapProjection(pos(t), v, (List<MAP_PROJECTION_ITEM>)items); }
+}
+
+MAP_PROJECTION_ITEM MapProjectionItem() :
+{
+  Token t;
+  Token p;
+  EXPRESSION e;
+  VARIABLE v;
+}
+{
+  LOOKAHEAD(2) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry(p.image, e); }
+| LOOKAHEAD(2) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty(p.image); }
+| v=Variable() { return astFactory.mapProjectionVariable(v); }
+| <DOT> t=<TIMES> { return astFactory.mapProjectionAll(pos(t)); }
+}
+
+EXPRESSION ExistsSubQuery() :
+{
+  Token t;
+  List patterns;
+  EXPRESSION where = null;
+}
+{
+  t=<EXISTS> <LCURLY> ( LOOKAHEAD(2) <MATCH> )? patterns=PatternList() ( where=Where() )? <RCURLY>
+  { return astFactory.existsSubQuery(pos(t), (List<PATTERN>)patterns, where); }
+}
+
+EXPRESSION Literal() :
+{Token t; EXPRESSION e;}
+{
+  (
+    e=NumberLiteral()
+  | e=StringLiteral()
+  | e=Parameter()
+  | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
+  | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
+  | t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
+  | e=ListLiteralOfLiterals()
+  | e=MapLiteralOfLiterals()
+  | e=FunctionInvocation() // for spatial and temporal constructors
+  )
+  { return e; }
+}
+
+EXPRESSION ListLiteralOfLiterals() :
+{
+  Token t;
+  EXPRESSION e;
+  List list = new ArrayList();
+}
+{
+  t=<LBRACKET> ( e=Literal() {list.add(e);} )? ( "," e=Literal() {list.add(e);} )* <RBRACKET>
+  { return astFactory.listLiteral(pos(t), (List<EXPRESSION>)list); }
+}
+
+EXPRESSION MapLiteralOfLiterals() :
+{
+  Token t;
+  Token key;
+  EXPRESSION value;
+  List keys = new ArrayList();
+  List values = new ArrayList();
+}
+{
+  t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add(key.image); values.add(value);} )?
+           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add(key.image); values.add(value);} )* <RCURLY>
+  { return astFactory.mapLiteral(pos(t), (List<String>)keys, (List<EXPRESSION>)values); }
+}
+
+EXPRESSION StringLiteral() :
+{ Token t; }
+{
+  t=<STRING_LITERAL1> { return astFactory.newString(pos(t), token.image); }
+| t=<STRING_LITERAL2> { return astFactory.newString(pos(t), token.image); }
+}
+
+EXPRESSION NumberLiteral() :
+{Token t; boolean negated = false;}
+{
+  t=<DECIMAL_DOUBLE> { return astFactory.newDouble(pos(t), token.image); }
+| ( <MINUS> {negated = true;})?
+  ( t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger(pos(t), token.image, negated); }
+  | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger(pos(t), token.image, negated); }
+  | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger(pos(t), token.image, negated); }
+  )
+}
+
+EXPRESSION ListLiteral() :
+{
+  Token t;
+  EXPRESSION e;
+  List list = new ArrayList();
+}
+{
+  t=<LBRACKET> ( e=Expression() {list.add(e);} )? ( "," e=Expression() {list.add(e);} )* <RBRACKET>
+  { return astFactory.listLiteral(pos(t), (List<EXPRESSION>)list); }
+}
+
+EXPRESSION MapLiteral() :
+{
+  Token t;
+  Token key;
+  EXPRESSION value;
+  List keys = new ArrayList();
+  List values = new ArrayList();
+}
+{
+  t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() {keys.add(key.image); values.add(value);} )?
+           ( "," key=PropertyKeyName() ":" value=Expression() {keys.add(key.image); values.add(value);} )* <RCURLY>
+  { return astFactory.mapLiteral(pos(t), (List<String>)keys, (List<EXPRESSION>)values); }
+}
+
+Token PropertyKeyName() :
+{Token t;}
+{
+  t=SymbolicNameString()
+  { return t; }
+}
+
+EXPRESSION Parameter() :
+{Token t; VARIABLE v;}
+{
+  t="$" (
+    v=Variable() { return astFactory.newParameter(pos(t), v); }
+  | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter(pos(t), token.image); }
+  )
+}
+
+EXPRESSION FunctionInvocation() :
+{
+  Token before = token;
+  List namespace;
+  String name;
+  boolean distinct = false;
+  EXPRESSION e;
+  List arguments = new ArrayList();
+}
+{
+  namespace=Namespace() name=FunctionName()
+  <LPAREN>
+  ( LOOKAHEAD(2) <DISTINCT> { distinct=true; })?
+  ( e=Expression() {arguments.add(e);} )? ( "," e=Expression() {arguments.add(e);} )*
+  <RPAREN>
+  { return astFactory.functionInvocation(pos(before.next), (List<String>)namespace, name, distinct, (List<EXPRESSION>)arguments);}
+}
+
+List<String> Namespace() :
+{
+  Token t;
+  List parts = new ArrayList();
+}
+{
+  ( LOOKAHEAD(2) t=SymbolicNameString() {parts.add(t.image);} <DOT> )*
+  { return (List<String>)parts; }
+}
+
+String FunctionName() :
+{ Token t; }
+{
+  t=SymbolicNameString()
+  { return t.image; }
+}
+
+List<VARIABLE> VariableList1() :
+{
+  Token t;
+  List list = new ArrayList();
+}
+{
+  t=SymbolicNameString() {list.add(astFactory.newVariable(pos(t), t.image));}
+  ( "," t=SymbolicNameString() {list.add(astFactory.newVariable(pos(t), t.image));} )*
+  { return (List<VARIABLE>)list; }
+}
+
+VARIABLE Variable() :
+{Token t;}
+{
+  t=SymbolicNameString()
+  { return astFactory.newVariable(pos(t), t.image); }
+}
+
+List<String> SymbolicNameList1() :
+{
+  Token n;
+  List list = new ArrayList();
+}
+{
+  n=SymbolicNameString() {list.add(n.image);} ( "," n=SymbolicNameString() {list.add(n.image);} )*
+  { return (List<String>)list; }
+}
+
+Token SymbolicNameString() :
+{Token t;}
+{
+  (
+    t=<IDENTIFIER>
+  | t=<ESCAPED_SYMBOLIC_NAME>
+  | t=<RETURN>
+  | t=<CREATE>
+  | t=<DELETE>
+  | t=<SET>
+  | t=<REMOVE>
+  | t=<DETACH>
+  | t=<MATCH>
+  | t=<WITH>
+  | t=<UNWIND>
+  | t=<CALL>
+  | t=<YIELD>
+  | t=<WHERE>
+  | t=<DISTINCT>
+  | t=<MERGE>
+  | t=<OPTIONAL>
+  | t=<DESC>
+  | t=<ASC>
+  | t=<SKIPROWS>
+  | t=<LIMITROWS>
+  | t=<AS>
+  | t=<OR>
+  | t=<XOR>
+  | t=<AND>
+  | t=<NOT>
+  | t=<CONTAINS>
+  | t=<IN>
+  | t=<COUNT>
+  | t=<FILTER>
+  | t=<EXTRACT>
+  | t=<REDUCE>
+  | t=<EXISTS>
+  | t=<ALL>
+  | t=<ANY>
+  | t=<NONE>
+  | t=<SINGLE>
+  | t=<CASE>
+  | t=<ELSE>
+  | t=<WHEN>
+  | t=<THEN>
+  | t=<END>
+  | t=<SHORTEST_PATH>
+  | t=<ALL_SHORTEST_PATH>
+  | t=<DROP>
+  | t=<INDEX>
+  | t=<CONSTRAINT>
+  | t=<ASSERT>
+  | t=<IS_NODE_KEY>
+  | t=<IS_UNIQUE>
+  | t=<ON>
+  | t=<HEADERS>
+  | t=<FROM>
+  | t=<FIELDTERMINATOR>
+  | t=<FOREACH>
+  | t=<SEEK>
+  | t=<SCAN>
+  | t=<NULL>
+  ) { return t; }
+}
