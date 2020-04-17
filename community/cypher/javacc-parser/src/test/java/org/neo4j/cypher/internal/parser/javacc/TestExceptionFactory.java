@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
-public class TestExceptionFactory implements ParseExceptionFactory
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
+
+public class TestExceptionFactory implements ASTExceptionFactory
 {
     @Override
     public Exception syntaxException( Exception source )

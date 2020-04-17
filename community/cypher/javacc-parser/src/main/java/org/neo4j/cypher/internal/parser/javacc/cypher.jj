@@ -46,6 +46,7 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 
 /** Simple brace matcher. */
@@ -70,7 +71,7 @@ public class Cypher<STATEMENT,
                     MAP_PROJECTION_ITEM,
                     POS> {
 
-    ParseExceptionFactory exceptionFactory;
+    ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
                QUERY,
                CLAUSE,
@@ -112,7 +113,7 @@ public class Cypher<STATEMENT,
                              PROPERTY,
                              MAP_PROJECTION_ITEM,
                              POS> astFactory,
-                  ParseExceptionFactory exceptionFactory,
+                  ASTExceptionFactory exceptionFactory,
                   java.io.Reader stream) {
         this(stream);
         this.astFactory = astFactory;

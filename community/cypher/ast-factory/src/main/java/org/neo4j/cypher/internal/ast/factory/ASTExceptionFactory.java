@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.javacc;
+package org.neo4j.cypher.internal.ast.factory;
 
-public interface ParseExceptionFactory
+public interface ASTExceptionFactory
 {
-    Exception syntaxException(Exception source);
-    Exception invalidUnicodeLiteral(String msg);
+    Exception syntaxException( Exception source );
+
+    Exception invalidUnicodeLiteral( String msg );
 }
