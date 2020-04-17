@@ -465,9 +465,10 @@ trait Statement extends Parser
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 
   private def Database: Rule1[List[GraphScope]] = rule("on a database") {
-    group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      group((SymbolicNameOrStringParameterList ~~>> (params => ipp => params.map(ast.NamedGraphScope(_)(ipp)))) | (keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))) |
-        (keyword("ON DEFAULT DATABASE") ~~~> (ipp => List(ast.DefaultDatabaseScope()(ipp))))
+    keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
+      group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
+        group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedGraphScope(_)(pos)))) |
+          (keyword("*") ~~~> (pos => List(ast.AllGraphsScope()(pos)))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
