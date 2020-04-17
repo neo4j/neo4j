@@ -36,7 +36,7 @@ abstract class ParsingTestBase() extends Assertions with Matchers {
       val exceptionFactory = new OpenCypherExceptionFactory(None)
       val parboiledAST = Try(parboiledParser.parse(query, exceptionFactory, None))
 
-      val parser = new Cypher(new Neo4jAstFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new StringReader(query))
+      val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new StringReader(query))
       val javaccAST = Try(parser.Statements().get(0))
 
       javaccAST shouldBe parboiledAST
