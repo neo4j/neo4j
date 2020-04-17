@@ -54,16 +54,18 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     boolean hasChanges;
     private LongIterator addedNodes;
     StorageNodeCursor storeCursor;
+    private StorageNodeCursor securityStoreCursor;
     private long currentAddedInTx;
     private long single;
     private AccessMode accessMode;
 
     private final CursorPool<DefaultNodeCursor> pool;
 
-    DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
+    DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
+        this.securityStoreCursor = securityStoreCursor;
     }
 
     void scan( Read read )
@@ -251,7 +253,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
         if ( currentAddedInTx == NO_ID )
         {
-            if ( accessMode.allowsTraverseAllRelTypes() )
+            if ( accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels() )
             {
                 storeCursor.degrees( selection, degrees );
             }
@@ -334,6 +336,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             checkHasChanges = true;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.reset();
+            securityStoreCursor.reset();
             accessMode = null;
 
             pool.accept( this );
@@ -392,43 +395,34 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     void release()
     {
         storeCursor.close();
+        securityStoreCursor.close();
     }
 
     private class SecureRelationshipSelection extends RelationshipSelection
     {
-        private final long previousReference;
         private final RelationshipSelection inner;
 
         SecureRelationshipSelection( RelationshipSelection selection )
         {
             inner = selection;
-            previousReference = nodeReference();
         }
 
         @Override
         public boolean test( int type, long sourceReference, long targetReference )
         {
-            try
+            if ( accessMode.allowsTraverseRelType( type ) )
             {
-                if ( accessMode.allowsTraverseRelType( type ) )
+                if ( sourceReference == targetReference )
                 {
-                    if ( sourceReference == targetReference )
-                    {
-                        return inner.test( type );
-                    }
-                    long otherReference = sourceReference == previousReference ? targetReference : sourceReference;
-                    storeCursor.single( otherReference );
-                    return storeCursor.next() && accessMode.allowsTraverseNode( storeCursor.labels() ) && inner.test( type );
+                    return inner.test( type );
                 }
-                else
-                {
-                    return false;
-                }
+                long otherReference = sourceReference == nodeReference() ? targetReference : sourceReference;
+                securityStoreCursor.single( otherReference );
+                return securityStoreCursor.next() && accessMode.allowsTraverseNode( securityStoreCursor.labels() ) && inner.test( type );
             }
-            finally
+            else
             {
-                storeCursor.single( previousReference );
-                storeCursor.next();
+                return false;
             }
         }
 

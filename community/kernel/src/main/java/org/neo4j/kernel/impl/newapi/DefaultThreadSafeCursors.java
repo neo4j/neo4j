@@ -47,13 +47,14 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public DefaultNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultNodeCursor(
-                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ) ) );
+                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
     public FullAccessNodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ) ) );
+        return trace( new FullAccessNodeCursor(
+                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override

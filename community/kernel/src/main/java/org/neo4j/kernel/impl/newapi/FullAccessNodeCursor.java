@@ -28,9 +28,9 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
  */
 class FullAccessNodeCursor extends DefaultNodeCursor
 {
-    FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
+    FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
     {
-        super( pool, storeCursor );
+        super( pool, storeCursor, securityStoreCursor );
     }
 
     @Override
