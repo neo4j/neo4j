@@ -54,7 +54,7 @@ class MemoryPoolsTest
         var pools = new MemoryPools();
         assertThat( pools.getPools() ).isEmpty();
 
-        var externalPool = new MemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, "test", 0, true );
+        var externalPool = new TopMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true );
         pools.registerPool( externalPool );
 
         assertThat( pools.getPools() ).hasSize( 1 );

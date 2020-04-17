@@ -22,6 +22,7 @@ package org.neo4j.bolt;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
@@ -70,6 +71,7 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 public class BoltServer extends LifecycleAdapter
 {
+    private static final PooledByteBufAllocator NETTY_BUF_ALLOCATOR = new PooledByteBufAllocator( PlatformDependent.directBufferPreferred() );
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
@@ -128,11 +130,10 @@ public class BoltServer extends LifecycleAdapter
         if ( config.get( BoltConnector.enabled ) )
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
-            var nettyBufAllocator = new PooledByteBufAllocator( true );
-            var boltMemoryPool = new BoltNettyMemoryPool( nettyBufAllocator.metric() );
+            var boltMemoryPool = new BoltNettyMemoryPool( NETTY_BUF_ALLOCATOR.metric() );
             memoryPools.registerPool( boltMemoryPool );
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
-                    createProtocolInitializer( boltProtocolFactory, throttleGroup, log, nettyBufAllocator ), connectorPortRegister, logService );
+                    createProtocolInitializer( boltProtocolFactory, throttleGroup, log, NETTY_BUF_ALLOCATOR ), connectorPortRegister, logService );
             life.add( new BoltMemoryPoolLifeCycleAdapter( memoryPools, boltMemoryPool ) );
             life.add( server );
             log.info( "Bolt server loaded" );
