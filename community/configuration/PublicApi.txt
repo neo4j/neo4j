@@ -128,6 +128,7 @@ org.neo4j.configuration.GraphDatabaseSettings::cypher_pipelined_batch_size_big o
 org.neo4j.configuration.GraphDatabaseSettings::cypher_pipelined_batch_size_small org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_pipelined_interpreted_pipes_fallback org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherPipelinedInterpretedPipesFallback> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_planner org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner> public static final
+org.neo4j.configuration.GraphDatabaseSettings::cypher_read_properties_from_cursor org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_replan_algorithm org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherReplanAlgorithm> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_replan_interval_target org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_runtime org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherRuntime> public static final
