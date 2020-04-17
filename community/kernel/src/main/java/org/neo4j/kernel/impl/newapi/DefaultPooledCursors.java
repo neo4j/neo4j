@@ -287,12 +287,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeValueIndexCursor = cursor;
     }
 
-    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor()
+    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer )
     {
         if ( fullAccessNodeValueIndexCursor == null )
         {
             return trace( new FullAccessNodeValueIndexCursor(
-                    this::acceptFullAccess, new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( PageCursorTracer.NULL ) ) ) );
+                    this::acceptFullAccess, new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ) ) ) );
         }
 
         try
@@ -344,12 +344,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeLabelIndexCursor = cursor;
     }
 
-    DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor()
+    DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
         if ( fullAccessNodeLabelIndexCursor == null )
         {
             return trace( new FullAccessNodeLabelIndexCursor(
-                    this::acceptFullAccess, new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( PageCursorTracer.NULL ) ) ) );
+                    this::acceptFullAccess, new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ) ) ) );
         }
 
         try

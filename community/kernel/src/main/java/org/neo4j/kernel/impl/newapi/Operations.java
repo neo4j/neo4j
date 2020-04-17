@@ -495,7 +495,7 @@ public class Operations implements Write, SchemaWrite
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
         IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
-        try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor();
+        try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor( cursorTracer );
               IndexReaders indexReaders = new IndexReaders( index, allStoreHolder ) )
         {
             assertIndexOnline( index );
@@ -1141,7 +1141,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
             constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
@@ -1158,7 +1158,7 @@ public class Operations implements Write, SchemaWrite
         ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
         {
             allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
             constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
