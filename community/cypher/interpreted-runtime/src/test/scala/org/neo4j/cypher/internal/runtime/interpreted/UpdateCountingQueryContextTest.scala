@@ -105,9 +105,27 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("remove_property") {
-    context.nodeOps.removeProperty(nodeAId, context.getPropertyKeyId("key"))
+    // given
+    val propertyKey = context.getPropertyKeyId("key")
+    when(nodeOps.removeProperty(nodeAId, propertyKey)).thenReturn(true)
 
+    // when
+    context.nodeOps.removeProperty(nodeAId, propertyKey)
+
+    // then
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+  }
+
+  test("remove_property does nothing") {
+    // given
+    val propertyKey = context.getPropertyKeyId("key")
+    when(nodeOps.removeProperty(nodeAId, propertyKey)).thenReturn(false)
+
+    // when
+    context.nodeOps.removeProperty(nodeAId, propertyKey)
+
+    // then
+    context.getStatistics should equal(QueryStatistics())
   }
 
   test("set_property_relationship") {
@@ -117,9 +135,27 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("remove_property_relationship") {
-    context.relationshipOps.removeProperty(relId, context.getPropertyKeyId("key"))
+    // given
+    val propertyKey = context.getPropertyKeyId("key")
+    when(relOps.removeProperty(relId, propertyKey)).thenReturn(true)
 
+    // when
+    context.relationshipOps.removeProperty(relId, propertyKey)
+
+    // then
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+  }
+
+  test("remove_property_relationship does nothing") {
+    // given
+    val propertyKey = context.getPropertyKeyId("key")
+    when(relOps.removeProperty(relId, propertyKey)).thenReturn(false)
+
+    // when
+    context.relationshipOps.removeProperty(relId, propertyKey)
+
+    // then
+    context.getStatistics should equal(QueryStatistics())
   }
 
   test("add_label") {

@@ -537,11 +537,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
+    override def removeProperty(id: Long, propertyKeyId: Int): Boolean = {
       try {
-        writes().nodeRemoveProperty(id, propertyKeyId)
+        !(writes().nodeRemoveProperty(id, propertyKeyId) eq Values.NO_VALUE)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => false
       }
     }
 
@@ -629,11 +629,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       CursorUtils.relationshipHasProperty(reads(), relationshipCursor, id, propertyCursor, propertyKey)
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
+    override def removeProperty(id: Long, propertyKeyId: Int): Boolean = {
       try {
-        writes().relationshipRemoveProperty(id, propertyKeyId)
+        !(writes().relationshipRemoveProperty(id, propertyKeyId) eq Values.NO_VALUE)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => false
       }
     }
 

@@ -280,7 +280,7 @@ trait Operations[T, CURSOR] {
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value)
 
-  def removeProperty(obj: Long, propertyKeyId: Int)
+  def removeProperty(obj: Long, propertyKeyId: Int): Boolean
 
   /**
     * @param throwOnDeleted if this is `true` an Exception will be thrown when the entity with id `obj` has been deleted in this transaction.

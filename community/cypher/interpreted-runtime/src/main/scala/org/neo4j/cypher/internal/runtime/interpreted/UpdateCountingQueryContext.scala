@@ -197,9 +197,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.delete(id)
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int) {
-      propertiesSet.increase()
-      inner.removeProperty(id, propertyKeyId)
+    override def removeProperty(id: Long, propertyKeyId: Int): Boolean = {
+      val wasRemoved = inner.removeProperty(id, propertyKeyId)
+      if (wasRemoved) {
+        propertiesSet.increase()
+      }
+      wasRemoved
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Value) {
