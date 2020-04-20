@@ -30,7 +30,10 @@ import org.neo4j.values.storable.Values.COMPARATOR
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-abstract class ManyNodeValueIndexCursor extends DefaultCloseListenable with NodeValueIndexCursor {
+/**
+  * Cursor used for joining several cursors into one composite cursor.
+  */
+abstract class CompositeValueIndexCursor extends DefaultCloseListenable with NodeValueIndexCursor {
 
   private[this] var closed = false
   protected var current: NodeValueIndexCursor = _
@@ -82,7 +85,7 @@ abstract class ManyNodeValueIndexCursor extends DefaultCloseListenable with Node
   override def isClosed: Boolean = closed
 }
 
-object ManyNodeValueIndexCursor {
+object CompositeValueIndexCursor {
   private val ASCENDING: Ordering[NodeValueIndexCursor] =
     (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => -COMPARATOR.compare(x.propertyValue(0), y.propertyValue(0))
   private val DESCENDING: Ordering[NodeValueIndexCursor] =
@@ -93,7 +96,7 @@ object ManyNodeValueIndexCursor {
   def unordered(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new UnorderedCursor(cursors)
 }
 
-private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor]) extends ManyNodeValueIndexCursor {
+private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor]) extends CompositeValueIndexCursor {
   private[this] var index = 0
   current = if (cursors.nonEmpty) cursors.head else null
 
@@ -113,7 +116,7 @@ private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor])
 /**
   * NOTE: this assumes that cursors internally are correctly sorted which is guaranteed by the index.
   */
-private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor], ordering: Ordering[NodeValueIndexCursor] ) extends ManyNodeValueIndexCursor {
+private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor], ordering: Ordering[NodeValueIndexCursor] ) extends CompositeValueIndexCursor {
   private[this] val queue: mutable.PriorityQueue[NodeValueIndexCursor] = mutable.PriorityQueue.empty[NodeValueIndexCursor](ordering)
 
   if (AssertionRunner.isAssertionsEnabled) {

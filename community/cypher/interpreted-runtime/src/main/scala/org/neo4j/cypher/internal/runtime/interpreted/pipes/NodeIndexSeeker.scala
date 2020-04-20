@@ -39,8 +39,9 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
@@ -59,6 +60,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
 import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters._
 
 /**
   * Mixin trait with functionality for executing logical index queries.
@@ -102,9 +104,9 @@ trait NodeIndexSeeker {
   // helpers
 
   private def orderedCursor(indexOrder: IndexOrder, cursors: Array[NodeValueIndexCursor]) = indexOrder match {
-    case IndexOrderNone => ManyNodeValueIndexCursor.unordered(cursors)
-    case IndexOrderAscending => ManyNodeValueIndexCursor.ascending(cursors)
-    case IndexOrderDescending => ManyNodeValueIndexCursor.descending(cursors)
+    case IndexOrderNone => CompositeValueIndexCursor.unordered(cursors)
+    case IndexOrderAscending => CompositeValueIndexCursor.ascending(cursors)
+    case IndexOrderDescending => CompositeValueIndexCursor.descending(cursors)
   }
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
