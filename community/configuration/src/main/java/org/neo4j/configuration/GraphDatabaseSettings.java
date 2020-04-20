@@ -990,7 +990,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "Only live objects will be included to minimize the file size. " )
     @Internal
     public static final Setting<Boolean> log_queries_heap_dump_enabled =
-            newBuilder( "dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
+            newBuilder( "unsupported.dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
             "flushing data into underlying storage." )
