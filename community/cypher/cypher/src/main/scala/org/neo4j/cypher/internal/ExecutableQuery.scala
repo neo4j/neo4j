@@ -24,10 +24,13 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
+
+import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
  * A fully compiled query in executable form.
@@ -68,6 +71,12 @@ trait ExecutableQuery extends CacheabilityInfo {
    * Meta-data about the compiled used for this query.
    */
   val compilerInfo: CompilerInfo // val to force eager calculation
+
+  /**
+    * Label ids of the indexes used by this executable query. Precomputed to reduce execution latency
+    * for very fact queries.
+    */
+  val labelIdsOfUsedIndexes: Array[Long] = compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }.toArray
 
   /**
    * Names of all parameters for this query, explicit and auto-parametrized.
