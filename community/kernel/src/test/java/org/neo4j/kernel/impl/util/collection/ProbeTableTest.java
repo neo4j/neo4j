@@ -58,7 +58,6 @@ class ProbeTableTest
     @Test
     void countInternalStructure()
     {
-        // We avoid key 0 and 1 since they are sentinel values and we don't track them
         table.put( Values.longValue( 0L ), Values.longValue( 2L ) );
         table.put( Values.longValue( 0L ), Values.longValue( 3L ) );
         table.put( Values.longValue( 1L ), Values.longValue( 4L ) );

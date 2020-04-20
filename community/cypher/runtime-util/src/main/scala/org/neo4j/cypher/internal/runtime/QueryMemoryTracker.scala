@@ -195,7 +195,7 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker, memoryTracke
     val id = Id(operatorId)
     memoryTrackerPerOperator.getOrElse(id, {
       val newOperatorMemoryTracker = new OperatorMemoryTracker(transactionMemoryTracker)
-      memoryTrackerPerOperator.set(Id(operatorId), newOperatorMemoryTracker)
+      memoryTrackerPerOperator.set(id, newOperatorMemoryTracker)
       newOperatorMemoryTracker
     }).allocateHeap(bytes)
   }
@@ -208,7 +208,7 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker, memoryTracke
     val id = Id(operatorId)
     memoryTrackerPerOperator.getOrElse(id, {
       val newOperatorMemoryTracker = new OperatorMemoryTracker(transactionMemoryTracker)
-      memoryTrackerPerOperator.set(Id(operatorId), newOperatorMemoryTracker)
+      memoryTrackerPerOperator.set(id, newOperatorMemoryTracker)
       newOperatorMemoryTracker
     }).releaseHeap(bytes)
   }

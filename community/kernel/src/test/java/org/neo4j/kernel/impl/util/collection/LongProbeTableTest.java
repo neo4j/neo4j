@@ -65,7 +65,7 @@ class LongProbeTableTest
 
         // Validate size
         long itemSize = meter.measure( 1L ) * 3;
-        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker ) - itemSize;
+        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
         assertEquals( actualSize, memoryTracker.estimatedHeapMemory() );
 
         // Validate content
@@ -96,7 +96,7 @@ class LongProbeTableTest
 
         // Validate size
         long itemSize = meter.measure( 1L ) * 3;
-        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker ) - itemSize;
+        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
         assertEquals( actualSize + externalAllocation, memoryTracker.estimatedHeapMemory() );
 
         // Close should release everything related to the table

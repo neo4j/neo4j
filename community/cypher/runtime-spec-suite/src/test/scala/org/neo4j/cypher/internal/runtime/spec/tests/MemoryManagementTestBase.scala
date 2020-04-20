@@ -93,7 +93,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    * @param rowSize the size of a row in Bytes.
    */
   protected def killAfterNRows(rowSize: Long): Long = {
-    ((MemoryManagementTestBase.maxMemory / rowSize) * 1.1).toLong // An extra of 10% rows to account for mis-estimation and batching
+    ((MemoryManagementTestBase.maxMemory / rowSize) * 1.2).toLong // An extra of 20% rows to account for mis-estimation and batching
   }
 
   sealed trait ValueToEstimate
