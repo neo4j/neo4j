@@ -33,8 +33,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.fs.FileUtils;
 
-import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
-
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
  * Any file retrieved from a layout can be considered a canonical file.
@@ -73,9 +71,7 @@ public class DatabaseLayout
 
     protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
     {
-        var database = new NormalizedDatabaseName( databaseName );
-        validateInternalDatabaseName( database );
-        var normalizedName = database.name();
+        var normalizedName = new NormalizedDatabaseName( databaseName ).name();
         this.neo4jLayout = neo4jLayout;
         this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), normalizedName ) );
         this.databaseName = normalizedName;
