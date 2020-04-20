@@ -1,21 +1,16 @@
 package org.neo4j.cypher.internal.runtime
 
-import org.mockito.Mockito
-import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor.ascending
-import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor.descending
-import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor.unordered
+import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.ascending
+import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.descending
+import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.unordered
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.scalatest.FunSuite
 
 import scala.collection.mutable.ArrayBuffer
 
-class ManyNodeValueIndexCursorTest extends CypherFunSuite {
+class CompositeValueIndexCursorTest extends CypherFunSuite {
 
   test("should create unordered cursor") {
     //given

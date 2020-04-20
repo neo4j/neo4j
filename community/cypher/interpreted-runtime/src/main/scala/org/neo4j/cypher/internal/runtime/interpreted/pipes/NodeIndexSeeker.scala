@@ -20,21 +20,26 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, IsNoValue, makeValueNeoSafe}
+import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PrefixSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.IsList
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
-import org.neo4j.exceptions.{CypherTypeException, InternalException}
-import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.internal.kernel.api.KernelReadTracer
-import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
+import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.InternalException
+import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.COMPARATOR
 import org.neo4j.values.storable._
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 /**
   * Mixin trait with functionality for executing logical index queries.
@@ -78,9 +83,9 @@ trait NodeIndexSeeker {
   // helpers
 
   private def orderedCursor(indexOrder: IndexOrder, cursors: Array[NodeValueIndexCursor]) = indexOrder match {
-    case IndexOrderNone => ManyNodeValueIndexCursor.unordered(cursors)
-    case IndexOrderAscending => ManyNodeValueIndexCursor.ascending(cursors)
-    case IndexOrderDescending => ManyNodeValueIndexCursor.descending(cursors)
+    case IndexOrderNone => CompositeValueIndexCursor.unordered(cursors)
+    case IndexOrderAscending => CompositeValueIndexCursor.ascending(cursors)
+    case IndexOrderDescending => CompositeValueIndexCursor.descending(cursors)
   }
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(COMPARATOR))
