@@ -111,8 +111,8 @@ abstract class ExecutionEngineFunSuite
   }
 }
 
-case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, compilations: Int = 0, jitCompilations: Int =0) {
-  override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, jitCompilations = $jitCompilations"
+case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, compilations: Int = 0, compilationsWithExpressionCodeGen: Int =0) {
+  override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
 }
 
 class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor with CypherCacheMonitor[Pair[String, ParameterTypeMap]] {
@@ -123,5 +123,5 @@ class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor wit
   override def cacheDiscard(key: Pair[String, ParameterTypeMap], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit =
     counts = counts.copy(evicted = counts.evicted + 1)
   override def cacheCompile(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-  override def cacheJitCompile(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(jitCompilations = counts.jitCompilations + 1)
+  override def cacheCompileWithExpressionCodeGen(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
 }

@@ -85,7 +85,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
           s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
           s"cacheCompile: (CYPHER 4.1 $query, $empty_parameters)",
           s"cacheHit: (CYPHER 4.1 $query, $empty_parameters)",
-          s"cacheJitCompile: (CYPHER 4.1 $query, $empty_parameters)",
+          s"cacheCompileWithExpressionCodeGen: (CYPHER 4.1 $query, $empty_parameters)",
         )
 
         actual should equal(expected)
@@ -112,7 +112,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
     )
 
     actual should equal(expected)
@@ -137,7 +137,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
       s"cacheCompile: (CYPHER 4.1 $query, $empty_parameters)",
       s"cacheMiss: (CYPHER 4.1 $query, $empty_parameters)",
-      s"cacheJitCompile: (CYPHER 4.1 $query, $empty_parameters)",
+      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.1 $query, $empty_parameters)",
     )
     actual should equal(expected)
   }
@@ -158,7 +158,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
     )
 
     actual should equal(expected)
@@ -341,7 +341,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     actual should equal(expected)
   }
 
-  test("No jit compilation on first attempt") {
+  test("No compilation with expression code generation on first attempt") {
     val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -360,7 +360,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     actual should equal(expected)
   }
 
-  test("One and only one jit compilation after several attempts") {
+  test("One and only one compilation with expression code generation after several attempts") {
     val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
@@ -381,7 +381,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheMiss: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheJitCompile: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 4.1 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
@@ -418,8 +418,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheCompile: $key"
     }
 
-    override def cacheJitCompile(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheJitCompile: $key"
+    override def cacheCompileWithExpressionCodeGen(key: Pair[String, ParameterTypeMap]): Unit = {
+      log += s"cacheCompileWithExpressionCodeGen: $key"
     }
   }
 }

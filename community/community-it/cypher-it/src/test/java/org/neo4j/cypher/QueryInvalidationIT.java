@@ -283,7 +283,7 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheJitCompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheCompileWithExpressionCodeGen( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
         {
             compilations.incrementAndGet();
         }

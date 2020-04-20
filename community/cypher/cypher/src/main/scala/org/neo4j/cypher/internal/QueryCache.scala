@@ -49,14 +49,14 @@ trait CacheTracer[QUERY_KEY] {
   def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit
 
   /**
-   * The compiler was invoked to compile a key to a query, avoiding JIT compilation.
+   * The compiler was invoked to compile a key to a query, avoiding expression code generation.
    */
   def queryCompile(queryKey: QUERY_KEY, metaData: String): Unit
 
   /**
-   * The compiler was invoked to compile a key to a query, requesting JIT compilation.
+   * The compiler was invoked to compile a key to a query, requesting expression code generation.
    */
-  def queryJitCompile(queryKey: QUERY_KEY, metaData: String): Unit
+  def queryCompileWithExpressionCodeGen(queryKey: QUERY_KEY, metaData: String): Unit
 
   /**
    * The item was found in the cache but has become stale.
@@ -72,31 +72,31 @@ trait CacheTracer[QUERY_KEY] {
 }
 
 /**
- * A compiler with jit-compilation capabilities.
+ * A compiler with expression code generation capabilities.
  */
-trait JitCompiler[EXECUTABLE_QUERY] {
+trait CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY] {
   /**
-   * Compile a query, avoiding any jit-compilation.
+   * Compile a query, avoiding any expression code generation.
    * If the settings enforce a certain expression engine,
-   * this engine is going to be in both compile and jitCompile.
+   * this engine is going to be in both compile and compileWithExpressionCodeGen.
    */
   def compile(): EXECUTABLE_QUERY
 
   /**
-   * Compile a query with jit-compilation.
+   * Compile a query with expression code generation.
    * If the settings enforce a certain expression engine,
-   * this engine is going to be in both compile and jitCompile.
+   * this engine is going to be in both compile and compileWithExpressionCodeGen.
    */
-  def jitCompile(): EXECUTABLE_QUERY
+  def compileWithExpressionCodeGen(): EXECUTABLE_QUERY
 
   /**
-   * Decide wheter a previously compiled query should be jit-compiled now,
-   * and do the jit-compilation in that case.
+   * Decide wheter a previously compiled query should be using expression code generation now,
+   * and do that in that case.
    * @param hitCount the number of cache hits for that query
-   * @return `Some(jit-compiled-query)` if jit-compilation was deemed useful,
+   * @return `Some(compiled-query-with-expression-code-gen)` if expression code generation was deemed useful,
    *         `None` otherwise.
    */
-  def maybeJitCompile(hitCount: Int): Option[EXECUTABLE_QUERY]
+  def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[EXECUTABLE_QUERY]
 }
 
 
@@ -135,14 +135,14 @@ class QueryCache[QUERY_REP <: AnyRef,
 
   /*
     * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
-    * and whether or not it has been recompiled.
+    * and whether or not it has been recompiled with expression code generation.
     */
-  private class CachedValue(val value: EXECUTABLE_QUERY, val recompiled: Boolean) {
+  private class CachedValue(val value: EXECUTABLE_QUERY, val recompiledWithExpressionCodeGen: Boolean) {
 
     @volatile private var _numberOfHits = 0
 
     def markHit(): Unit = {
-      if (!recompiled) {
+      if (!recompiledWithExpressionCodeGen) {
         _numberOfHits += 1
       }
     }
@@ -176,7 +176,7 @@ class QueryCache[QUERY_REP <: AnyRef,
    */
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
-                             compiler: JitCompiler[EXECUTABLE_QUERY],
+                             compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
                              replanStrategy: CypherReplanOption,
                              metaData: String = ""
                             ): EXECUTABLE_QUERY = {
@@ -188,7 +188,7 @@ class QueryCache[QUERY_REP <: AnyRef,
       inner.getIfPresent(queryKey) match {
         case NOT_PRESENT =>
           if (replanStrategy == CypherReplanOption.force)
-            jitCompileAndCache(queryKey, compiler, metaData)
+            compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
           else
             compileAndCache(queryKey, compiler, metaData)
 
@@ -198,7 +198,7 @@ class QueryCache[QUERY_REP <: AnyRef,
 
           replanStrategy match {
             case CypherReplanOption.force =>
-              jitCompileAndCache(queryKey, compiler, metaData)
+              compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
             case CypherReplanOption.skip =>
               hit(queryKey, cachedValue, metaData)
             case CypherReplanOption.default =>
@@ -211,7 +211,7 @@ class QueryCache[QUERY_REP <: AnyRef,
                   }
                 case Stale(secondsSincePlan, maybeReason) =>
                   tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
-                  if (cachedValue.recompiled) jitCompileAndCache(queryKey, compiler, metaData)
+                  if (cachedValue.recompiledWithExpressionCodeGen) compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
                   else compileAndCache(queryKey, compiler, metaData)
               }
           }
@@ -235,19 +235,19 @@ class QueryCache[QUERY_REP <: AnyRef,
   }
 
   /**
-   * JIT recompile a query if needed. Otherwise return the cached value.
+   * Recompile a query with expression code generation if needed. Otherwise return the cached value.
    */
   def recompileOrGet(cachedValue: CachedValue,
-                     compiler: JitCompiler[EXECUTABLE_QUERY],
+                     compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
                      queryKey: QUERY_KEY,
                      metaData: String
                     ): EXECUTABLE_QUERY = {
     tracer.queryCacheHit(queryKey, metaData)
-    val newCachedValue = if (!cachedValue.recompiled ) {
-      compiler.maybeJitCompile(cachedValue.numberOfHits) match {
+    val newCachedValue = if (!cachedValue.recompiledWithExpressionCodeGen ) {
+      compiler.maybeCompileWithExpressionCodeGen(cachedValue.numberOfHits) match {
         case Some(recompiledQuery) =>
-          tracer.queryJitCompile(queryKey, metaData)
-          val recompiled = new CachedValue(recompiledQuery, recompiled = true)
+          tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
+          val recompiled = new CachedValue(recompiledQuery, recompiledWithExpressionCodeGen = true)
           inner.put(queryKey, recompiled)
           recompiled
         case None => cachedValue
@@ -258,22 +258,22 @@ class QueryCache[QUERY_REP <: AnyRef,
   }
 
   private def compileAndCache(queryKey: QUERY_KEY,
-                              compiler: JitCompiler[EXECUTABLE_QUERY],
+                              compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
                               metaData: String,
                               hitCache: Boolean = false
                              ): EXECUTABLE_QUERY = {
-    val result = compileOrJitCompileAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
+    val result = compileOrcompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
     tracer.queryCompile(queryKey, metaData)
     result
   }
 
-  private def jitCompileAndCache(queryKey: QUERY_KEY,
-                                 compiler: JitCompiler[EXECUTABLE_QUERY],
-                                 metaData: String,
-                                 hitCache: Boolean = false
-                                ): EXECUTABLE_QUERY = {
-    val result = compileOrJitCompileAndCache(queryKey, () => compiler.jitCompile(), metaData, hitCache)
-    tracer.queryJitCompile(queryKey, metaData)
+  private def compileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
+                                                   compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
+                                                   metaData: String,
+                                                   hitCache: Boolean = false
+                                                  ): EXECUTABLE_QUERY = {
+    val result = compileOrcompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compileWithExpressionCodeGen(), metaData, hitCache)
+    tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
     result
   }
 
@@ -285,14 +285,14 @@ class QueryCache[QUERY_REP <: AnyRef,
    * take a long time. The only exception is if hitCache is true, which should only happen
    * when we are forced to recompile due to previously present warnings not being valid anymore
    */
-  private def compileOrJitCompileAndCache(queryKey: QUERY_KEY,
-                                          compile: () => EXECUTABLE_QUERY,
-                                          metaData: String,
-                                          hitCache: Boolean = false
-                                         ): EXECUTABLE_QUERY = {
+  private def compileOrcompileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
+                                                            compile: () => EXECUTABLE_QUERY,
+                                                            metaData: String,
+                                                            hitCache: Boolean = false
+                                                           ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {
-      val cachedValue = new CachedValue(newExecutableQuery, recompiled = false)
+      val cachedValue = new CachedValue(newExecutableQuery, recompiledWithExpressionCodeGen = false)
       inner.put(queryKey, cachedValue)
       if (hitCache)
         hit(queryKey, cachedValue, metaData)

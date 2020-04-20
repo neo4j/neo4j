@@ -119,8 +119,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
       counts = counts.copy(evicted = counts.evicted + 1)
     override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-    override def queryJitCompile(queryKey: Pair[AnyRef, ParameterTypeMap],
-                                 metaData: String): Unit = {counts = counts.copy(jitCompilations = counts.jitCompilations + 1)
+    override def queryCompileWithExpressionCodeGen(queryKey: Pair[AnyRef, ParameterTypeMap],
+                                                   metaData: String): Unit = {counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
     }
   }
 

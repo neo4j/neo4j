@@ -66,9 +66,9 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.coll
     }
 
     @Override
-    public void queryJitCompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    public void queryCompileWithExpressionCodeGen( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
     {
-        monitor.cacheJitCompile( queryKey );
+        monitor.cacheCompileWithExpressionCodeGen( queryKey );
     }
 
     @Override

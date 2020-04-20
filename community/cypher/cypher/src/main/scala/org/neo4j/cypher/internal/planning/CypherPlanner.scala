@@ -26,11 +26,11 @@ import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.Assertion.assertionsEnabled
 import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.FullyParsedQuery
-import org.neo4j.cypher.internal.JitCompiler
 import org.neo4j.cypher.internal.MaybeReusable
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
@@ -303,10 +303,10 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
 
-    val jitCompiler = new JitCompiler[CacheableLogicalPlan] {
+    val compilerWithExpressionCodeGenOption = new CompilerWithExpressionCodeGenOption[CacheableLogicalPlan] {
       override def compile(): CacheableLogicalPlan = createPlan(shouldBeCached = true)
-      override def jitCompile(): CacheableLogicalPlan = compile()
-      override def maybeJitCompile(hitCount: Int): Option[CacheableLogicalPlan] = None
+      override def compileWithExpressionCodeGen(): CacheableLogicalPlan = compile()
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[CacheableLogicalPlan] = None
     }
 
     val cacheableLogicalPlan =
@@ -314,7 +314,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
           transactionalContext,
-          jitCompiler,
+          compilerWithExpressionCodeGenOption,
           options.replan,
           syntacticQuery.queryText)
       } else if (!enoughParametersSupplied) {
@@ -429,7 +429,7 @@ trait CypherCacheHitMonitor[T] {
 
   def cacheCompile(key: T): Unit = {}
 
-  def cacheJitCompile(key: T): Unit = {}
+  def cacheCompileWithExpressionCodeGen(key: T): Unit = {}
 }
 
 /**

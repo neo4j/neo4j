@@ -73,7 +73,7 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
 
       override def queryCompile(queryKey: STATEMENT, metaData: String): Unit = {}
 
-      override def queryJitCompile(queryKey: STATEMENT, metaData: String): Unit = {}
+      override def queryCompileWithExpressionCodeGen(queryKey: STATEMENT, metaData: String): Unit = {}
     }
 }
 

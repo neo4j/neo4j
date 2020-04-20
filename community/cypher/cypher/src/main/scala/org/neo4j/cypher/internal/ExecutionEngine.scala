@@ -109,8 +109,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
       cacheTracer.queryCompile(str(queryKey), metaData)
 
-    override def queryJitCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
-      cacheTracer.queryJitCompile(str(queryKey), metaData)
+    override def queryCompileWithExpressionCodeGen(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+      cacheTracer.queryCompileWithExpressionCodeGen(str(queryKey), metaData)
 
     override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
       cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData, maybeReason)
@@ -242,18 +242,18 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   /*
-   * Return the JIT compiler to be used.
+   * Return the CompilerWithExpressionCodeGenOption to be used.
    */
-  private def jitCompiler(inputQuery: InputQuery,
-                          tracer: QueryCompilationEvent,
-                          transactionalContext: TransactionalContext,
-                          params: MapValue): JitCompiler[ExecutableQuery] = {
+  private def compilerWithExpressionCodeGenOption(inputQuery: InputQuery,
+                                                  tracer: QueryCompilationEvent,
+                                                  transactionalContext: TransactionalContext,
+                                                  params: MapValue): CompilerWithExpressionCodeGenOption[ExecutableQuery] = {
     val compiledExpressionCompiler = () => masterCompiler.compile(inputQuery.withRecompilationLimitReached,
       tracer, transactionalContext, params)
     val interpretedExpressionCompiler = () => masterCompiler.compile(inputQuery, tracer, transactionalContext, params)
 
-    new JitCompiler[ExecutableQuery] {
-      override def compile(): ExecutableQuery ={
+    new CompilerWithExpressionCodeGenOption[ExecutableQuery] {
+      override def compile(): ExecutableQuery = {
         if (inputQuery.options.compileWhenHot && config.recompilationLimit == 0) {
           //We have recompilationLimit == 0, go to compiled directly
           compiledExpressionCompiler()
@@ -262,9 +262,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         }
       }
 
-      override def jitCompile(): ExecutableQuery = compiledExpressionCompiler()
+      override def compileWithExpressionCodeGen(): ExecutableQuery = compiledExpressionCompiler()
 
-      override def maybeJitCompile(hitCount: Int): Option[ExecutableQuery] = {
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[ExecutableQuery] = {
         //check if we need to do jit compiling of queries and if hot enough
         if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit) {
           Some(compiledExpressionCompiler())
@@ -292,7 +292,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
 
         val schemaToken = schemaHelper.readSchemaToken(tc)
-        val compiler = jitCompiler(inputQuery, tracer, tc, params)
+        val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params)
         val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
           compiler,
