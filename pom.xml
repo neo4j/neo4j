@@ -586,6 +586,9 @@
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
+            <compilerArgs>
+              <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->
+            </compilerArgs>
           </configuration>
         </plugin>
         <plugin>
@@ -827,6 +830,7 @@
                   -Xep:ReturnValueIgnored:WARN
                   -Xep:InvalidZoneId:WARN
                 </arg>
+                <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->
               </compilerArgs>
               <annotationProcessorPaths>
                 <path>
