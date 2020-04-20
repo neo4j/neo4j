@@ -70,7 +70,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
 
     public ResultSubscriber( TransactionalContext context )
     {
-        this(context, new DefaultValueMapper( context.transaction() ));
+        this( context, new DefaultValueMapper( context.transaction() ) );
     }
 
     public ResultSubscriber( TransactionalContext context, ValueMapper<Object> valueMapper )
