@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering
@@ -36,6 +39,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
@@ -75,19 +79,33 @@ trait NodeIndexSeeker {
                                             index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            baseContext: CypherRow): Iterator[NodeValueIndexCursor] =
+                                            baseContext: CypherRow): NodeValueIndexCursor =
     indexMode match {
       case _: ExactSeek |
            _: SeekByRange =>
-        val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.toIterator.map(query => state.query.indexSeek(index, needsValues, indexOrder, query))
+        val indexQueries: Seq[Seq[IndexQuery]] = computeIndexQueries(state, baseContext)
+        if (indexQueries.size == 1) {
+          state.query.indexSeek(index, needsValues, indexOrder, indexQueries.head)
+        } else {
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+        }
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
-        indexQueries.map(indexQuery => state.query.lockingUniqueIndexSeek(index.reference(), indexQuery)).toIterator
+        if (indexQueries.size == 1) {
+          state.query.lockingUniqueIndexSeek(index.reference(), indexQueries.head)
+        } else {
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.lockingUniqueIndexSeek(index.reference(), query)).toArray)
+        }
     }
 
   // helpers
+
+  private def orderedCursor(indexOrder: IndexOrder, cursors: Array[NodeValueIndexCursor]) = indexOrder match {
+    case IndexOrderNone => ManyNodeValueIndexCursor.unordered(cursors)
+    case IndexOrderAscending => ManyNodeValueIndexCursor.ascending(cursors)
+    case IndexOrderDescending => ManyNodeValueIndexCursor.descending(cursors)
+  }
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
