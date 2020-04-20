@@ -44,7 +44,7 @@ class HeapTrackingIntObjectHashMapTest
     @BeforeEach
     void setUp()
     {
-        memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, "test", 0L );
+        memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 0L );
         memoryTracker = new LocalMemoryTracker( memoryPool );
     }
 

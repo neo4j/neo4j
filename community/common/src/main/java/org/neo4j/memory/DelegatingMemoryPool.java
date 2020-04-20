@@ -19,90 +19,72 @@
  */
 package org.neo4j.memory;
 
-public class MemoryGroupTracker implements NamedMemoryPool
+public class DelegatingMemoryPool implements MemoryPool
 {
-    private final MemoryPools pools;
-    private final MemoryGroup group;
-    private final String name;
-    private final MemoryPool pool;
+    private final MemoryPool delegate;
 
-    MemoryGroupTracker( MemoryPools pools, MemoryGroup group, String name, long limit, boolean strict )
+    DelegatingMemoryPool( MemoryPool delegate )
     {
-        this.pools = pools;
-        this.group = group;
-        this.name = name;
-        this.pool = MemoryPools.fromLimit( limit, strict );
-    }
-
-    @Override
-    public MemoryGroup group()
-    {
-        return group;
-    }
-
-    @Override
-    public String name()
-    {
-        return name;
+        this.delegate = delegate;
     }
 
     @Override
     public void reserveHeap( long bytes )
     {
-        pool.reserveHeap( bytes );
+        delegate.reserveHeap( bytes );
     }
 
     @Override
     public void reserveNative( long bytes )
     {
-        pool.reserveNative( bytes );
+        delegate.reserveNative( bytes );
     }
 
     @Override
     public void releaseHeap( long bytes )
     {
-        pool.releaseHeap( bytes );
+        delegate.releaseHeap( bytes );
     }
 
     @Override
     public void releaseNative( long bytes )
     {
-        pool.releaseNative( bytes );
+        delegate.releaseNative( bytes );
     }
 
     @Override
     public long totalSize()
     {
-        return pool.totalSize();
+        return delegate.totalSize();
     }
 
     @Override
     public long usedHeap()
     {
-        return pool.usedHeap();
+        return delegate.usedHeap();
     }
 
     @Override
     public long usedNative()
     {
-        return pool.usedNative();
+        return delegate.usedNative();
     }
 
     @Override
     public long totalUsed()
     {
-        return pool.totalUsed();
+        return delegate.totalUsed();
     }
 
     @Override
     public long free()
     {
-        return pool.free();
+        return delegate.free();
     }
 
     @Override
-    public void close()
+    public void setSize( long size )
     {
-        pools.releasePool( this );
+        delegate.setSize( size );
     }
 }

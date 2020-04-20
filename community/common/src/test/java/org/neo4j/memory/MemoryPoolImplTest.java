@@ -31,7 +31,7 @@ class MemoryPoolImplTest
     @Test
     void unboundedShouldBeUnbounded()
     {
-        MemoryPool memoryPool = new MemoryPoolImpl.UnboundedMemoryPool();
+        MemoryPool memoryPool = new MemoryPoolImpl( 0, false );
         memoryPool.reserveHeap( Long.MAX_VALUE - 1 );
         assertEquals( 1, memoryPool.free() );
         memoryPool.releaseHeap( Long.MAX_VALUE - 2 );
@@ -41,7 +41,7 @@ class MemoryPoolImplTest
     @Test
     void trackHeapAndNativeMemory()
     {
-        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 1000, true );
+        var memoryPool = new MemoryPoolImpl( 1000, true );
         memoryPool.reserveHeap( 10 );
 
         assertEquals( 0, memoryPool.usedNative() );
@@ -60,7 +60,7 @@ class MemoryPoolImplTest
     @Test
     void nonStrictPoolAllowAllocationsOverMax()
     {
-        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 10, false );
+        var memoryPool = new MemoryPoolImpl( 10, false );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 100 ) );
@@ -71,7 +71,7 @@ class MemoryPoolImplTest
     @Test
     void strictPoolForbidAllocationsOverMax()
     {
-        var memoryPool = new MemoryPoolImpl.BoundedMemoryPool( 100, true );
+        var memoryPool = new MemoryPoolImpl( 100, true );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
         assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 100 ) );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
@@ -84,7 +84,7 @@ class MemoryPoolImplTest
     {
         final long limit = 10;
         final long halfLimit = limit / 2;
-        MemoryPool memoryPool = new MemoryPoolImpl.BoundedMemoryPool( limit, true );
+        MemoryPool memoryPool = new MemoryPoolImpl( limit, true );
         assertState( limit, limit, 0, memoryPool );
 
         memoryPool.reserveHeap( halfLimit );

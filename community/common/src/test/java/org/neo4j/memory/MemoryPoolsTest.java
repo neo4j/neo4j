@@ -32,8 +32,8 @@ class MemoryPoolsTest
     void createdPoolRegisteredInListOfPools()
     {
         var pools = new MemoryPools();
-        var pool1 = pools.pool( QUERY_CACHE, "test", 2, true );
-        var pool2 = pools.pool( TRANSACTION, "test", 2, true );
+        var pool1 = pools.pool( QUERY_CACHE, 2, true );
+        var pool2 = pools.pool( TRANSACTION, 2, true );
         assertThat( pools.getPools() ).contains( pool1, pool2 );
     }
 
@@ -41,7 +41,7 @@ class MemoryPoolsTest
     void poolIsDeregisteredOnClose()
     {
         var pools = new MemoryPools();
-        var pool = pools.pool( TRANSACTION, "test", 2, true );
+        var pool = pools.pool( TRANSACTION, 2, true );
 
         assertThat( pools.getPools() ).contains( pool );
         pool.close();

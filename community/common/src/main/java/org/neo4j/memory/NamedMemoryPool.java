@@ -19,6 +19,8 @@
  */
 package org.neo4j.memory;
 
+import java.util.List;
+
 public interface NamedMemoryPool extends MemoryPool, AutoCloseable
 {
     /**
@@ -35,4 +37,8 @@ public interface NamedMemoryPool extends MemoryPool, AutoCloseable
      * Close and de-registed specific memory pool
      */
     void close();
+
+    NamedMemoryPool newSubPool( String name, long limit, boolean strict );
+
+    List<NamedMemoryPool> getSubPools();
 }

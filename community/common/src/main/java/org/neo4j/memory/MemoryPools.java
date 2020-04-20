@@ -20,29 +20,25 @@
 package org.neo4j.memory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class MemoryPools
 {
-    public static final MemoryPool NO_TRACKING = new NoTrackingMemoryPool();
-    private final List<NamedMemoryPool> pools = new CopyOnWriteArrayList<>();
+    public static final NamedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
+    private final List<TopMemoryGroupTracker> pools = new CopyOnWriteArrayList<>();
 
-    public NamedMemoryPool pool( MemoryGroup group, String name, long limit )
+    public NamedMemoryPool pool( MemoryGroup group, long limit )
     {
-        return this.pool( group, name, limit, true );
+        return this.pool( group, limit, true );
     }
 
-    public NamedMemoryPool pool( MemoryGroup group, String name, long limit, boolean strict )
+    public NamedMemoryPool pool( MemoryGroup group, long limit, boolean strict )
     {
-        var pool = new MemoryGroupTracker( this, group, name, limit, strict );
+        var pool = new TopMemoryGroupTracker( this, group, limit, strict );
         pools.add( pool );
         return pool;
-    }
-
-    public void releasePool( NamedMemoryPool pool )
-    {
-        pools.remove( pool );
     }
 
     public List<NamedMemoryPool> getPools()
@@ -50,20 +46,9 @@ public final class MemoryPools
         return new ArrayList<>( pools );
     }
 
-    /**
-     * Constructs a new memory pool.
-     *
-     * @param limit of the pool, passing 0 will result in an unbounded pool
-     * @param strict true if pool should restrict allocation to the provided limit
-     * @return a new memory pool with the specified limit
-     */
-    static MemoryPool fromLimit( long limit, boolean strict )
+    void releasePool( TopMemoryGroupTracker topMemoryGroupTracker )
     {
-        if ( limit == 0 )
-        {
-            return new MemoryPoolImpl.UnboundedMemoryPool();
-        }
-        return new MemoryPoolImpl.BoundedMemoryPool( limit, strict );
+        pools.remove( topMemoryGroupTracker );
     }
 
     private static class NoTrackingMemoryPool implements NamedMemoryPool
@@ -90,7 +75,6 @@ public final class MemoryPools
         @Override
         public void reserveNative( long bytes )
         {
-
         }
 
         @Override
@@ -101,7 +85,6 @@ public final class MemoryPools
         @Override
         public void releaseNative( long bytes )
         {
-
         }
 
         @Override
@@ -137,7 +120,23 @@ public final class MemoryPools
         @Override
         public void close()
         {
+        }
 
+        @Override
+        public NamedMemoryPool newSubPool( String name, long limit, boolean strict )
+        {
+            return this;
+        }
+
+        @Override
+        public void setSize( long size )
+        {
+        }
+
+        @Override
+        public List<NamedMemoryPool> getSubPools()
+        {
+            return Collections.emptyList();
         }
     }
 }

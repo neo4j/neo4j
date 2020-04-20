@@ -43,7 +43,6 @@ import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
 
 public class ConfiguringPageCacheFactory
 {
-    private static final String PAGE_CACHE_POOL_NAME = "Global Page Cache Pool";
     private PageSwapperFactory swapperFactory;
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -107,7 +106,7 @@ public class ConfiguringPageCacheFactory
             pageCacheMemorySetting = "" + heuristic;
         }
         long pageCacheMaxMemory = ByteUnit.parse( pageCacheMemorySetting );
-        var memoryPool = memoryPools.pool( PAGE_CACHE, PAGE_CACHE_POOL_NAME, pageCacheMaxMemory, false );
+        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false );
         return createAllocator( pageCacheMaxMemory, new ThreadSafeMemoryTracker( memoryPool, pageCacheMaxMemory, 0 ) );
     }
 

@@ -45,7 +45,7 @@ public class LocalMemoryTracker implements MemoryTracker
     /**
      * Imposes limits on a {@link MemoryGroup} level, e.g. global maximum transactions size
      */
-    private final MemoryPool memoryGroupPool;
+    private final MemoryPool memoryPool;
 
     /**
      * The chunk size to reserve from the memory pool
@@ -70,7 +70,7 @@ public class LocalMemoryTracker implements MemoryTracker
     /**
      * The currently allocated off heap
      */
-    private long allocatedBytesDirect;
+    private long allocatedBytesNative;
 
     /**
      * The heap high water mark, i.e. the maximum observed allocated heap bytes
@@ -82,14 +82,14 @@ public class LocalMemoryTracker implements MemoryTracker
         this( NO_TRACKING, NO_LIMIT, DEFAULT_GRAB_SIZE );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryGroupPool )
+    public LocalMemoryTracker( MemoryPool memoryPool )
     {
-        this( memoryGroupPool, NO_LIMIT, DEFAULT_GRAB_SIZE );
+        this( memoryPool, NO_LIMIT, DEFAULT_GRAB_SIZE );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryGroupPool, long localHeapBytesLimit, long grabSize )
+    public LocalMemoryTracker( MemoryPool memoryPool, long localHeapBytesLimit, long grabSize )
     {
-        this.memoryGroupPool = requireNonNull( memoryGroupPool );
+        this.memoryPool = requireNonNull( memoryPool );
         this.localHeapBytesLimit = localHeapBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localHeapBytesLimit );
         this.grabSize = requireNonNegative( grabSize );
     }
@@ -97,15 +97,15 @@ public class LocalMemoryTracker implements MemoryTracker
     @Override
     public void allocateNative( long bytes )
     {
-        this.allocatedBytesDirect += bytes;
-        this.memoryGroupPool.reserveNative( bytes );
+        this.allocatedBytesNative += bytes;
+        this.memoryPool.reserveNative( bytes );
     }
 
     @Override
     public void releaseNative( long bytes )
     {
-        this.allocatedBytesDirect -= bytes;
-        this.memoryGroupPool.releaseNative( bytes );
+        this.allocatedBytesNative -= bytes;
+        this.memoryPool.releaseNative( bytes );
     }
 
     @Override
@@ -132,7 +132,7 @@ public class LocalMemoryTracker implements MemoryTracker
         if ( allocatedBytesHeap > localHeapPool )
         {
             long grab = max( bytes, grabSize );
-            reserveHeap( grab );
+            reserveHeapFromPool( grab );
         }
     }
 
@@ -155,7 +155,7 @@ public class LocalMemoryTracker implements MemoryTracker
     @Override
     public long usedNativeMemory()
     {
-        return allocatedBytesDirect;
+        return allocatedBytesNative;
     }
 
     @Override
@@ -167,8 +167,8 @@ public class LocalMemoryTracker implements MemoryTracker
     @Override
     public void reset()
     {
-        checkState( allocatedBytesDirect == 0, "Potential direct memory leak" );
-        memoryGroupPool.releaseHeap( localHeapPool );
+        checkState( allocatedBytesNative == 0, "Potential direct memory leak" );
+        memoryPool.releaseHeap( localHeapPool );
         localHeapPool = 0;
         allocatedBytesHeap = 0;
         heapHighWaterMark = 0;
@@ -180,14 +180,14 @@ public class LocalMemoryTracker implements MemoryTracker
     }
 
     /**
-     * Will reserve heap on the parent tracker.
+     * Will reserve heap in the provided pool.
      *
      * @param size heap space to reserve for the local pool
      * @throws HeapMemoryLimitExceeded if not enough free memory
      */
-    private void reserveHeap( long size )
+    private void reserveHeapFromPool( long size )
     {
-        memoryGroupPool.reserveHeap( size );
+        memoryPool.reserveHeap( size );
         localHeapPool += size;
     }
 

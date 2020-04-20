@@ -95,4 +95,11 @@ public interface MemoryPool
      * @return the number of bytes that are not used by anyone.
      */
     long free();
+
+    /**
+     * Updates the total size of the pool.
+     *
+     * @param size the new size of the pool.
+     */
+    void setSize( long size );
 }

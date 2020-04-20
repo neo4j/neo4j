@@ -146,6 +146,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
@@ -242,6 +243,7 @@ public class Database extends LifecycleAdapter
     private final KernelTransactionFactory kernelTransactionFactory;
     private final DatabaseStartupController startupController;
     private final MemoryPools memoryPools;
+    private final NamedMemoryPool transactionsMemoryPool;
 
     public Database( DatabaseCreationContext context )
     {
@@ -252,6 +254,7 @@ public class Database extends LifecycleAdapter
         this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
         this.memoryPools = context.getMemoryPools();
+        this.transactionsMemoryPool = context.getTransactionsMemoryPool();
         this.databaseLogService = context.getDatabaseLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.internalLogProvider = context.getDatabaseLogService().getInternalLogProvider();
@@ -703,7 +706,7 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
-                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService, memoryPools ) );
+                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService, transactionsMemoryPool ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 
