@@ -20,15 +20,21 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.runtime.ManyNodeValueIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, IsNoValue, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.exceptions.{CypherTypeException, InternalException}
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.KernelReadTracer
+import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.COMPARATOR
 import org.neo4j.values.storable._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
   * Mixin trait with functionality for executing logical index queries.
@@ -49,21 +55,35 @@ trait NodeIndexSeeker {
                                             index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            baseContext: ExecutionContext): Iterator[NodeValueIndexCursor] =
+                                            baseContext: ExecutionContext): NodeValueIndexCursor =
     indexMode match {
       case _: ExactSeek |
            _: SeekByRange =>
-        val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.toIterator.map(query => state.query.indexSeek(index, needsValues, indexOrder, query))
+        val indexQueries: Seq[Seq[IndexQuery]] = computeIndexQueries(state, baseContext)
+        if (indexQueries.size == 1) {
+          state.query.indexSeek(index, needsValues, indexOrder, indexQueries.head)
+        } else {
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+        }
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
-        indexQueries.map(indexQuery => state.query.lockingUniqueIndexSeek(index.reference(), indexQuery)).toIterator
+        if (indexQueries.size == 1) {
+          state.query.lockingUniqueIndexSeek(index.reference(), indexQueries.head)
+        } else {
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.lockingUniqueIndexSeek(index.reference(), query)).toArray)
+        }
     }
 
   // helpers
 
-  private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
+  private def orderedCursor(indexOrder: IndexOrder, cursors: Array[NodeValueIndexCursor]) = indexOrder match {
+    case IndexOrderNone => ManyNodeValueIndexCursor.unordered(cursors)
+    case IndexOrderAscending => ManyNodeValueIndexCursor.ascending(cursors)
+    case IndexOrderDescending => ManyNodeValueIndexCursor.descending(cursors)
+  }
+
+  private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(COMPARATOR))
 
   protected def computeIndexQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery]] =
     valueExpr match {
@@ -132,7 +152,7 @@ trait NodeIndexSeeker {
             case RangeBetween(rangeGreaterThan, rangeLessThan) =>
               val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
               val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
-              val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
+              val compare = COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
               if (compare < 0) {
                     List(IndexQuery.range(propertyId,
                       greaterThanLimit.endPoint,
