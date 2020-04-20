@@ -71,7 +71,7 @@ public class InconsistencyReport implements InconsistencyLogger
         logger.warning( message );
     }
 
-    void updateSummary( RecordType type, int errors, int warnings )
+    public void updateSummary( RecordType type, int errors, int warnings )
     {
         summary.update( type, errors, warnings );
     }

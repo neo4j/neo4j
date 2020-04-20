@@ -50,6 +50,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -80,10 +81,10 @@ public class FullCheck
     private final boolean verbose;
     private final NodeBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
-    private final ConsistencyFlags flags;
     private final IndexSamplingConfig samplingConfig;
     private final int threads;
     private final Statistics statistics;
+    private ConsistencyFlags flags;
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
                       ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
@@ -152,6 +153,15 @@ public class FullCheck
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(),
                 samplingConfig, pageCacheTracer ) )
         {
+            if ( !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) && flags.isCheckRelationshipTypeScanStore() )
+            {
+                report.warning( "Consistency checker was configured to validate consistency of relationship type scan store, " +
+                        "but this auxiliary store is not enabled and can therefore not be validated." );
+                report.updateSummary( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, 0, 1 );
+                flags = new ConsistencyFlags( flags.isCheckGraph(), flags.isCheckIndexes(), flags.isCheckIndexStructure(), flags.isCheckLabelScanStore(), false,
+                        flags.isCheckPropertyOwners() );
+            }
+
             if ( flags.isCheckIndexStructure() )
             {
                 consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.relationshipTypeScanStore(),

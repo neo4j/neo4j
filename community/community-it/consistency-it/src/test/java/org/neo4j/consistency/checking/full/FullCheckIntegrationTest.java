@@ -2131,6 +2131,22 @@ public class FullCheckIntegrationTest
         shouldReportBadCountsStore( this::corruptFileIfExists );
     }
 
+    @Test
+    void shouldWarnIfConfiguredToValidateRelationshipTypeScanStoreButItIsDisabled() throws ConsistencyCheckIncompleteException
+    {
+        // given
+        Config config = config();
+        config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
+        ConsistencyFlags flags = new ConsistencyFlags( true, true, true, true, true, true );
+
+        // when
+        ConsistencySummaryStatistics check = check( config, flags );
+
+        // then
+        assertThat( check.getTotalWarningCount() ).isEqualTo( 1 );
+        on( check ).andThatsAllFolks();
+    }
+
     private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
     {
         // given
@@ -2289,12 +2305,28 @@ public class FullCheckIntegrationTest
         return check( fixture.getInstantiatedPageCache(), stores, fixture.counts() );
     }
 
+    private ConsistencySummaryStatistics check( Config config, ConsistencyFlags consistencyFlags )
+            throws ConsistencyCheckIncompleteException
+    {
+        PageCache pageCache = fixture.getInstantiatedPageCache();
+        DirectStoreAccess stores = fixture.readOnlyDirectStoreAccess();
+        ThrowingSupplier<CountsStore,IOException> counts = fixture.counts();
+        return check( pageCache, stores, counts, config, consistencyFlags );
+    }
+
     private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts )
             throws ConsistencyCheckIncompleteException
     {
         Config config = config();
         boolean checkRelationshipTypeScanStore = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true, checkRelationshipTypeScanStore, true );
+        return check( pageCache, stores, counts, config, consistencyFlags );
+    }
+
+    private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
+            Config config, ConsistencyFlags consistencyFlags )
+            throws ConsistencyCheckIncompleteException
+    {
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, FormattedLog.toOutputStream( System.out ) );
