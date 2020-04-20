@@ -30,7 +30,6 @@ import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.ByteUnit;
 
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 class EphemeralFileData
@@ -38,14 +37,12 @@ class EphemeralFileData
     private static final ThreadLocal<byte[]> SCRATCH_PAD =
             ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
     private final File file;
-    private EphemeralDynamicByteBuffer fileAsBuffer;
-    private EphemeralDynamicByteBuffer forcedBuffer;
-    private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
-    private long size;
-    private long forcedSize;
-    private int locked; // Guarded by lock on 'channels'
     private final Clock clock;
-    private long lastModified;
+    private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
+    private volatile EphemeralDynamicByteBuffer fileAsBuffer;
+    private volatile EphemeralDynamicByteBuffer forcedBuffer;
+    private volatile long lastModified;
+    private int locked; // Guarded by lock on 'channels'
 
     EphemeralFileData( File file, Clock clock )
     {
@@ -64,7 +61,8 @@ class EphemeralFileData
     int read( EphemeralPositionable fc, ByteBuffer dst )
     {
         int wanted = dst.limit() - dst.position();
-        long size = size();
+        var fileBuffer = fileAsBuffer; // Snapshot buffer instance with volatile read.
+        long size = fileBuffer.getSize();
         long available = min( wanted, size - fc.pos() );
         if ( available <= 0 )
         {
@@ -77,7 +75,7 @@ class EphemeralFileData
         {
             int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
             long pos = fc.pos();
-            fileAsBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
+            fileBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
             fc.pos( pos + howMuchToReadThisTime );
             dst.put( scratchPad, 0, howMuchToReadThisTime );
             pending -= howMuchToReadThisTime;
@@ -85,37 +83,35 @@ class EphemeralFileData
         return Math.toIntExact( available ); // return how much data was read
     }
 
-    synchronized int write( EphemeralPositionable fc, ByteBuffer src )
+    int write( EphemeralPositionable fc, ByteBuffer src )
     {
         int wanted = src.limit() - src.position();
         int pending = wanted;
         byte[] scratchPad = SCRATCH_PAD.get();
+        var fileBuffer = fileAsBuffer; // Snapshot buffer instance with volatile read.
 
         while ( pending > 0 )
         {
             int howMuchToWriteThisTime = min( pending, scratchPad.length );
             src.get( scratchPad, 0, howMuchToWriteThisTime );
             long pos = fc.pos();
-            fileAsBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
+            fileBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
             fc.pos( pos + howMuchToWriteThisTime );
             pending -= howMuchToWriteThisTime;
         }
 
-        size = max( size, fc.pos() );
         lastModified = clock.millis();
         return wanted;
     }
 
-    synchronized Iterable<ByteBuffer> buffers()
+    Iterable<ByteBuffer> buffers()
     {
         return fileAsBuffer;
     }
 
-    synchronized EphemeralFileData copy()
+    EphemeralFileData copy()
     {
-        EphemeralFileData copy = new EphemeralFileData( file, fileAsBuffer.copy(), clock );
-        copy.size = size;
-        return copy;
+        return new EphemeralFileData( file, fileAsBuffer.copy(), clock );
     }
 
     void free()
@@ -131,16 +127,14 @@ class EphemeralFileData
         }
     }
 
-    synchronized void force()
+    void force()
     {
         forcedBuffer = fileAsBuffer.copy();
-        forcedSize = size;
     }
 
-    synchronized void crash()
+    void crash()
     {
         fileAsBuffer = forcedBuffer.copy();
-        size = forcedSize;
     }
 
     void close( EphemeralFileChannel channel )
@@ -192,14 +186,14 @@ class EphemeralFileData
         };
     }
 
-    synchronized long size()
+    long size()
     {
-        return size;
+        return fileAsBuffer.getSize();
     }
 
-    synchronized void truncate( long newSize )
+    void truncate( long newSize )
     {
-        this.size = newSize;
+        this.fileAsBuffer.truncate( newSize );
     }
 
     boolean takeLock()
@@ -229,10 +223,10 @@ class EphemeralFileData
     @Override
     public String toString()
     {
-        return "size: " + size + ", locked:" + locked;
+        return "EphemeralFileData[size: " + fileAsBuffer.getSize() + "]";
     }
 
-    public long getLastModified()
+    long getLastModified()
     {
         return lastModified;
     }

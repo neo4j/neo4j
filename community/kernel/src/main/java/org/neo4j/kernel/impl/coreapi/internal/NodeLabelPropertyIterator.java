@@ -57,8 +57,8 @@ public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
         do
         {
             hasNext = nodeLabelCursor.next();
-
-        } while ( hasNext && !hasPropertiesWithValues() );
+        }
+        while ( hasNext && !hasPropertiesWithValues() );
 
         if ( hasNext )
         {

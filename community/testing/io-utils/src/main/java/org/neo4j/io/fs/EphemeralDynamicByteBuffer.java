@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.util.Preconditions;
 
 /**
  * Dynamically expanding ByteBuffer substitute/wrapper. This will allocate ByteBuffers on the go
@@ -41,6 +42,7 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
     private static final ByteBuffer ZERO_BUFFER = ByteBuffer.allocate( SECTOR_SIZE );
     private SortedMap<Long,ByteBuffer> sectors;
     private Exception freeCall;
+    private long size;
 
     EphemeralDynamicByteBuffer()
     {
@@ -48,47 +50,62 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
     }
 
     /** This is a copying constructor, the input buffer is just read from, never stored in 'this'. */
-    @SuppressWarnings( "CopyConstructorMissesField" )
+    @SuppressWarnings( { "CopyConstructorMissesField", "SynchronizationOnLocalVariableOrMethodParameter" } )
     private EphemeralDynamicByteBuffer( EphemeralDynamicByteBuffer toClone )
     {
         this();
-        toClone.assertNotFreed();
-        for ( Map.Entry<Long,ByteBuffer> entry : toClone.sectors.entrySet() )
+        synchronized ( toClone ) // Necessary for safely accessing toClone.sectors field.
         {
-            ByteBuffer sector = allocate( SECTOR_SIZE );
-            copyByteBufferContents( entry.getValue(), sector );
-            sectors.put( entry.getKey(), sector );
+            toClone.assertNotFreed();
+            for ( Map.Entry<Long,ByteBuffer> entry : toClone.sectors.entrySet() )
+            {
+                ByteBuffer sector = allocate( SECTOR_SIZE );
+                copyByteBufferContents( entry.getValue(), sector );
+                sectors.put( entry.getKey(), sector );
+            }
+            size = toClone.getSize();
         }
     }
 
     public Iterator<ByteBuffer> iterator()
     {
-        if ( sectors.isEmpty() )
+        synchronized ( this )
         {
-            return Iterators.emptyResourceIterator();
+            if ( sectors.isEmpty() )
+            {
+                return Iterators.emptyResourceIterator();
+            }
         }
 
         return new Iterator<>()
         {
-            final long last = sectors.lastKey();
+            // Hold on to the EphemeralDynamicByteBuffer.
+            // We need this object in order for locking, so we can safely access the 'sectors' field.
+            final EphemeralDynamicByteBuffer dbb = EphemeralDynamicByteBuffer.this;
             long next;
 
             @Override
             public boolean hasNext()
             {
-                return next <= last;
+                synchronized ( dbb )
+                {
+                    return next <= dbb.sectors.lastKey();
+                }
             }
 
             @Override
             public ByteBuffer next()
             {
-                if ( next > last )
+                synchronized ( dbb )
                 {
-                    throw new NoSuchElementException();
+                    if ( next > dbb.sectors.lastKey() )
+                    {
+                        throw new NoSuchElementException();
+                    }
+                    ByteBuffer sector = sectors.get( next );
+                    next++;
+                    return Objects.requireNonNullElse( sector, ZERO_BUFFER ).position( 0 );
                 }
-                ByteBuffer sector = sectors.get( next );
-                next++;
-                return Objects.requireNonNullElse( sector, ZERO_BUFFER ).position( 0 );
             }
         };
     }
@@ -118,7 +135,7 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
         return ByteBuffers.allocate( Math.toIntExact( capacity ) );
     }
 
-    void free()
+    synchronized void free()
     {
         assertNotFreed();
         sectors = null;
@@ -132,6 +149,7 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
         long sector = pos / SECTOR_SIZE;
         int offset = (int) (pos % SECTOR_SIZE);
 
+        size = Math.max( size, pos + length );
         for ( ;; )
         {
             ByteBuffer buf = getOrCreateSector( sector );
@@ -171,7 +189,12 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
         }
     }
 
-    private ByteBuffer getOrCreateSector( long sector )
+    synchronized long getSize()
+    {
+        return size;
+    }
+
+    private synchronized ByteBuffer getOrCreateSector( long sector )
     {
         ByteBuffer buf = sectors.get( sector );
         if ( buf == null )
@@ -182,11 +205,34 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
         return buf;
     }
 
-    private void assertNotFreed()
+    private synchronized void assertNotFreed()
     {
         if ( sectors == null )
         {
             throw new IllegalStateException( "This buffer has been freed.", freeCall );
         }
+    }
+
+    synchronized void truncate( long newSize )
+    {
+        Preconditions.requireNonNegative( newSize );
+        size = newSize;
+        SortedMap<Long, ByteBuffer> tail = sectors.tailMap( newSize - ( SECTOR_SIZE - 1 ) );
+        if ( tail.isEmpty() )
+        {
+            return;
+        }
+        Long firstKey = tail.firstKey();
+        if ( firstKey <= newSize )
+        {
+            ByteBuffer buffer = tail.get( firstKey );
+            int tailToClear = Math.toIntExact( newSize - firstKey );
+            buffer.position( tailToClear );
+            while ( buffer.hasRemaining() )
+            {
+                buffer.put( (byte) 0 );
+            }
+        }
+        sectors.tailMap( firstKey + 1 ).clear();
     }
 }

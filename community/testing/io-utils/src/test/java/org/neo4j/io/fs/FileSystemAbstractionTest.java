@@ -19,10 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +34,9 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.memory.ByteBuffers;
@@ -762,6 +761,30 @@ public abstract class FileSystemAbstractionTest
 
         List<File> filepaths = fsa.streamFilesRecursive( dir ).map( FileHandle::getRelativeFile ).collect( toList() );
         assertThat( filepaths ).contains( new File( a.getName() ) );
+    }
+
+    @Test
+    void truncationMustReduceFileSize() throws Exception
+    {
+        File a = existingFile( "a" );
+        try ( StoreChannel channel = fsa.write( a ) )
+        {
+            channel.position( 0 );
+            byte[] data = {
+                    1, 2, 3, 4,
+                    5, 6, 7, 8
+            };
+            channel.writeAll( ByteBuffer.wrap( data ) );
+            channel.truncate( 4 );
+            assertThat( channel.size() ).isEqualTo( 4 );
+            ByteBuffer buf = ByteBuffer.allocate( data.length );
+            channel.position( 0 );
+            int read = channel.read( buf );
+            assertThat( read ).isEqualTo( 4 );
+            buf.flip();
+            assertThat( buf.remaining() ).isEqualTo( 4 );
+            assertThat( buf.array() ).containsExactly( 1, 2, 3, 4, 0, 0, 0, 0 );
+        }
     }
 
     private void generateFileWithRecords( File file, int recordCount ) throws IOException
