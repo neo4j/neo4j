@@ -38,13 +38,22 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) =>
-      val newResolved = resolved.withFakedFullDeclarations
-      //Add the equivalent of a return for each item yielded by the procedure
-      val aliases = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
-      val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
-                              None, None, None)(resolved.position)
+    case q@Query(None, part@SingleQuery(Seq(resolved: ResolvedCall))) =>
+      val (newResolved, projection) = getResolvedAndProjection(resolved)
       q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
+
+    case q@Query(None, part@SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
+      val (newResolved, projection) = getResolvedAndProjection(resolved)
+      q.copy(part = part.copy(clauses = Seq(graph, newResolved, projection))(part.position))(q.position)
+  }
+
+  private def getResolvedAndProjection(resolved: ResolvedCall) = {
+    val newResolved = resolved.withFakedFullDeclarations
+    //Add the equivalent of a return for each item yielded by the procedure
+    val aliases = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
+    val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
+      None, None, None)(resolved.position)
+    (newResolved, projection)
   }
 
   def resolverProcedureCall(context: ProcedureSignatureResolver) = bottomUp(Rewriter.lift {
