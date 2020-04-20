@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
@@ -40,9 +38,9 @@ public class LogVersionUpgradeChecker
         throw new AssertionError( "No instances allowed" );
     }
 
-    public static void check( LogTailScanner tailScanner, Config config ) throws UpgradeNotAllowedException
+    public static void check( LogTailScanner tailScanner, boolean upgradeAllowed ) throws UpgradeNotAllowedException
     {
-        if ( !config.get( GraphDatabaseSettings.allow_upgrade ) )
+        if ( !upgradeAllowed )
         {
             // The user doesn't want us to upgrade the store.
             byte latestLogEntryVersion = tailScanner.getTailInformation().latestLogEntryVersion;

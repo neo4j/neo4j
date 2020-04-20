@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
@@ -35,14 +33,14 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST
 
 class LogVersionUpgradeCheckerTest
 {
-    private LogTailScanner tailScanner = mock( LogTailScanner.class );
+    private final LogTailScanner tailScanner = mock( LogTailScanner.class );
 
     @Test
     void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LATEST.version() ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, false ) );
+        check( tailScanner, false );
     }
 
     @Test
@@ -50,7 +48,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( V2_3.version() ) );
 
-        assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, false ) ) );
+        assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, false ) );
     }
 
     @Test
@@ -58,7 +56,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LATEST.version() ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, true ) );
+        check( tailScanner, true );
     }
 
     @Test
@@ -66,7 +64,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( V2_3.version() ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, true ) );
+        check( tailScanner, true );
     }
 
     private static class OnlyVersionTailInformation extends LogTailScanner.LogTailInformation

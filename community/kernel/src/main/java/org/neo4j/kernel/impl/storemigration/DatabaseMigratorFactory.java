@@ -32,7 +32,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -92,7 +91,6 @@ public class DatabaseMigratorFactory
             throw new RuntimeException( e );
         }
         final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
-        LogVersionUpgradeChecker.check( tailScanner, dbConfig );
         return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator,
                 storageEngineFactory, pageCacheTracer );
     }

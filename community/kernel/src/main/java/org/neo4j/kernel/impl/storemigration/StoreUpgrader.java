@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -130,6 +131,8 @@ public class StoreUpgrader
 
     public void migrateIfNeeded( DatabaseLayout layout )
     {
+        boolean upgradeAllowed = isUpgradeAllowed();
+        LogVersionUpgradeChecker.check( logTailScanner, upgradeAllowed );
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             // TODO: System database does not (yet) support migration, remove this when it does!
@@ -150,7 +153,7 @@ public class StoreUpgrader
                 return;
             }
 
-            if ( isUpgradeAllowed() )
+            if ( upgradeAllowed )
             {
                 migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
             }

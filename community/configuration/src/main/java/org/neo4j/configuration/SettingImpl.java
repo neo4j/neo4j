@@ -237,7 +237,7 @@ public final class SettingImpl<T> implements Setting<T>
         private final String name;
         private final SettingValueParser<T> parser;
         private final List<SettingConstraint<T>> constraints = new ArrayList<>();
-        private T defaultValue;
+        private final T defaultValue;
         private boolean dynamic;
         private boolean immutable;
         private SettingImpl<T> dependency;

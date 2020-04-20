@@ -147,7 +147,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> strict_config_validation = newBuilder( "dbms.config.strict_validation", BOOL, false ).build();
 
     @Description( "Whether to allow an upgrade in case the current version of the database starts against an older version." )
-    public static final Setting<Boolean> allow_upgrade = newBuilder( "dbms.allow_upgrade", BOOL, false ).build();
+    public static final Setting<Boolean> allow_upgrade = newBuilder( "dbms.allow_upgrade", BOOL, false ).dynamic().build();
 
     @Description( "Max number of processors used when upgrading the store. Defaults to the number of processors available to the JVM. " +
             "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this " +
