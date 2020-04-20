@@ -225,7 +225,7 @@ class RelationshipChecker implements Checker
                 if ( relationshipTypeIndexState.currentRange != null )
                 {
                     for ( long relationshipIdMissingFromStore = relationshipTypeIndexState.lastCheckedEntityId + 1;
-                          relationshipIdMissingFromStore < relationshipId & relationshipTypeIndexState.currentRange.covers( relationshipIdMissingFromStore );
+                          relationshipIdMissingFromStore < relationshipId && relationshipTypeIndexState.currentRange.covers( relationshipIdMissingFromStore );
                           relationshipIdMissingFromStore++ )
                     {
                         if ( relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )

@@ -270,7 +270,7 @@ class RelationshipCheckerTest extends CheckerTestBase
     }
 
     @Test
-    void shouldFailConsistencyCheckIfRelationshipTypeScanStoreNotConfigured() throws Exception
+    void shouldFailConsistencyCheckIfConfiguredToCheckRelationshipTypeScanStoreButItIsDisabled() throws Exception
     {
         // given
         try ( AutoCloseable ignored = tx() )
