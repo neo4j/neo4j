@@ -123,20 +123,25 @@ class NativeTokenScanReader implements TokenScanReader
         return seekerForToken( startId, Long.MAX_VALUE, tokenId, IndexOrder.NONE, cursorTracer );
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer ) throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer )
+            throws IOException
     {
-        if (indexOrder != IndexOrder.DESCENDING)
+        long rangeFrom;
+        long rangeTo;
+        if ( indexOrder != IndexOrder.DESCENDING )
         {
-            TokenScanKey from = new TokenScanKey( tokenId, rangeOf( startId ) );
-            TokenScanKey to = new TokenScanKey( tokenId, rangeOf( stopId ) );
-            return index.seek( from, to, cursorTracer );
+            rangeFrom = startId;
+            rangeTo = stopId;
         }
         else
         {
-            TokenScanKey from = new TokenScanKey( tokenId, rangeOf( stopId ) );
-            TokenScanKey to = new TokenScanKey( tokenId, rangeOf( startId ) );
-            return index.seek( from, to, cursorTracer );
+            rangeFrom = stopId;
+            rangeTo = startId;
         }
+
+        TokenScanKey fromKey = new TokenScanKey( tokenId, rangeOf( rangeFrom ) );
+        TokenScanKey toKey = new TokenScanKey( tokenId, rangeOf( rangeTo ) );
+        return index.seek( fromKey, toKey, cursorTracer );
     }
 
     private class NativeTokenScan implements TokenScan

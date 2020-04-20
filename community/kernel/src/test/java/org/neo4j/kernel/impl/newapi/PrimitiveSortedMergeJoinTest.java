@@ -23,7 +23,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -31,6 +30,7 @@ import java.util.List;
 
 import org.neo4j.internal.schema.IndexOrder;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PrimitiveSortedMergeJoinTest
@@ -47,42 +47,21 @@ class PrimitiveSortedMergeJoinTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldWorkWithAList( IndexOrder indexOrder )
     {
-        assertThatItWorks( Arrays.asList(
-                1L,
-                3L,
-                5L,
-                7L ),
-                           Collections.emptyList(), indexOrder );
+        assertThatItWorks( asList( 1L, 3L, 5L, 7L ), Collections.emptyList(), indexOrder );
     }
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldWorkWith2Lists( IndexOrder indexOrder )
     {
-        assertThatItWorks( Arrays.asList(
-                1L,
-                3L,
-                5L,
-                7L ),
-                           Arrays.asList(
-                                   2L,
-                                   4L,
-                                   6L,
-                                   8L ), indexOrder );
+        assertThatItWorks( asList( 1L, 3L, 5L, 7L ), asList( 2L, 4L, 6L, 8L ), indexOrder );
     }
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldWorkWithSameElements( IndexOrder indexOrder )
     {
-        assertThatItWorks( Arrays.asList(
-                1L,
-                3L,
-                5L ),
-                           Arrays.asList(
-                                   2L,
-                                   3L,
-                                   6L ), indexOrder );
+        assertThatItWorks( asList( 1L, 3L, 5L ), asList( 2L, 3L, 6L ), indexOrder );
     }
 
     private void assertThatItWorks( List<Long> listA, List<Long> listB, IndexOrder indexOrder )
@@ -116,8 +95,9 @@ class PrimitiveSortedMergeJoinTest
                                 Iterator<Long> iteratorA,
                                 Iterator<Long> iteratorB )
     {
-        Collector collector = new Collector();
-        while ( !collector.done )
+        final List<Long> result = new ArrayList<>();
+        long node = 0;
+        while ( node != -1 )
         {
             if ( iteratorA.hasNext() && sortedMergeJoin.needsA() )
             {
@@ -130,27 +110,12 @@ class PrimitiveSortedMergeJoinTest
                 sortedMergeJoin.setB( b );
             }
 
-            sortedMergeJoin.next( collector );
-        }
-        return collector.result;
-    }
-
-    static class Collector implements PrimitiveSortedMergeJoin.Sink
-    {
-        final List<Long> result = new ArrayList<>();
-        boolean done;
-
-        @Override
-        public void acceptSortedMergeJoin( long nodeId )
-        {
-            if ( nodeId == -1 )
+            node = sortedMergeJoin.next();
+            if ( node != -1 )
             {
-                done = true;
-            }
-            else
-            {
-                result.add( nodeId );
+                result.add( node );
             }
         }
+        return result;
     }
 }

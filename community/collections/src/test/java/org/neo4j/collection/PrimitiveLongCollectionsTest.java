@@ -71,6 +71,19 @@ class PrimitiveLongCollectionsTest
     }
 
     @Test
+    void reverseArrayOfItemsAsIterator()
+    {
+        // GIVEN
+        long[] items = new long[] { 2, 5, 234 };
+
+        // WHEN
+        LongIterator iterator = PrimitiveLongCollections.reverseIterator( items );
+
+        // THEN
+        assertItems( iterator, 234, 5, 2 );
+    }
+
+    @Test
     void filter()
     {
         // GIVEN

@@ -60,7 +60,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             while ( bits != 0 )
             {
                 long idForClient;
-                if (indexOrder != IndexOrder.DESCENDING)
+                if ( indexOrder != IndexOrder.DESCENDING )
                 {
                     int delta = Long.numberOfTrailingZeros( bits );
 

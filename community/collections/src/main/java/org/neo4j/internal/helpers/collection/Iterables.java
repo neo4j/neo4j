@@ -93,7 +93,7 @@ public final class Iterables
         return new FilterIterable<>( i, specification );
     }
 
-    public static <X> Iterable<X> reverse( Iterable<X> iterable )
+    public static <X> List<X> reverse( List<X> iterable )
     {
         List<X> list = asList( iterable );
         Collections.reverse( list );

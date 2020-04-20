@@ -98,6 +98,21 @@ public final class PrimitiveLongCollections
         };
     }
 
+    public static LongIterator reverseIterator( final long... items )
+    {
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( Resource.EMPTY )
+        {
+            private int index = items.length;
+
+            @Override
+            protected boolean fetchNext()
+            {
+                index--;
+                return index >= 0 && next( items[index] );
+            }
+        };
+    }
+
     // Concating
     public static LongIterator concat( LongIterator... longIterators )
     {

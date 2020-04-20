@@ -38,7 +38,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static com.google.common.collect.Lists.reverse;
 import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -47,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.helpers.collection.Iterables.reverse;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
