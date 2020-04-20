@@ -972,6 +972,64 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
   }
 
+  test("should handle order in multiple index seek, ascending") {
+    val nodes =
+      given {
+        index("Honey", "prop")
+        nodeGraph(5, "Milk")
+        nodePropertyGraph(sizeHint, {
+          case i => Map("prop" -> i % 10)
+        }, "Honey")
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .nodeIndexOperator("x:Honey(prop)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+        indexOrder = IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val keys = Set(7, 2, 3)
+    val expected = nodes.collect {
+      case n if keys(n.getProperty("prop").asInstanceOf[Int]) => n.getProperty("prop").asInstanceOf[Int]
+    }.sorted
+    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+  }
+
+  test("should handle order in multiple index seek, descending") {
+    val nodes =
+      given {
+        index("Honey", "prop")
+        nodeGraph(5, "Milk")
+        nodePropertyGraph(sizeHint, {
+          case i => Map("prop" -> i % 10)
+        }, "Honey")
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop AS prop")
+      .nodeIndexOperator("x:Honey(prop)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+        indexOrder = IndexOrderDescending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val keys = Set(7, 2, 3)
+    val expected = nodes.collect {
+      case n if keys(n.getProperty("prop").asInstanceOf[Int]) => n.getProperty("prop").asInstanceOf[Int]
+    }.sorted(Ordering.Int.reverse)
+    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+  }
+
   test("should handle multiple index seek with overflowing morsels") {
     // given
     given {
