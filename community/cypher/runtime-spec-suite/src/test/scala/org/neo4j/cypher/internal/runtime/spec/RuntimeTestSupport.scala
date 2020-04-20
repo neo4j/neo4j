@@ -117,6 +117,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
+    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext))._1
+
+  override def buildPlanAndContext(logicalQuery: LogicalQuery,
+                                   runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) =
     compileWithTx(logicalQuery, runtime, newQueryContext(_txContext))
 
   override def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
@@ -218,7 +222,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
     val queryContext = newQueryContext(txContext)
     try {
-      val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)
+      val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
       runWithTx(executionPlan, input, resultMapper, subscriber, profile = false, parameters, tx, txContext)
     } finally {
       txContext.close()
@@ -256,10 +260,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   }
 
   private def compileWithTx(logicalQuery: LogicalQuery,
-                    runtime: CypherRuntime[CONTEXT],
-                    queryContext: QueryContext): ExecutionPlan = {
+                            runtime: CypherRuntime[CONTEXT],
+                            queryContext: QueryContext): (ExecutionPlan, CONTEXT) = {
     val runtimeContext = newRuntimeContext(queryContext)
-    runtime.compileToExecutable(logicalQuery, runtimeContext)
+    (runtime.compileToExecutable(logicalQuery, runtimeContext), runtimeContext)
   }
 
   // CONTEXTS
