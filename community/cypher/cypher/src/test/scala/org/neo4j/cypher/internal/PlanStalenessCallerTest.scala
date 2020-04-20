@@ -44,7 +44,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.1, 0.05, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
 
       clock.forward(2, SECONDS)
 
@@ -59,7 +59,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.1, 0.05, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
 
       clock.forward(2, SECONDS)
 
@@ -74,7 +74,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
 
       clock.forward(2, SECONDS)
 
@@ -89,7 +89,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
 
       clock.forward(2, SECONDS)
 
@@ -106,7 +106,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(17), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(17), not_used, null)
 
       clock.forward(2, SECONDS)
 
@@ -122,7 +122,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
 
       clock.forward(500, MILLISECONDS)
 
@@ -139,7 +139,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
       val idSupplier = TransactionIdSupplier(17)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
 
       clock.forward(2, SECONDS)
       planStalenessCaller.staleness(fingerprintRef, stats) shouldBe NotStale
@@ -158,7 +158,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 5.0)
       val idSupplier = TransactionIdSupplier(23)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
 
       clock.forward(2, SECONDS)
       planStalenessCaller.staleness(fingerprintRef, stats) shouldBe NotStale
@@ -176,7 +176,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
       val idSupplier = TransactionIdSupplier(23)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
 
       clock.forward(2, SECONDS)
       planStalenessCaller.staleness(fingerprintRef, stats) shouldBe NotStale
@@ -199,7 +199,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
       val idSupplier = TransactionIdSupplier(23)
-      val planStalenessCaller = new StatisticsBasedPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
 
       clock.forward(2, SECONDS)
       planStalenessCaller.staleness(fingerprintRef, stats) shouldBe NotStale

@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.StringCacheMonitor;
+import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -446,7 +446,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         return monitorListener;
     }
 
-    private static class ReplanMonitor extends IndexingService.MonitorAdapter implements StringCacheMonitor
+    private static class ReplanMonitor extends IndexingService.MonitorAdapter implements ExecutionEngineQueryCacheMonitor
     {
         private long numberOfFlushedItems = -1L;
         private IndexSamplingMode samplingMode;

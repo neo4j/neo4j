@@ -196,21 +196,24 @@ class QueryCache[QUERY_REP <: AnyRef,
           //mark as seen from cache
           cachedValue.markHit()
 
-          (stalenessCaller.staleness(tc, cachedValue.value), replanStrategy) match {
-            case (_, CypherReplanOption.force) =>
+          replanStrategy match {
+            case CypherReplanOption.force =>
               jitCompileAndCache(queryKey, compiler, metaData)
-            case (_, CypherReplanOption.skip) =>
+            case CypherReplanOption.skip =>
               hit(queryKey, cachedValue, metaData)
-            case (NotStale, _) =>
-              if(invalidNotificationExisting(cachedValue, tc)) {
-                compileAndCache(queryKey, compiler, metaData, hitCache = true)
-              } else {
-                recompileOrGet(cachedValue, compiler, queryKey, metaData)
+            case CypherReplanOption.default =>
+              stalenessCaller.staleness(tc, cachedValue.value) match {
+                case NotStale =>
+                  if(invalidNotificationExisting(cachedValue, tc)) {
+                    compileAndCache(queryKey, compiler, metaData, hitCache = true)
+                  } else {
+                    recompileOrGet(cachedValue, compiler, queryKey, metaData)
+                  }
+                case Stale(secondsSincePlan, maybeReason) =>
+                  tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
+                  if (cachedValue.recompiled) jitCompileAndCache(queryKey, compiler, metaData)
+                  else compileAndCache(queryKey, compiler, metaData)
               }
-            case (Stale(secondsSincePlan, maybeReason), _) =>
-              tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
-              if (cachedValue.recompiled) jitCompileAndCache(queryKey, compiler, metaData)
-              else compileAndCache(queryKey, compiler, metaData)
           }
       }
     }
@@ -258,15 +261,21 @@ class QueryCache[QUERY_REP <: AnyRef,
                               compiler: JitCompiler[EXECUTABLE_QUERY],
                               metaData: String,
                               hitCache: Boolean = false
-                             ): EXECUTABLE_QUERY =
-    compileOrJitCompileAndCache(queryKey, () => compiler.compile(), () => tracer.queryCompile(queryKey, metaData), metaData, hitCache)
+                             ): EXECUTABLE_QUERY = {
+    val result = compileOrJitCompileAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
+    tracer.queryCompile(queryKey, metaData)
+    result
+  }
 
   private def jitCompileAndCache(queryKey: QUERY_KEY,
                                  compiler: JitCompiler[EXECUTABLE_QUERY],
                                  metaData: String,
                                  hitCache: Boolean = false
-                                ): EXECUTABLE_QUERY =
-    compileOrJitCompileAndCache(queryKey, () => compiler.jitCompile(), () => tracer.queryJitCompile(queryKey, metaData), metaData, hitCache)
+                                ): EXECUTABLE_QUERY = {
+    val result = compileOrJitCompileAndCache(queryKey, () => compiler.jitCompile(), metaData, hitCache)
+    tracer.queryJitCompile(queryKey, metaData)
+    result
+  }
 
   /**
    * Ensure this query is recompiled and put it in the cache.
@@ -278,12 +287,11 @@ class QueryCache[QUERY_REP <: AnyRef,
    */
   private def compileOrJitCompileAndCache(queryKey: QUERY_KEY,
                                           compile: () => EXECUTABLE_QUERY,
-                                          trace: () => Unit,
                                           metaData: String,
                                           hitCache: Boolean = false
                                          ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
-    val result = if (newExecutableQuery.shouldBeCached) {
+    if (newExecutableQuery.shouldBeCached) {
       val cachedValue = new CachedValue(newExecutableQuery, recompiled = false)
       inner.put(queryKey, cachedValue)
       if (hitCache)
@@ -293,8 +301,6 @@ class QueryCache[QUERY_REP <: AnyRef,
     } else {
       miss(queryKey, newExecutableQuery, metaData)
     }
-    trace()
-    result
   }
 
   private def hit(queryKey: QUERY_KEY,

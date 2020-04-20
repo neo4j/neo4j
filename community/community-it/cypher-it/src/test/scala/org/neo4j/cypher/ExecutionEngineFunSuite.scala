@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -115,7 +115,7 @@ case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted
   override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, jitCompilations = $jitCompilations"
 }
 
-class ExecutionEngineCacheCounter() extends StringCacheMonitor with CypherCacheMonitor[Pair[String, ParameterTypeMap]] {
+class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor with CypherCacheMonitor[Pair[String, ParameterTypeMap]] {
   var counts: CacheCounts = CacheCounts()
   override def cacheMiss(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(misses = counts.misses + 1)
   override def cacheHit(key: Pair[String, ParameterTypeMap]): Unit = counts = counts.copy(hits = counts.hits + 1)

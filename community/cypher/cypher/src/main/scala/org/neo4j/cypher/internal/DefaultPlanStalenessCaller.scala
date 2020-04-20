@@ -35,11 +35,11 @@ import org.neo4j.logging.Log
  *                   statistics, and how much time has passed.
  * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
  */
-class StatisticsBasedPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
-                                                           divergenceCalculator: StatsDivergenceCalculator,
-                                                           lastCommittedTxIdProvider: () => Long,
-                                                           reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
-                                                           log: Log) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
+class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
+                                                   divergenceCalculator: StatsDivergenceCalculator,
+                                                   lastCommittedTxIdProvider: () => Long,
+                                                   reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
+                                                   log: Log) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
 
   override def staleness(transactionalContext: TransactionalContext,
                          cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {

@@ -48,7 +48,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 /**
  * See comment in MonitoringCacheTracer for justification of the existence of this type.
  */
-trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
+trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
 
 /**
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -82,14 +82,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
-  kernelMonitors.addMonitorListener( new StringCacheMonitor {
+  kernelMonitors.addMonitorListener( new ExecutionEngineQueryCacheMonitor {
     override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
       log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query: $query")
     }
   })
 
   private val planStalenessCaller =
-    new StatisticsBasedPlanStalenessCaller[ExecutableQuery](clock,
+    new DefaultPlanStalenessCaller[ExecutableQuery](clock,
       config.statsDivergenceCalculator,
       lastCommittedTxIdProvider,
       planReusabilitiy,

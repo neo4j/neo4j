@@ -21,8 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.CypherExpressionEngine.ONLY_WHEN_HOT
+import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
@@ -45,7 +45,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "MATCH (n:Person) RETURN n"
@@ -93,7 +93,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("repeating query with same parameters should hit the cache") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n"
@@ -119,7 +119,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("repeating query with replan=force should not hit the cache") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN 42"
@@ -143,7 +143,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("repeating query with same parameter types but different values should hit the cache") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n"
@@ -165,7 +165,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("repeating query with different parameters types should not hit the cache") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n"
@@ -188,7 +188,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("Query with missing parameters should not be cached") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n, $m"
@@ -211,7 +211,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("EXPLAIN Query with missing parameters should not be cached") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val actualQuery = "RETURN $n, $m"
@@ -240,7 +240,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("EXPLAIN Query with enough parameters should be cached") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val actualQuery = "RETURN $n, $m"
@@ -260,7 +260,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("Different expressionEngine in query should not use same plan") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
@@ -281,7 +281,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("Different operatorEngine in query should not use same plan") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
@@ -302,7 +302,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("Different runtime in query should not use same plan") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
@@ -323,7 +323,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("should cache plans when same parameter appears multiple times") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n + $n"
@@ -342,7 +342,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("No jit compilation on first attempt") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n + 3 < 6"
@@ -361,7 +361,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   test("One and only one jit compilation after several attempts") {
-    val cacheListener = new LoggingStringCacheListener
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "RETURN $n + 3 < 6"
@@ -389,7 +389,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     actual should equal(expected)
   }
 
-  private class LoggingStringCacheListener extends StringCacheMonitor {
+  private class LoggingExecutionEngineQueryCacheListener extends ExecutionEngineQueryCacheMonitor {
     private var log: mutable.Builder[String, List[String]] = List.newBuilder
 
     def trace: Seq[String] = log.result()

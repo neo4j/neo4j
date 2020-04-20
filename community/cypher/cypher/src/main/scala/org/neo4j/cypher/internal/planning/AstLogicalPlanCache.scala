@@ -23,11 +23,11 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CacheabilityInfo
+import org.neo4j.cypher.internal.DefaultPlanStalenessCaller
 import org.neo4j.cypher.internal.PlanStalenessCaller
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.ReusabilityState
-import org.neo4j.cypher.internal.StatisticsBasedPlanStalenessCaller
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -82,7 +82,7 @@ object AstLogicalPlanCache {
                       divergence: StatsDivergenceCalculator,
                       txIdProvider: () => Long,
                       log: Log): PlanStalenessCaller[CacheableLogicalPlan] = {
-    new StatisticsBasedPlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
+    new DefaultPlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
   }
 }
 
