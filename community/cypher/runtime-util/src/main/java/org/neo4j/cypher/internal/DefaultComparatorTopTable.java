@@ -68,7 +68,6 @@ public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable 
     private int size;
     private T[] heap;
 
-    @SuppressWarnings( "unchecked" )
     public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount )
     {
         this( comparator, totalCount, EmptyMemoryTracker.INSTANCE );
