@@ -187,8 +187,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkOrder(clauses: Seq[Clause]): SemanticCheck = s => {
-    val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause] -> Vector.empty[SemanticError]) {
-      case ((_, semanticErrors), pair) =>
+    val sequenceErrors = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
+      case (semanticErrors, pair) =>
         val optError = pair match {
           case Seq(_: With, _: Start) =>
             None
@@ -211,18 +211,23 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case _ =>
             None
         }
-        (pair, optError.fold(semanticErrors)(semanticErrors :+ _))
+        optError.fold(semanticErrors)(semanticErrors :+ _)
     }
 
-    val lastError = {
-      val clause = lastPair.last
-      if (SingleQuery.canConcludeWith(clause, clauses.size))
-        None
-      else
-        Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
+    val concludeError = clauses match {
+      // standalone procedure call
+      case Seq(_: CallClause)                    => None
+      case Seq(_: GraphSelection, _: CallClause) => None
+
+      // otherwise
+      case seq => seq.last match {
+        case _: UpdateClause | _: Return | _: ReturnGraph => None
+        case clause                                       =>
+          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
+      }
     }
 
-    semantics.SemanticCheckResult(s, errors ++ lastError)
+    semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError)
   }
 
   private def checkClauses(clauses: Seq[Clause]): SemanticCheck = initialState => {
@@ -273,14 +278,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   def finalScope(scope: Scope): Scope =
     scope.children.last
-}
-
-object SingleQuery {
-  def canConcludeWith(clause: Clause, numClauses: Int): Boolean = clause match {
-    case _: UpdateClause | _: Return | _: ReturnGraph => true
-    case _: CallClause if numClauses == 1             => true
-    case _                                            => false
-  }
 }
 
 object Union {

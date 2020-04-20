@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -90,22 +91,30 @@ trait RewriteProcedureCalls {
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
     case q @ Query(None, part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
-
-      val newResolved = resolved.withFakedFullDeclarations
-
-      //Add the equivalent of a return for each item yielded by the procedure
-      val projection = Return(
-        distinct = false,
-        returnItems = ReturnItems(
-          includeExisting = false,
-          items = newResolved.callResults.map(item => AliasedReturnItem(
-            item.variable.copyId,
-            item.variable.copyId)(resolved.position))
-        )(resolved.position),
-        None, None, None
-      )(resolved.position)
-
+      val (newResolved, projection) = getResolvedAndProjection(resolved)
       q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
+
+    case q @ Query(None, part @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
+      val (newResolved, projection) = getResolvedAndProjection(resolved)
+      q.copy(part = part.copy(clauses = Seq(graph, newResolved, projection))(part.position))(q.position)
+  }
+
+  private def getResolvedAndProjection(resolved: ResolvedCall) = {
+    val newResolved = resolved.withFakedFullDeclarations
+
+    //Add the equivalent of a return for each item yielded by the procedure
+    val projection = Return(
+      distinct = false,
+      returnItems = ReturnItems(
+        includeExisting = false,
+        items = newResolved.callResults.map(item => AliasedReturnItem(
+          item.variable.copyId,
+          item.variable.copyId)(resolved.position))
+      )(resolved.position),
+      None, None, None
+    )(resolved.position)
+
+    (newResolved, projection)
   }
 }
 
