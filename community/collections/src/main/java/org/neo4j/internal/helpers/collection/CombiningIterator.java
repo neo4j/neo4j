@@ -29,18 +29,18 @@ import java.util.Iterator;
  */
 public class CombiningIterator<T> extends PrefetchingIterator<T>
 {
-    private Iterator<? extends Iterator<T>> iterators;
+    private final Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
 
-    CombiningIterator( Iterable<? extends Iterator<T>> iterators )
+    public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
     {
         this( iterators.iterator() );
     }
 
-    CombiningIterator( Iterator<? extends Iterator<T>> iterators )
-   {
+    public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
+    {
         this.iterators = iterators;
-   }
+    }
 
     @Override
     protected T fetchNextOrNull()

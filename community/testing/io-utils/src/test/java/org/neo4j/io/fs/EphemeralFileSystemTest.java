@@ -83,8 +83,8 @@ class EphemeralFileSystemTest
     @Test
     void growEphemeralFileBuffer()
     {
-        EphemeralFileSystemAbstraction.DynamicByteBuffer byteBuffer =
-                new EphemeralFileSystemAbstraction.DynamicByteBuffer();
+        EphemeralDynamicByteBuffer byteBuffer =
+                new EphemeralDynamicByteBuffer();
 
         byte[] testBytes = {1, 2, 3, 4};
         int length = testBytes.length;

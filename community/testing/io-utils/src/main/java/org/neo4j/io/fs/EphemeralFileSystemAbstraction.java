@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -32,15 +30,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
-import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
@@ -48,33 +38,28 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.CombiningIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
@@ -83,17 +68,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Clock clock;
     private final AtomicInteger keepFiles = new AtomicInteger();
-    private volatile boolean closed;
-
-    interface Positionable
-    {
-        long pos();
-
-        void pos( long position );
-    }
-
     private final Set<File> directories = ConcurrentHashMap.newKeySet();
     private final Map<File,EphemeralFileData> files;
+    private volatile boolean closed;
 
     public EphemeralFileSystemAbstraction()
     {
@@ -138,7 +115,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
      */
     public void crash()
     {
-        files.values().forEach( EphemeralFileSystemAbstraction.EphemeralFileData::crash );
+        files.values().forEach( EphemeralFileData::crash );
     }
 
     public Resource keepFiles()
@@ -174,7 +151,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     public void assertNoOpenFiles() throws Exception
     {
-        FileStillOpenException exception = null;
+        EphemeralFileStillOpenException exception = null;
         for ( EphemeralFileData file : files.values() )
         {
             Iterator<EphemeralFileChannel> channels = file.getOpenChannels();
@@ -243,7 +220,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( key, clock ) );
-        return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
+        return new StoreFileChannel( new EphemeralFileChannel( data, new EphemeralFileStillOpenException( fileName.getPath() ) ) );
     }
 
     @Override
@@ -260,7 +237,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long getBlockSize( File file ) throws IOException
+    public long getBlockSize( File file )
     {
         return 512;
     }
@@ -470,7 +447,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         EphemeralFileData data = files.get( canonicalFile( fileName ) );
         if ( data != null )
         {
-            return new StoreFileChannel( new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
+            return new StoreFileChannel( new EphemeralFileChannel( data, new EphemeralFileStillOpenException( fileName.getPath() ) ) );
         }
         return write( fileName );
     }
@@ -561,7 +538,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         for ( File name : names )
         {
             EphemeralFileData file = files.get( name );
-            for ( ByteBuffer buf : file.fileAsBuffer )
+            for ( ByteBuffer buf : file.buffers() )
             {
                 while ( buf.position() < buf.limit() )
                 {
@@ -603,7 +580,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
               StoreChannel sink = this.write( to ) )
         {
             sink.truncate( 0 );
-            for ( int available; (available = (int) (source.size() - source.position())) > 0; )
+            long sourceSize = source.size();
+            for ( int available; (available = (int) (sourceSize - source.position())) > 0; )
             {
                 buffer.clear();
                 buffer.limit( min( available, buffer.capacity() ) );
@@ -633,7 +611,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             return 0;
         }
-        return data.lastModified;
+        return data.getLastModified();
     }
 
     @Override
@@ -660,705 +638,5 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public int getFileDescriptor( StoreChannel channel )
     {
         return INVALID_FILE_DESCRIPTOR;
-    }
-
-    @SuppressWarnings( "serial" )
-    private static class FileStillOpenException extends Exception
-    {
-        private final String filename;
-
-        FileStillOpenException( String filename )
-        {
-            super( "File still open: [" + filename + "]" );
-            this.filename = filename;
-        }
-    }
-
-    static class LocalPosition implements Positionable
-    {
-        private long position;
-
-        LocalPosition( long position )
-        {
-            this.position = position;
-        }
-
-        @Override
-        public long pos()
-        {
-            return position;
-        }
-
-        @Override
-        public void pos( long position )
-        {
-            this.position = position;
-        }
-    }
-
-    private static class EphemeralFileChannel extends FileChannel implements Positionable
-    {
-        final FileStillOpenException openedAt;
-        private final EphemeralFileData data;
-        private long position;
-
-        EphemeralFileChannel( EphemeralFileData data, FileStillOpenException opened )
-        {
-            this.data = data;
-            this.openedAt = opened;
-            data.open( this );
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "%s[%s]", getClass().getSimpleName(), openedAt.filename );
-        }
-
-        private void checkIfClosedOrInterrupted() throws IOException
-        {
-            if ( !isOpen() )
-            {
-                throw new ClosedChannelException();
-            }
-            if ( Thread.currentThread().isInterrupted() )
-            {
-                close();
-                throw new ClosedByInterruptException();
-            }
-        }
-
-        @Override
-        public int read( ByteBuffer dst ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return data.read( this, dst );
-        }
-
-        @Override
-        public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int write( ByteBuffer src ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return data.write( this, src );
-        }
-
-        @Override
-        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long position() throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return position;
-        }
-
-        @Override
-        public FileChannel position( long newPosition ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            this.position = newPosition;
-            return this;
-        }
-
-        @Override
-        public long size() throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return data.size();
-        }
-
-        @Override
-        public FileChannel truncate( long size ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            data.truncate( size );
-            return this;
-        }
-
-        @Override
-        public void force( boolean metaData ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            // Otherwise no forcing of an in-memory file
-            data.force();
-        }
-
-        @Override
-        public long transferTo( long position, long count, WritableByteChannel target )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            long previousPos = position();
-            position( position );
-            try
-            {
-                long transferred = 0;
-                ByteBuffer intermediary = ByteBuffers.allocate( 8, ByteUnit.MebiByte );
-                while ( transferred < count )
-                {
-                    intermediary.clear();
-                    intermediary.limit( (int) min( intermediary.capacity(), count - transferred ) );
-                    int read = src.read( intermediary );
-                    if ( read == -1 )
-                    {
-                        break;
-                    }
-                    transferred += read;
-                    intermediary.flip();
-                }
-                return transferred;
-            }
-            finally
-            {
-                position( previousPos );
-            }
-        }
-
-        @Override
-        public int read( ByteBuffer dst, long position ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return data.read( new LocalPosition( position ), dst );
-        }
-
-        @Override
-        public int write( ByteBuffer src, long position ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            return data.write( new LocalPosition( position ), src );
-        }
-
-        @Override
-        public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            throw new IOException( "Not supported" );
-        }
-
-        @Override
-        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
-        {
-            checkIfClosedOrInterrupted();
-            synchronized ( data.channels )
-            {
-                if ( !data.lock() )
-                {
-                    return null;
-                }
-                return new EphemeralFileLock( this, data );
-            }
-        }
-
-        @Override
-        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared )
-        {
-            synchronized ( data.channels )
-            {
-                if ( !data.lock() )
-                {
-                    throw new OverlappingFileLockException();
-                }
-                return new EphemeralFileLock( this, data );
-            }
-        }
-
-        @Override
-        protected void implCloseChannel()
-        {
-            data.close( this );
-        }
-
-        @Override
-        public long pos()
-        {
-            return position;
-        }
-
-        @Override
-        public void pos( long position )
-        {
-            this.position = position;
-        }
-    }
-
-    private static class EphemeralFileData
-    {
-        private static final ThreadLocal<byte[]> SCRATCH_PAD =
-                ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
-        private final File file;
-        private DynamicByteBuffer fileAsBuffer;
-        private DynamicByteBuffer forcedBuffer;
-        private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
-        private long size;
-        private long forcedSize;
-        private int locked;
-        private final Clock clock;
-        private long lastModified;
-
-        EphemeralFileData( File file, Clock clock )
-        {
-            this( file, new DynamicByteBuffer(), clock );
-        }
-
-        private EphemeralFileData( File file, DynamicByteBuffer data, Clock clock )
-        {
-            this.file = file;
-            this.fileAsBuffer = data;
-            this.forcedBuffer = data.copy();
-            this.clock = clock;
-            this.lastModified = clock.millis();
-        }
-
-        int read( Positionable fc, ByteBuffer dst )
-        {
-            int wanted = dst.limit() - dst.position();
-            long size = size();
-            long available = min( wanted, size - fc.pos() );
-            if ( available <= 0 )
-            {
-                return -1; // EOF
-            }
-            long pending = available;
-            // Read up until our internal size
-            byte[] scratchPad = SCRATCH_PAD.get();
-            while ( pending > 0 )
-            {
-                int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
-                long pos = fc.pos();
-                fileAsBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
-                fc.pos( pos + howMuchToReadThisTime );
-                dst.put( scratchPad, 0, howMuchToReadThisTime );
-                pending -= howMuchToReadThisTime;
-            }
-            return Math.toIntExact( available ); // return how much data was read
-        }
-
-        synchronized int write( Positionable fc, ByteBuffer src )
-        {
-            int wanted = src.limit() - src.position();
-            int pending = wanted;
-            byte[] scratchPad = SCRATCH_PAD.get();
-
-            while ( pending > 0 )
-            {
-                int howMuchToWriteThisTime = min( pending, scratchPad.length );
-                src.get( scratchPad, 0, howMuchToWriteThisTime );
-                long pos = fc.pos();
-                fileAsBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
-                fc.pos( pos + howMuchToWriteThisTime );
-                pending -= howMuchToWriteThisTime;
-            }
-
-            size = max( size, fc.pos() );
-            lastModified = clock.millis();
-            return wanted;
-        }
-
-        synchronized EphemeralFileData copy()
-        {
-            EphemeralFileData copy = new EphemeralFileData( file, fileAsBuffer.copy(), clock );
-            copy.size = size;
-            return copy;
-        }
-
-        void free()
-        {
-            fileAsBuffer.free();
-        }
-
-        void open( EphemeralFileChannel channel )
-        {
-            synchronized ( channels )
-            {
-                channels.add( new WeakReference<>( channel ) );
-            }
-        }
-
-        synchronized void force()
-        {
-            forcedBuffer = fileAsBuffer.copy();
-            forcedSize = size;
-        }
-
-        synchronized void crash()
-        {
-            fileAsBuffer = forcedBuffer.copy();
-            size = forcedSize;
-        }
-
-        void close( EphemeralFileChannel channel )
-        {
-            synchronized ( channels )
-            {
-                locked = 0; // Regular file systems seems to release all file locks when closed...
-                for ( Iterator<EphemeralFileChannel> iter = getOpenChannels(); iter.hasNext(); )
-                {
-                    if ( iter.next() == channel )
-                    {
-                        iter.remove();
-                    }
-                }
-            }
-        }
-
-        Iterator<EphemeralFileChannel> getOpenChannels()
-        {
-            final Iterator<WeakReference<EphemeralFileChannel>> refs = channels.iterator();
-
-            return new PrefetchingIterator<>()
-            {
-                @Override
-                protected EphemeralFileChannel fetchNextOrNull()
-                {
-                    while ( refs.hasNext() )
-                    {
-                        EphemeralFileChannel channel = refs.next().get();
-                        if ( channel != null )
-                        {
-                            return channel;
-                        }
-                        refs.remove();
-                    }
-                    return null;
-                }
-
-                @Override
-                public void remove()
-                {
-                    refs.remove();
-                }
-            };
-        }
-
-        synchronized long size()
-        {
-            return size;
-        }
-
-        synchronized void truncate( long newSize )
-        {
-            this.size = newSize;
-        }
-
-        boolean lock()
-        {
-            return locked == 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "size: " + size + ", locked:" + locked;
-        }
-    }
-
-    private static class EphemeralFileLock extends java.nio.channels.FileLock
-    {
-        private EphemeralFileData file;
-
-        EphemeralFileLock( EphemeralFileChannel channel, EphemeralFileData file )
-        {
-            super( channel, 0, Long.MAX_VALUE, false );
-            this.file = file;
-            file.locked++;
-        }
-
-        @Override
-        public boolean isValid()
-        {
-            return file != null;
-        }
-
-        @Override
-        public void release()
-        {
-            synchronized ( file.channels )
-            {
-                if ( file == null || file.locked == 0 )
-                {
-                    return;
-                }
-                file.locked--;
-                file = null;
-            }
-        }
-    }
-
-    /**
-     * Dynamically expanding ByteBuffer substitute/wrapper. This will allocate ByteBuffers on the go
-     * so that we don't have to allocate too big of a buffer up-front.
-     */
-    static class DynamicByteBuffer implements Iterable<ByteBuffer>
-    {
-        private static final int SECTOR_SIZE = (int) ByteUnit.kibiBytes( 1 );
-        private static final ByteBuffer ZERO_BUFFER = ByteBuffer.allocate( SECTOR_SIZE );
-        private SortedMap<Long,ByteBuffer> sectors;
-        private Exception freeCall;
-
-        DynamicByteBuffer()
-        {
-            sectors = new TreeMap<>();
-        }
-
-        /** This is a copying constructor, the input buffer is just read from, never stored in 'this'. */
-        @SuppressWarnings( "CopyConstructorMissesField" )
-        private DynamicByteBuffer( DynamicByteBuffer toClone )
-        {
-            this();
-            toClone.assertNotFreed();
-            for ( Map.Entry<Long,ByteBuffer> entry : toClone.sectors.entrySet() )
-            {
-                ByteBuffer sector = allocate( SECTOR_SIZE );
-                copyByteBufferContents( entry.getValue(), sector );
-                sectors.put( entry.getKey(), sector );
-            }
-        }
-
-        public Iterator<ByteBuffer> iterator()
-        {
-            if ( sectors.isEmpty() )
-            {
-                return Iterators.emptyResourceIterator();
-            }
-
-            return new Iterator<>()
-            {
-                long last = sectors.lastKey();
-                long next;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return next <= last;
-                }
-
-                @Override
-                public ByteBuffer next()
-                {
-                    if ( next > last )
-                    {
-                        throw new NoSuchElementException();
-                    }
-                    ByteBuffer sector = sectors.get( next );
-                    next++;
-                    return Objects.requireNonNullElse( sector, ZERO_BUFFER ).position( 0 );
-                }
-            };
-        }
-
-        synchronized DynamicByteBuffer copy()
-        {
-            return new DynamicByteBuffer( this ); // invoke "copy constructor"
-        }
-
-        private void copyByteBufferContents( ByteBuffer from, ByteBuffer to )
-        {
-            int positionBefore = from.position();
-            try
-            {
-                from.position( 0 );
-                to.put( from );
-            }
-            finally
-            {
-                from.position( positionBefore );
-                to.position( 0 );
-            }
-        }
-
-        private ByteBuffer allocate( long capacity )
-        {
-            return ByteBuffers.allocate( Math.toIntExact( capacity ) );
-        }
-
-        void free()
-        {
-            assertNotFreed();
-            sectors = null;
-            freeCall = new Exception(
-                    "You're most likely seeing this exception because there was an attempt to use this buffer " +
-                            "after it was freed. This stack trace may help you figure out where and why it was freed." );
-        }
-
-        synchronized void put( long pos, byte[] bytes, int off, int length )
-        {
-            long sector = pos / SECTOR_SIZE;
-            int offset = (int) (pos % SECTOR_SIZE);
-
-            for ( ;; )
-            {
-                ByteBuffer buf = getOrCreateSector( sector );
-                buf.position( offset );
-                int toPut = Math.min( buf.remaining(), length );
-                buf.put( bytes, off, toPut );
-                if ( toPut == length )
-                {
-                    break;
-                }
-                off += toPut;
-                length -= toPut;
-                offset = 0;
-                sector += 1;
-            }
-        }
-
-        synchronized void get( long pos, byte[] bytes, int off, int length )
-        {
-            long sector = pos / SECTOR_SIZE;
-            int offset = (int) (pos % SECTOR_SIZE);
-
-            for ( ;; )
-            {
-                ByteBuffer buf = sectors.getOrDefault( sector, ZERO_BUFFER );
-                buf.position( offset );
-                int toGet = Math.min( buf.remaining(), length );
-                buf.get( bytes, off, toGet );
-                if ( toGet == length )
-                {
-                    break;
-                }
-                off += toGet;
-                length -= toGet;
-                offset = 0;
-                sector += 1;
-            }
-        }
-
-        private ByteBuffer getOrCreateSector( long sector )
-        {
-            ByteBuffer buf = sectors.get( sector );
-            if ( buf == null )
-            {
-                buf = allocate( SECTOR_SIZE );
-                sectors.put( sector, buf );
-            }
-            return buf;
-        }
-
-        private void assertNotFreed()
-        {
-            if ( sectors == null )
-            {
-                throw new IllegalStateException( "This buffer has been freed.", freeCall );
-            }
-        }
-    }
-
-    // Copied from kernel since we don't want to depend on that module here
-    private abstract static class PrefetchingIterator<T> implements Iterator<T>
-    {
-        boolean hasFetchedNext;
-        T nextObject;
-
-        /**
-         * @return {@code true} if there is a next item to be returned from the next
-         * call to {@link #next()}.
-         */
-        @Override
-        public boolean hasNext()
-        {
-            return peek() != null;
-        }
-
-        /**
-         * @return the next element that will be returned from {@link #next()} without
-         * actually advancing the iterator
-         */
-        public T peek()
-        {
-            if ( hasFetchedNext )
-            {
-                return nextObject;
-            }
-
-            nextObject = fetchNextOrNull();
-            hasFetchedNext = true;
-            return nextObject;
-        }
-
-        /**
-         * Uses {@link #hasNext()} to try to fetch the next item and returns it
-         * if found, otherwise it throws a {@link java.util.NoSuchElementException}.
-         *
-         * @return the next item in the iteration, or throws
-         * {@link java.util.NoSuchElementException} if there's no more items to return.
-         */
-        @Override
-        public T next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException();
-            }
-            T result = nextObject;
-            nextObject = null;
-            hasFetchedNext = false;
-            return result;
-        }
-
-        protected abstract T fetchNextOrNull();
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private static class CombiningIterator<T> extends PrefetchingIterator<T>
-    {
-        private Iterator<? extends Iterator<T>> iterators;
-        private Iterator<T> currentIterator;
-
-        CombiningIterator( Iterable<? extends Iterator<T>> iterators )
-        {
-            this( iterators.iterator() );
-        }
-
-        CombiningIterator( Iterator<? extends Iterator<T>> iterators )
-        {
-            this.iterators = iterators;
-        }
-
-        @Override
-        protected T fetchNextOrNull()
-        {
-            if ( currentIterator == null || !currentIterator.hasNext() )
-            {
-                while ( (currentIterator = nextIteratorOrNull()) != null )
-                {
-                    if ( currentIterator.hasNext() )
-                    {
-                        break;
-                    }
-                }
-            }
-            return currentIterator != null ? currentIterator.next() : null;
-        }
-
-        Iterator<T> nextIteratorOrNull()
-        {
-            if ( iterators.hasNext() )
-            {
-                return iterators.next();
-            }
-            return null;
-        }
     }
 }
