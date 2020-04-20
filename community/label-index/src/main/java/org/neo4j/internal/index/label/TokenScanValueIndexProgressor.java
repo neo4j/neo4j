@@ -62,15 +62,23 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                 long idForClient;
                 if ( indexOrder != IndexOrder.DESCENDING )
                 {
+                    // The next idForClient can be found at the next 1-bit from the right.
                     int delta = Long.numberOfTrailingZeros( bits );
 
+                    // We switch that bit to zero, so that we don't find it again the next time.
+                    // First, create a mask where that bit is zero (easiest by subtracting 1) and then &
+                    // it with bits.
                     bits &= bits - 1;
                     idForClient = baseEntityId + delta;
                 }
                 else
                 {
+                    // The next idForClient can be found at the next 1-bit from the left.
                     int delta = Long.numberOfLeadingZeros( bits );
 
+                    // We switch that bit to zero, so that we don't find it again the next time.
+                    // First, create a mask where only set bit is set (easiest by bitshifting the number one),
+                    // and then invert the mask and then & it with bits.
                     long bitToZeroe = 1L << (Long.SIZE - delta - 1);
                     bits &= ~bitToZeroe;
                     idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
