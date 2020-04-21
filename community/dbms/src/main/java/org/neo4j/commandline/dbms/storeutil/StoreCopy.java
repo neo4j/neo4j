@@ -366,23 +366,35 @@ public class StoreCopy
             {
                 if ( !tokens.isEmpty() )
                 {
-                    int end = tokens.size();
-                    Set<String> names = new HashSet<>( end );
-                    for ( int i = 0; i < end; i++ )
+                    Set<String> names = new HashSet<>( tokens.size() );
+                    int i = 0;
+                    while ( i < tokens.size() )
                     {
-                        while ( i < end && !names.add( tokens.get( i ).name() ) )
+                        if ( names.add( tokens.get( i ).name() ) )
                         {
-                            int lastIndex = end - 1;
-                            NamedToken endToken = tokens.remove( lastIndex );
-                            if ( i < lastIndex )
-                            {
-                                tokens.set( i, endToken);
-                            }
-                            end--;
+                            i++;
+                        }
+                        else
+                        {
+                            removeUnordered( tokens, i );
                         }
                     }
                 }
                 return tokens;
+            }
+
+            /**
+             * Remove the token at the given index, by replacing it with the last token in the list.
+             * This changes the order of elements, but can be done in constant time instead of linear time.
+             */
+            private void removeUnordered( List<NamedToken> list, int index )
+            {
+                int lastIndex = list.size() - 1;
+                NamedToken endToken = list.remove( lastIndex );
+                if ( index < lastIndex )
+                {
+                    list.set( index, endToken );
+                }
             }
         };
     }
