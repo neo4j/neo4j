@@ -102,8 +102,7 @@ public class VmPauseMonitor
             nextCheckPoint = now + measurementDurationNs;
 
             final GcStats gcStats = getGcStats();
-            final long gctime = gcStats.time - lastGcStats.time;
-            if ( gctime >= stallAlertThresholdNs && gcStats.count != lastGcStats.count )
+            if ( pauseNs >= stallAlertThresholdNs )
             {
                 final VmPauseInfo pauseInfo = new VmPauseInfo(
                         NANOSECONDS.toMillis( pauseNs ),
