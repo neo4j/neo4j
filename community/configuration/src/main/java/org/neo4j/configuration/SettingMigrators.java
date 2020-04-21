@@ -372,7 +372,18 @@ public final class SettingMigrators
                     if ( port >= 0 ) //valid port on listen, and none on advertised, migrate!
                     {
                         SocketAddress newAdvertised = new SocketAddress( advertisedValue, port );
-                        log.warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.", port, listenAddress, advertisedAddress );
+                        String msg = "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s." +
+                                " This behavior may change in the future and we recommend you to explicitly set it.";
+                        if ( isNotBlank( advertisedValue ) )
+                        {
+                            //If advertised has an address set (not inherited or default value we treat this as a warning, since is is likely to be used.
+                            log.warn( msg, advertisedAddress, port, listenAddress );
+                        }
+                        else
+                        {
+                            //No value was set, likely the user does not care or won't use this. Just provide the info
+                            log.info( msg, advertisedAddress, port, listenAddress );
+                        }
                         defaultValues.put( advertisedAddress, newAdvertised.toString() );
                     }
                 }

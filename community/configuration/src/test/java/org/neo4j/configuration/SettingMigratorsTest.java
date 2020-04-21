@@ -271,15 +271,16 @@ class SettingMigratorsTest
         assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( advertisedAddr ) );
         assertEquals( new SocketAddress( "bar", 777 ), config6.get( advertisedAddr ) );
 
-        String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";
+        String msg = "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s." +
+                " This behavior may change in the future and we recommend you to explicitly set it.";
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 111, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 222, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 333, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).info( msg, advertisedAddr.name(), 111, listenAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).info( msg, advertisedAddr.name(), 222, listenAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, advertisedAddr.name(), 333, listenAddr.name() ) );
 
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 444, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 555, listenAddr.name(), advertisedAddr.name() ) );
-        logProvider.assertNone( inLog( Config.class ).warn( msg, 666, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, advertisedAddr.name(), 444, listenAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).info( msg, advertisedAddr.name(), 555, listenAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, advertisedAddr.name(), 666, listenAddr.name() ) );
     }
 
     private static void testMigrateSslPolicy( String oldGroupnameSetting, SslPolicyConfig policyConfig )
