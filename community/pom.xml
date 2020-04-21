@@ -50,7 +50,6 @@
     <module>csv</module>
     <module>logging</module>
     <module>security</module>
-    <module>neo4j-slf4j</module>
     <module>codegen</module>
     <module>index</module>
     <module>kernel</module>
