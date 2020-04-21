@@ -62,6 +62,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -111,6 +112,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -135,7 +137,9 @@ public class DetectRandomSabotageIT
 
     protected DatabaseManagementService getDbms( File home )
     {
-        return new TestDatabaseManagementServiceBuilder( home ).build();
+        return new TestDatabaseManagementServiceBuilder( home )
+                .setConfig( enable_relationship_type_scan_store, true )
+                .build();
     }
 
     @BeforeEach
@@ -370,6 +374,7 @@ public class DetectRandomSabotageIT
         Config config = Config.newBuilder()
                 .set( neo4j_home, directory.homeDir().toPath() )
                 .set( experimental_consistency_checker, true )
+                .set( enable_relationship_type_scan_store, true )
                 .build();
         return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
@@ -767,6 +772,62 @@ public class DetectRandomSabotageIT
                             }
                         }
                         return new Sabotage( String.format( "%s labelId:%d node:%s", add ? "Add" : "Remove", labelId, nodeRecord ), nodeRecord.toString() );
+                    }
+                },
+        RELATIONSHIP_TYPE_INDEX_ENTRY
+                {
+                    @Override
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    {
+                        RelationshipTypeScanStore relationshipTypeIndex = otherDependencies.resolveDependency( RelationshipTypeScanStore.class );
+                        RelationshipStore store = stores.getRelationshipStore();
+                        RelationshipRecord relationshipRecord = randomRecord( random, store, r -> true );
+                        TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
+                        Set<String> relationshipTypeNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
+                        int typeBefore = relationshipRecord.getType();
+                        long[] typesBefore = new long[]{typeBefore};
+                        int typeId;
+                        long[] typesAfter;
+                        String operation;
+                        try ( TokenScanWriter writer = relationshipTypeIndex.newWriter( NULL ) )
+                        {
+                            if ( relationshipRecord.inUse() )
+                            {
+                                int mode = random.nextInt( 3 );
+                                if ( mode < 2 )
+                                {
+                                    relationshipTypeNames.remove( tokenHolders.relationshipTypeTokens().getTokenById( typeBefore ).name() );
+                                    typeId =
+                                            tokenHolders.relationshipTypeTokens().getIdByName( random.among( new ArrayList<>( relationshipTypeNames ) ) );
+                                    if ( mode == 0 )
+                                    {
+                                        operation = "Replace relationship type in index with a new type";
+                                        typesAfter = new long[]{typeId};
+                                    }
+                                    else
+                                    {
+                                        operation = "Add additional relationship type in index";
+                                        typesAfter = new long[]{typeId, typeBefore};
+                                        Arrays.sort( typesAfter );
+                                    }
+                                }
+                                else
+                                {
+                                    operation = "Remove relationship type from index";
+                                    typeId = typeBefore;
+                                    typesAfter = EMPTY_LONG_ARRAY;
+                                }
+                                writer.write( EntityTokenUpdate.tokenChanges( relationshipRecord.getId(), typesBefore, typesAfter ) );
+                            }
+                            else
+                            {
+                                // Getting here means the we're adding something (see above when selecting the relationship)
+                                operation = "Add relationship type to a non-existing relationship (in relationship type index only)";
+                                typeId = tokenHolders.labelTokens().getIdByName( random.among( TOKEN_NAMES ) );
+                                writer.write( EntityTokenUpdate.tokenChanges( relationshipRecord.getId(), EMPTY_LONG_ARRAY, new long[]{typeId} ) );
+                            }
+                        }
+                        return new Sabotage( String.format( "%s relationshipTypeId:%d relationship:%s", operation, typeId, relationshipRecord ), relationshipRecord.toString() );
                     }
                 };
 
