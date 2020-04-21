@@ -299,7 +299,7 @@ public class SingleSourceShortestPathBFS implements
         List<Node> result = new LinkedList<>();
         List<Relationship> predecessorRelationShips = predecessors.get( node );
         if ( predecessorRelationShips == null
-            || predecessorRelationShips.size() == 0 )
+            || predecessorRelationShips.isEmpty() )
         {
             return null;
         }

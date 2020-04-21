@@ -188,7 +188,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
 
     private String stripByteOrderMark( String string )
     {
-        if ( string != null && string.length() > 0 && string.charAt( 0 ) == 0xfeff )
+        if ( string != null && !string.isEmpty() && string.charAt( 0 ) == 0xfeff )
         {
             return string.substring( 1 );
         }

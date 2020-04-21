@@ -57,8 +57,8 @@ public class DurationRange
                          .replaceAll( "\\]$", "" )
                          .split( "-" );
         if ( parts.length != 2 ||
-             parts[0].length() == 0 ||
-             parts[1].length() == 0 )
+             parts[0].isEmpty() ||
+             parts[1].isEmpty() )
         {
             throw new IllegalArgumentException( "must be in format <min>-<max>, where min and max are non-negative durations" );
         }

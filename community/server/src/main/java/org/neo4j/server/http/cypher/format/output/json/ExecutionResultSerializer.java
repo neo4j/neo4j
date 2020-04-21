@@ -147,7 +147,7 @@ class ExecutionResultSerializer
 
     private ResultDataContentWriter configureWriters( List<ResultDataContent> specifiers )
     {
-        if ( specifiers == null || specifiers.size() == 0 )
+        if ( specifiers == null || specifiers.isEmpty() )
         {
             return ResultDataContent.row.writer( baseUri ); // default
         }

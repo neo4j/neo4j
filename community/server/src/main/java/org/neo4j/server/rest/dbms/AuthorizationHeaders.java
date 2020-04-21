@@ -39,13 +39,13 @@ public class AuthorizationHeaders
         String[] parts = authorizationHeader.trim().split( " " );
         String tokenSegment = parts[parts.length - 1];
 
-        if ( tokenSegment.trim().length() == 0 )
+        if ( tokenSegment.isBlank() )
         {
             return null;
         }
 
         String decoded = decodeBase64( tokenSegment );
-        if ( decoded.length() < 1 )
+        if ( decoded.isEmpty() )
         {
             return null;
         }

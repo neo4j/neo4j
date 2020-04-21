@@ -253,7 +253,7 @@ class CsvInputBatchImportIT
                 {
                     sb.append( node.propertyValue( i ) + "," );
                 }
-                sb.append( csvLabels != null && csvLabels.length() > 0 ? csvLabels : "" );
+                sb.append( csvLabels != null && !csvLabels.isEmpty() ? csvLabels : "" );
                 println( writer, sb.toString() );
             }
         }

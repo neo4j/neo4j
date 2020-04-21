@@ -95,7 +95,7 @@ class DistributedConfigTest
         if ( matcher.matches() )
         {
             // This is a commented setting
-            if ( matcher.group( 3 ).length() == 0 )
+            if ( matcher.group( 3 ).isEmpty() )
             {
                 // And we have no default value, we have to probe the config later
                 mentionedSettings.add( matcher.group( 1 ) );
