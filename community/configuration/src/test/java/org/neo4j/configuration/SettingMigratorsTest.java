@@ -59,6 +59,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_ma
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -359,16 +360,18 @@ class SettingMigratorsTest
         assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( advertisedAddr ) );
         assertEquals( new SocketAddress( "bar", 777 ), config6.get( advertisedAddr ) );
 
-        String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";
+        String msg = "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s." +
+                " This behavior may change in the future and we recommend you to explicitly set it.";
 
-        var logAssertion = assertThat( logProvider ).forLevel( WARN ).forClass( Config.class );
-        logAssertion.containsMessageWithArguments( msg, 111, listenAddr.name(), advertisedAddr.name() )
-                    .containsMessageWithArguments( msg, 222, listenAddr.name(), advertisedAddr.name() )
-                    .containsMessageWithArguments( msg, 333, listenAddr.name(), advertisedAddr.name() );
+        var warnMatcher = assertThat( logProvider ).forClass( Config.class ).forLevel( WARN );
+        var infoMatcher = assertThat( logProvider ).forClass( Config.class ).forLevel( INFO );
+        infoMatcher.containsMessageWithArguments( msg, advertisedAddr.name(), 111, listenAddr.name() );
+        infoMatcher.containsMessageWithArguments( msg, advertisedAddr.name(), 222, listenAddr.name() );
+        warnMatcher.containsMessageWithArguments( msg, advertisedAddr.name(), 333, listenAddr.name() );
 
-        logAssertion.doesNotContainMessageWithArguments( msg, 444, listenAddr.name(), advertisedAddr.name() )
-                    .doesNotContainMessageWithArguments( msg, 555, listenAddr.name(), advertisedAddr.name() )
-                    .doesNotContainMessageWithArguments( msg, 666, listenAddr.name(), advertisedAddr.name() );
+        warnMatcher.doesNotContainMessageWithArguments( msg, advertisedAddr.name(), 444, listenAddr.name() );
+        infoMatcher.doesNotContainMessageWithArguments( msg, advertisedAddr.name(), 555, listenAddr.name() );
+        warnMatcher.doesNotContainMessageWithArguments( msg, advertisedAddr.name(), 666, listenAddr.name() );
     }
 
     private static void testMigrateSslPolicy( String oldGroupnameSetting, SslPolicyConfig policyConfig )
