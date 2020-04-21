@@ -23,15 +23,18 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection.DistinctSet
 import org.neo4j.values.AnyValue
 
 class DistinctFunction(value: Expression, inner: AggregationFunction, operatorId: Id) extends AggregationFunction {
-  private val seen = scala.collection.mutable.Set[AnyValue]()
+  private var seen: DistinctSet[AnyValue] = _
 
   override def apply(ctx: ReadableRow, state: QueryState): Unit = {
     val data = value(ctx, state)
+    if (seen == null) {
+      seen = DistinctSet.createDistinctSet[AnyValue](state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+    }
     if (seen.add(data)) {
-      state.memoryTracker.allocated(data, operatorId.x)
       inner(ctx, state)
     }
   }
@@ -39,7 +42,10 @@ class DistinctFunction(value: Expression, inner: AggregationFunction, operatorId
   override def result(state: QueryState): AnyValue = inner.result(state)
 
   override def recordMemoryDeallocation(state: QueryState): Unit = {
-    seen.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
+    if (seen != null) {
+      seen.close()
+      seen = null
+    }
     inner.recordMemoryDeallocation(state)
   }
 }
