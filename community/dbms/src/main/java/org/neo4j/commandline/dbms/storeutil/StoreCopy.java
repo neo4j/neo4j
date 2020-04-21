@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.collections.api.factory.Maps;
@@ -121,7 +120,7 @@ public class StoreCopy
     private final PrintStream out;
 
     private StoreCopyFilter storeCopyFilter;
-    private MutableMap<String, List<NamedToken>> inventedTokens;
+    private MutableMap<String, List<NamedToken>> recreatedTokens;
     private TokenHolders tokenHolders;
     private NodeStore nodeStore;
     private PropertyStore propertyStore;
@@ -168,7 +167,7 @@ public class StoreCopy
                 nodeStore = neoStores.getNodeStore();
                 propertyStore = neoStores.getPropertyStore();
                 relationshipStore = neoStores.getRelationshipStore();
-                inventedTokens = Maps.mutable.empty();
+                recreatedTokens = Maps.mutable.empty();
                 tokenHolders = createTokenHolders( neoStores );
                 stats = new StoreCopyStats( log );
                 SchemaStore schemaStore = neoStores.getSchemaStore();
@@ -211,10 +210,10 @@ public class StoreCopy
                             "The commands are saved to " + logFilePath.toAbsolutePath() + " as well for reference.");
                 }
 
-                if ( inventedTokens.notEmpty() )
+                if ( recreatedTokens.notEmpty() )
                 {
-                    log.info( "The following tokens had to be invented in order to not leave data behind:" );
-                    inventedTokens.forEach( ( type, tokens ) ->
+                    log.info( "The following tokens were recreated (with new names) in order to not leave data behind:" );
+                    recreatedTokens.forEach( ( type, tokens ) ->
                     {
                         for ( NamedToken token : tokens )
                         {
@@ -240,7 +239,8 @@ public class StoreCopy
     {
         return new TokenHolder()
         {
-            private final TokenHolder delegate = createReadOnlyTokenHolder(tokenType);
+            private final TokenHolder delegate = createReadOnlyTokenHolder( tokenType );
+            private int createdTokenCounter; // Guarded by 'this'.
 
             @Override
             public synchronized void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
@@ -279,12 +279,13 @@ public class StoreCopy
                     String tokenName;
                     do
                     {
-                        tokenName = String.format( "%s_%x", getTokenType(), ThreadLocalRandom.current().nextInt() );
+                        createdTokenCounter++;
+                        tokenName = getTokenType() + "_" + createdTokenCounter;
                     }
                     while ( getIdByName( tokenName ) != TokenConstants.NO_TOKEN );
                     NamedToken token = new NamedToken( tokenName, id );
                     delegate.addToken( token );
-                    inventedTokens.getIfAbsentPut( getTokenType(), ArrayList::new ).add( token );
+                    recreatedTokens.getIfAbsentPut( getTokenType(), ArrayList::new ).add( token );
                     return token;
                 }
             }
