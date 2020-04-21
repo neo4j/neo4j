@@ -229,9 +229,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
+    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator, boolean allowFastDegreeLookup )
     {
-        if ( !isDense() || !selection.denseEnabled() )
+        if ( !isDense() || !allowFastDegreeLookup )
         {
             if ( relationshipCursor == null )
             {

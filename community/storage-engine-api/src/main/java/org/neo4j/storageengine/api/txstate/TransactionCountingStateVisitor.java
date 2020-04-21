@@ -86,7 +86,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
     {
         EagerDegrees degrees = new EagerDegrees();
-        node.degrees( ALL_RELATIONSHIPS, degrees );
+        node.degrees( ALL_RELATIONSHIPS, degrees, true );
         for ( int type : degrees.types() )
         {
             visitor.visitDegree( type, degrees.outgoingDegree( type ), degrees.incomingDegree( type ) );

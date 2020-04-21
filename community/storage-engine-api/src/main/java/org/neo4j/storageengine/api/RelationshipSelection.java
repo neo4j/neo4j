@@ -56,16 +56,6 @@ public abstract class RelationshipSelection
     }
 
     /**
-     * Check if it is possible to use group cursor for checking degrees.
-     *
-     * @return true if there are no security rules that would disable this.
-     */
-    public boolean denseEnabled()
-    {
-        return true;
-    }
-
-    /**
      * Tests whether a relationship of a certain direction should be part of this selection.
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship is part of this selection.

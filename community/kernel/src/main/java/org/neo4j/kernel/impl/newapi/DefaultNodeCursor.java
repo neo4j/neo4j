@@ -255,11 +255,11 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         {
             if ( accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels() )
             {
-                storeCursor.degrees( selection, degrees );
+                storeCursor.degrees( selection, degrees, true );
             }
             else
             {
-                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees );
+                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees, false );
             }
         }
         if ( nodeTxState != null )
@@ -424,12 +424,6 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             {
                 return false;
             }
-        }
-
-        @Override
-        public boolean denseEnabled()
-        {
-            return false;
         }
 
         @Override

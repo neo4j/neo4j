@@ -250,7 +250,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     private int degree( StorageNodeCursor cursor, RelationshipSelection selection )
     {
         SingleDegree degree = new SingleDegree();
-        cursor.degrees( selection, degree );
+        cursor.degrees( selection, degree, true );
         return degree.getTotal();
     }
 
@@ -472,7 +472,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
         EagerDegrees nodeDegrees = new EagerDegrees();
-        nodeCursor.degrees( ALL_RELATIONSHIPS, nodeDegrees );
+        nodeCursor.degrees( ALL_RELATIONSHIPS, nodeDegrees, true );
         for ( int type : nodeDegrees.types() )
         {
             degrees.add( new TestDegreeItem( type, nodeDegrees.outgoingDegree( type ), nodeDegrees.incomingDegree( type ) ) );
