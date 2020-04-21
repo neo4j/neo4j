@@ -38,8 +38,7 @@ public class JarBuilder
 {
     public URL createJarFor( File f, Class<?>... classesToInclude ) throws IOException
     {
-        try ( OutputStream fout = Files.newOutputStream( f.toPath() );
-              JarOutputStream jarOut = new JarOutputStream( fout ) )
+        try ( JarOutputStream jarOut = new JarOutputStream( Files.newOutputStream( f.toPath() ) ) )
         {
             for ( Class<?> target : classesToInclude )
             {
