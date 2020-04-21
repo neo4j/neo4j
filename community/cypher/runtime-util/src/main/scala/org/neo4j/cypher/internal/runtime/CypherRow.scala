@@ -212,12 +212,18 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     var total = 0L
     val iterator = m.valuesIterator
     while (iterator.hasNext) {
-      total += iterator.next().estimatedHeapUsage()
+      val value = iterator.next()
+      if (value != null) {
+        total += value.estimatedHeapUsage()
+      }
     }
     if (cachedProperties != null) {
       val iterator = cachedProperties.valuesIterator
       while (iterator.hasNext) {
-        total += iterator.next().estimatedHeapUsage()
+        val value = iterator.next()
+        if (value != null ) {
+          total += value.estimatedHeapUsage()
+        }
       }
     }
     total
