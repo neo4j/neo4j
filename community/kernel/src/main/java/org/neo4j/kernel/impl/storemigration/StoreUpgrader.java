@@ -131,6 +131,11 @@ public class StoreUpgrader
 
     public void migrateIfNeeded( DatabaseLayout layout )
     {
+        // nothing to migrate
+        if ( !layout.databaseDirectory().exists() )
+        {
+            return;
+        }
         boolean upgradeAllowed = isUpgradeAllowed();
         LogVersionUpgradeChecker.check( logTailScanner, upgradeAllowed );
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
