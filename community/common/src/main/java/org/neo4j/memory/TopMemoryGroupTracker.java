@@ -30,7 +30,7 @@ class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryP
     private final MemoryPools pools;
     private final MemoryGroup group;
 
-    private List<SubMemoryGroupTracker> subPools = new CopyOnWriteArrayList<>();
+    private final List<SubMemoryGroupTracker> subPools = new CopyOnWriteArrayList<>();
 
     TopMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
     {

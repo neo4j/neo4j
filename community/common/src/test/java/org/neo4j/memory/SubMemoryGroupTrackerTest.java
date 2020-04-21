@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SubMemoryGroupTrackerTest
 {
-    private MemoryPools memoryPools = new MemoryPools();
-    private NamedMemoryPool topPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );
+    private final MemoryPools memoryPools = new MemoryPools();
+    private final NamedMemoryPool topPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );
 
     @AfterEach
     void tearDown()
