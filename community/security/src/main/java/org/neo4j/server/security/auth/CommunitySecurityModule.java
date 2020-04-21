@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
@@ -27,40 +28,39 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.time.Clocks;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public class CommunitySecurityModule extends SecurityModule
 {
     private final LogProvider logProvider;
     private final Config config;
     private final GlobalProcedures globalProcedures;
-    private final FileSystemAbstraction fileSystem;
     private final DependencySatisfier dependencySatisfier;
     private BasicSystemGraphRealm authManager;
-    private SystemGraphInitializer systemGraphInitializer;
-    private DatabaseManager<?> databaseManager;
 
     public CommunitySecurityModule(
             LogService logService,
             Config config,
             GlobalProcedures procedures,
-            FileSystemAbstraction fileSystem,
             DependencySatisfier dependencySatisfier )
     {
         this.logProvider = logService.getUserLogProvider();
         this.config = config;
         this.globalProcedures = procedures;
-        this.fileSystem = fileSystem;
         this.dependencySatisfier = dependencySatisfier;
     }
 
@@ -68,12 +68,18 @@ public class CommunitySecurityModule extends SecurityModule
     public void setup()
     {
         org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencySatisfier;
-        this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
-        this.systemGraphInitializer = platformDependencies.resolveDependency( SystemGraphInitializer.class );
+        Supplier<GraphDatabaseService> systemSupplier = () ->
+        {
+            DatabaseManager<?> databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
+            return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
+                    () -> new RuntimeException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
+        };
 
-        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
+        authManager = new BasicSystemGraphRealm(
+                new SystemGraphRealmHelper( systemSupplier, new SecureHasher() ),
+                createAuthenticationStrategy( config )
+        );
 
-        life.add( dependencySatisfier.satisfyDependency( authManager ) );
         registerProcedure( globalProcedures, logProvider.getLog( getClass() ), AuthProcedures.class, null );
     }
 
@@ -81,6 +87,12 @@ public class CommunitySecurityModule extends SecurityModule
     public AuthManager authManager()
     {
         return authManager;
+    }
+
+    @Override
+    public AuthManager inClusterAuthManager()
+    {
+        return null;
     }
 
     private static final String USER_STORE_FILENAME = "auth";
@@ -92,8 +104,7 @@ public class CommunitySecurityModule extends SecurityModule
         return new FileUserRepository( fileSystem, getUserRepositoryFile( config ), logProvider );
     }
 
-    public static FileUserRepository getInitialUserRepository( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem )
+    private static FileUserRepository getInitialUserRepository( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
     }
@@ -124,22 +135,12 @@ public class CommunitySecurityModule extends SecurityModule
         return new File( authStoreDir, fileName );
     }
 
-    private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
+    public static UserSecurityGraphComponent createSecurityComponent( Log log, Config config, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
-        SecureHasher secureHasher = new SecureHasher();
-
         UserRepository migrationUserRepository = CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
-        UserSecurityGraphInitializer securityGraphInitializer =
-                new UserSecurityGraphInitializer( databaseManager, systemGraphInitializer, logProvider.getLog( getClass() ),
-                        migrationUserRepository, initialUserRepository, secureHasher );
-
-        return new BasicSystemGraphRealm(
-                securityGraphInitializer, // always init on start in community
-                new SystemGraphRealmHelper( databaseManager, secureHasher ),
-                createAuthenticationStrategy( config )
-        );
+        return new UserSecurityGraphComponent( log, migrationUserRepository, initialUserRepository, config );
     }
 
     public static AuthenticationStrategy createAuthenticationStrategy( Config config )

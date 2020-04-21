@@ -256,7 +256,14 @@ public interface ProcedureITBase
                 proc( "dbms.listConnections", "() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, " +
                                 "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
                         "List all accepted network connections at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )));
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.upgradeStatus", "() :: (component :: STRING?, status :: STRING?, description :: STRING?, resolution :: STRING?)",
+                        "Report the current status of the system database sub-graph schema.",
+                        stringArray( "admin" ), "DBMS" ),
+                proc( "dbms.upgrade", "() :: (component :: STRING?, status :: STRING?, upgradeResult :: STRING?)",
+                        "Upgrade the system database schema if it is not the current schema.",
+                        stringArray( "admin" ), "DBMS" )
+        ));
         return result;
     }
 

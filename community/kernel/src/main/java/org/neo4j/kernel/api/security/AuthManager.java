@@ -24,15 +24,15 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * An AuthManager is used to do basic authentication and user management.
  */
-public interface AuthManager extends Lifecycle
+public abstract class AuthManager extends LifecycleAdapter
 {
-    String INITIAL_USER_NAME = "neo4j";
-    String INITIAL_PASSWORD = "neo4j";
+    public static final String INITIAL_USER_NAME = "neo4j";
+    public static final String INITIAL_PASSWORD = "neo4j";
 
     /**
      * Log in using the provided authentication token
@@ -43,35 +43,15 @@ public interface AuthManager extends Lifecycle
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    public abstract LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
-    void log( String message, SecurityContext securityContext );
+    public abstract void log( String message, SecurityContext securityContext );
 
     /**
      * Implementation that does no authentication.
      */
-    AuthManager NO_AUTH = new AuthManager()
+    public static final AuthManager NO_AUTH = new AuthManager()
     {
-        @Override
-        public void init()
-        {
-        }
-
-        @Override
-        public void start()
-        {
-        }
-
-        @Override
-        public void stop()
-        {
-        }
-
-        @Override
-        public void shutdown()
-        {
-        }
-
         @Override
         public LoginContext login( Map<String,Object> authToken )
         {

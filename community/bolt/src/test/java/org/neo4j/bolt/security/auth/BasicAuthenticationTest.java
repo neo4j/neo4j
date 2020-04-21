@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.time.Clocks;
 
@@ -152,8 +151,7 @@ class BasicAuthenticationTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, maxFailedAttempts );
         SystemGraphRealmHelper realmHelper = spy( new SystemGraphRealmHelper( null, new SecureHasher() ) );
-        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, realmHelper,
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ) );
+        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( realmHelper, new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ) );
         Authentication authentication = new BasicAuthentication( realm );
         doReturn( new User.Builder( "bob", credentialFor( "secret" ) ).withRequiredPasswordChange( true ).build() ).when( realmHelper ).getUser( "bob" );
         doReturn( new User.Builder( "mike", credentialFor( "secret2" ) ).build() ).when( realmHelper ).getUser( "mike" );

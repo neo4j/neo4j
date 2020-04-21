@@ -31,6 +31,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -133,6 +134,7 @@ public class GlobalModule
     private final MemoryPools memoryPools;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
+    private final SystemGraphComponents systemGraphComponents;
 
     public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
     {
@@ -180,6 +182,9 @@ public class GlobalModule
         transactionsMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ) );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
+
+        systemGraphComponents = tryResolveOrCreate( SystemGraphComponents.class, SystemGraphComponents::new );
+        globalDependencies.satisfyDependency( systemGraphComponents );
 
         globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler, globalMonitors ) );
 
@@ -552,5 +557,10 @@ public class GlobalModule
     public GlobalMemoryGroupTracker getOtherMemoryPool()
     {
         return otherMemoryPool;
+    }
+
+    public SystemGraphComponents getSystemGraphComponents()
+    {
+        return systemGraphComponents;
     }
 }

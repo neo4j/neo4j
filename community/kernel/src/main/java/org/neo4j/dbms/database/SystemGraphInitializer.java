@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public abstract class SystemGraphInitializer extends LifecycleAdapter
@@ -30,19 +29,12 @@ public abstract class SystemGraphInitializer extends LifecycleAdapter
         initializeSystemGraph();
     }
 
-    public abstract void initializeSystemGraph() throws Exception;
-
-    public abstract void initializeSystemGraph( GraphDatabaseService db ) throws Exception;
+    protected abstract void initializeSystemGraph() throws Exception;
 
     public static final SystemGraphInitializer NO_OP = new SystemGraphInitializer()
     {
         @Override
         public void initializeSystemGraph()
-        {
-        }
-
-        @Override
-        public void initializeSystemGraph( GraphDatabaseService db )
         {
         }
     };

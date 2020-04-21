@@ -17,28 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.security.provider;
+package org.neo4j.server.security.systemgraph.versions;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import java.util.Optional;
 
-public class NoAuthSecurityProvider extends LifecycleAdapter implements SecurityProvider
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.NullLog;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
+
+public class NoUserSecurityGraph extends KnownCommunitySecurityComponentVersion
 {
-    public static final NoAuthSecurityProvider INSTANCE = new NoAuthSecurityProvider();
+    public static final int VERSION = -1;
 
-    private NoAuthSecurityProvider()
+    public NoUserSecurityGraph()
     {
+        super( VERSION, String.format( "no '%s' graph found", UserSecurityGraphComponent.COMPONENT ), NullLog.getInstance() );
     }
 
     @Override
-    public AuthManager authManager()
+    public void setupUsers( Transaction tx )
     {
-        return AuthManager.NO_AUTH;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public AuthManager inClusterAuthManager()
+    public Optional<Exception> updateInitialUserPassword( Transaction tx )
     {
-        return AuthManager.NO_AUTH;
+        return Optional.of( unsupported() );
     }
 }

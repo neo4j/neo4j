@@ -90,7 +90,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private static final String KEY2 = "key2";
     private DatabaseManagementService managementService;
     // number of new indexes dbms will create on its own for internal purposes, like system database
-    private static final int NUMBER_OF_NEW_INDEXES = 3;
+    private static final int NUMBER_OF_SYSTEM_INDEXES = 2;
 
     private enum Provider
     {
@@ -315,7 +315,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         managementService = setupDb( storeDir, indexRecoveryTracker );
         try
         {
-            verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes + NUMBER_OF_NEW_INDEXES, InternalIndexState.ONLINE );
+            int numberNewIndexes = 2;
+            verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes + numberNewIndexes + NUMBER_OF_SYSTEM_INDEXES, InternalIndexState.ONLINE );
         }
         finally
         {

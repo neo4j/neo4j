@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.systemgraph;
 
+import java.util.function.Supplier;
+
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
@@ -38,8 +40,9 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 
 public class SystemGraphRealmHelper
 {
-    private final DatabaseManager<?> databaseManager;
+    private final Supplier<GraphDatabaseService> systemSupplier;
     private final SecureHasher secureHasher;
+    private GraphDatabaseService systemDb;
 
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
@@ -47,9 +50,9 @@ public class SystemGraphRealmHelper
      */
     public static final String IS_SUSPENDED = "is_suspended";
 
-    public SystemGraphRealmHelper( DatabaseManager<?> databaseManager, SecureHasher secureHasher )
+    public SystemGraphRealmHelper( Supplier<GraphDatabaseService> systemSupplier, SecureHasher secureHasher )
     {
-        this.databaseManager = databaseManager;
+        this.systemSupplier = systemSupplier;
         this.secureHasher = secureHasher;
     }
 
@@ -83,7 +86,16 @@ public class SystemGraphRealmHelper
 
     public GraphDatabaseService getSystemDb()
     {
-        return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
+        if ( systemDb == null )
+        {
+            systemDb = systemSupplier.get();
+        }
+        return systemDb;
+    }
+
+    public static Supplier<GraphDatabaseService> makeSystemSupplier( DatabaseManager<?> databaseManager )
+    {
+        return () -> databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }

@@ -147,7 +147,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc)." )
     public static final Setting<Boolean> strict_config_validation = newBuilder( "dbms.config.strict_validation", BOOL, false ).build();
 
-    @Description( "Whether to allow an upgrade in case the current version of the database starts against an older version." )
+    @Description( "Whether to allow a store upgrade in case the current version of the database starts against an older version of the store." )
     public static final Setting<Boolean> allow_upgrade = newBuilder( "dbms.allow_upgrade", BOOL, false ).dynamic().build();
 
     @Description( "Max number of processors used when upgrading the store. Defaults to the number of processors available to the JVM. " +
@@ -161,6 +161,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "A change of the record format is irreversible. " +
             "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default." )
     public static final Setting<String> record_format = newBuilder( "dbms.record_format", STRING, "" ).build();
+
+    @Description( "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). " +
+                  "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). " +
+                  "If set to false, or when in a clustering environment, it is necessary to call the procedure `dbms.upgrade()` to " +
+                  "complete the upgrade." )
+    public static final Setting<Boolean> allow_single_automatic_upgrade = newBuilder( "dbms.allow_single_automatic_upgrade", BOOL, true ).dynamic().build();
 
     // Cypher settings
 

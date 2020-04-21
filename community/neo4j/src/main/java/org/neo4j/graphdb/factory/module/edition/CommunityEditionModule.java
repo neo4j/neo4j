@@ -38,15 +38,19 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -69,8 +73,8 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -78,6 +82,7 @@ import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -85,8 +90,10 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -235,33 +242,59 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager )
     {
-        SystemGraphInitializer initializer = tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
-                () -> new DefaultSystemGraphInitializer( databaseManager, globalModule.getGlobalConfig() ) );
-        return globalModule.getGlobalDependencies().satisfyDependency( globalModule.getGlobalLife().add( initializer ) );
+        DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
+        Supplier<GraphDatabaseService> systemSupplier = systemSupplier( globalDependencies );
+        var systemGraphComponents = globalModule.getSystemGraphComponents();
+        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig() );
+        systemGraphComponents.register( systemGraphComponent );
+        SystemGraphInitializer initializer =
+                CommunityEditionModule.tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
+                        () -> new DefaultSystemGraphInitializer( systemSupplier, systemGraphComponents ) );
+        return globalModule.getGlobalDependencies().satisfyDependency( initializer );
     }
+
+    protected Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )
+    {
+        return () ->
+        {
+            DatabaseManager<?> databaseManager = dependencies.resolveDependency( DatabaseManager.class );
+            return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
+                    () -> new RuntimeException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
+        };
+    }
+
+    private void setupSecurityGraphInitializer( GlobalModule globalModule )
+    {
+        Config config = globalModule.getGlobalConfig();
+        FileSystemAbstraction fileSystem = globalModule.getFileSystem();
+        LogProvider logProvider = globalModule.getLogService().getUserLogProvider();
+        Log securityLog = logProvider.getLog( UserSecurityGraphComponent.class );
+
+        var communityComponent = CommunitySecurityModule.createSecurityComponent( securityLog, config, fileSystem, logProvider );
+
+        Dependencies dependencies = globalModule.getGlobalDependencies();
+        SystemGraphComponents systemGraphComponents = dependencies.resolveDependency( SystemGraphComponents.class );
+        systemGraphComponents.register( communityComponent );
+   }
 
     @Override
     public void createSecurityModule( GlobalModule globalModule )
     {
-        LifeSupport globalLife = globalModule.getGlobalLife();
+        setupSecurityGraphInitializer( globalModule );
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
             SecurityModule securityModule = new CommunitySecurityModule(
                     globalModule.getLogService(),
                     globalModule.getGlobalConfig(),
                     globalProcedures,
-                    globalModule.getFileSystem(),
                     globalModule.getGlobalDependencies()
             );
             securityModule.setup();
-            globalLife.add( securityModule );
             this.securityProvider = securityModule;
         }
         else
         {
-            NoAuthSecurityProvider noAuthSecurityProvider = NoAuthSecurityProvider.INSTANCE;
-            globalLife.add( noAuthSecurityProvider );
-            this.securityProvider = noAuthSecurityProvider;
+            this.securityProvider = NoAuthSecurityProvider.INSTANCE;
         }
     }
 

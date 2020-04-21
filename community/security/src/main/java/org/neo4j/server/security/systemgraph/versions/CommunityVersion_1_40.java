@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.systemgraph;
+package org.neo4j.server.security.systemgraph.versions;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.UserRepository;
 
-public interface SecurityGraphInitializer
+public class CommunityVersion_1_40 extends SupportedCommunityVersion
 {
-    void initializeSecurityGraph() throws Exception;
-
-    void initializeSecurityGraph( GraphDatabaseService database ) throws Exception;
-
-    SecurityGraphInitializer NO_OP = new SecurityGraphInitializer()
+    public CommunityVersion_1_40( Log log, UserRepository userRepository )
     {
-        @Override
-        public void initializeSecurityGraph()
-        {
-        }
+        super( 2, "Neo4j 4.0", log, userRepository );
+    }
 
-        @Override
-        public void initializeSecurityGraph( GraphDatabaseService database )
-        {
-        }
-    };
+    @Override
+    public boolean detected( Transaction tx )
+    {
+        return componentNotInVersionNode( tx ) && nodesWithLabelExist( tx, USER_LABEL );
+    }
 }

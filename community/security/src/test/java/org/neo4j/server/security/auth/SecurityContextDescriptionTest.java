@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 import org.neo4j.time.Clocks;
 
@@ -50,8 +49,8 @@ class SecurityContextDescriptionTest
     void setup() throws Throwable
     {
         SystemGraphRealmHelper realmHelper = spy( new SystemGraphRealmHelper( null, new SecureHasher() ) );
-        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, realmHelper,
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ) );
+        BasicSystemGraphRealm realm =
+                new BasicSystemGraphRealm( realmHelper, new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ) );
         User user =  new User.Builder( "johan", credentialFor( "bar" ) ).build();
         doReturn( user ).when( realmHelper ).getUser( "johan" );
         context = realm.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );

@@ -38,6 +38,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseInitializer;
+import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -135,7 +136,7 @@ public class DatabaseManagementServiceFactory
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new TransactionalDbmsOperations( globalProcedures ) );
 
-        edition.createSystemGraphInitializer( globalModule, databaseManager );
+        globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
@@ -278,6 +279,7 @@ public class DatabaseManagementServiceFactory
         globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
         globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
         globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
+        globalProcedures.registerComponent( SystemGraphComponents.class, ctx -> globalModule.getSystemGraphComponents(), false );
         globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
 
         // Register injected public API components

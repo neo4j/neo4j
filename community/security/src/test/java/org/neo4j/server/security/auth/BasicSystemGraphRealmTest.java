@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,7 +65,7 @@ public class BasicSystemGraphRealmTest
     {
         authStrategy = mock( AuthenticationStrategy.class );
         realmHelper = spy( new SystemGraphRealmHelper( null, new SecureHasher() ) );
-        realm = new BasicSystemGraphRealm( SecurityGraphInitializer.NO_OP, realmHelper, authStrategy );
+        realm = new BasicSystemGraphRealm( realmHelper, authStrategy );
     }
 
     @Test

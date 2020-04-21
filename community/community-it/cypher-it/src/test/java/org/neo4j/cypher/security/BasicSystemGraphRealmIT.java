@@ -31,7 +31,10 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
@@ -40,7 +43,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -60,21 +63,23 @@ class BasicSystemGraphRealmIT
 {
     private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;
     private SystemGraphRealmHelper realmHelper;
-    private SecureHasher secureHasher;
     private Config defaultConfig;
 
+    @SuppressWarnings( "unused" )
     @Inject
     private TestDirectory testDirectory;
 
     private UserRepository oldUsers;
     private UserRepository initialPassword;
+    private BasicSystemGraphRealm realm;
+    private SystemGraphInitializer systemGraphInitializer;
 
     @BeforeEach
     void setUp()
     {
         dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseManager( testDirectory );
-        secureHasher = new SecureHasher();
-        realmHelper = new SystemGraphRealmHelper( dbManager, secureHasher );
+        SecureHasher secureHasher = new SecureHasher();
+        realmHelper = new SystemGraphRealmHelper( SystemGraphRealmHelper.makeSystemSupplier( dbManager ), secureHasher );
         defaultConfig = Config.defaults();
         oldUsers = new InMemoryUserRepository();
         initialPassword = new InMemoryUserRepository();
@@ -105,16 +110,14 @@ class BasicSystemGraphRealmIT
     void shouldLoadInitialUserWithInitialPasswordOnRestart() throws Throwable
     {
         // Given
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        startSystemGraphRealm();
 
         assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
-
-        realm.stop();
 
         initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
 
         // When
-        realm.start();
+        systemGraphInitializer.start();
 
         // Then
         assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
@@ -125,16 +128,14 @@ class BasicSystemGraphRealmIT
     void shouldNotLoadInitialUserWithInitialPasswordOnRestartWhenAlreadyChanged() throws Throwable
     {
         // Given
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
-        realm.stop();
+        startSystemGraphRealm();
         initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
-        realm.start();
-        realm.stop();
+        systemGraphInitializer.start();
 
         // When
         initialPassword.clear();
         initialPassword.create( createUser( INITIAL_USER_NAME, "abc", false ) );
-        realm.start();
+        systemGraphInitializer.start();
 
         // Then
         assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
@@ -179,7 +180,7 @@ class BasicSystemGraphRealmIT
         int maxFailedAttempts = Config.defaults().get( GraphDatabaseSettings.auth_max_failed_attempts );
         oldUsers.create( createUser( "alice", "correct", false ) );
         oldUsers.create( createUser( "bob", "password", false ) );
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        startSystemGraphRealm();
 
         // First make sure one of the users will have a cached successful authentication result for variation
         assertAuthenticationSucceeds( realmHelper, "alice", "correct" );
@@ -202,42 +203,40 @@ class BasicSystemGraphRealmIT
     void shouldHandleSwitchOfDefaultDatabase() throws Throwable
     {
         oldUsers.create( createUser( "alice", "bar", false ) );
-        BasicSystemGraphRealm realm = startSystemGraphRealm();
+        startSystemGraphRealm();
 
         assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
-
-        realm.stop();
 
         // Set a new database foo to default db in config
         defaultConfig.set( default_database, "foo" );
 
-        realm.start();
+        systemGraphInitializer.start();
 
         // Alice should still be able to authenticate
         assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
 
-        realm.stop();
-
         // Switch back default db to 'neo4j'
         defaultConfig.set( default_database, DEFAULT_DATABASE_NAME );
 
-        realm.start();
+        systemGraphInitializer.start();
 
         // Alice should still be able to authenticate
         assertAuthenticationSucceeds( realmHelper, "alice", "bar" );
     }
 
-    private BasicSystemGraphRealm startSystemGraphRealm() throws Exception
+    private void startSystemGraphRealm() throws Exception
     {
         Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ).toPath() );
-        DefaultSystemGraphInitializer systemGraphInitializer = new DefaultSystemGraphInitializer( dbManager, config );
 
-        UserSecurityGraphInitializer securityGraphInitializer =
-                new UserSecurityGraphInitializer( dbManager, systemGraphInitializer, Mockito.mock( Log.class ), oldUsers, initialPassword, secureHasher );
+        var systemGraphComponents = new SystemGraphComponents();
+        systemGraphComponents.register( new DefaultSystemGraphComponent( config ) );
+        systemGraphComponents.register( new UserSecurityGraphComponent( Mockito.mock( Log.class ), oldUsers, initialPassword, config ) );
+
+        var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier( dbManager );
+        systemGraphInitializer = new DefaultSystemGraphInitializer( systemGraphSupplier, systemGraphComponents );
+        systemGraphInitializer.start();
 
         RateLimitedAuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( Clock.systemUTC(), config );
-        BasicSystemGraphRealm realm = new BasicSystemGraphRealm( securityGraphInitializer, realmHelper, authStrategy );
-        realm.start();
-        return realm;
+        realm = new BasicSystemGraphRealm( realmHelper, authStrategy );
     }
 }

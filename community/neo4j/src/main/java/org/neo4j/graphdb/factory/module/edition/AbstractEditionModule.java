@@ -189,7 +189,7 @@ public abstract class AbstractEditionModule
 
     public AuthManager getBoltInClusterAuthManager()
     {
-        return null;
+        return securityProvider.inClusterAuthManager();
     }
 
     public abstract DatabaseStartupController getDatabaseStartupController();

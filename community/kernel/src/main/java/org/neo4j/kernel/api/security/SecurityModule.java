@@ -22,14 +22,10 @@ package org.neo4j.kernel.api.security;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
-public abstract class SecurityModule implements Lifecycle, SecurityProvider
+public abstract class SecurityModule implements SecurityProvider
 {
-    protected final LifeSupport life = new LifeSupport();
-
     protected final void registerProcedure( GlobalProcedures globalProcedures, Log log, Class procedureClass, String warning )
     {
         try
@@ -45,28 +41,4 @@ public abstract class SecurityModule implements Lifecycle, SecurityProvider
     }
 
     public abstract void setup();
-
-    @Override
-    public void init()
-    {
-        life.init();
-    }
-
-    @Override
-    public void start() throws Exception
-    {
-        life.start();
-    }
-
-    @Override
-    public void stop() throws Exception
-    {
-        life.stop();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        life.shutdown();
-    }
 }

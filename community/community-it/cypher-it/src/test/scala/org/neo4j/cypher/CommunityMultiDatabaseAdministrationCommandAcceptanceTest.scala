@@ -27,14 +27,16 @@ import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.default_database
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.dbms.database.DefaultSystemGraphComponent
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
+import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
-import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
@@ -320,16 +322,15 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   }
 
   private def initSystemGraph(config: Config): Unit = {
-    val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
-    val securityGraphInitializer = new UserSecurityGraphInitializer(
-      databaseManager,
-      new DefaultSystemGraphInitializer(databaseManager, config),
-      mock[Log],
-      new InMemoryUserRepository,
-      new InMemoryUserRepository,
-      new SecureHasher())
+    val systemGraphComponents = new SystemGraphComponents()
+    systemGraphComponents.register(new DefaultSystemGraphComponent(config))
+    systemGraphComponents.register(new UserSecurityGraphComponent( mock[Log], new InMemoryUserRepository, new InMemoryUserRepository, config ))
 
-    securityGraphInitializer.initializeSecurityGraph()
+    val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
+    val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseManager)
+    val systemGraphInitializer = new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents)
+    systemGraphInitializer.start()
+
     selectDatabase(SYSTEM_DATABASE_NAME)
   }
 }

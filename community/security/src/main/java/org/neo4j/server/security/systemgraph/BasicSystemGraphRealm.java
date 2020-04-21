@@ -38,41 +38,17 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 /**
  * Shiro realm using a Neo4j graph to store users
  */
-public class BasicSystemGraphRealm implements AuthManager
+public class BasicSystemGraphRealm extends AuthManager
 {
-    private final SecurityGraphInitializer systemGraphInitializer;
     private final SystemGraphRealmHelper systemGraphRealmHelper;
     private final AuthenticationStrategy authenticationStrategy;
 
     public BasicSystemGraphRealm(
-            SecurityGraphInitializer systemGraphInitializer,
             SystemGraphRealmHelper systemGraphRealmHelper,
             AuthenticationStrategy authenticationStrategy )
     {
-        this.systemGraphInitializer = systemGraphInitializer;
         this.systemGraphRealmHelper = systemGraphRealmHelper;
         this.authenticationStrategy = authenticationStrategy;
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start() throws Exception
-    {
-        systemGraphInitializer.initializeSecurityGraph();
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
-    public void shutdown()
-    {
     }
 
     @Override

@@ -17,28 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.security.provider;
+package org.neo4j.server.security.systemgraph.versions;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.UserRepository;
 
-public class NoAuthSecurityProvider extends LifecycleAdapter implements SecurityProvider
+public class CommunityVersion_2_41d2 extends SupportedCommunityVersion
 {
-    public static final NoAuthSecurityProvider INSTANCE = new NoAuthSecurityProvider();
-
-    private NoAuthSecurityProvider()
+    public CommunityVersion_2_41d2( Log log, UserRepository userRepository )
     {
+        super( 2, "Neo4j 4.1.0-Drop02", log, userRepository );
     }
 
     @Override
-    public AuthManager authManager()
+    public boolean isCurrent()
     {
-        return AuthManager.NO_AUTH;
-    }
-
-    @Override
-    public AuthManager inClusterAuthManager()
-    {
-        return AuthManager.NO_AUTH;
+        return true;
     }
 }
