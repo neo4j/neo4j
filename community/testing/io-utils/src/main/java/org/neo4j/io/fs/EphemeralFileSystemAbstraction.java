@@ -151,7 +151,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     public void assertNoOpenFiles() throws Exception
     {
-        EphemeralFileStillOpenException exception = null;
+        Exception exception = null;
         for ( EphemeralFileData file : files.values() )
         {
             Iterator<EphemeralFileChannel> channels = file.getOpenChannels();
@@ -160,12 +160,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 EphemeralFileChannel channel = channels.next();
                 if ( exception == null )
                 {
-                    exception = channel.openedAt;
+                    exception = new IOException( "Expected no open files. " +
+                            "The stack traces of the currently open files are attached as suppressed exceptions." );
                 }
-                else
-                {
-                    exception.addSuppressed( channel.openedAt );
-                }
+                exception.addSuppressed( channel.openedAt );
             }
         }
         if ( exception != null )

@@ -142,11 +142,14 @@ class EphemeralFileData
         synchronized ( channels )
         {
             locked = 0; // Regular file systems seems to release all file locks when closed...
-            for ( Iterator<EphemeralFileChannel> iter = getOpenChannels(); iter.hasNext(); )
+            Iterator<WeakReference<EphemeralFileChannel>> iterator = channels.iterator();
+            while ( iterator.hasNext() )
             {
-                if ( iter.next() == channel )
+                WeakReference<EphemeralFileChannel> reference = iterator.next();
+                EphemeralFileChannel openChannel = reference.get();
+                if ( openChannel == null || openChannel == channel )
                 {
-                    iter.remove();
+                    iterator.remove();
                 }
             }
         }
