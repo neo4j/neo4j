@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -43,11 +44,13 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHECK_POINT;
@@ -57,11 +60,18 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHEC
 class LogVersionUpgradeCheckerIT
 {
     @Inject
-    private DatabaseLayout databaseLayout;
+    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    private DatabaseLayout databaseLayout;
+
+    @BeforeEach
+    void setUp()
+    {
+        databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( DEFAULT_DATABASE_NAME ) );
+    }
 
     @Test
     void startAsNormalWhenUpgradeIsNotAllowed()
@@ -69,11 +79,7 @@ class LogVersionUpgradeCheckerIT
         createGraphDbAndKillIt();
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
-                .impermanent()
-                .setConfig( allow_upgrade, false )
-                .build();
+        DatabaseManagementService managementService = startDatabaseService( false );
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
@@ -84,11 +90,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( V2_3.version() );
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
-                .impermanent()
-                .setConfig( allow_upgrade, false )
-                .build();
+        DatabaseManagementService managementService = startDatabaseService( false );
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -110,21 +112,14 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( V2_3.version() );
 
         // Try to start with upgrading enabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
-                .impermanent()
-                .setConfig( allow_upgrade, true )
-                .build();
+        DatabaseManagementService managementService = startDatabaseService( true );
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
 
     private void createGraphDbAndKillIt()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
-                .impermanent()
-                .build();
+        DatabaseManagementService managementService = startDatabaseService( false );
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
@@ -165,5 +160,14 @@ class LogVersionUpgradeCheckerIT
 
             channel.prepareForFlush().flush();
         }
+    }
+
+    private DatabaseManagementService startDatabaseService( boolean allowUpgrade )
+    {
+        var rootDirectory = databaseLayout.databaseDirectory().getParentFile();
+        return new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setFileSystem( fileSystem ).impermanent()
+                .setConfig( transaction_logs_root_path, rootDirectory.toPath() )
+                .setConfig( allow_upgrade, allowUpgrade ).build();
     }
 }
