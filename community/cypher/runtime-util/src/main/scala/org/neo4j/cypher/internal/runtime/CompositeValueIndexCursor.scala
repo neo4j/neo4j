@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -55,16 +54,10 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
   override def score(): Float = current.score()
 
   override def setTracer(tracer: KernelReadTracer): Unit = {
-    if (current != null) {
-      current.setTracer(tracer)
-    }
     cursors.foreach(_.setTracer(tracer))
   }
 
   override def removeTracer(): Unit = {
-    if (current != null) {
-      current.removeTracer()
-    }
     cursors.foreach(_.removeTracer())
   }
 
@@ -76,9 +69,6 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
   }
 
   override def closeInternal(): Unit = {
-    if (current != null) {
-      current.close()
-    }
     cursors.foreach(_.close())
   }
 
@@ -118,11 +108,6 @@ private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor])
   */
 private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor], ordering: Ordering[NodeValueIndexCursor] ) extends CompositeValueIndexCursor {
   private[this] val queue: mutable.PriorityQueue[NodeValueIndexCursor] = mutable.PriorityQueue.empty[NodeValueIndexCursor](ordering)
-
-  if (AssertionRunner.isAssertionsEnabled) {
-    //we must have values in order to keep items sorted
-    require(cursors.forall(_.hasValue))
-  }
 
   cursors.foreach(c => {
     if (c.next()) {
