@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -116,4 +118,12 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
   }
 
   override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)
+
+  def asUnresolvedFunction: FunctionInvocation = FunctionInvocation(
+    namespace = Namespace(qualifiedName.namespace.toList)(position),
+    functionName = FunctionName(qualifiedName.name)(position),
+    distinct = false,
+    args = arguments.toIndexedSeq,
+  )(position)
+
 }

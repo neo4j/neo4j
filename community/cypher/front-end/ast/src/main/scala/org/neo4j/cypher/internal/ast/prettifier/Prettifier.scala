@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.AllResource
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateGraph
@@ -103,6 +102,7 @@ import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -146,7 +146,9 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WritePrivilege
+import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
@@ -579,9 +581,14 @@ case class Prettifier(
     def asString(u: UnresolvedCall): String = {
       val namespace = expr(u.procedureNamespace)
       val prefix = if (namespace.isEmpty) "" else namespace + "."
-      val arguments = u.declaredArguments.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
+      val args = u.declaredArguments.map(_.filter {
+        case CoerceTo(_: ImplicitProcedureArgument, _) => false
+        case _: ImplicitProcedureArgument              => false
+        case _                                         => true
+      })
+      val arguments = args.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
       val ind = indented()
-      val yields = u.declaredResult.map(ind.asString).map(asNewLine).getOrElse("")
+      val yields = u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
       s"${INDENT}CALL $prefix${expr(u.procedureName)}$arguments$yields"
     }
 

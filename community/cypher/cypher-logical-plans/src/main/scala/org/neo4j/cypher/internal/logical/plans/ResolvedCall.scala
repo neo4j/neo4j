@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -33,7 +34,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -205,4 +208,11 @@ case class ResolvedCall(signature: ProcedureSignature,
     case ProcedureDbmsAccess(_) => true
     case _ => false
   }
+
+  def asUnresolvedCall: UnresolvedCall = UnresolvedCall(
+    procedureNamespace = Namespace(signature.name.namespace.toList)(position),
+    procedureName = ProcedureName(signature.name.name)(position),
+    declaredArguments = if (declaredArguments) Some(callArguments) else None,
+    declaredResult = if (declaredResults) Some(ProcedureResult(callResults)(position)) else None,
+  )(position)
 }

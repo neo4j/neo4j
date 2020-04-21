@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.Neo4jException
@@ -72,6 +73,7 @@ import org.neo4j.values.storable.StringArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -290,8 +292,22 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(_, queryString, _, checkCredentialsExpired) => (_, _) =>
-      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY, checkCredentialsExpired = checkCredentialsExpired)
+    case SystemProcedureCall(_, call, _, checkCredentialsExpired) => (_, parameterMapping) =>
+      val queryString = QueryRenderer.render(Seq(call))
+
+      def addParameterDefaults(params: MapValue) = {
+        val builder = new MapValueBuilder()
+        parameterMapping.foreach((name, value) =>
+          value.default.foreach(builder.add(name, _))
+        )
+        val defaults = builder.build()
+        defaults.updatedWith(params)
+      }
+
+      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY,
+        checkCredentialsExpired = checkCredentialsExpired,
+        parameterConverter = addParameterDefaults
+      )
 
     // Ignore the log command in community
     case LogSystemCommand(source, _) => (context, parameterMapping) =>

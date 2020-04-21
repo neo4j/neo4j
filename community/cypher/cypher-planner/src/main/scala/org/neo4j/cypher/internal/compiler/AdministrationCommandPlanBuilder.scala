@@ -434,7 +434,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
-        Some(plans.SystemProcedureCall(signature.name.toString, from.queryText, context.params, checkCredentialsExpired))
+        Some(plans.SystemProcedureCall(signature.name.toString, resolved, context.params, checkCredentialsExpired))
 
       case _ => None
     }
