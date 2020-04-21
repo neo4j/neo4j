@@ -264,7 +264,7 @@ public class Dijkstra<CostType> implements
                     foundPathsMiddleNodes = new HashSet<>();
                 }
                 // No previous path found, or equally good one found?
-                if ( foundPathsMiddleNodes.size() == 0
+                if ( foundPathsMiddleNodes.isEmpty()
                      || costComparator.compare( foundPathsCost, newTotalCost ) == 0 )
                 {
                     foundPathsCost = newTotalCost; // in case we had no
@@ -555,7 +555,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculateMultiple();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return Collections.emptyList();
         }
@@ -596,7 +596,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculateMultiple();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return null;
         }
@@ -637,7 +637,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculateMultiple();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return null;
         }
@@ -678,7 +678,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculate();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return null;
         }
@@ -702,7 +702,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculate();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return null;
         }
@@ -726,7 +726,7 @@ public class Dijkstra<CostType> implements
             throw new RuntimeException( "Start or end node undefined." );
         }
         calculate();
-        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
+        if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.isEmpty() )
         {
             return null;
         }

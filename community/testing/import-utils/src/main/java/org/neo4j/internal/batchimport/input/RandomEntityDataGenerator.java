@@ -107,7 +107,7 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
     {
         switch ( entry.extractor().name() )
         {
-        case "String": return "" + id;
+        case "String": return Long.toString( id );
         case "long": return id;
         default: throw new IllegalArgumentException( entry.name() );
         }

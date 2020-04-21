@@ -125,7 +125,7 @@ public abstract class FileRepositorySerializer<S>
         int lineNumber = 1;
         for ( String line : lines )
         {
-            if ( line.trim().length() > 0 )
+            if ( !line.isBlank() )
             {
                 out.add( deserializeRecord( line, lineNumber ) );
             }

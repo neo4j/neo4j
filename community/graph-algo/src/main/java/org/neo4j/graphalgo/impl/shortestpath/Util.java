@@ -149,7 +149,7 @@ public class Util
         Node currentNode = node;
         List<Relationship> currentPreds = predecessors.get( currentNode );
         // Traverse predecessors until we have added a node without predecessors
-        while ( currentPreds != null && currentPreds.size() != 0 )
+        while ( currentPreds != null && !currentPreds.isEmpty() )
         {
             // Get next node
             Relationship currentRelationship = currentPreds.get( 0 );
@@ -391,7 +391,7 @@ public class Util
                 return i;
             }
             List<Relationship> preds = predecessors.get( node );
-            if ( preds == null || preds.size() == 0 )
+            if ( preds == null || preds.isEmpty() )
             {
                 return 1;
             }

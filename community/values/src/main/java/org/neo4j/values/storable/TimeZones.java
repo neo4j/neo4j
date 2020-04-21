@@ -91,7 +91,7 @@ public class TimeZones
         {
             for ( String line; (line = reader.readLine()) != null; )
             {
-                if ( line.startsWith( "//" ) || line.trim().isEmpty() )
+                if ( line.startsWith( "//" ) || line.isBlank() )
                 {
                     continue;
                 }

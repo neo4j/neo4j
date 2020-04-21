@@ -248,7 +248,7 @@ public class ShortestPath implements PathFinder<Path>
                 monitorData( startSide, (otherSide == startSide) ? directionData : otherSide, nextNode );
                 // NOTE: Applying the filter-condition could give the wrong results with allShortestPaths,
                 // so only use it for singleShortestPath
-                if ( !stopAsap || filterPaths( hitToPaths( context, hit, start, end, stopAsap ) ).size() > 0 )
+                if ( !stopAsap || !filterPaths( hitToPaths( context, hit, start, end, stopAsap ) ).isEmpty() )
                 {
                     if ( hits.add( hit, depth ) >= maxResultCount )
                     {

@@ -111,7 +111,7 @@ public class HttpHeaderUtils
      */
     public static boolean isValidHttpHeaderName( String name )
     {
-        if ( name == null || name.length() == 0 )
+        if ( name == null || name.isEmpty() )
         {
             return false;
         }
