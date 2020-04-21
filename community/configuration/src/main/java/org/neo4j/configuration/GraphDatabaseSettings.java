@@ -388,7 +388,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "If enabled, calling `dbms.listQueries` will display the allocated bytes. " +
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
-            newBuilder( "dbms.track_query_allocation", BOOL, false ).dynamic().build();
+            newBuilder( "dbms.track_query_allocation", BOOL, true ).dynamic().build();
 
     @Description( "Enable tracing of pipelined runtime scheduler." )
     @Internal
@@ -953,11 +953,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "i.e. for memory intense or long-running queries the value may be larger " +
             "than the current memory allocation. Requires `dbms.track_query_allocation=true`" )
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
-            newBuilder( "dbms.logs.query.allocation_logging_enabled", BOOL, false ).dynamic().build();
+            newBuilder( "dbms.logs.query.allocation_logging_enabled", BOOL, true ).dynamic().build();
 
     @Description( "Logs which runtime that was used to run the query" )
     public static final Setting<Boolean> log_queries_runtime_logging_enabled =
-            newBuilder( "dbms.logs.query.runtime_logging_enabled", BOOL, false ).dynamic().build();
+            newBuilder( "dbms.logs.query.runtime_logging_enabled", BOOL, true ).dynamic().build();
 
     @Description( "Log page hits and page faults for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
