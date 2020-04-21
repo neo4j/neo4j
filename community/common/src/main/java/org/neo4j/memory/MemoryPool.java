@@ -89,7 +89,7 @@ public interface MemoryPool
      */
     default long totalUsed()
     {
-        return Math.addExact( usedHeap(), usedNative() );
+        return usedHeap() + usedNative();
     }
 
     /**
