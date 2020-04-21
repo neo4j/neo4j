@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -113,6 +114,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
+        globalDependencies.satisfyDependency( new DatabaseOperationCounts.Counter() ); // for global metrics
 
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
