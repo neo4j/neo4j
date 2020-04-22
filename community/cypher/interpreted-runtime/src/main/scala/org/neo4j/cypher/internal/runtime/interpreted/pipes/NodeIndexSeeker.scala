@@ -60,7 +60,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters._
 
 /**
   * Mixin trait with functionality for executing logical index queries.
@@ -89,7 +88,7 @@ trait NodeIndexSeeker {
         if (indexQueries.size == 1) {
           state.query.indexSeek(index, needsValues, indexOrder, indexQueries.head)
         } else {
-          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = needsValues || indexOrder != IndexOrderNone, indexOrder, query)).toArray)
         }
 
       case LockingUniqueIndexSeek =>
