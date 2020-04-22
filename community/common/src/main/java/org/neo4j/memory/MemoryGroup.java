@@ -21,29 +21,22 @@ package org.neo4j.memory;
 
 public enum MemoryGroup
 {
-    TRANSACTION( "Transaction", false ),
-    NETTY( "Netty", true ),
-    PAGE_CACHE( "Page Cache", true ),
-    REPLICATION_BUFFERS( "Replication Buffers", true ),
-    QUERY_CACHE( "Query Cache", false ),
-    NO_TRACKING( "No Tracking", true );
+    TRANSACTION( "Transaction" ),
+    NETTY( "Netty" ),
+    PAGE_CACHE( "Page Cache" ),
+    REPLICATION_BUFFERS( "Replication Buffers" ),
+    QUERY_CACHE( "Query Cache" ),
+    NO_TRACKING( "No Tracking" );
 
     private final String name;
-    private final boolean global;
 
-    MemoryGroup( String name, boolean global )
+    MemoryGroup( String name )
     {
         this.name = name;
-        this.global = global;
     }
 
     public String getName()
     {
         return name;
-    }
-
-    public boolean isGlobal()
-    {
-        return global;
     }
 }
