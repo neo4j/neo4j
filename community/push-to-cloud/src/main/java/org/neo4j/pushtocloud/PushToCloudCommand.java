@@ -188,7 +188,7 @@ public class PushToCloudCommand implements AdminCommand
         //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
 
-        Pattern pattern = Pattern.compile( "bolt\\+routing://([^-]+)(-(.+))?.databases.neo4j.io$" );
+        Pattern pattern = Pattern.compile( "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$" );
         Matcher matcher = pattern.matcher( boltURI );
         if ( !matcher.matches() )
         {

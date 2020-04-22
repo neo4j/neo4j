@@ -425,6 +425,23 @@ public class PushToCloudCommandTest
     }
 
     @Test
+    public void shouldRecognizeDatabaseIdFromNeo4jBoltURI() throws IOException, CommandFailed, IncorrectUsage
+    {
+        // given
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().copier( copier ).build();
+
+        // when
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, "neo4j://mydbid.databases.neo4j.io" ) ) );
+
+        // then
+        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ),
+                eq( "neo4j://mydbid.databases.neo4j.io" ), any(), eq( false ), any() );
+    }
+
+    @Test
     public void shouldAuthenticateBeforeDumping() throws CommandFailed, IOException, IncorrectUsage
     {
         // given
