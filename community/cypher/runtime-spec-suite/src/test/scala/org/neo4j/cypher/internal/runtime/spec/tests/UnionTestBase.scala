@@ -682,4 +682,27 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(inOrder(expected))
   }
+
+  test("should work with non-fused limit") {
+    val size = sizeHint / 2
+    given { nodeGraph(size)}
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .limit(1)
+      .nonFuseable()
+      .unwind("range (1, 10) AS y")
+      .union()
+      .|.allNodeScan("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val inputVals = randomValues(size)
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Seq(Array[Any](1)))
+  }
 }
