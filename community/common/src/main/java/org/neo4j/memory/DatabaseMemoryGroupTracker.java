@@ -21,12 +21,12 @@ package org.neo4j.memory;
 
 import java.util.List;
 
-public class SubMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
+public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
 {
-    private final TopMemoryGroupTracker parent;
+    private final GlobalMemoryGroupTracker parent;
     private final String name;
 
-    SubMemoryGroupTracker( TopMemoryGroupTracker parent, String name, long limit, boolean strict )
+    DatabaseMemoryGroupTracker( GlobalMemoryGroupTracker parent, String name, long limit, boolean strict )
     {
         super( new MemoryPoolImpl( limit, strict ) );
         this.parent = parent;

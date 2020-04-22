@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SubMemoryGroupTrackerTest
+class DatabaseMemoryGroupTrackerTest
 {
     private final MemoryPools memoryPools = new MemoryPools();
     private final NamedMemoryPool topPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );

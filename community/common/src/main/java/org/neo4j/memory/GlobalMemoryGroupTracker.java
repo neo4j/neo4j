@@ -26,23 +26,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.util.Preconditions.checkState;
 
-class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
+class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
 {
     private final MemoryPools pools;
     private final MemoryGroup group;
 
-    private final List<SubMemoryGroupTracker> subPools = new CopyOnWriteArrayList<>();
+    private final List<DatabaseMemoryGroupTracker> subPools = new CopyOnWriteArrayList<>();
 
-    TopMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
+    GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
     {
         super( new MemoryPoolImpl( limit, strict ) );
         this.pools = pools;
         this.group = group;
     }
 
-    void releasePool( SubMemoryGroupTracker subMemoryGroupTracker )
+    void releasePool( DatabaseMemoryGroupTracker databaseMemoryGroupTracker )
     {
-        subPools.remove( subMemoryGroupTracker );
+        subPools.remove( databaseMemoryGroupTracker );
     }
 
     @Override
@@ -73,7 +73,7 @@ class TopMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryP
     @Override
     public NamedMemoryPool newSubPool( String name, long limit )
     {
-        SubMemoryGroupTracker subTracker = new SubMemoryGroupTracker( this, name, limit, true );
+        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true );
         subPools.add( subTracker );
         return subTracker;
     }

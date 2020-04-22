@@ -38,7 +38,7 @@ public final class MemoryPools
 
     public NamedMemoryPool pool( MemoryGroup group, long limit, boolean strict )
     {
-        var pool = new TopMemoryGroupTracker( this, group, limit, strict );
+        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict );
         pools.add( pool );
         return pool;
     }
@@ -58,9 +58,9 @@ public final class MemoryPools
         return new ArrayList<>( pools );
     }
 
-    void releasePool( TopMemoryGroupTracker topMemoryGroupTracker )
+    void releasePool( GlobalMemoryGroupTracker globalMemoryGroupTracker )
     {
-        pools.remove( topMemoryGroupTracker );
+        pools.remove( globalMemoryGroupTracker );
     }
 
     private static class NoTrackingMemoryPool implements NamedMemoryPool
