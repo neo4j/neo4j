@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -165,6 +166,7 @@ class StoreLogServiceTest
         // Sometimes instantiate the log here.
         // Also sometimes not since we want to exercise the race of instantiating the log instance concurrently with changing log level.
         Log globalLog = random.nextBoolean() ? logService.getInternalLog( StoreLogServiceTest.class ) : null;
+        AtomicInteger logRequestsMade = new AtomicInteger();
         try ( Lifespan life = new Lifespan( logService ) )
         {
             Race race = new Race();
@@ -182,15 +184,19 @@ class StoreLogServiceTest
                     log.info( message );
                     log.warn( message );
                     log.error( message );
+                    logRequestsMade.incrementAndGet();
                 }
             } );
             race.addContestant( throwing( () ->
             {
-                ThreadLocalRandom tlRandom = ThreadLocalRandom.current();
                 Level[] levels = new Level[]{Level.INFO, Level.WARN, Level.ERROR};
                 for ( Level level : levels )
                 {
-                    Thread.sleep( tlRandom.nextInt( 5_000 ) );
+                    int count = logRequestsMade.get();
+                    while ( count == logRequestsMade.get() )
+                    {
+                        Thread.sleep( 10 );
+                    }
                     levelChanger.accept( logService, level );
                 }
                 end.set( true );
