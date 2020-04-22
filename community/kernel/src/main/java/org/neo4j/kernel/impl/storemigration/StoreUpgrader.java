@@ -121,7 +121,7 @@ public class StoreUpgrader
         }
     }
 
-    public void migrateIfNeeded( DatabaseLayout layout ) throws IOException
+    public void migrateIfNeeded( DatabaseLayout layout )
     {
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
@@ -179,7 +179,7 @@ public class StoreUpgrader
         return versionResult.outcome.isSuccessful() && versionResult.actualVersion.equals( configuredVersion );
     }
 
-    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile ) throws IOException
+    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );

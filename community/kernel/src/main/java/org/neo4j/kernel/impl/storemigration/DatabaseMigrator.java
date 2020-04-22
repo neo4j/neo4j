@@ -72,7 +72,7 @@ public class DatabaseMigrator
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
      */
-    public void migrate() throws IOException
+    public void migrate()
     {
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService );
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,

@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -41,6 +42,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -94,6 +97,7 @@ class RecoveryIT
     private Neo4jLayout neo4jLayout;
     @Inject
     private DatabaseLayout databaseLayout;
+    private TestDatabaseManagementServiceBuilder builder;
     private DatabaseManagementService managementService;
 
     @Test
@@ -320,6 +324,44 @@ class RecoveryIT
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( getRootCause( failure.get() ).getMessage(), containsString( "Transaction logs are missing and recovery is not possible." ) );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void failToStartDatabaseWithTransactionLogsInLegacyLocation() throws Exception
+    {
+        GraphDatabaseAPI database = createDatabase();
+        generateSomeData( database );
+        managementService.shutdown();
+
+        File[] txLogFiles = buildLogFiles().logFiles();
+        File databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
+        DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
+        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
+        File transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
+        assertNotNull( txLogFiles );
+        assertTrue( txLogFiles.length > 0 );
+        for ( File logFile : txLogFiles )
+        {
+            fileSystem.moveToDirectory( logFile, transactionLogsDirectory );
+        }
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        builder.setInternalLogProvider( logProvider );
+        GraphDatabaseAPI restartedDb = createDatabase();
+        try
+        {
+            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
+            assertTrue( failure.isPresent() );
+            assertThat( getRootCause( failure.get() ).getMessage(), containsString( "Transaction logs are missing and recovery is not possible." ) );
+            AssertableLogProvider.MessageMatcher messageMatcher = logProvider.formattedMessageMatcher();
+            messageMatcher.assertContains( txLogFiles[0].getName() );
         }
         finally
         {
@@ -682,10 +724,18 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
-                .build();
+        createBuilder();
+        managementService = builder.build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    private void createBuilder()
+    {
+        if ( builder == null )
+        {
+            builder = new TestDatabaseManagementServiceBuilder( neo4jLayout ).
+                    setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() );
+        }
     }
 
     private void startStopDatabaseWithForcedRecovery()
@@ -706,10 +756,10 @@ class RecoveryIT
 
     private void verifyRecoveryTimestampPresent( GraphDatabaseAPI databaseAPI ) throws IOException
     {
-        GraphDatabaseService restartedDatabase = createDatabase();
+        GraphDatabaseAPI restartedDatabase = createDatabase();
         try
         {
-            PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
+            PageCache restartedCache = getDatabasePageCache( restartedDatabase );
             assertThat( getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ),
                     greaterThan( 0L ) );
         }
@@ -746,11 +796,5 @@ class RecoveryIT
         {
             globalGuard = dependencies.globalGuard();
         }
-
-        public CompositeDatabaseAvailabilityGuard getGlobalGuard()
-        {
-            return globalGuard;
-        }
     }
-
 }
