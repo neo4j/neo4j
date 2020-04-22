@@ -51,6 +51,7 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
@@ -58,6 +59,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -135,15 +137,18 @@ public class DetectRandomSabotageIT
     private NeoStores neoStores;
     private DependencyResolver resolver;
 
-    protected DatabaseManagementService getDbms( File home )
+    private DatabaseManagementService getDbms( File home )
     {
-        return new TestDatabaseManagementServiceBuilder( home )
-                .setConfig( enable_relationship_type_scan_store, true )
-                .build();
+        return addConfig( createBuilder( home ) ).build();
+    }
+
+    protected TestDatabaseManagementServiceBuilder createBuilder( File home )
+    {
+        return new TestDatabaseManagementServiceBuilder( home );
     }
 
     @BeforeEach
-    void setUp()
+    protected void setUp()
     {
         dbms = getDbms( directory.homeDir() );
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
@@ -371,13 +376,33 @@ public class DetectRandomSabotageIT
     private ConsistencyCheckService.Result shutDownAndRunConsistencyChecker() throws ConsistencyCheckIncompleteException
     {
         dbms.shutdown();
-        Config config = Config.newBuilder()
-                .set( neo4j_home, directory.homeDir().toPath() )
-                .set( experimental_consistency_checker, true )
-                .set( enable_relationship_type_scan_store, true )
-                .build();
+        Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() );
+        Config config = addConfig( builder ).build();
         return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+    }
+
+    protected  <T> T addConfig( T t, SetConfigAction<T> action )
+    {
+        action.setConfig( t, enable_relationship_type_scan_store, true );
+        action.setConfig( t, experimental_consistency_checker, true );
+        return t;
+    }
+
+    private DatabaseManagementServiceBuilder addConfig( DatabaseManagementServiceBuilder builder )
+    {
+        return addConfig( builder, DatabaseManagementServiceBuilder::setConfig );
+    }
+
+    private Config.Builder addConfig( Config.Builder builder )
+    {
+        return addConfig( builder, Config.Builder::set );
+    }
+
+    @FunctionalInterface
+    protected interface SetConfigAction<TARGET>
+    {
+        <VALUE> void setConfig( TARGET target, Setting<VALUE> setting, VALUE value );
     }
 
     private enum SabotageType
@@ -827,7 +852,8 @@ public class DetectRandomSabotageIT
                                 writer.write( EntityTokenUpdate.tokenChanges( relationshipRecord.getId(), EMPTY_LONG_ARRAY, new long[]{typeId} ) );
                             }
                         }
-                        return new Sabotage( String.format( "%s relationshipTypeId:%d relationship:%s", operation, typeId, relationshipRecord ), relationshipRecord.toString() );
+                        String description = String.format( "%s relationshipTypeId:%d relationship:%s", operation, typeId, relationshipRecord );
+                        return new Sabotage( description, relationshipRecord.toString() );
                     }
                 };
 
