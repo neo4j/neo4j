@@ -30,24 +30,16 @@ Apache Software License, Version 2.0
   Apache Commons Collections
   Apache Commons Lang
   Caffeine cache
-  casbah-commons
-  casbah-core
-  casbah-query
   Gherkin Repackaged Dependencies
   Java Concurrency Tools Core Library
-  Joda convert
-  Joda-Time
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  nscala-time
   openCypher TCK API
   openCypher TCK Features and Graphs
   parboiled-core
   parboiled-scala
-  salat-core
-  salat-util
   Scala Compiler
 
 BSD - Scala License
@@ -67,7 +59,6 @@ GNU Lesser General Public License, Version 2.1
 MIT License
   fastparse_2.12
   Gherkin
-  SLF4J API Module
   sourcecode
 
 Unlicense

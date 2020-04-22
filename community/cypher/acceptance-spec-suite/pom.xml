@@ -200,11 +200,6 @@
         <!-- other -->
 
         <dependency>
-            <groupId>com.github.salat</groupId>
-            <artifactId>salat-core_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>

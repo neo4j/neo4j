@@ -1214,26 +1214,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>com.github.salat</groupId>
-        <artifactId>salat-core_${scala.binary.version}</artifactId>
-        <version>1.11.2</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-          <exclusion>
-            <artifactId>scalap</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang.modules</groupId>
-            <artifactId>scala-xml_${scala.binary.version}</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>com.lihaoyi</groupId>
         <artifactId>pprint_${scala.binary.version}</artifactId>
         <version>0.5.3</version>
