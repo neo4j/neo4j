@@ -32,12 +32,12 @@ import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.memory.HeapMemoryLimitExceeded
+import org.neo4j.memory.MemoryLimitExceeded
 import org.neo4j.values.virtual.VirtualValues
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(1)
+  val maxMemory: Long = ByteUnit.mebiBytes(2)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -200,7 +200,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -217,7 +217,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -250,7 +250,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -283,7 +283,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -301,7 +301,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize, Some(_ => Array(0)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -319,7 +319,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -339,14 +339,14 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
 
   test("should not kill hash join query with large RHS") {
     // given
-    val nodes = given { nodeGraph(100000) }
+    val nodes = given { nodeGraph(10000) }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -377,7 +377,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, Some(_ => Array(nodes.head, nodes.head)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -396,7 +396,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(estimatedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -418,7 +418,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteNodeInput(estimatedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -490,7 +490,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -508,7 +508,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -526,7 +526,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(expectedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -549,7 +549,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     circleGraph(1000)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }
@@ -571,7 +571,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     circleGraph(1000)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }
@@ -588,7 +588,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -644,7 +644,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimatedRowSize)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -661,7 +661,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(java.lang.Double.BYTES, Some(_ => Array(5))) // StdDev stores primitive doubles
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -678,7 +678,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -695,7 +695,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -713,7 +713,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -730,10 +730,10 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    circleGraph(1500)
+    circleGraph(3000)
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
   }
@@ -783,7 +783,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -803,7 +803,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }
@@ -827,7 +827,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
-    a[HeapMemoryLimitExceeded] should be thrownBy {
+    a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
   }

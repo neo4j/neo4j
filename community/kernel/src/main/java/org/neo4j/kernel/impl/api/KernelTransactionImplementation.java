@@ -297,7 +297,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
         this.initializationTrace = traceProvider.getTraceInfo();
-        this.memoryTracker.setHeapLimit( transactionHeapBytesLimit );
+        this.memoryTracker.setLimit( transactionHeapBytesLimit );
         return this;
     }
 

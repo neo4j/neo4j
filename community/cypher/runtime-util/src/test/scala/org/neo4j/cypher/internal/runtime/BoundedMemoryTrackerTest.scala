@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.Measurable
+import org.neo4j.memory.MemoryLimitExceeded
 import org.neo4j.memory.MemoryPools
 import org.neo4j.values.storable.Values
 
@@ -101,7 +102,7 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     tracker.deallocated(6, 0)
     tracker.allocated(9, 0)
     // Then
-    a[org.neo4j.memory.HeapMemoryLimitExceeded] should be thrownBy tracker.allocated(3, 0)
+    a[MemoryLimitExceeded] should be thrownBy tracker.allocated(3, 0)
   }
 
   test("Tracks individual memory per operator plus overall") {

@@ -52,7 +52,7 @@ public interface MemoryTracker extends AutoCloseable
      * Record an allocation of heap memory.
      *
      * @param bytes the number of bytes about to be allocated.
-     * @throws HeapMemoryLimitExceeded if the current quota would be exceeded by allocating the provided number of bytes.
+     * @throws MemoryLimitExceeded if the current quota would be exceeded by allocating the provided number of bytes.
      */
     void allocateHeap( long bytes );
 

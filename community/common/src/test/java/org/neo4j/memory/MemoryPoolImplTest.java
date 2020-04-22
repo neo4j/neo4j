@@ -73,7 +73,7 @@ class MemoryPoolImplTest
     {
         var memoryPool = new MemoryPoolImpl( 100, true );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
-        assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 100 ) );
+        assertThrows( MemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 100 ) );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
 
         assertEquals( 20, memoryPool.totalUsed() );
@@ -93,8 +93,8 @@ class MemoryPoolImplTest
         memoryPool.reserveHeap( halfLimit );
         assertState( limit, 0, limit, memoryPool );
 
-        HeapMemoryLimitExceeded heapMemoryLimitExceeded = assertThrows( HeapMemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 1 ) );
-        assertThat( heapMemoryLimitExceeded.getMessage() ).contains( "The allocation of 1 would use more than the limit " + limit );
+        MemoryLimitExceeded memoryLimitExceeded = assertThrows( MemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 1 ) );
+        assertThat( memoryLimitExceeded.getMessage() ).contains( "The allocation of 1 would use more than the limit " + limit );
 
         memoryPool.releaseHeap( halfLimit );
         assertState( limit, halfLimit, halfLimit, memoryPool );

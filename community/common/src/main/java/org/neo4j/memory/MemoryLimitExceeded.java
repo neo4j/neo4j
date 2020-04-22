@@ -24,10 +24,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.General.TransactionMemoryLimit;
 
-public class HeapMemoryLimitExceeded extends RuntimeException implements Status.HasStatus
+public class MemoryLimitExceeded extends RuntimeException implements Status.HasStatus
 {
 
-    public HeapMemoryLimitExceeded( long allocation, long limit, long current )
+    public MemoryLimitExceeded( long allocation, long limit, long current )
     {
         super( format( "The allocation of %d would use more than the limit %d. Currently using %d", allocation, limit, current ) );
     }

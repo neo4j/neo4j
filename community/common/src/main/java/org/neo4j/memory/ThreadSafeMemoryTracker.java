@@ -122,7 +122,7 @@ public class ThreadSafeMemoryTracker implements MemoryTracker
 
         if ( allocatedHeap > localHeapBytesLimit )
         {
-            throw new HeapMemoryLimitExceeded( bytes, localHeapBytesLimit, allocatedHeap - bytes );
+            throw new MemoryLimitExceeded( bytes, localHeapBytesLimit, allocatedHeap - bytes );
         }
 
         if ( allocatedHeap > heapHighWaterMark.get() )
@@ -184,7 +184,7 @@ public class ThreadSafeMemoryTracker implements MemoryTracker
      * Will reserve heap on the parent tracker.
      *
      * @param size heap space to reserve for the local pool
-     * @throws HeapMemoryLimitExceeded if not enough free memory
+     * @throws MemoryLimitExceeded if not enough free memory
      */
     private void reserveHeap( long size )
     {
