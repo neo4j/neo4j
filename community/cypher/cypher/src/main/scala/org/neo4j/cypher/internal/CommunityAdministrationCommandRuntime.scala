@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
@@ -152,6 +153,19 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
       else {
         makeCreateUserExecutionPlan(userName, password, requirePasswordChange, suspended = false)(sourcePlan, normalExecutionEngine)
+      }
+
+    // ALTER USER foo [SET PASSWORD pw] [CHANGE [NOT] REQUIRED]
+    case AlterUser(source, userName, password, requirePasswordChange, suspended) => (context, parameterMapping) =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+      if (suspended.isDefined) { // Users are always active in community
+        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
+          val user = runtimeValue(userName, params)
+          throw new CantCompileQueryException(s"Failed to alter the specified user '$user': 'SET STATUS' is not available in community edition.")
+        })
+      }
+      else {
+        makeAlterUserExecutionPlan(userName, password, requirePasswordChange, suspended = None)(sourcePlan, normalExecutionEngine)
       }
 
     // DROP USER foo [IF EXISTS]

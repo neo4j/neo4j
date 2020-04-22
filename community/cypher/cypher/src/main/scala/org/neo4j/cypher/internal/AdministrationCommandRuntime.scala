@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
@@ -205,4 +204,57 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     )
   }
 
+  protected def makeAlterUserExecutionPlan(userName: Either[String, Parameter],
+                                           password: Option[expressions.Expression],
+                                           requirePasswordChange: Option[Boolean],
+                                           suspended: Option[Boolean])(
+                                            sourcePlan: Option[ExecutionPlan],
+                                            normalExecutionEngine: ExecutionEngine
+                                          ): ExecutionPlan = {
+          val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
+      val maybePw = password.map(getPasswordExpression(_))
+      val params = Seq(
+        maybePw -> "credentials",
+        requirePasswordChange -> "passwordChangeRequired",
+        suspended -> "suspended"
+      ).flatMap { param =>
+        param._1 match {
+          case None => Seq.empty
+          case Some(boolExpr: Boolean) => Seq((param._2, internalKey(param._2), Values.booleanValue(boolExpr)))
+          case Some(passwordExpression: PasswordExpression) => Seq((param._2, passwordExpression.key, passwordExpression.value))
+          case Some(p) => throw new InvalidArgumentsException(s"Invalid option type for ALTER USER, expected PasswordExpression or Boolean but got: ${p.getClass.getSimpleName}")
+        }
+      }
+      val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`$userNameKey`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>
+        val propertyName: String = param._1
+        val key: String = param._2
+        val value: Value = param._3
+        (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
+      }
+      val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameKey
+      val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameValue
+      val mapper: MapValue => MapValue = m => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(userNameConverter(m))
+      UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
+        s"$query RETURN oldCredentials",
+        VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
+        QueryHandler
+          .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
+          .handleError {
+            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
+              new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to alter the specified user '${runtimeValue(userName, p)}'.", error)
+          }
+          .handleResult((_, value, p) => maybePw.flatMap { newPw =>
+            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
+            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
+            if (oldCredentials.matchesPassword(newValue))
+              Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
+            else
+              None
+          }),
+        sourcePlan,
+        finallyFunction = p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()),
+        parameterConverter = mapper
+      )
+  }
 }

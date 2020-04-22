@@ -494,15 +494,145 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     } should have message "This is an administration command and it should be executed against the system database: DROP USER"
   }
 
-  // Tests for altering users (not supported in community)
+  // Tests for altering users
 
-  test("should fail on altering user from community") {
-    assertFailure("ALTER USER neo4j SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER neo4j SET PASSWORD 'xxx'")
+ test("should alter user password") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD 'baz'")
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
   }
 
-  test("should fail on altering non-existing user with correct error message") {
-    assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER foo SET PASSWORD 'xxx'")
-    assertFailure("ALTER USER $foo SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER $foo SET PASSWORD 'xxx'")
+  test("should alter user password as parameter") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD $password", Map("password" -> "baz"))
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail when alter user with invalid password") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER foo SET PASSWORD ''")
+      // THEN
+    } should have message "A password cannot be empty."
+
+    testUserLogin("foo", "bar", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when alter user with empty password parameter") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER $user SET PASSWORD $password", Map("user" -> "foo", "password" -> ""))
+      // THEN
+    } should have message "A password cannot be empty."
+
+    testUserLogin("foo", "bar", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when alter user with current password parameter") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER foo SET PASSWORD $password", Map("password" -> "bar"))
+      // THEN
+    } should have message "Failed to alter the specified user 'foo': Old password and new password cannot be the same."
+
+    testUserLogin("foo", "bar", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when alter user password as list parameter") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    the[ParameterWrongTypeException] thrownBy {
+      // WHEN
+      execute("ALTER USER foo SET PASSWORD $password", Map("password" -> Seq("baz", "boo")))
+      // THEN
+    } should have message "Only string values are accepted as password, got: List"
+  }
+
+  test("should alter user password mode") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED")
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should alter user password mode to change required") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD CHANGE REQUIRED")
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should alter user password and mode") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD 'baz' CHANGE NOT REQUIRED")
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+  }
+
+  test("should alter user password as parameter and password mode") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER foo SET PASSWORD $password CHANGE NOT REQUIRED", Map("password" -> "baz"))
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+  }
+
+  test("should fail when altering a non-existing user") {
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER foo SET PASSWORD 'baz'")
+      // THEN
+    } should have message "Failed to alter the specified user 'foo': User does not exist."
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER $user SET PASSWORD 'baz'", Map("user" -> "foo"))
+      // THEN
+    } should have message "Failed to alter the specified user 'foo': User does not exist."
+  }
+
+  test("should fail on altering user status from community") {
+    assertFailure("ALTER USER neo4j SET STATUS ACTIVE","Failed to alter the specified user 'neo4j': 'SET STATUS' is not available in community edition.")
+    assertFailure("ALTER USER neo4j SET PASSWORD 'xxx' SET STATUS SUSPENDED", "Failed to alter the specified user 'neo4j': 'SET STATUS' is not available in community edition.")
   }
 
   // Tests for changing own password
