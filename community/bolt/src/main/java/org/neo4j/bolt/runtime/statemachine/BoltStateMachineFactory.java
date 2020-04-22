@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime.statemachine;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 
 /**
  * Factory class for Bolt runtime environments.
@@ -33,5 +34,5 @@ public interface BoltStateMachineFactory
      * @param boltChannel channel over which Bolt massages can be exchanged
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newStateMachine( long protocolVersion, BoltChannel boltChannel );
+    BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel );
 }

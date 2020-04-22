@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
@@ -30,6 +31,8 @@ import org.neo4j.bolt.v3.runtime.TransactionStateMachineSPIProviderV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineSPIProviderV4;
+import org.neo4j.bolt.v41.BoltProtocolV41;
+import org.neo4j.bolt.v41.BoltStateMachineV41;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.internal.LogService;
@@ -54,15 +57,19 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     }
 
     @Override
-    public BoltStateMachine newStateMachine( long protocolVersion, BoltChannel boltChannel )
+    public BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel )
     {
-        if ( protocolVersion == BoltProtocolV3.VERSION )
+        if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
             return newStateMachineV3( boltChannel );
         }
-        else if ( protocolVersion == BoltProtocolV4.VERSION )
+        else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
             return newStateMachineV4( boltChannel );
+        }
+        else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
+        {
+            return newStateMachineV41( boltChannel );
         }
         else
         {
@@ -82,5 +89,12 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
+    }
+
+    private BoltStateMachine newStateMachineV41( BoltChannel boltChannel )
+    {
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        return new BoltStateMachineV41( boltSPI, boltChannel, clock );
     }
 }

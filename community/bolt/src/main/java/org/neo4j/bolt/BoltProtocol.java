@@ -24,5 +24,5 @@ public interface BoltProtocol
     /** Used to install protocol components */
     void install();
     /** Used for version negotiation */
-    long version();
+    BoltProtocolVersion version();
 }

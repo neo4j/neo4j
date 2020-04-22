@@ -22,6 +22,7 @@ package org.neo4j.bolt.v3;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -52,7 +53,7 @@ class BoltProtocolV3Test
                 new BoltProtocolV3( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
                         NullLogService.getInstance() );
 
-        assertThat( protocolV3.version() ).isEqualTo( 3L );
+        assertThat( protocolV3.version() ).isEqualTo( new BoltProtocolVersion( 3, 0 ) );
     }
 
     @Test

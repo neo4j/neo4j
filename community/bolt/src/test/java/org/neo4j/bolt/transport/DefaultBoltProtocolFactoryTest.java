@@ -22,17 +22,16 @@ package org.neo4j.bolt.transport;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.v3.BoltProtocolV3;
-import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -57,22 +56,22 @@ class DefaultBoltProtocolFactoryTest
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
                         NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
 
-        BoltProtocol protocol = factory.create( protocolVersion, channel );
-
+        BoltProtocol protocol = factory.create( new BoltProtocolVersion( protocolVersion, 0 ), channel );
         // handler is not created
         assertNull( protocol );
     }
 
-    @ParameterizedTest( name = "V{0}" )
-    @ValueSource( longs = {BoltProtocolV3.VERSION, BoltProtocolV4.VERSION} )
-    void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
+    @ParameterizedTest( name = "V{0}.{1}" )
+    @CsvSource( { "3, 0", "4, 0", "4, 1"} )
+    void shouldCreateBoltProtocol( int majorVersion, int minorVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         BoltChannel boltChannel = newTestBoltChannel( channel );
+        BoltProtocolVersion boltProtocolVersion = new BoltProtocolVersion( majorVersion, minorVersion );
 
         BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
-        when( stateMachineFactory.newStateMachine( protocolVersion, boltChannel ) ).thenReturn( stateMachine );
+        when( stateMachineFactory.newStateMachine( boltProtocolVersion, boltChannel ) ).thenReturn( stateMachine );
 
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         BoltConnection connection = mock( BoltConnection.class );
@@ -81,12 +80,12 @@ class DefaultBoltProtocolFactoryTest
         BoltProtocolFactory factory = new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(),
                 new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
 
-        BoltProtocol protocol = factory.create( protocolVersion, boltChannel );
+        BoltProtocol protocol = factory.create( boltProtocolVersion, boltChannel );
 
         protocol.install();
 
         // handler with correct version is created
-        assertEquals( protocolVersion, protocol.version() );
+        assertEquals( boltProtocolVersion, protocol.version() );
         // it uses the expected worker
         verify( connectionFactory ).newConnection( eq( boltChannel ), any( BoltStateMachine.class ) );
 

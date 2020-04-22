@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.security.auth.Authentication;
@@ -61,7 +62,7 @@ class BoltStateMachineFactoryImplTest
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( 3L, CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 3, 0 ), CHANNEL );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV3.class );
@@ -72,19 +73,20 @@ class BoltStateMachineFactoryImplTest
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( 4L, CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 0 ), CHANNEL );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV4.class );
     }
 
     @ParameterizedTest( name = "V{0}" )
-    @ValueSource( longs = {999, -1, 1, 2} )
-    void shouldThrowExceptionIfVersionIsUnknown( long protocolVersion )
+    @ValueSource( ints = {999, -1, 1, 2} )
+    void shouldThrowExceptionIfVersionIsUnknown( int protocolVersion )
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        BoltProtocolVersion boltProtocolVersion = new BoltProtocolVersion( protocolVersion, 0 );
 
-        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( protocolVersion, CHANNEL ) );
+        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( boltProtocolVersion, CHANNEL ) );
         assertThat( error.getMessage() ).startsWith( "Failed to create a state machine for protocol version" );
     }
 

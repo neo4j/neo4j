@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -84,8 +85,10 @@ class AbstractBoltProtocolTest
 
     private static class TestAbstractBoltProtocol extends AbstractBoltProtocol
     {
+        private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
+
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                LogService logging )
+                                  LogService logging )
         {
             super( channel, connectionFactory, stateMachineFactory, logging );
         }
@@ -98,15 +101,15 @@ class AbstractBoltProtocolTest
 
         @Override
         protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
-                BookmarksParser bookmarksParser, LogService logging )
+                                                                BookmarksParser bookmarksParser, LogService logging )
         {
             return mock( BoltRequestMessageReader.class );
         }
 
         @Override
-        public long version()
+        public BoltProtocolVersion version()
         {
-            return -1;
+            return DUMMY_VERSION;
         }
     }
 }

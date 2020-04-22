@@ -21,12 +21,14 @@ package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
+import org.neo4j.bolt.v41.BoltProtocolV41;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.LogService;
 
@@ -47,15 +49,19 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     }
 
     @Override
-    public BoltProtocol create( long protocolVersion, BoltChannel channel )
+    public BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel )
     {
-        if ( protocolVersion == BoltProtocolV3.VERSION )
+        if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
             return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService );
         }
-        else if ( protocolVersion == BoltProtocolV4.VERSION )
+        else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
             return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService );
+        }
+        else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
+        {
+            return new BoltProtocolV41( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService );
         }
         else
         {

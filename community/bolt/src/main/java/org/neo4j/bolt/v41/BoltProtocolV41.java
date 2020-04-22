@@ -17,32 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3;
+package org.neo4j.bolt.v41;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
-import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
+import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.logging.internal.LogService;
 
 /**
- * Bolt protocol V3. It hosts all the components that are specific to BoltV3
+ * Bolt protocol V4.1 It hosts all the components that are specific to BoltV4.1
  */
-public class BoltProtocolV3 extends AbstractBoltProtocol
+public class BoltProtocolV41 extends AbstractBoltProtocol
 {
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 3, 0 );
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 1 );
 
-    public BoltProtocolV3( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory, LogService logging )
+    public BoltProtocolV41( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
+                           BookmarksParser bookmarksParser, LogService logging )
     {
-        super( channel, connectionFactory, stateMachineFactory, logging );
+        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging );
     }
 
     @Override
@@ -59,9 +60,9 @@ public class BoltProtocolV3 extends AbstractBoltProtocol
 
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
-            BookmarksParser bookmarksParser, LogService logging )
+                                                            BookmarksParser bookmarksParser, LogService logging )
     {
         BoltResponseMessageWriterV3 responseWriter = new BoltResponseMessageWriterV3( neo4jPack, connection.output(), logging );
-        return new BoltRequestMessageReaderV3( connection, responseWriter, logging );
+        return new BoltRequestMessageReaderV4( connection, responseWriter, bookmarksParser, logging );
     }
 }

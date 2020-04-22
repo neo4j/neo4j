@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -77,7 +78,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         this.builderFactory = builderFactory;
     }
 
-    public BoltStateMachine newMachine( long version, BoltChannel boltChannel )
+    public BoltStateMachine newMachine( BoltProtocolVersion version, BoltChannel boltChannel )
     {
         assertTestStarted();
         BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel );

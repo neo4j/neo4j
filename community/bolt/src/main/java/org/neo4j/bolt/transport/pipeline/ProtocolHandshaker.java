@@ -29,6 +29,7 @@ import java.util.Arrays;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -98,7 +99,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
                     if ( performHandshake() )
                     {
                         // announce selected protocol to the client
-                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( (int)protocol.version() ) );
+                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( (int)protocol.version().toInt() ) );
 
                         // install related protocol handlers into the pipeline
                         protocol.install();
@@ -163,10 +164,10 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private boolean performHandshake()
     {
-        long[] suggestions = new long[4];
+        BoltProtocolVersion[] suggestions = new BoltProtocolVersion[4];
         for ( int i = 0; i < 4; i++ )
         {
-            final long suggestion = handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) & 0xFFFFFFFFL;
+            BoltProtocolVersion suggestion = BoltProtocolVersion.fromRawBytes( handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) );
 
             protocol = boltProtocolFactory.create( suggestion, boltChannel );
             if ( protocol != null )

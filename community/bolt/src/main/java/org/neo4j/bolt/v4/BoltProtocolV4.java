@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v4;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
@@ -37,7 +38,7 @@ import org.neo4j.logging.internal.LogService;
  */
 public class BoltProtocolV4 extends AbstractBoltProtocol
 {
-    public static final long VERSION = 4;
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 0 );
 
     public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
             BookmarksParser bookmarksParser, LogService logging )
@@ -52,7 +53,7 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     }
 
     @Override
-    public long version()
+    public BoltProtocolVersion version()
     {
         return VERSION;
     }

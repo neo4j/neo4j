@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
@@ -56,7 +57,7 @@ class BoltProtocolV4Test
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
                         bookmarksParser, NullLogService.getInstance() );
 
-        assertThat( protocolV4.version() ).isEqualTo( 4L );
+        assertThat( protocolV4.version() ).isEqualTo( new BoltProtocolVersion( 4, 0 ) );
     }
 
     @Test
