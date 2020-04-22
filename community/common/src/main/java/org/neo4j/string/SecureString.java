@@ -24,7 +24,7 @@ import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.neo4j.annotations.api.PublicApi;
@@ -62,19 +62,25 @@ public class SecureString
             {
                 try
                 {
-                    final byte[] buf = new byte[KEY_SIZE];
-                    random.nextBytes( buf );
-                    final Key aesKey = new SecretKeySpec( buf, "AES" );
-                    cipher = Cipher.getInstance( "AES/CBC/PKCS5Padding" );
+                    // Setup key
+                    final byte[] key = new byte[KEY_SIZE];
+                    random.nextBytes( key );
+                    final Key aesKey = new SecretKeySpec( key, "AES" );
+                    Arrays.fill( key, (byte) 0 );
 
-                    random.nextBytes( buf );
-                    IvParameterSpec iv = new IvParameterSpec( buf );
-                    Arrays.fill( buf, (byte) 0 );
+                    // Setup iv
+                    final byte[] iv = new byte[12];
+                    random.nextBytes( iv );
+                    GCMParameterSpec parameterSpec = new GCMParameterSpec( 128, iv );
+                    Arrays.fill( iv, (byte) 0 );
 
-                    cipher.init( Cipher.ENCRYPT_MODE, aesKey, iv );
+                    // Init cypher and encode
+                    cipher = Cipher.getInstance( "AES/GCM/NoPadding" );
+                    cipher.init( Cipher.ENCRYPT_MODE, aesKey, parameterSpec );
                     encryptedData = cipher.doFinal( dataToSecure );
 
-                    cipher.init( Cipher.DECRYPT_MODE, aesKey, iv );
+                    // Swap to decode mode
+                    cipher.init( Cipher.DECRYPT_MODE, aesKey, parameterSpec );
                     encryptionAvailable = true;
                 }
                 catch ( Exception e )

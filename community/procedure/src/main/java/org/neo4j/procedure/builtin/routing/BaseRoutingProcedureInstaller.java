@@ -19,8 +19,6 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.eclipse.collections.impl.factory.Lists;
-
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -29,8 +27,8 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 
 public abstract class BaseRoutingProcedureInstaller
 {
-    public static final List<String> DEFAULT_NAMESPACE = Lists.immutable.of( "dbms", "routing" ).castToList();
-    private static final List<String> LEGACY_NAMESPACE = Lists.immutable.of( "dbms", "cluster", "routing" ).castToList();
+    public static final List<String> DEFAULT_NAMESPACE = List.of( "dbms", "routing" );
+    private static final List<String> LEGACY_NAMESPACE = List.of( "dbms", "cluster", "routing" );
 
     public final void install( GlobalProcedures globalProcedures ) throws ProcedureException
     {
