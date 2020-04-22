@@ -103,7 +103,7 @@ class ZonedDateTimeType extends Type
         if ( compare == 0 )
         {
             compare = Integer.compare( (int) this_long1, (int) that_long1 );
-            if ( compare == 0 &&
+            if ( compare == 0 && !(this_long2 == that_long2 && this_long3 == that_long3) &&
                     // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
                     TimeZones.validZoneOffset( (int) this_long3 ) &&
                     TimeZones.validZoneOffset( (int) that_long3 ) )
