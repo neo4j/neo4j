@@ -20,7 +20,6 @@
 package org.neo4j.memory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -31,12 +30,12 @@ public final class MemoryPools
     public static final NamedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
     private final List<NamedMemoryPool> pools = new CopyOnWriteArrayList<>();
 
-    public NamedMemoryPool pool( MemoryGroup group, long limit )
+    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit )
     {
         return this.pool( group, limit, true );
     }
 
-    public NamedMemoryPool pool( MemoryGroup group, long limit, boolean strict )
+    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, boolean strict )
     {
         var pool = new GlobalMemoryGroupTracker( this, group, limit, strict );
         pools.add( pool );
@@ -141,20 +140,8 @@ public final class MemoryPools
         }
 
         @Override
-        public NamedMemoryPool newSubPool( String name, long limit )
-        {
-            return this;
-        }
-
-        @Override
         public void setSize( long size )
         {
-        }
-
-        @Override
-        public List<NamedMemoryPool> getSubPools()
-        {
-            return Collections.emptyList();
         }
     }
 }

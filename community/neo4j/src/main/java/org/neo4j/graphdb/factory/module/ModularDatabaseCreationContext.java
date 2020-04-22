@@ -60,8 +60,7 @@ import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.DatabaseLogService;
-import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.NamedMemoryPool;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -111,8 +110,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
     private final DatabaseStartupController startupController;
-    private final MemoryPools memoryPools;
-    private final NamedMemoryPool transactionsMemoryPool;
+    private final GlobalMemoryGroupTracker transactionsMemoryPool;
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -126,7 +124,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
-        this.memoryPools = globalModule.getMemoryPools();
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
         this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( namedDatabaseId.name() );
         this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), globalModule.getLogService() );
@@ -393,13 +390,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public MemoryPools getMemoryPools()
-    {
-        return memoryPools;
-    }
-
-    @Override
-    public NamedMemoryPool getTransactionsMemoryPool()
+    public GlobalMemoryGroupTracker getTransactionsMemoryPool()
     {
         return transactionsMemoryPool;
     }

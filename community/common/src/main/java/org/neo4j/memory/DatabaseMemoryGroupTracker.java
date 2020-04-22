@@ -19,8 +19,6 @@
  */
 package org.neo4j.memory;
 
-import java.util.List;
-
 public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
 {
     private final GlobalMemoryGroupTracker parent;
@@ -99,17 +97,5 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
     {
         parent.releaseNative( bytes );
         super.releaseNative( bytes );
-    }
-
-    @Override
-    public NamedMemoryPool newSubPool( String name, long limit )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<NamedMemoryPool> getSubPools()
-    {
-        throw new UnsupportedOperationException();
     }
 }

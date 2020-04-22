@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -153,7 +154,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
             Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
-            NamedMemoryPool transactionsMemoryPool )
+            GlobalMemoryGroupTracker transactionsMemoryPool )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -185,7 +186,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.factory = new KernelTransactionImplementationFactory( allTransactions, tracers );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
-        this.transactionMemoryPool = transactionsMemoryPool.newSubPool( namedDatabaseId.name(),
+        this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
                 config.get( memory_transaction_database_max_size ) );
         config.addListener( memory_transaction_database_max_size, ( before, after ) -> transactionMemoryPool.setSize( after ) );
         doBlockNewTransactions();

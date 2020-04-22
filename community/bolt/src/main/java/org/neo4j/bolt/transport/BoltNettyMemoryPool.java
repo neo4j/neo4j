@@ -21,9 +21,6 @@ package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBufAllocatorMetric;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.NamedMemoryPool;
 
@@ -62,18 +59,6 @@ public class BoltNettyMemoryPool implements NamedMemoryPool
     public void close()
     {
 
-    }
-
-    @Override
-    public NamedMemoryPool newSubPool( String name, long limit )
-    {
-        return this;
-    }
-
-    @Override
-    public List<NamedMemoryPool> getSubPools()
-    {
-        return Collections.emptyList();
     }
 
     @Override

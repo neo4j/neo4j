@@ -78,9 +78,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
@@ -131,7 +131,7 @@ public class GlobalModule
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
-    private final NamedMemoryPool transactionsMemoryPool;
+    private final GlobalMemoryGroupTracker transactionsMemoryPool;
 
     public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
     {
@@ -541,7 +541,7 @@ public class GlobalModule
         return memoryPools;
     }
 
-    public NamedMemoryPool getTransactionsMemoryPool()
+    public GlobalMemoryGroupTracker getTransactionsMemoryPool()
     {
         return transactionsMemoryPool;
     }

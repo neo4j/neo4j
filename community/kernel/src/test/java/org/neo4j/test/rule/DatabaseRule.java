@@ -83,9 +83,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.NamedMemoryPool;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -216,7 +216,7 @@ public class DatabaseRule extends ExternalResource
         private final LeaseService leaseService;
         private final DatabaseStartupController startupController;
         private final MemoryPools memoryPools;
-        private final NamedMemoryPool transactionsMemoryPool;
+        private final GlobalMemoryGroupTracker transactionsMemoryPool;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final DatabaseLogService logService;
@@ -260,7 +260,7 @@ public class DatabaseRule extends ExternalResource
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
                 FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController, MemoryPools memoryPools,
-                NamedMemoryPool transactionsMemoryPool )
+                GlobalMemoryGroupTracker transactionsMemoryPool )
         {
             this.namedDatabaseId = namedDatabaseId;
             this.databaseLayout = databaseLayout;
@@ -540,13 +540,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public MemoryPools getMemoryPools()
-        {
-            return memoryPools;
-        }
-
-        @Override
-        public NamedMemoryPool getTransactionsMemoryPool()
+        public GlobalMemoryGroupTracker getTransactionsMemoryPool()
         {
             return transactionsMemoryPool;
         }

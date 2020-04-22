@@ -26,14 +26,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.util.Preconditions.checkState;
 
-class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
+public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
 {
     private final MemoryPools pools;
     private final MemoryGroup group;
 
-    private final List<DatabaseMemoryGroupTracker> subPools = new CopyOnWriteArrayList<>();
+    private final List<DatabaseMemoryGroupTracker> databasePools = new CopyOnWriteArrayList<>();
 
-    GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
+    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
     {
         super( new MemoryPoolImpl( limit, strict ) );
         this.pools = pools;
@@ -42,7 +42,7 @@ class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemo
 
     void releasePool( DatabaseMemoryGroupTracker databaseMemoryGroupTracker )
     {
-        subPools.remove( databaseMemoryGroupTracker );
+        databasePools.remove( databaseMemoryGroupTracker );
     }
 
     @Override
@@ -66,21 +66,19 @@ class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemo
     @Override
     public void close()
     {
-        checkState( subPools.isEmpty(), "All sub pools must be closed before closing top pool" );
+        checkState( databasePools.isEmpty(), "All sub pools must be closed before closing top pool" );
         pools.releasePool( this );
     }
 
-    @Override
-    public NamedMemoryPool newSubPool( String name, long limit )
+    public NamedMemoryPool newDatabasePool( String name, long limit )
     {
         DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true );
-        subPools.add( subTracker );
+        databasePools.add( subTracker );
         return subTracker;
     }
 
-    @Override
-    public List<NamedMemoryPool> getSubPools()
+    public List<NamedMemoryPool> getDatabasePools()
     {
-        return new ArrayList<>( subPools );
+        return new ArrayList<>( databasePools );
     }
 }

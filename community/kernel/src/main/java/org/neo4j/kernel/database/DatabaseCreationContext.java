@@ -52,8 +52,7 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.DatabaseLogService;
-import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.NamedMemoryPool;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
@@ -140,7 +139,5 @@ public interface DatabaseCreationContext
 
     DatabaseStartupController getStartupController();
 
-    MemoryPools getMemoryPools();
-
-    NamedMemoryPool getTransactionsMemoryPool();
+    GlobalMemoryGroupTracker getTransactionsMemoryPool();
 }

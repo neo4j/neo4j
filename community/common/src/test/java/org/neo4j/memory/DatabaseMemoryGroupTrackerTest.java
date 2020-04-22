@@ -34,13 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DatabaseMemoryGroupTrackerTest
 {
     private final MemoryPools memoryPools = new MemoryPools();
-    private final NamedMemoryPool topPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );
+    private final GlobalMemoryGroupTracker globalPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );
 
     @AfterEach
     void tearDown()
     {
-        assertEquals( 0, topPool.totalUsed() );
-        topPool.close();
+        assertEquals( 0, globalPool.totalUsed() );
+        globalPool.close();
     }
 
     private static Stream<Arguments> arguments()
@@ -55,10 +55,10 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void allocateOnParent( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
+        NamedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
-        assertEquals( 2, methods.used( topPool ) );
+        assertEquals( 2, methods.used( globalPool ) );
 
         methods.release( subPool, 2 );
         subPool.close();
@@ -68,22 +68,22 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void ownPoolFromTracking( AllocationFacade methods )
     {
-        methods.reserve( topPool, 2 );
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
+        methods.reserve( globalPool, 2 );
+        NamedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
-        assertEquals( 4, methods.used( topPool ) );
+        assertEquals( 4, methods.used( globalPool ) );
 
         methods.release( subPool, 2 );
         subPool.close();
-        methods.release( topPool, 2 );
+        methods.release( globalPool, 2 );
     }
 
     @ParameterizedTest
     @MethodSource( "arguments" )
     void respectLocalLimit( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 10 );
+        NamedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
         assertThrows( HeapMemoryLimitExceeded.class, () -> methods.reserve( subPool, 11 ) );
         subPool.close();
     }
@@ -92,7 +92,7 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void respectParentLimit( AllocationFacade methods )
     {
-        NamedMemoryPool subPool = topPool.newSubPool( "pool1", 102 );
+        NamedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 102 );
         assertThrows( HeapMemoryLimitExceeded.class, () -> methods.reserve( subPool, 101 ) );
         subPool.close();
     }
