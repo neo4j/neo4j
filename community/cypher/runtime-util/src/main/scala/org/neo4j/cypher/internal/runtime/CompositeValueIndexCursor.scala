@@ -121,9 +121,6 @@ private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor],
     }
 
     if (queue.isEmpty) {
-      if (current != null) {
-        current.close()
-      }
       current = null
       false
     }

@@ -68,7 +68,7 @@ trait NodeIndexSeeker {
         if (indexQueries.size == 1) {
           state.query.indexSeek(index, needsValues, indexOrder, indexQueries.head)
         } else {
-          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = needsValues || indexOrder != IndexOrderNone, indexOrder, query)).toArray)
         }
 
       case LockingUniqueIndexSeek =>
