@@ -33,7 +33,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.packstream.PackOutput;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -75,7 +75,7 @@ class DefaultBoltConnectionTest
     private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final PackOutput output = mock( PackOutput.class );
+    private final BoltResponseMessageWriter writer = mock( BoltResponseMessageWriter.class );
 
     private BoltChannel boltChannel;
     private BoltStateMachine stateMachine;
@@ -415,7 +415,7 @@ class DefaultBoltConnectionTest
         // Then
         verify( stateMachine ).markFailed( argThat( e -> e.status().equals( Status.Request.NoThreadsAvailable ) ) );
         verify( stateMachine ).close();
-        verify( output ).flush();
+        verify( writer ).flush();
     }
 
     private DefaultBoltConnection newConnection()
@@ -425,7 +425,7 @@ class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, output, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
+        return new DefaultBoltConnection( boltChannel, writer, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
                 mock( BoltConnectionMetricsMonitor.class ), Clock.systemUTC() );
     }
 }

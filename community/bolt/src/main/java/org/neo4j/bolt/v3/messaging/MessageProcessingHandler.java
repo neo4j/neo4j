@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.packstream.PackOutputClosedException;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
@@ -31,7 +32,6 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
-import org.neo4j.bolt.packstream.PackOutputClosedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;

@@ -22,7 +22,10 @@ package org.neo4j.bolt.transport;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
@@ -40,29 +43,30 @@ import org.neo4j.logging.internal.LogService;
  */
 public abstract class AbstractBoltProtocol implements BoltProtocol
 {
-    private final Neo4jPack neo4jPack;
-    private final BoltConnection connection;
-    private final BoltRequestMessageReader messageReader;
-
     private final BoltChannel channel;
     private final LogService logging;
+    private final TransportThrottleGroup throttleGroup;
 
-    public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory, LogService logging )
+    private final BoltStateMachineFactory stateMachineFactory;
+    private final BoltConnectionFactory connectionFactory;
+    private final BookmarksParser bookmarksParser;
+
+    public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
+            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup )
     {
-        this( channel, connectionFactory, stateMachineFactory, BookmarksParserV3.INSTANCE, logging );
+        this( channel, connectionFactory, stateMachineFactory, BookmarksParserV3.INSTANCE, logging, throttleGroup );
     }
 
-    protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            BookmarksParser bookmarksParser, LogService logging )
+    protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
+            BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
+            TransportThrottleGroup throttleGroup )
     {
         this.channel = channel;
         this.logging = logging;
-
-        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel );
-        this.connection = connectionFactory.newConnection( channel, stateMachine );
-
-        this.neo4jPack = createPack();
-        this.messageReader = createMessageReader( channel, neo4jPack, connection, bookmarksParser, logging );
+        this.throttleGroup = throttleGroup;
+        this.stateMachineFactory = stateMachineFactory;
+        this.connectionFactory = connectionFactory;
+        this.bookmarksParser = bookmarksParser;
     }
 
     /**
@@ -71,6 +75,13 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     @Override
     public void install()
     {
+        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel );
+        var neo4jPack = createPack();
+        var messageWriter = createMessageWriter( neo4jPack, logging );
+
+        var connection = connectionFactory.newConnection( channel, stateMachine, messageWriter );
+        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging );
+
         channel.installBoltProtocol(
                 new ChunkDecoder(),
                 new MessageAccumulator(),
@@ -78,8 +89,16 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
                 new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }
 
+    protected PackOutput createPackOutput()
+    {
+        return new ChunkedOutput( channel.rawChannel(), throttleGroup );
+    }
+
     protected abstract Neo4jPack createPack();
 
-    protected abstract BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
-            BookmarksParser bookmarksParser, LogService logging );
+    protected abstract BoltRequestMessageReader createMessageReader( BoltConnection connection,
+            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging );
+
+    protected abstract BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
+            LogService logging );
 }

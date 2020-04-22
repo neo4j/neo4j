@@ -24,6 +24,7 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
@@ -49,7 +50,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
-class BoltResponseMessageWriterV3Test
+public class BoltResponseMessageWriterV3Test
 {
     @Test
     void shouldWriteRecordMessage() throws Exception
@@ -57,7 +58,7 @@ class BoltResponseMessageWriterV3Test
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         writer.write( new RecordMessage( new AnyValue[]{longValue( 42 ), stringValue( "42" )} ) );
 
@@ -74,7 +75,7 @@ class BoltResponseMessageWriterV3Test
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         MapValue metadata = map( new String[]{"a", "b", "c"}, new AnyValue[]{intValue( 1 ), stringValue( "2" ), date( 2010, 02, 02 )} );
         writer.write( new SuccessMessage( metadata ) );
@@ -91,7 +92,7 @@ class BoltResponseMessageWriterV3Test
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         Status.Transaction errorStatus = Status.Transaction.DeadlockDetected;
         String errorMessage = "Hi Deadlock!";
@@ -110,7 +111,7 @@ class BoltResponseMessageWriterV3Test
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         writer.write( IgnoredMessage.IGNORED_MESSAGE );
 
@@ -126,11 +127,11 @@ class BoltResponseMessageWriterV3Test
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         writer.flush();
 
-        verify( packer ).flush();
+        verify( output ).flush();
     }
 
     @Test
@@ -141,7 +142,7 @@ class BoltResponseMessageWriterV3Test
         IOException error = new IOException( "Unable to pack 42" );
         doThrow( error ).when( packer ).pack( longValue( 42 ) );
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) ) );
         assertEquals( error, e );
@@ -161,7 +162,7 @@ class BoltResponseMessageWriterV3Test
         IOException error = new IOException( "Unable to flush" );
         doThrow( error ).when( output ).messageSucceeded();
 
-        BoltResponseMessageWriterV3 writer = newWriter( output, packer );
+        var writer = newWriter( output, packer );
 
         var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{longValue( 1 ), longValue( 2 )} ) ) );
         assertEquals( error, e );
@@ -175,7 +176,7 @@ class BoltResponseMessageWriterV3Test
         verify( output, never() ).messageFailed();
     }
 
-    private static BoltResponseMessageWriterV3 newWriter( PackOutput output, Neo4jPack.Packer packer )
+    protected BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
     {
         return new BoltResponseMessageWriterV3( out -> packer, output, NullLogService.getInstance() );
     }

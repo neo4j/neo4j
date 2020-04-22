@@ -74,4 +74,10 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
     {
         //IGNORE
     }
+
+    @Override
+    public void close() throws IOException
+    {
+        // do nothing
+    }
 }

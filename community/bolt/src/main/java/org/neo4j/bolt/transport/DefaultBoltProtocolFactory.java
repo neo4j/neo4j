@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.transport;
 
+import java.time.Duration;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
@@ -31,6 +33,7 @@ import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.BoltProtocolV41;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.time.SystemNanoClock;
 
 public class DefaultBoltProtocolFactory implements BoltProtocolFactory
 {
@@ -38,14 +41,22 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     private final LogService logService;
     private final BoltStateMachineFactory stateMachineFactory;
     private final BookmarksParserV4 bookmarksParserV4;
+    private final SystemNanoClock clock;
+    private final Duration keepAliveInterval;
+    private final TransportThrottleGroup throttleGroup;
 
     public DefaultBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            LogService logService, DatabaseIdRepository databaseIdRepository, CustomBookmarkFormatParser customBookmarkFormatParser )
+            LogService logService, DatabaseIdRepository databaseIdRepository,
+            CustomBookmarkFormatParser customBookmarkFormatParser, TransportThrottleGroup throttleGroup,
+            SystemNanoClock clock, Duration keepAliveInterval )
     {
         this.connectionFactory = connectionFactory;
         this.stateMachineFactory = stateMachineFactory;
         this.logService = logService;
         this.bookmarksParserV4 = new BookmarksParserV4( databaseIdRepository, customBookmarkFormatParser );
+        this.throttleGroup = throttleGroup;
+        this.clock = clock;
+        this.keepAliveInterval = keepAliveInterval;
     }
 
     @Override
@@ -53,15 +64,17 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     {
         if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
-            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService );
+            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService, throttleGroup );
         }
         else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
-            return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService );
+            return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
+                    throttleGroup );
         }
         else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
         {
-            return new BoltProtocolV41( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService );
+            return new BoltProtocolV41( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
+                    throttleGroup, clock, keepAliveInterval );
         }
         else
         {

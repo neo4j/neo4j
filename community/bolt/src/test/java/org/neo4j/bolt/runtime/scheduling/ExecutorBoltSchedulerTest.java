@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,14 +66,13 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class ExecutorBoltSchedulerTest
 {
     private static final String CONNECTOR_KEY = "connector-id";
-
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
     private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory();
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
-            new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(),
-                    Duration.ZERO );
+            new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10,
+                    Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
 
     @BeforeEach
     void setup()
@@ -88,13 +88,49 @@ class ExecutorBoltSchedulerTest
     }
 
     @Test
+    void shouldScheduleKeepAliveService() throws Throwable
+    {
+        // Given
+        var id = UUID.randomUUID().toString();
+        var exitCondition = new AtomicBoolean();
+        var connection = newConnection( id );
+        when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
+
+        var scheduledCondition = new AtomicBoolean();
+        doAnswer( inv -> {
+                    scheduledCondition.set( true );
+                    return null;
+                }
+        ).when( connection ).keepAlive();
+
+        var boltScheduler = new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10,
+                Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, Duration.ofMillis( 10 ) );
+        boltScheduler.init();
+        boltScheduler.created( connection );
+        boltScheduler.enqueued( connection, Jobs.noop() );
+
+        // When
+        boltScheduler.start();
+
+        // Then
+        Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
+        Predicates.await( scheduledCondition::get, 1, MINUTES );
+        verify( connection, atLeastOnce() ).keepAlive();
+        exitCondition.set( true );
+        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
+
+        boltScheduler.stop();
+        boltScheduler.shutdown();
+    }
+
+    @Test
     void initShouldCreateThreadPool() throws Throwable
     {
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool(), Duration.ZERO );
+                        ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
 
         scheduler.init();
 
@@ -110,7 +146,7 @@ class ExecutorBoltSchedulerTest
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool(), Duration.ZERO );
+                        ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
 
         scheduler.init();
         scheduler.shutdown();

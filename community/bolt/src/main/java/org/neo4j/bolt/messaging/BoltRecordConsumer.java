@@ -57,5 +57,5 @@ public interface BoltRecordConsumer
     /**
      * Called when an error is received.
      */
-    void onError();
+    void onError() throws IOException;
 }

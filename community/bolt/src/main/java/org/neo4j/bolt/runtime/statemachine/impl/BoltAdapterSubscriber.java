@@ -62,7 +62,7 @@ public class BoltAdapterSubscriber implements QuerySubscriber
     }
 
     @Override
-    public void onError( Throwable throwable )
+    public void onError( Throwable throwable ) throws IOException
     {
         if ( this.error == null )
         {

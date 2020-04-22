@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -29,6 +30,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.logging.internal.LogService;
@@ -41,9 +43,9 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 0 );
 
     public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            BookmarksParser bookmarksParser, LogService logging )
+            BookmarksParser bookmarksParser, LogService logging, TransportThrottleGroup throttleGroup )
     {
-        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging );
+        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging, throttleGroup );
     }
 
     @Override
@@ -59,10 +61,17 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     }
 
     @Override
-    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
-            BookmarksParser bookmarksParser, LogService logging )
+    protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
+            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
     {
-        BoltResponseMessageWriterV3 responseWriter = new BoltResponseMessageWriterV3( neo4jPack, connection.output(), logging );
-        return new BoltRequestMessageReaderV4( connection, responseWriter, bookmarksParser, logging );
+        return new BoltRequestMessageReaderV4( connection, messageWriter, bookmarksParser, logging );
+    }
+
+    @Override
+    protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
+            LogService logging )
+    {
+        var output = createPackOutput();
+        return new BoltResponseMessageWriterV3( neo4jPack, output, logging );
     }
 }

@@ -21,12 +21,14 @@ package org.neo4j.bolt.v3.messaging.encoder;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
+import org.neo4j.bolt.v41.messaging.IncrementalRecordMessageEncoder;
 import org.neo4j.values.AnyValue;
 
-public class RecordMessageEncoder implements ResponseMessageEncoder<RecordMessage>
+public class RecordMessageEncoder implements ResponseMessageEncoder<RecordMessage>,
+        IncrementalRecordMessageEncoder
 {
     @Override
     public void encode( Neo4jPack.Packer packer, RecordMessage message ) throws IOException

@@ -77,12 +77,6 @@ public class SynchronousBoltConnection implements BoltConnection
     }
 
     @Override
-    public PackOutput output()
-    {
-        return output;
-    }
-
-    @Override
     public boolean hasPendingJobs()
     {
         return false;
@@ -144,5 +138,17 @@ public class SynchronousBoltConnection implements BoltConnection
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public void keepAlive()
+    {
+
+    }
+
+    @Override
+    public void initKeepAliveTimer()
+    {
+
     }
 }

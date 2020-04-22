@@ -22,11 +22,11 @@ package org.neo4j.bolt.runtime;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltTestUtil;
-import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 
@@ -169,7 +169,7 @@ class DefaultBoltConnectionMetricsTest
     private static BoltConnection newConnection( BoltConnectionMetricsMonitor metricsMonitor )
     {
         BoltChannel channel = BoltTestUtil.newTestBoltChannel();
-        return new DefaultBoltConnection( channel, mock( PackOutput.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
+        return new DefaultBoltConnection( channel, mock( BoltResponseMessageWriter.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
                 mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), DEFAULT_MAX_BATCH_SIZE, metricsMonitor,
                 Clocks.systemClock() );
     }

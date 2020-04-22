@@ -25,10 +25,11 @@ import java.util.Map;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.PackProvider;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.messaging.ResponseMessageEncoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackOutput;
+import org.neo4j.bolt.packstream.PackProvider;
 import org.neo4j.bolt.v3.messaging.encoder.FailureMessageEncoder;
 import org.neo4j.bolt.v3.messaging.encoder.IgnoredMessageEncoder;
 import org.neo4j.bolt.v3.messaging.encoder.RecordMessageEncoder;
@@ -38,7 +39,6 @@ import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
-import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -88,7 +88,17 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
     @Override
     public void flush() throws IOException
     {
-        packer.flush();
+        output.flush();
+    }
+
+    public PackOutput output()
+    {
+        return this.output;
+    }
+
+    public Log log()
+    {
+        return this.log;
     }
 
     private void packCompleteMessageOrFail( ResponseMessage message ) throws IOException
@@ -165,5 +175,11 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
         // packing failed, there might be some half-written data in the output buffer right now
         // notify output about the failure so that it cleans up the buffer
         output.messageReset();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        output.close();
     }
 }

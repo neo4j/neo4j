@@ -57,7 +57,7 @@ public class RowDroppingQuerySubscriber implements QuerySubscriber
     }
 
     @Override
-    public void onError( Throwable throwable )
+    public void onError( Throwable throwable ) throws Exception
     {
         inner.onError( throwable );
     }

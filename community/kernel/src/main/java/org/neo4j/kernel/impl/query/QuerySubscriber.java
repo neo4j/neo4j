@@ -81,7 +81,7 @@ public interface QuerySubscriber
      *
      * @param throwable the error
      */
-    void onError( Throwable throwable );
+    void onError( Throwable throwable ) throws Exception;
 
     /**
      * Call onError while suppressing any new exception.

@@ -120,12 +120,14 @@ public class BoltServer extends LifecycleAdapter
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
         BoltSchedulerProvider boltSchedulerProvider =
-                life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(), jobScheduler, logService ) );
+                life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(),
+                        jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
-                createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
+                createConnectionFactory( config, boltSchedulerProvider, logService, clock );
         BoltStateMachineFactory boltStateMachineFactory = createBoltStateMachineFactory( authentication, clock );
 
-        BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, boltStateMachineFactory );
+        BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory,
+                boltStateMachineFactory, throttleGroup, clock, config.get( BoltConnector.connection_keep_alive ) );
 
         if ( config.get( BoltConnector.enabled ) )
         {
@@ -160,9 +162,9 @@ public class BoltServer extends LifecycleAdapter
     }
 
     private BoltConnectionFactory createConnectionFactory( Config config, BoltSchedulerProvider schedulerProvider,
-            TransportThrottleGroup throttleGroup, LogService logService, Clock clock )
+            LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( schedulerProvider, throttleGroup, config, logService, clock, monitors );
+        return new DefaultBoltConnectionFactory( schedulerProvider, config, logService, clock, monitors );
     }
 
     private ProtocolInitializer createProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup, Log log,
@@ -231,10 +233,14 @@ public class BoltServer extends LifecycleAdapter
         return new BasicAuthentication( authManager );
     }
 
-    private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory )
+    private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory,
+            BoltStateMachineFactory stateMachineFactory, TransportThrottleGroup throttleGroup, SystemNanoClock clock,
+            Duration keepAliveInterval )
     {
-        var customBookmarkParser = boltGraphDatabaseManagementServiceSPI.getCustomBookmarkFormatParser().orElse( CustomBookmarkFormatParser.DEFAULT );
-        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService, databaseIdRepository, customBookmarkParser );
+        var customBookmarkParser = boltGraphDatabaseManagementServiceSPI.getCustomBookmarkFormatParser()
+                .orElse( CustomBookmarkFormatParser.DEFAULT );
+        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService,
+                databaseIdRepository, customBookmarkParser, throttleGroup, clock, keepAliveInterval );
     }
 
     private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock )

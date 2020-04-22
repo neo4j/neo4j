@@ -17,23 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.v41.messaging;
 
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import java.time.Duration;
 
-public interface BoltConnectionFactory
+import org.neo4j.time.SystemNanoClock;
+
+public class MessageWriterTimer
 {
-    /**
-     * Create a new connection bound to the specified channel
-     *
-     * @param channel the underlying channel
-     * @param boltStateMachine to handle state change of the connection
-     * @param messageWriter holds the protocol specific message writer
-     * @return the newly created connection instance
-     */
-    BoltConnection newConnection( BoltChannel channel, BoltStateMachine boltStateMachine,
-            BoltResponseMessageWriter messageWriter );
+    private final SystemNanoClock clock;
+    private final Duration keepAliveInterval;
 
+    private long expirationNano;
+
+    public MessageWriterTimer( SystemNanoClock clock, Duration keepAliveInterval )
+    {
+        this.clock = clock;
+        this.keepAliveInterval = keepAliveInterval;
+    }
+
+    public void reset()
+    {
+        expirationNano = clock.nanos() + keepAliveInterval.toNanos();
+    }
+
+    public boolean isTimedOut()
+    {
+        return clock.nanos() >= expirationNano;
+    }
 }

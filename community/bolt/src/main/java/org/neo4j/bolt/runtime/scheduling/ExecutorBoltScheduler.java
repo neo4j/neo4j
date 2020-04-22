@@ -24,7 +24,9 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -57,8 +59,12 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
 
     private ExecutorService threadPool;
 
-    public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize,
-            int maxPoolSize, Duration keepAlive, int queueSize, ExecutorService forkJoinPool, Duration shutdownWaitTime )
+    private final Duration keepAliveSchedulingInterval;
+    private ScheduledExecutorService keepAliveService;
+
+    public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler,
+            LogService logService, int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize,
+            ExecutorService forkJoinPool, Duration shutdownWaitTime, Duration keepAliveSchedulingInterval )
     {
         this.connector = connector;
         this.executorFactory = executorFactory;
@@ -70,6 +76,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         this.queueSize = queueSize;
         this.forkJoinPool = forkJoinPool;
         this.shutdownWaitTime = shutdownWaitTime;
+        this.keepAliveSchedulingInterval = keepAliveSchedulingInterval;
     }
 
     boolean isRegistered( BoltConnection connection )
@@ -93,21 +100,43 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     {
         threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, true,
                 new NameAppendingThreadFactory( connector, scheduler.threadFactory( Group.BOLT_WORKER ) ) );
-        log.debug( "Initialized bolt thread pool" );
     }
 
     @Override
     public void start()
     {
+        if ( keepAliveSchedulingInterval.isNegative() || keepAliveSchedulingInterval.isZero() )
+        {
+            log.debug( "Bolt keep-alive service is disabled." );
+        }
+        else
+        {
+            log.debug( "Initialized bolt thread pool." );
+            keepAliveService = Executors.newSingleThreadScheduledExecutor();
+            keepAliveService.scheduleAtFixedRate( () -> {
+                for ( var id : activeWorkItems.keySet() )
+                {
+                    var connection = activeConnections.get( id );
+                    connection.keepAlive();
+                }
+            }, keepAliveSchedulingInterval.toMillis(), keepAliveSchedulingInterval.toMillis(), MILLISECONDS );
+            log.debug( "Initialized bolt keep-alive service." );
+        }
     }
 
     @Override
     public void stop()
     {
+        if ( keepAliveService != null )
+        {
+            log.debug( "Shutting down bolt keep-alive service." );
+            keepAliveService.shutdown();
+            log.debug( "Bolt keep-alive service shut down." );
+        }
         // Close all idle connections
-        log.debug( "Stopping idle connections" );
+        log.debug( "Stopping idle connections." );
         activeConnections.values().stream().filter( BoltConnection::idle ).forEach( this::stopConnection );
-        log.debug( "Idle connections stopped" );
+        log.debug( "Idle connections stopped." );
     }
 
     @Override
@@ -183,6 +212,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
 
     private void handleSubmission( BoltConnection connection )
     {
+        connection.initKeepAliveTimer();
         activeWorkItems.computeIfAbsent( connection.id(),
                 key -> scheduleBatchOrHandleError( connection ).whenCompleteAsync( ( result, error ) -> handleCompletion( connection, result, error ),
                         forkJoinPool ) );

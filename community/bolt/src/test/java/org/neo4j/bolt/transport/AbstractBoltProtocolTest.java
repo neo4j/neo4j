@@ -31,6 +31,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
@@ -67,9 +68,10 @@ class AbstractBoltProtocolTest
         // Given
         BoltChannel boltChannel = newTestBoltChannel( channel );
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
-        when( connectionFactory.newConnection( eq( boltChannel ), any() ) ).thenReturn( mock( BoltConnection.class ) );
+        when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
-                new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), NullLogService.getInstance() );
+                new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
+                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
 
         // When
         boltProtocol.install();
@@ -88,9 +90,9 @@ class AbstractBoltProtocolTest
         private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
 
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  LogService logging )
+                                  LogService logging, TransportThrottleGroup throttleGroup )
         {
-            super( channel, connectionFactory, stateMachineFactory, logging );
+            super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup );
         }
 
         @Override
@@ -100,10 +102,16 @@ class AbstractBoltProtocolTest
         }
 
         @Override
-        protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
-                                                                BookmarksParser bookmarksParser, LogService logging )
+        protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
+                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
         {
             return mock( BoltRequestMessageReader.class );
+        }
+
+        @Override
+        protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging )
+        {
+            return mock( BoltResponseMessageWriter.class );
         }
 
         @Override

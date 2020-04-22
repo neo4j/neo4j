@@ -22,14 +22,13 @@ package org.neo4j.bolt.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitorAggregate;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.scheduling.BoltScheduler;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.internal.LogService;
@@ -41,17 +40,15 @@ import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZ
 public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 {
     private final BoltSchedulerProvider schedulerProvider;
-    private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
     private final Clock clock;
     private final Config config;
     private final BoltConnectionMetricsMonitor metricsMonitor;
 
-    public DefaultBoltConnectionFactory( BoltSchedulerProvider schedulerProvider, TransportThrottleGroup throttleGroup,
-            Config config, LogService logService, Clock clock, Monitors monitors )
+    public DefaultBoltConnectionFactory( BoltSchedulerProvider schedulerProvider, Config config, LogService logService,
+            Clock clock, Monitors monitors )
     {
         this.schedulerProvider = schedulerProvider;
-        this.throttleGroup = throttleGroup;
         this.config = config;
         this.logService = logService;
         this.clock = clock;
@@ -59,7 +56,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     }
 
     @Override
-    public BoltConnection newConnection( BoltChannel channel, BoltStateMachine stateMachine )
+    public BoltConnection newConnection( BoltChannel channel, BoltStateMachine stateMachine,
+            BoltResponseMessageWriter messageWriter )
     {
         requireNonNull( channel );
         requireNonNull( stateMachine );
@@ -67,8 +65,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         BoltScheduler scheduler = schedulerProvider.get( channel );
         BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
         BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
-        ChunkedOutput chunkedOutput = new ChunkedOutput( channel.rawChannel(), throttleGroup );
-        BoltConnection connection = new DefaultBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
+
+        BoltConnection connection = new DefaultBoltConnection( channel, messageWriter, stateMachine, logService, scheduler,
                 connectionQueueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
         connection.start();
 

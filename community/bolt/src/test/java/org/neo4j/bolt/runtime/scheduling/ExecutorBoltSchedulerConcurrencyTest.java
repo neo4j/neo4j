@@ -73,7 +73,7 @@ class ExecutorBoltSchedulerConcurrencyTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, maxPoolSize, maxPoolSize, Duration.ofMinutes( 1 ), 0,
-                    ForkJoinPool.commonPool(), Duration.ZERO );
+                    ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
 
     @BeforeEach
     void setup() throws Throwable

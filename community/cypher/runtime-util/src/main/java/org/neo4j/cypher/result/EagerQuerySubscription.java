@@ -77,7 +77,7 @@ public abstract class EagerQuerySubscription implements QuerySubscription
     }
 
     @Override
-    public boolean await()
+    public boolean await() throws Exception
     {
         boolean hasMore = servedRecords < resultSize();
         if ( !hasMore )

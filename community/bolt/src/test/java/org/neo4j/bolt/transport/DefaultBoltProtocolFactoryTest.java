@@ -24,16 +24,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Duration;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -54,7 +58,8 @@ class DefaultBoltProtocolFactoryTest
         BoltChannel channel = newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
+                        NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
+                        mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 
         BoltProtocol protocol = factory.create( new BoltProtocolVersion( protocolVersion, 0 ), channel );
         // handler is not created
@@ -75,10 +80,13 @@ class DefaultBoltProtocolFactoryTest
 
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         BoltConnection connection = mock( BoltConnection.class );
-        when( connectionFactory.newConnection( boltChannel, stateMachine ) ).thenReturn( connection );
+        when( connectionFactory.newConnection( eq( boltChannel ), eq( stateMachine ), any() ) )
+                .thenReturn( connection );
 
-        BoltProtocolFactory factory = new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(),
-                new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
+        BoltProtocolFactory factory =
+                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(),
+                        new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
+                        mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 
         BoltProtocol protocol = factory.create( boltProtocolVersion, boltChannel );
 
@@ -87,7 +95,8 @@ class DefaultBoltProtocolFactoryTest
         // handler with correct version is created
         assertEquals( boltProtocolVersion, protocol.version() );
         // it uses the expected worker
-        verify( connectionFactory ).newConnection( eq( boltChannel ), any( BoltStateMachine.class ) );
+        verify( connectionFactory ).newConnection( eq( boltChannel ), any( BoltStateMachine.class ),
+                any( BoltResponseMessageWriter.class ) );
 
         // and halts this same worker when closed
         verify( connection, never() ).stop();
