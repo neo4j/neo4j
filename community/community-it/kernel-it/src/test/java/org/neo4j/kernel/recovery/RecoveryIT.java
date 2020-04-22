@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
@@ -72,6 +72,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
 import static java.lang.String.valueOf;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -622,10 +623,30 @@ class RecoveryIT
         Monitors monitors = new Monitors();
         var recoveryMonitor = new RecoveryMonitor()
         {
+            private final AtomicBoolean reverseCompleted = new AtomicBoolean();
+            private final AtomicBoolean recoveryCompleted = new AtomicBoolean();
+
             @Override
             public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
             {
                 GlobalGuardConsumer.globalGuard.stop();
+                reverseCompleted.set( true );
+            }
+
+            @Override
+            public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
+            {
+                recoveryCompleted.set( true );
+            }
+
+            public boolean isReverseCompleted()
+            {
+                return reverseCompleted.get();
+            }
+
+            public boolean isRecoveryCompleted()
+            {
+                return recoveryCompleted.get();
             }
         };
         monitors.addMonitorListener( recoveryMonitor );
@@ -635,6 +656,9 @@ class RecoveryIT
         try
         {
             var database = service.database( layout.getDatabaseName() );
+            assertTrue( recoveryMonitor.isReverseCompleted() );
+            assertFalse( recoveryMonitor.isRecoveryCompleted() );
+            assertFalse( GlobalGuardConsumer.globalGuard.isAvailable() );
             assertFalse( database.isAvailable( 0 ) );
             var e = assertThrows( Exception.class, database::beginTx );
             assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
@@ -649,7 +673,7 @@ class RecoveryIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 10, MINUTES );
             transaction.commit();
         }
     }
