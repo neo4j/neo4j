@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
@@ -66,6 +68,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -367,7 +370,7 @@ public final class Recovery
         recoveryLife.add( extensions );
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( config, logTailScanner, recoveryLog ) );
+        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailScanner, recoveryLog ) );
         recoveryLife.add( labelScanStore );
         recoveryLife.add( relationshipTypeScanStore );
         recoveryLife.add( logFiles );
@@ -495,13 +498,18 @@ public final class Recovery
 
     private static class MissingTransactionLogsCheck extends LifecycleAdapter
     {
+        private final DatabaseLayout databaseLayout;
         private final Config config;
+        private final FileSystemAbstraction fs;
         private final LogTailScanner logTailScanner;
         private final Log recoveryLog;
 
-        MissingTransactionLogsCheck( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+        MissingTransactionLogsCheck( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fs,
+                                     LogTailScanner logTailScanner, Log recoveryLog )
         {
+            this.databaseLayout = databaseLayout;
             this.config = config;
+            this.fs = fs;
             this.logTailScanner = logTailScanner;
             this.recoveryLog = recoveryLog;
         }
@@ -509,23 +517,47 @@ public final class Recovery
         @Override
         public void init()
         {
-            checkForMissingLogFiles( config, logTailScanner, recoveryLog );
+            checkForMissingLogFiles();
         }
 
-        private static void checkForMissingLogFiles( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+        private void checkForMissingLogFiles()
         {
             if ( logTailScanner.getTailInformation().logsMissing() )
             {
                 if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
                 {
-                    throw new RuntimeException(
-                            "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
-                                    GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
-                                    "will update database metadata accordingly. Doing this means your database " +
-                                    "integrity might be compromised, please consider restoring from a consistent backup instead." );
+                    recoveryLog.error( "Transaction logs are missing and recovery is not possible." );
+                    recoveryLog.info( "To force the database to start anyway, you can specify '%s=false'. " +
+                            "This will create new transaction log and will update database metadata accordingly. " +
+                            "Doing this means your database integrity might be compromised, " +
+                            "please consider restoring from a consistent backup instead.",
+                            GraphDatabaseSettings.fail_on_missing_files.name() );
+
+                    File[] logFiles = findLegacyLogFiles();
+                    if ( logFiles.length > 0 )
+                    {
+                        recoveryLog.warn( "Transaction log files were found in a legacy location. " +
+                                "This indicates that the database files might have been manipulated wrongly by a human operator, " +
+                                "e.g. trying to restore a backup by manually copying files." );
+                        recoveryLog.warn( "Please move or remove the following misplaced transaction log files:" );
+                        for ( File logFile : logFiles )
+                        {
+                            recoveryLog.warn( logFile.getAbsolutePath() );
+                        }
+                    }
+
+                    throw new RuntimeException( "Transaction logs are missing and recovery is not possible." );
                 }
                 recoveryLog.warn( "No transaction logs were detected, but recovery was forced by user." );
             }
+        }
+
+        private File[] findLegacyLogFiles()
+        {
+            LegacyTransactionLogsLocator locator = new LegacyTransactionLogsLocator( Config.defaults(), databaseLayout );
+            File logsDirectory = locator.getTransactionLogsDirectory();
+            TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fs, logsDirectory );
+            return logFilesHelper.getLogFiles();
         }
     }
 }
