@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -66,6 +67,8 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @EphemeralPageCacheExtension
@@ -88,6 +91,7 @@ class LogTailScannerTest
     private final byte latestLogEntryVersion = LogEntryVersion.LATEST.version();
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
+    private AssertableLogProvider logProvider;
 
     private static Stream<Arguments> params()
     {
@@ -109,7 +113,8 @@ class LogTailScannerTest
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
-        tailScanner = new LogTailScanner( logFiles, reader, monitors );
+        logProvider = new AssertableLogProvider();
+        tailScanner = new LogTailScanner( logFiles, reader, monitors, false, logProvider );
     }
 
     @Test
@@ -472,6 +477,27 @@ class LogTailScannerTest
 
         // then
         assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void printProgress( long startLogVersion, long endLogVersion )
+    {
+        // given
+        long txId = 6;
+        PositionEntry position = position();
+        setupLogFiles( endLogVersion,
+                       logFile( start(), commit( txId - 1 ), position ),
+                       logFile( checkPoint( position ) ),
+                       logFile( start(), commit( txId ) ) );
+
+        // when
+        tailScanner.getTailInformation();
+
+        // then
+        String message = "Scanning transaction file with version %d for checkpoint entries";
+        assertThat( logProvider ).forClass( LogTailScanner.class ).forLevel( INFO ).containsMessageWithArguments( message, endLogVersion );
+        assertThat( logProvider ).forClass( LogTailScanner.class ).forLevel( INFO ).containsMessageWithArguments( message, startLogVersion );
     }
 
     // === Below is code for helping the tests above ===

@@ -37,6 +37,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -65,20 +68,27 @@ public class LogTailScanner
     private LogTailInformation logTailInformation;
     private final LogTailScannerMonitor monitor;
     private final boolean failOnCorruptedLogFiles;
+    private final Log log;
 
     public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
     {
         this( logFiles, logEntryReader, monitors, false );
     }
 
+    public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors, boolean failOnCorruptedLogFiles )
+    {
+        this( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles, NullLogProvider.getInstance() );
+    }
+
     public LogTailScanner( LogFiles logFiles,
-            LogEntryReader logEntryReader, Monitors monitors,
-            boolean failOnCorruptedLogFiles )
+                           LogEntryReader logEntryReader, Monitors monitors,
+                           boolean failOnCorruptedLogFiles, LogProvider log )
     {
         this.logFiles = logFiles;
         this.logEntryReader = logEntryReader;
         this.monitor = monitors.newMonitor( LogTailScannerMonitor.class );
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
+        this.log = log.getLog( getClass() );
     }
 
     private LogTailInformation findLogTail() throws IOException
@@ -95,6 +105,8 @@ public class LogTailScanner
 
         while ( version >= logFiles.getLowestLogVersion() && version >= INITIAL_LOG_VERSION )
         {
+            log.info( "Scanning transaction file with version %d for checkpoint entries", version );
+
             oldestVersionFound = version;
             CheckPoint latestCheckPoint = null;
             StoreId storeId = StoreId.UNKNOWN;

@@ -371,7 +371,7 @@ public class Database extends LifecycleAdapter
 
             var pageCacheTracer = tracers.getPageCacheTracer();
             LogTailScanner tailScanner =
-                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ) );
+                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ), internalLogProvider );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
