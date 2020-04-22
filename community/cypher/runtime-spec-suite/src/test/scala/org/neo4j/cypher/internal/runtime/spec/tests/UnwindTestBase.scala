@@ -161,4 +161,62 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     } yield Array(i)
     runtimeResult should beColumns("i").withRows(expected)
   }
+
+  test("should handle unwind with non-fused limit under apply") {
+    // given
+    val limit = 1
+    val input = for (a <- 1 to sizeHint) yield Array[Any](a)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.limit(limit) // assuming this won't be fused
+      .|.unwind("range(1, 10) AS b")
+      .|.argument("a")
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for {
+      a <- 1 to sizeHint
+      b <- (1 to 10).take(limit)
+    } yield Array[Any](a, b)
+
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
+  test("should handle nested unwinds with non-fused limit under apply") {
+    // given
+    val limit = 1
+    val input = for (a <- 1 to sizeHint) yield Array[Any](a)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.limit(limit) // assuming this won't be fused
+      .|.unwind("range(-a*10, -a*10 + 10) AS c")
+      .|.unwind("range( a*10,  a*10 + 10) AS b")
+      .|.argument("a")
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for {
+      a <- 1 to sizeHint
+      rhs = for {
+        b <- ( a*10) to ( a*10 + 10)
+        c <- (-a*10) to (-a*10 + 10)
+      } yield (b, c)
+      (b, c) <- rhs.take(limit)
+    } yield Array[Any](a, b, c)
+
+    runtimeResult should beColumns("a", "b", "c").withRows(expected)
+    System.out.flush()
+  }
 }
