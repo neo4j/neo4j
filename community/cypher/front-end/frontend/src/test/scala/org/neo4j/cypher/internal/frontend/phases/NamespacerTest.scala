@@ -199,11 +199,11 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   tests.foreach {
     case TestCase(q, rewritten, semanticTableExpressions) =>
       test(q) {
-        assertRewritten(q, rewritten, semanticTableExpressions)
+        assertRewritten(q.replace("\r\n", "\n"), rewritten, semanticTableExpressions)
       }
     case TestCaseWithStatement(q, rewritten, semanticTableExpressions) =>
       test(q) {
-        assertRewritten(q, rewritten, semanticTableExpressions)
+        assertRewritten(q.replace("\r\n", "\n"), rewritten, semanticTableExpressions)
       }
   }
 }

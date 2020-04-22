@@ -132,7 +132,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
           | - Int(8500)
           | - Int(8600)
           |    ... 13 matching rows ...
-          |""".stripMargin))
+          |""".stripMargin.replace("\r\n", "\n")))
 
     EqualInAnyOrder(rows).matches(Array("X"), rows.slice(1, 99) :+ row(-1) :+ row(999999)) should be(
       RowsDontMatch(
@@ -141,7 +141,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName  {
           |    ... 98 matching rows ...
           | - Int(9900)
           | + Int(999999)
-          |""".stripMargin))
+          |""".stripMargin.replace("\r\n", "\n")))
   }
 
   test("listInAnyOrder basic") {

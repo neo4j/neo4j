@@ -228,7 +228,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         logicalPlanIdGen = idGen
       )
 
-      val state = createInitState(queryString)
+      val state = createInitState(queryString.replace("\r\n", "\n"))
       val output = pipeLine().transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p:ProduceResult if stripProduceResults => p.source
@@ -308,7 +308,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
               config:CypherPlannerConfiguration = cypherCompilerConfig,
               queryGraphSolver: QueryGraphSolver = queryGraphSolver,
               stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) =
-    new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults)
+    new given().getLogicalPlanFor(queryString.replace("\r\n", "\n"), config, queryGraphSolver, stripProduceResults)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 

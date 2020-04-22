@@ -190,7 +190,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
                 for ( final String provider : newProviders )
                 {
                     writer.write( provider );
-                    writer.write( "\n" );
+                    writer.write( System.lineSeparator() );
                 }
             }
         }

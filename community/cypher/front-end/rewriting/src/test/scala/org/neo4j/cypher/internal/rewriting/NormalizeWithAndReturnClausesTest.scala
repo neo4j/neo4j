@@ -785,7 +785,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   protected def assertNotRewrittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {
-    val original = parser.parse(query, exceptionFactory)
+    val original = parser.parse(query.replace("\r\n", "\n"), exceptionFactory)
     val result = endoRewrite(original)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
 
