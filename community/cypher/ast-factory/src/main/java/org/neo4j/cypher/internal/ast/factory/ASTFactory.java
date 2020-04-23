@@ -57,11 +57,11 @@ public interface ASTFactory<STATEMENT,
         POS>
         extends ASTExpressionFactory<EXPRESSION,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
-    class NULL
+    final class NULL
     {
         private NULL()
         {
-            // not instantiable
+            throw new IllegalStateException("This class should not be instantiated, use `null` instead.");
         }
     }
 

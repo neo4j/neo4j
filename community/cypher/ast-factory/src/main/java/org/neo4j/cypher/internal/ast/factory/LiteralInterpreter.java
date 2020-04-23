@@ -306,13 +306,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public Object newTrueLiteral( NULL p )
     {
-        return true;
+        return Boolean.TRUE;
     }
 
     @Override
     public Object newFalseLiteral( NULL p )
     {
-        return false;
+        return Boolean.FALSE;
     }
 
     @Override

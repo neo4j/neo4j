@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ public class LiteralInterpreterTest
     private final ASTFactory.NULL POS = null;
 
     @Test
-    public void shouldInterpretNumbers()
+    void shouldInterpretNumbers()
     {
         final var x = new LiteralInterpreter();
 
@@ -59,15 +59,18 @@ public class LiteralInterpreterTest
     }
 
     @Test
-    public void shouldInterpretString()
+    void shouldInterpretString()
     {
         final var x = new LiteralInterpreter();
 
         assertEquals( "a string", x.newString( POS, "a string" ) );
+        assertEquals( "ÅÄü", x.newString( POS, "ÅÄü" ) );
+        assertEquals( "Ελληνικά", x.newString( POS, "Ελληνικά" ) );
+        assertEquals( "\uD83D\uDCA9", x.newString( POS, "\uD83D\uDCA9" ) );
     }
 
     @Test
-    public void shouldInterpretNull()
+    void shouldInterpretNull()
     {
         final var x = new LiteralInterpreter();
 
@@ -75,7 +78,7 @@ public class LiteralInterpreterTest
     }
 
     @Test
-    public void shouldInterpretBoolean()
+    void shouldInterpretBoolean()
     {
         final var x = new LiteralInterpreter();
 
@@ -84,7 +87,7 @@ public class LiteralInterpreterTest
     }
 
     @Test
-    public void shouldInterpretList()
+    void shouldInterpretList()
     {
         final var x = new LiteralInterpreter();
 
@@ -92,7 +95,7 @@ public class LiteralInterpreterTest
     }
 
     @Test
-    public void shouldInterpretMap()
+    void shouldInterpretMap()
     {
         final var x = new LiteralInterpreter();
 
