@@ -104,7 +104,7 @@ import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.NamedMemoryPool;
+import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -220,7 +220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            NamedDatabaseId namedDatabaseId, LeaseService leaseService, NamedMemoryPool transactionMemoryPool )
+            NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.eventListeners = eventListeners;

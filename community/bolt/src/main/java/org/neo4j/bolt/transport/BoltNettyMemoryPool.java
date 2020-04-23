@@ -22,14 +22,12 @@ package org.neo4j.bolt.transport;
 import io.netty.buffer.ByteBufAllocatorMetric;
 
 import org.neo4j.memory.MemoryGroup;
-import org.neo4j.memory.NamedMemoryPool;
+import org.neo4j.memory.ScopedMemoryPool;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.memory.MemoryGroup.NETTY;
 
-public class BoltNettyMemoryPool implements NamedMemoryPool
+public class BoltNettyMemoryPool implements ScopedMemoryPool
 {
-    private static final String BOLT_SERVER_MEMORY_POOL = "Bolt Memory Pool";
     private final ByteBufAllocatorMetric allocatorMetric;
 
     public BoltNettyMemoryPool( ByteBufAllocatorMetric allocatorMetric )
@@ -41,18 +39,6 @@ public class BoltNettyMemoryPool implements NamedMemoryPool
     public MemoryGroup group()
     {
         return NETTY;
-    }
-
-    @Override
-    public String name()
-    {
-        return BOLT_SERVER_MEMORY_POOL;
-    }
-
-    @Override
-    public String databaseName()
-    {
-        return EMPTY;
     }
 
     @Override

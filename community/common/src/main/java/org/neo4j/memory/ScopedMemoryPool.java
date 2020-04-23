@@ -19,7 +19,9 @@
  */
 package org.neo4j.memory;
 
-public interface NamedMemoryPool extends MemoryPool, AutoCloseable
+import org.apache.commons.lang3.StringUtils;
+
+public interface ScopedMemoryPool extends MemoryPool, AutoCloseable
 {
     /**
      * Memory pool group
@@ -27,15 +29,13 @@ public interface NamedMemoryPool extends MemoryPool, AutoCloseable
     MemoryGroup group();
 
     /**
-     * Memory pool name
-     */
-    String name();
-
-    /**
      * Database name for non global pools, otherwise empty
      * @return name of the database this pool belongs or empty if global
      */
-    String databaseName();
+    default String databaseName()
+    {
+        return StringUtils.EMPTY;
+    }
 
     /**
      * Close and de-register specific memory pool

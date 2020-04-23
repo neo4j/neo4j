@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
-import org.neo4j.memory.NamedMemoryPool;
+import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -136,7 +136,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
-    private final NamedMemoryPool transactionMemoryPool;
+    private final ScopedMemoryPool transactionMemoryPool;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.

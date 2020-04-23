@@ -23,10 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.neo4j.util.Preconditions.checkState;
 
-public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
+public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool
 {
     private final MemoryPools pools;
     private final MemoryGroup group;
@@ -52,32 +51,20 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Na
     }
 
     @Override
-    public String name()
-    {
-        return "*";
-    }
-
-    @Override
-    public String databaseName()
-    {
-        return EMPTY;
-    }
-
-    @Override
     public void close()
     {
         checkState( databasePools.isEmpty(), "All sub pools must be closed before closing top pool" );
         pools.releasePool( this );
     }
 
-    public NamedMemoryPool newDatabasePool( String name, long limit )
+    public ScopedMemoryPool newDatabasePool( String name, long limit )
     {
         DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true );
         databasePools.add( subTracker );
         return subTracker;
     }
 
-    public List<NamedMemoryPool> getDatabasePools()
+    public List<ScopedMemoryPool> getDatabasePools()
     {
         return new ArrayList<>( databasePools );
     }

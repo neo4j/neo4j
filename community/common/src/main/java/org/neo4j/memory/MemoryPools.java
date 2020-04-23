@@ -23,12 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-
 public final class MemoryPools
 {
-    public static final NamedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
-    private final List<NamedMemoryPool> pools = new CopyOnWriteArrayList<>();
+    public static final ScopedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
+    private final List<ScopedMemoryPool> pools = new CopyOnWriteArrayList<>();
 
     public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit )
     {
@@ -42,17 +40,17 @@ public final class MemoryPools
         return pool;
     }
 
-    public void registerPool( NamedMemoryPool pool )
+    public void registerPool( ScopedMemoryPool pool )
     {
         pools.add( pool );
     }
 
-    public boolean unregisterPool( NamedMemoryPool pool )
+    public boolean unregisterPool( ScopedMemoryPool pool )
     {
         return pools.remove( pool );
     }
 
-    public List<NamedMemoryPool> getPools()
+    public List<ScopedMemoryPool> getPools()
     {
         return new ArrayList<>( pools );
     }
@@ -62,26 +60,12 @@ public final class MemoryPools
         pools.remove( globalMemoryGroupTracker );
     }
 
-    private static class NoTrackingMemoryPool implements NamedMemoryPool
+    private static class NoTrackingMemoryPool implements ScopedMemoryPool
     {
-        private static final String NO_TRACKING_POOL_NAME = "No tracking";
-
         @Override
         public MemoryGroup group()
         {
             return MemoryGroup.NO_TRACKING;
-        }
-
-        @Override
-        public String name()
-        {
-            return NO_TRACKING_POOL_NAME;
-        }
-
-        @Override
-        public String databaseName()
-        {
-            return EMPTY;
         }
 
         @Override

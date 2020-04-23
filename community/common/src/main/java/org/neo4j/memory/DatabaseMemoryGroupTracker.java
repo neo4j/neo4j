@@ -19,7 +19,7 @@
  */
 package org.neo4j.memory;
 
-public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements NamedMemoryPool
+public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements ScopedMemoryPool
 {
     private final GlobalMemoryGroupTracker parent;
     private final String name;
@@ -35,12 +35,6 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
     public MemoryGroup group()
     {
         return parent.group();
-    }
-
-    @Override
-    public String name()
-    {
-        return name;
     }
 
     @Override
