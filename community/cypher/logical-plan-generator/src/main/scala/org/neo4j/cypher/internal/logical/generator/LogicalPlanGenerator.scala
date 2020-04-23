@@ -351,7 +351,6 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
       expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))
         .suchThat(e => {
           val errors = SemanticExpressionCheck.check(Results, e)(semanticState).errors
-          if(errors.nonEmpty) println(errors)
           errors.isEmpty
         })
       parameters = expression.findByAllClass[Parameter].map(_.name)
