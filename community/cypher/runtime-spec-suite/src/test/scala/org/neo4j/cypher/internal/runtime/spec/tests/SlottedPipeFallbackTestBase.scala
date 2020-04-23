@@ -62,6 +62,32 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 
+  test("should use fallback correctly if rows are filtered out by fallback pipe") {
+    // given
+    val rels = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "n", "m")
+      .projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = false)
+      .input(nodes = Seq("n"), relationships = Seq("r"))
+      .build()
+
+    val input = for {
+      r <- rels
+      n <- Seq(r.getStartNode, r.getEndNode)
+    } yield Array[Any](n, r)
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expected = rels.map { r => Array(r, r.getStartNode, r.getEndNode) }
+    runtimeResult should beColumns("r", "n", "m").withRows(expected)
+  }
+
   test("should get exception with error plan") {
     given { nodeGraph(10) }
 
