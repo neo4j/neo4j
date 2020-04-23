@@ -25,13 +25,13 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
 {
     public abstract void dbHit();
 
-    public abstract void dbHits( int hits );
+    public abstract void dbHits( long hits );
 
     public abstract void row();
 
     public abstract void row( boolean hasRow );
 
-    public abstract void rows( int n );
+    public abstract void rows( long n );
 
     // AutoCloseable
 

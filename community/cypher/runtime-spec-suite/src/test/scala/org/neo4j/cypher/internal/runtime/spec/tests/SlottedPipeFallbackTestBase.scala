@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.exceptions.HintException
 
 abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
@@ -107,5 +108,94 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     a[HintException] should be thrownBy {
       consume(runtimeResult)
     }
+  }
+
+  test("should do multiple middle correctly and profile") {
+    // given
+    val n = sizeHint
+    val relTuples = (for(i <- 0 until n) yield {
+      Seq(
+        (i, (i + 1) % n, "NEXT")
+      )
+    }).reduce(_ ++ _)
+
+    val (nodes, rels) = given {
+      val nodes = nodeGraph(n, "Honey")
+      val rels = connect(nodes, relTuples)
+      (nodes, rels)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "n", "m", "r") // 0
+      .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false) // 1
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false) // 2
+      .input(relationships = Seq("r")) // 3
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(rels.map(Array[Any](_)): _*))
+
+    // then
+    val expected = relTuples.zip(rels).map {
+      case ((f, t, _), rel) => Array(nodes(f), nodes(t), nodes(f), nodes(t), rel)
+    }
+
+    runtimeResult should beColumns("a", "b", "n", "m", "r").withRows(expected)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    // ROWS
+    queryProfile.operatorProfile(0).rows() shouldBe relTuples.size // produce result
+    queryProfile.operatorProfile(1).rows() shouldBe relTuples.size // project endpoints
+    queryProfile.operatorProfile(2).rows() shouldBe relTuples.size // project endpoints
+    queryProfile.operatorProfile(3).rows() shouldBe relTuples.size // input
+
+    // TIME
+    queryProfile.operatorProfile(0).time() should be > 0L // produce result
+    queryProfile.operatorProfile(1).time() shouldBe OperatorProfile.NO_DATA // project endpoints
+    queryProfile.operatorProfile(2).time() shouldBe OperatorProfile.NO_DATA // project endpoints
+    queryProfile.operatorProfile(3).time() should be > 0L // input
+  }
+
+  test("should profile head with multiple middle correctly") {
+    // given
+    val (nodes, rels) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "n", "m", "r", "x", "y") // 0
+      .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false) // 1
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false) // 2
+      .pruningVarExpand("(x)-[*1..1]->(y)") // 3
+      .input(nodes = Seq("x"), relationships = Seq("r")) // 4
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues((0 until sizeHint).map(i => Array[Any](nodes(i), rels(i))): _*))
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    // ROWS
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce result
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // project endpoints
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // project endpoints
+    queryProfile.operatorProfile(3).rows() shouldBe sizeHint // var expand
+    queryProfile.operatorProfile(4).rows() shouldBe sizeHint // input
+
+    // TIME
+    queryProfile.operatorProfile(0).time() should be > 0L // produce result
+    queryProfile.operatorProfile(1).time() shouldBe OperatorProfile.NO_DATA // project endpoints
+    queryProfile.operatorProfile(2).time() shouldBe OperatorProfile.NO_DATA // project endpoints
+    queryProfile.operatorProfile(3).time() shouldBe OperatorProfile.NO_DATA // var expand
+    queryProfile.operatorProfile(4).time() should be > 0L // input
+
+    // DB HITS
+    queryProfile.operatorProfile(0).dbHits() shouldBe 0L // produce result
+    queryProfile.operatorProfile(1).dbHits() shouldBe 0L // project endpoints
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0L // project endpoints
+    queryProfile.operatorProfile(3).dbHits() shouldBe 2 * sizeHint // var expand
+    queryProfile.operatorProfile(4).dbHits() shouldBe 0L // input
   }
 }

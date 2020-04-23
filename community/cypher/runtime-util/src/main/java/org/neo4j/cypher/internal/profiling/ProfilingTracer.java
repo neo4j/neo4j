@@ -111,6 +111,12 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format( "ProfilingTracer { %s }", data );
+    }
+
     private static class ExecutionEvent extends OperatorProfileEvent
     {
         final ProfilingTracerData data;
@@ -139,7 +145,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
 
         @Override
-        public void dbHits( int hits )
+        public void dbHits( long hits )
         {
             hitCount += hits;
         }
@@ -160,7 +166,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
 
         @Override
-        public void rows( int n )
+        public void rows( long n )
         {
             rowCount += n;
         }

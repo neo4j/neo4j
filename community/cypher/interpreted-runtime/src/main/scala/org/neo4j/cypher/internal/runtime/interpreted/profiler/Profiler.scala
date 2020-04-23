@@ -145,7 +145,7 @@ trait Counter {
       _count += 1L
   }
 
-  def increment(hits: Int): Unit = {
+  def increment(hits: Long): Unit = {
     if (count != OperatorProfile.NO_DATA)
       _count += hits
   }
@@ -264,7 +264,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
       increment()
     }
 
-    override def dbHits(hits: Int): Unit = {
+    override def dbHits(hits: Long): Unit = {
       increment(hits)
     }
 
@@ -272,7 +272,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
 
     override def row(hasRow: Boolean): Unit = {}
 
-    override def rows(n: Int): Unit = {}
+    override def rows(n: Long): Unit = {}
 
     override def close(): Unit = {
     }

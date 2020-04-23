@@ -184,7 +184,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be > 0L // pruning var expand
+    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // pruning var expand (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
@@ -212,7 +212,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be > 0L // shortest path
+    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // shortest path (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // cartesian product
     queryProfile.operatorProfile(3).time() should be > 0L // nodeByLabelScan
     queryProfile.operatorProfile(4).time() should be > 0L // nodeByLabelScan
@@ -410,7 +410,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val queryProfile = result.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).time() should be > 0L // procedure call
+    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // procedure call (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // unwind
     queryProfile.operatorProfile(3).time() should be > 0L // argument
     // Should not attribute anything to the invalid id
